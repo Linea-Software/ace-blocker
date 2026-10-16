@@ -1,0 +1,5441 @@
+# reqwest Full API Documentation
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Allow HTTP/0.9 responses
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get a mutable reference to the timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+A Response to a submitted `Request`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Send headers as title case instead of lowercase.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+A builder to construct the properties of a `Request`.
+
+To construct a `RequestBuilder`, refer to the `Client` documentation.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the identity to be used for client certificate authentication.
+
+# Optional
+
+This requires the optional `native-tls` or `rustls(-...)` feature to be
+enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Set the request body.
+
+# Examples
+
+Using a string:
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .body("from a &str!")
+    .send()?;
+# Ok(())
+# }
+```
+
+Using a `File`:
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let file = std::fs::File::open("from_a_file.txt")?;
+let client = reqwest::blocking::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .body(file)
+    .send()?;
+# Ok(())
+# }
+```
+
+Using arbitrary bytes:
+
+```rust
+# use std::fs;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+// from bytes!
+let bytes: Vec<u8> = vec![1, 10, 100];
+let client = reqwest::blocking::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .body(bytes)
+    .send()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/mod.rs
+A blocking Client API.
+
+The blocking `Client` will block the current thread to execute, instead
+of returning futures that need to be executed on a runtime.
+
+Conversely, the functionality in `reqwest::blocking` must *not* be executed
+within an async runtime, or it will panic when attempting to block. If
+calling directly from an async function, consider using an async
+[`reqwest::Client`][crate::Client] instead. If the immediate context is only
+synchronous, but a transitive caller is async, consider changing that caller
+to use [`tokio::task::spawn_blocking`] around the calls that need to block.
+
+# Optional
+
+This requires the optional `blocking` feature to be enabled.
+
+# Making a GET request
+
+For a single request, you can use the [`get`] shortcut method.
+
+```rust
+# use reqwest::{Error, Response};
+
+# fn run() -> Result<(), Error> {
+let body = reqwest::blocking::get("https://www.rust-lang.org")?
+    .text()?;
+
+println!("body = {body:?}");
+# Ok(())
+# }
+```
+
+Additionally, the blocking [`Response`] struct implements Rust's
+`Read` trait, so many useful standard library and third party crates will
+have convenience methods that take a `Response` anywhere `T: Read` is
+acceptable.
+
+**NOTE**: If you plan to perform multiple requests, it is best to create a
+[`Client`] and reuse it, taking advantage of keep-alive connection pooling.
+
+# Making POST requests (or setting request bodies)
+
+There are several ways you can set the body of a request. The basic one is
+by using the `body()` method of a [`RequestBuilder`]. This lets you set the
+exact raw bytes of what the body should be. It accepts various types,
+including `String`, `Vec<u8>`, and `File`. If you wish to pass a custom
+Reader, you can use the `reqwest::blocking::Body::new()` constructor.
+
+```rust
+# use reqwest::Error;
+#
+# fn run() -> Result<(), Error> {
+let client = reqwest::blocking::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .body("the exact body that is sent")
+    .send()?;
+# Ok(())
+# }
+```
+
+## And More
+
+Most features available to the asynchronous `Client` are also available,
+on the blocking `Client`, see those docs for more.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets whether invalid header lines should be silently ignored in HTTP/1 responses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set a request retry policy.
+
+Default behavior is to retry protocol NACKs.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Provide a custom function to determine what traffic to proxy to where.
+
+# Example
+
+```
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let target = reqwest::Url::parse("https://my.prox")?;
+let client = reqwest::Client::builder()
+    .proxy(reqwest::Proxy::custom(move |url| {
+        if url.host_str() == Some("hyper.rs") {
+            Some(target.clone())
+        } else {
+            None
+        }
+    }))
+    .build()?;
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enable whether to send HTTP/3 protocol grease on the connections.
+
+HTTP/3 uses the concept of "grease"
+
+to prevent potential interoperability issues in the future.
+In HTTP/3, the concept of grease is used to ensure that the protocol can evolve
+and accommodate future changes without breaking existing implementations.
+
+Please see docs in [`Builder`] in [`h3`].
+
+[`Builder`]: https://docs.rs/h3/latest/h3/client/struct.Builder.html#method.send_grease
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Returns a mutable reference to the associated extensions.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Create a scoped retry policy.
+
+For a more convenient constructor, see [`for_host()`].
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Returns an action meaning reqwest should follow the next URL.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Override DNS resolution for specific domains to particular IP addresses.
+
+Set the port to `0` to use the conventional port for the given scheme (e.g. 80 for http).
+Ports in the URL itself will always be used instead of the port in the overridden addr.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set that all sockets have `TCP_USER_TIMEOUT` set with the supplied duration.
+
+This option controls how long transmitted data may remain unacknowledged before
+the connection is force-closed.
+
+If `None`, the option will not be set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Returns a new no-proxy configuration based on environment variables (or `None` if no variables are set)
+see [self::NoProxy::from_string()] for the string format
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_backend_preconfigured()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the maximum frame size to use for HTTP2.
+
+Default is currently 16,384 but may change internally to optimize for common uses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set that all connections will use this Unix socket.
+
+If a request URI uses the `https` scheme, TLS will still be used over
+the Unix socket.
+
+# Note
+
+This option is not compatible with any of the TCP or Proxy options.
+Setting this will ignore all those options previously set.
+
+Likewise, DNS resolution will not be done on the domain name.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Convenience method to make a `HEAD` request to a URL.
+
+# Errors
+
+This method fails whenever supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Controls the use of certificate validation.
+
+Defaults to `false`.
+
+# Warning
+
+You should think very carefully before using this method. If
+invalid certificates are trusted, *any* certificate for *any* site
+will be trusted for use. This includes expired certificates. This
+introduces significant vulnerabilities, and should only be used
+as a last resort.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the remote address used to get this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Send a JSON body.
+
+# Optional
+
+This requires the optional `json` feature enabled.
+
+# Errors
+
+Serialization can fail if `T`'s implementation of `Serialize` decides to
+fail, or if `T` contains a map with non-string keys.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enables the [hickory-dns](hickory_resolver) async resolver instead of a default threadpool using `getaddrinfo`.
+
+If the `hickory-dns` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `hickory-dns` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+A request which can be executed with `Client::execute()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Sets custom headers for the part.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Force using the native TLS backend.
+
+Since multiple TLS backends can be optionally enabled, this option will
+force the `native-tls` backend to be used for this `Client`.
+
+# Optional
+
+This requires the optional `native-tls` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Set the `Proxy-Authorization` header to a specified value.
+
+# Example
+
+```
+# extern crate reqwest;
+# use reqwest::header::*;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let proxy = reqwest::Proxy::https("http://localhost:1234")?
+    .custom_http_auth(HeaderValue::from_static("justletmeinalreadyplease"));
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get a mutable reference to the body.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Configure this `Form` to percent-encode using the `path-segment` rules.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Constructs a new `Client`.
+
+# Panics
+
+This method panics if a TLS backend cannot be initialized, or the resolver
+cannot load the system configuration.
+
+Use `Client::builder()` if you wish to handle the failure as an `Error`
+instead of panicking.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enable auto zstd decompression by checking the `Content-Encoding` response header.
+
+If auto zstd decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `zstd`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if its headers contain a `Content-Encoding` value of
+  `zstd`, both `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `zstd` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `zstd` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set that all sockets have `TCP_USER_TIMEOUT` set with the supplied duration.
+
+This option controls how long transmitted data may remain unacknowledged before
+the connection is force-closed.
+
+The current default is `None` (option disabled).
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+An asynchronous request body.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Represents a private key and X509 cert as a client certificate.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Bind connections only on the specified network interface.
+
+This option is only available on the following operating systems:
+
+- Android
+- Fuchsia
+- Linux,
+- macOS and macOS-like systems (iOS, tvOS, watchOS and visionOS)
+- Solaris and illumos
+
+On Android, Linux, and Fuchsia, this uses the
+[`SO_BINDTODEVICE`][man-7-socket] socket option. On macOS and macOS-like
+systems, Solaris, and illumos, this instead uses the [`IP_BOUND_IF` and
+`IPV6_BOUND_IF`][man-7p-ip] socket options (as appropriate).
+
+Note that connections will fail if the provided interface name is not a
+network interface that currently exists when a connection is established.
+
+# Example
+
+```
+# fn doc() -> Result<(), reqwest::Error> {
+let interface = "lo";
+let client = reqwest::Client::builder()
+    .interface(interface)
+    .build()?;
+# Ok(())
+# }
+```
+
+[man-7-socket]: https://man7.org/linux/man-pages/man7/socket.7.html
+[man-7p-ip]: https://docs.oracle.com/cd/E86824_01/html/E54777/ip-7p.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Set the `Proxy-Authorization` header using Basic auth.
+
+# Example
+
+```
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let proxy = reqwest::Proxy::https("http://localhost:1234")?
+    .basic_auth("Aladdin", "open sesame");
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Add a `Header` to this Request.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns the status code, if the error was generated from a response.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Create a `Certificate` from a PEM encoded certificate
+
+# Examples
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn cert() -> Result<(), Box<dyn std::error::Error>> {
+let mut buf = Vec::new();
+File::open("my_cert.pem")?
+    .read_to_end(&mut buf)?;
+let cert = reqwest::Certificate::from_pem(&buf)?;
+# drop(cert);
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Disable auto response body zstd decompression.
+
+This method exists even if the optional `zstd` feature is not enabled.
+This can be used to ensure a `Client` doesn't use zstd decompression
+even if another dependency were to enable the optional `zstd` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets whether to use an adaptive flow control.
+
+Enabling this will override the limits set in `http2_initial_stream_window_size` and
+`http2_initial_connection_window_size`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get the method.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the content length of the response, if it is known.
+
+
+This value does not directly represents the value of the `Content-Length`
+header, but rather the size of the response's body. To read the header's
+value, please use the [`Response::headers`] method instead.
+
+Reasons it may not be known:
+
+- The response does not include a body (e.g. it responds to a `HEAD`
+  request).
+- The response is gzipped and automatically decoded (thus changing the
+  actual decoded length).
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set a request retry policy.
+
+Default behavior is to retry protocol NACKs.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_backend_native()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the full response text.
+
+This method decodes the response body with BOM sniffing
+and with malformed sequences replaced with the
+[`char::REPLACEMENT_CHARACTER`].
+Encoding is determined from the `charset` parameter of `Content-Type` header,
+and defaults to `utf-8` if not presented.
+
+Note that the BOM is stripped from the returned String.
+
+# Note
+
+If the `charset` feature is disabled the method will only attempt to decode the
+response as UTF-8, regardless of the given `Content-Type`
+
+# Example
+
+```
+# async fn run() -> Result<(), Box<dyn std::error::Error>> {
+let content = reqwest::get("http://httpbin.org/range/26")
+    .await?
+    .text()
+    .await?;
+
+println!("text: {content:?}");
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Override DNS resolution for specific domains to a particular IP address.
+
+Set the port to `0` to use the conventional port for the given scheme (e.g. 80 for http).
+Ports in the URL itself will always be used instead of the port in the overridden addr.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Represents a server X509 certificate.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_backend_rustls()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+An asynchronous `Client` to make Requests with.
+
+The Client has various configuration values to tweak, but the defaults
+are set to what is usually the most commonly desired value. To configure a
+`Client`, use `Client::builder()`.
+
+The `Client` holds a connection pool internally to improve performance
+by reusing connections and avoiding setup overhead, so it is advised that
+you create one and **reuse** it.
+
+You do **not** have to wrap the `Client` in an [`Rc`] or [`Arc`] to **reuse** it,
+because it already uses an [`Arc`] internally.
+
+# Connection Pooling
+
+The connection pool can be configured using [`ClientBuilder`] methods
+with the `pool_` prefix, such as [`ClientBuilder::pool_idle_timeout`]
+and [`ClientBuilder::pool_max_idle_per_host`].
+
+[`Rc`]: std::rc::Rc
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Retry requests
+
+A `Client` has the ability to retry requests, by sending additional copies
+to the server if a response is considered retryable.
+
+The [`Builder`] makes it easier to configure what requests to retry, along
+with including best practices by default, such as a retry budget.
+
+# Defaults
+
+The default retry behavior of a `Client` is to only retry requests where an
+error or low-level protocol NACK is encountered that is known to be safe to
+retry. Note however that providing a specific retry policy will override
+the default, and you will need to explicitly include that behavior.
+
+All policies default to including a retry budget that permits 20% extra
+requests to be sent.
+
+# Scoped
+
+A client's retry policy is scoped. That means that the policy doesn't
+apply to all requests, but only those within a user-defined scope.
+
+Since all policies include a budget by default, it doesn't make sense to
+apply it on _all_ requests. Rather, the retry history applied by a budget
+should likely only be applied to the same host.
+
+# Classifiers
+
+A retry policy needs to be configured with a classifier that determines
+if a request should be retried. Knowledge of the destination server's
+behavior is required to make a safe classifier. **Requests should not be
+retried** if the server cannot safely handle the same request twice, or if
+it causes side effects.
+
+Some common properties to check include if the request method is
+idempotent, or if the response status code indicates a transient error.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Restrict the Client to be used with HTTPS only requests.
+
+Defaults to false.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Convenience method to make a `HEAD` request to a URL.
+
+# Errors
+
+This method fails whenever the supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is from a `RedirectPolicy`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Try to deserialize the response body as JSON.
+
+# Optional
+
+This requires the optional `json` feature enabled.
+
+# Examples
+
+```
+# extern crate reqwest;
+# extern crate serde;
+#
+# use reqwest::Error;
+# use serde::Deserialize;
+#
+// This `derive` requires the `serde` dependency.
+#[derive(Deserialize)]
+struct Ip {
+    origin: String,
+}
+
+# async fn run() -> Result<(), Error> {
+let ip = reqwest::get("http://httpbin.org/ip")
+    .await?
+    .json::<Ip>()
+    .await?;
+
+println!("ip: {}", ip.origin);
+# Ok(())
+# }
+#
+# fn main() { }
+```
+
+# Errors
+
+This method fails whenever the response body is not in JSON format,
+or it cannot be properly deserialized to target type `T`. For more
+details please see [`serde_json::from_reader`].
+
+[`serde_json::from_reader`]: https://docs.serde.rs/serde_json/fn.from_reader.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_backend_rustls()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Controls the use of hostname verification.
+
+Defaults to `false`.
+
+# Warning
+
+You should think very carefully before you use this method. If
+hostname verification is not used, any valid certificate for any
+site will be trusted for use from any other. This introduces a
+significant vulnerability to man-in-the-middle attacks.
+
+# Errors
+
+Depending on the TLS backend and verifier, this might not work with
+native certificates, only those added with [`ClientBuilder::tls_certs_only()`].
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Constructs a new request.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Provide a classifier to determine if a request should be retried.
+
+# Example
+
+```rust
+# fn with_builder(builder: reqwest::retry::Builder) -> reqwest::retry::Builder {
+builder.classify_fn(|req_rep| {
+    match (req_rep.method(), req_rep.status()) {
+        (&http::Method::GET, Some(http::StatusCode::SERVICE_UNAVAILABLE)) => {
+            req_rep.retryable()
+        },
+        _ => req_rep.success()
+    }
+})
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set the maximum allowed TLS version for connections.
+
+By default, there's no maximum.
+
+# Errors
+
+A value of `tls::Version::TLS_1_3` will cause an error with the
+`native-tls` backend. This does not mean the version
+isn't supported, just that it can't be set as a maximum due to
+technical limitations.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Convert the response into a `Stream` of `Bytes` from the body.
+
+# Example
+
+```
+use futures_util::StreamExt;
+
+# async fn run() -> Result<(), Box<dyn std::error::Error>> {
+let mut stream = reqwest::get("http://httpbin.org/ip")
+    .await?
+    .bytes_stream();
+
+while let Some(item) = stream.next().await {
+    println!("Chunk: {:?}", item?);
+}
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the optional `stream` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set whether HTTP/1 connections will accept obsolete line folding for
+header values.
+
+Newline codepoints (`\r` and `\n`) will be transformed to spaces when
+parsing.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+Wrap a [`HttpBody`] in a box inside `Body`.
+
+# Example
+
+```
+# use reqwest::Body;
+# use futures_util;
+# fn main() {
+let content = "hello,world!".to_string();
+
+let body = Body::wrap(content);
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the identity to be used for client certificate authentication.
+
+# Optional
+
+This requires the optional `native-tls` or `rustls(-...)` feature to be
+enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_version_min()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Makes a new parameter from an arbitrary stream.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the `StatusCode` of this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get the timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get a mutable reference to the headers.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Get the DER encoded leaf certificate of the peer.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Sets custom headers for the part.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Override DNS resolution for specific domains to a particular IP address.
+
+Set the port to `0` to use the conventional port for the given scheme (e.g. 80 for http).
+Ports in the URL itself will always be used instead of the port in the overridden addr.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Add custom certificate roots.
+
+This can be used to connect to a server that has a self-signed
+certificate for example.
+
+This optional attempts to merge with any native or built-in roots.
+
+# Errors
+
+If the selected TLS backend or verifier does not support merging
+certificates, the builder will return an error.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+A field in a multipart form.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Tries to set the mime of this part.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Sets the filename, builder style.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+A `ClientBuilder` can be used to create a `Client` with  custom configuration.
+
+# Example
+
+```
+# fn run() -> Result<(), reqwest::Error> {
+use std::time::Duration;
+
+let client = reqwest::blocking::Client::builder()
+    .timeout(Duration::from_secs(10))
+    .build()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Adds a Custom Headers to Proxy
+Adds custom headers to this Proxy
+
+# Example
+```
+# extern crate reqwest;
+# use reqwest::header::*;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let mut headers = HeaderMap::new();
+headers.insert(USER_AGENT, "reqwest".parse().unwrap());
+let proxy = reqwest::Proxy::https("http://localhost:1234")?
+    .headers(headers);
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Only use HTTP/1.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the full response body as `Bytes`.
+
+# Example
+
+```
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let bytes = reqwest::blocking::get("http://httpbin.org/ip")?.bytes()?;
+
+println!("bytes: {bytes:?}");
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+Alias for an `Iterator` trait object over `SocketAddr`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/lib.rs
+# reqwest
+
+The `reqwest` crate provides a convenient, higher-level HTTP
+[`Client`][client].
+
+It handles many of the things that most people just expect an HTTP client
+to do for them.
+
+- Async and [blocking] Clients
+- Plain bodies, [JSON](#json), [urlencoded](#forms), [multipart]
+- Customizable [redirect policy](#redirect-policies)
+- HTTP [Proxies](#proxies)
+- Uses [TLS](#tls) by default
+- Cookies
+
+The [`reqwest::Client`][client] is asynchronous (requiring Tokio). For
+applications wishing  to only make a few HTTP requests, the
+[`reqwest::blocking`](blocking) API may be more convenient.
+
+Additional learning resources include:
+
+- [The Rust Cookbook](https://rust-lang-nursery.github.io/rust-cookbook/web/clients.html)
+- [reqwest Repository Examples](https://github.com/seanmonstar/reqwest/tree/master/examples)
+
+## Commercial Support
+
+For private advice, support, reviews, access to the maintainer, and the
+like, reach out for [commercial support][sponsor].
+
+## Making a GET request
+
+For a single request, you can use the [`get`][get] shortcut method.
+
+```rust
+# async fn run() -> Result<(), reqwest::Error> {
+let body = reqwest::get("https://www.rust-lang.org")
+    .await?
+    .text()
+    .await?;
+
+println!("body = {body:?}");
+# Ok(())
+# }
+```
+
+**NOTE**: If you plan to perform multiple requests, it is best to create a
+[`Client`][client] and reuse it, taking advantage of keep-alive connection
+pooling.
+
+## Making POST requests (or setting request bodies)
+
+There are several ways you can set the body of a request. The basic one is
+by using the `body()` method of a [`RequestBuilder`][builder]. This lets you set the
+exact raw bytes of what the body should be. It accepts various types,
+including `String` and `Vec<u8>`. If you wish to pass a custom
+type, you can use the `reqwest::Body` constructors.
+
+```rust
+# use reqwest::Error;
+#
+# async fn run() -> Result<(), Error> {
+let client = reqwest::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .body("the exact body that is sent")
+    .send()
+    .await?;
+# Ok(())
+# }
+```
+
+### Forms
+
+It's very common to want to send form data in a request body. This can be
+done with any type that can be serialized into form data.
+
+This can be an array of tuples, or a `HashMap`, or a custom type that
+implements [`Serialize`][serde].
+
+The feature `form` is required.
+
+```rust
+# use reqwest::Error;
+#
+# #[cfg(feature = "form")]
+# async fn run() -> Result<(), Error> {
+// This will POST a body of `foo=bar&baz=quux`
+let params = [("foo", "bar"), ("baz", "quux")];
+let client = reqwest::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .form(&params)
+    .send()
+    .await?;
+# Ok(())
+# }
+```
+
+### JSON
+
+There is also a `json` method helper on the [`RequestBuilder`][builder] that works in
+a similar fashion the `form` method. It can take any value that can be
+serialized into JSON.
+
+The feature `json` is required.
+
+```rust
+# use reqwest::Error;
+# use std::collections::HashMap;
+#
+# #[cfg(feature = "json")]
+# async fn run() -> Result<(), Error> {
+// This will POST a body of `{"lang":"rust","body":"json"}`
+let mut map = HashMap::new();
+map.insert("lang", "rust");
+map.insert("body", "json");
+
+let client = reqwest::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .json(&map)
+    .send()
+    .await?;
+# Ok(())
+# }
+```
+
+## Redirect Policies
+
+By default, a `Client` will automatically handle HTTP redirects, having a
+maximum redirect chain of 10 hops. To customize this behavior, a
+[`redirect::Policy`][redirect] can be used with a `ClientBuilder`.
+
+## Cookies
+
+The automatic storing and sending of session cookies can be enabled with
+the [`cookie_store`][ClientBuilder::cookie_store] method on `ClientBuilder`.
+
+## Proxies
+
+**NOTE**: System proxies are enabled by default.
+
+System proxies look in environment variables to set HTTP or HTTPS proxies.
+
+`HTTP_PROXY` or `http_proxy` provide HTTP proxies for HTTP connections while
+`HTTPS_PROXY` or `https_proxy` provide HTTPS proxies for HTTPS connections.
+`ALL_PROXY` or `all_proxy` provide proxies for both HTTP and HTTPS connections.
+If both the all proxy and HTTP or HTTPS proxy variables are set the more specific
+HTTP or HTTPS proxies take precedence.
+
+These can be overwritten by adding a [`Proxy`] to `ClientBuilder`
+i.e. `let proxy = reqwest::Proxy::http("https://secure.example")?;`
+or disabled by calling `ClientBuilder::no_proxy()`.
+
+`socks` feature is required if you have configured socks proxy like this:
+
+```bash
+export https_proxy=socks5://127.0.0.1:1086
+```
+
+## TLS
+
+A `Client` will use transport layer security (TLS) by default to connect to
+HTTPS destinations.
+
+- Additional server certificates can be configured on a `ClientBuilder`
+  with the [`Certificate`] type.
+- Client certificates can be added to a `ClientBuilder` with the
+  [`Identity`] type.
+- Various parts of TLS can also be configured or even disabled on the
+  `ClientBuilder`.
+
+See more details in the [`tls`] module.
+
+## WASM
+
+The Client implementation automatically switches to the WASM one when the target_arch is wasm32,
+the usage is basically the same as the async api. Some of the features are disabled in wasm
+: [`tls`], [`cookie`], [`blocking`], as well as various `ClientBuilder` methods such as `timeout()` and `connector_layer()`.
+
+TLS and cookies are provided through the browser environment, so reqwest can issue TLS requests with cookies,
+but has limited configuration.
+
+## Optional Features
+
+The following are a list of [Cargo features][cargo-features] that can be
+enabled or disabled:
+
+- **http2** *(enabled by default)*: Enables HTTP/2 support.
+- **default-tls** *(enabled by default)*: Provides TLS support to connect
+  over HTTPS.
+- **rustls**: Enables TLS functionality provided by `rustls`.
+- **native-tls**: Enables TLS functionality provided by `native-tls`.
+- **native-tls-vendored**: Enables the `vendored` feature of `native-tls`.
+- **native-tls-alpn**: Enables the `alpn` feature of `native-tls`.
+- **blocking**: Provides the [blocking][] client API.
+- **charset** *(enabled by default)*: Improved support for decoding text.
+- **cookies**: Provides cookie session support.
+- **gzip**: Provides response body gzip decompression.
+- **brotli**: Provides response body brotli decompression.
+- **zstd**: Provides response body zstd decompression.
+- **deflate**: Provides response body deflate decompression.
+- **query**: Provides query parameter serialization.
+- **form**: Provides form data serialization.
+- **json**: Provides serialization and deserialization for JSON bodies.
+- **multipart**: Provides functionality for multipart forms.
+- **stream**: Adds support for `futures::Stream`.
+- **socks**: Provides SOCKS5 proxy support.
+- **hickory-dns**: Enables a hickory-dns async resolver instead of default
+  threadpool using `getaddrinfo`.
+- **system-proxy** *(enabled by default)*: Use Windows and macOS system
+  proxy settings automatically.
+
+## Unstable Features
+
+Some feature flags require additional opt-in by the application, by setting
+a `reqwest_unstable` flag.
+
+- **http3** *(unstable)*: Enables support for sending HTTP/3 requests.
+
+These features are unstable, and experimental. Details about them may be
+changed in patch releases.
+
+You can pass such a flag to the compiler via `.cargo/config`, or
+environment variables, such as:
+
+```notrust
+RUSTFLAGS="--cfg reqwest_unstable" cargo build
+```
+
+## Sponsors
+
+Support this project by becoming a [sponsor][].
+
+[hyper]: https://hyper.rs
+[blocking]: ./blocking/index.html
+[client]: ./struct.Client.html
+[response]: ./struct.Response.html
+[get]: ./fn.get.html
+[builder]: ./struct.RequestBuilder.html
+[serde]: http://serde.rs
+[redirect]: crate::redirect
+[Proxy]: ./struct.Proxy.html
+[cargo-features]: https://doc.rust-lang.org/stable/cargo/reference/manifest.html#the-features-section
+[sponsor]: https://seanmonstar.com/sponsor
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Get the type of redirect.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+A multipart/form-data request.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/connect.rs
+Note: the `is_proxy` member means *is plain text HTTP proxy*.
+This tells hyper whether the URI should be written in
+* origin-form (`GET /just/a/path HTTP/1.1`), when `is_proxy == false`, or
+* absolute-form (`GET http://foo.bar/and/a/path HTTP/1.1`), otherwise.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_version_max()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Send headers as title case instead of lowercase.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Makes a new parameter from arbitrary bytes.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set whether sockets have `TCP_NODELAY` enabled.
+
+Default is `true`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Maximum number of bytes the peer may transmit without acknowledgement on any one stream
+before becoming blocked.
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+# Panics
+
+Panics if the value is over 2^62.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Allow HTTP/0.9 responses
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set whether HTTP/1 connections will accept obsolete line folding for
+header values.
+
+Newline codepoints (`\r` and `\n`) will be transformed to spaces when
+parsing.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Use a preconfigured TLS backend.
+
+If the passed `Any` argument is not a TLS backend that reqwest
+understands, the `ClientBuilder` will error when calling `build`.
+
+# Advanced
+
+This is an advanced option, and can be somewhat brittle. Usage requires
+keeping the preconfigured TLS argument version in sync with reqwest,
+since version mismatches will result in an "unknown" TLS backend.
+
+If possible, it's preferable to use the methods on `ClientBuilder`
+to configure reqwest's TLS.
+
+# Optional
+
+This requires one of the optional features `native-tls` or
+`rustls(-...)` to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set that all sockets have `SO_KEEPALIVE` set with the supplied retry count.
+
+If `None`, the option will not be set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get a mutable reference to the `Headers` of this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get a mutable reference to the body.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the `Headers` of this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+A type that controls the policy on how to handle the following of redirects.
+
+The default value will catch redirect loops, and has a maximum of 10
+redirects it will follow in a chain before returning an error.
+
+- `limited` can be used have the same as the default behavior, but adjust
+  the allowed maximum redirect hops in a chain.
+- `none` can be used to disable all redirect behavior.
+- `custom` can be used to create a customized policy.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get the method.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Add a `Proxy` to the list of proxies the `Client` will use.
+
+# Note
+
+Adding a proxy will disable the automatic usage of the "system" proxy.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get a mutable reference to the `Headers` of this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Adds a generic reader with known length.
+
+Does not set filename or mime.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Override the default congestion control algorithm to use [BBR]
+
+The current default congestion control algorithm is [CUBIC]. This method overrides the
+default.
+
+[BBR]: https://datatracker.ietf.org/doc/html/draft-ietf-ccwg-bbr
+[CUBIC]: https://datatracker.ietf.org/doc/html/rfc8312
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set that all sockets have `SO_KEEPALIVE` set with the supplied retry count.
+
+If `None`, the option will not be set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Apply this policy to a given [`Attempt`] to produce a [`Action`].
+
+# Note
+
+This method can be used together with `Policy::custom()`
+to construct one `Policy` that wraps another.
+
+# Example
+
+```rust
+# use reqwest::{Error, redirect};
+#
+# fn run() -> Result<(), Error> {
+let custom = redirect::Policy::custom(|attempt| {
+    eprintln!("{}, Location: {:?}", attempt.status(), attempt.url());
+    redirect::Policy::default().redirect(attempt)
+});
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_version_max()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set the maximum HTTP/3 header size this client is willing to accept.
+
+See [header size constraints] section of the specification for details.
+
+[header size constraints]: https://www.rfc-editor.org/rfc/rfc9114.html#name-header-size-constraints
+
+Please see docs in [`Builder`] in [`h3`].
+
+[`Builder`]: https://docs.rs/h3/latest/h3/client/struct.Builder.html#method.max_field_section_size
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Sets the max extra load the budget will allow.
+
+Think of the amount of requests your client generates, and how much
+load that puts on the server. This option configures as a percentage
+how much extra load is allowed via retries.
+
+For example, if you send 1,000 requests per second, setting a maximum
+extra load value of `0.3` would allow 300 more requests per second
+in retries. A value of `2.5` would allow 2,500 more requests.
+
+# Panics
+
+The `extra_percent` value must be within reasonable values for a
+percentage. This method will panic if it is less than `0.0`, or greater
+than `1000.0`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+The Errors that may occur when processing a `Request`.
+
+Note: Errors may include the full URL used to make the `Request`. If the URL
+contains sensitive information (e.g. an API key as a query parameter), be
+sure to remove it ([`without_url`](Error::without_url))
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Build a `Request`, which can be inspected, modified and executed with
+`Client::execute()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Bind to an interface by `SO_BINDTODEVICE`.
+
+# Example
+
+```
+let interface = "lo";
+let client = reqwest::blocking::Client::builder()
+    .interface(interface)
+    .build().unwrap();
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set whether HTTP/1 connections will accept spaces between header
+names and the colon that follow them in responses.
+
+Newline codepoints (`\r` and `\n`) will be transformed to spaces when
+parsing.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Convenience method to make a `PUT` request to a URL.
+
+# Errors
+
+This method fails whenever the supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+A configuration for filtering out requests that shouldn't be proxied
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Creates a new async Form without any content.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Set the max retries allowed per request.
+
+For each logical (initial) request, only retry up to `max` times.
+
+This value is used in combination with a token budget that is applied
+to all requests. Even if the budget would allow more requests, this
+limit will prevent. Likewise, the budget may prevent retrying up to
+`max` times. This setting prevents a single request from consuming
+the entire budget.
+
+Default is currently 2 retries.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Provide a classifier to determine if a request should be retried.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is related to a timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Returns the path directive of the cookie, if set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is related to a protocol upgrade request
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Returns the domain directive of the cookie, if set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Creates a new Form without any content.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Returns true if the 'HttpOnly' directive is enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get a mutable reference to the url.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get the body.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Sends a multipart/form-data body.
+
+```
+# use reqwest::Error;
+
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let form = reqwest::blocking::multipart::Form::new()
+    .text("key3", "value3")
+    .file("file", "/path/to/field")?;
+
+let response = client.post("your url")
+    .multipart(form)
+    .send()?;
+# Ok(())
+# }
+```
+
+See [`multipart`](multipart/) for more examples.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Modify the query string of the URL.
+
+Modifies the URL of this request, adding the parameters provided.
+This method appends and does not overwrite. This means that it can
+be called multiple times and that existing query parameters are not
+overwritten if the same key is used. The key will simply show up
+twice in the query string.
+Calling `.query(&[("foo", "a"), ("foo", "b")])` gives `"foo=a&foo=b"`.
+
+```rust
+# use reqwest::Error;
+#
+# fn run() -> Result<(), Error> {
+let client = reqwest::blocking::Client::new();
+let res = client.get("http://httpbin.org")
+    .query(&[("lang", "rust")])
+    .send()?;
+# Ok(())
+# }
+```
+
+# Note
+This method does not support serializing a single key-value
+pair. Instead of using `.query(("key", "val"))`, use a sequence, such
+as `.query(&[("key", "val")])`. It's also possible to serialize structs
+and maps into a key-value pair.
+
+# Optional
+
+This requires the optional `query` feature to be enabled.
+
+# Errors
+This method will fail if the object you provide cannot be serialized
+into a query string.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+multipart/form-data
+
+To send a `multipart/form-data` body, a [`Form`] is built up, adding
+fields or customized [`Part`]s, and then calling the
+[`multipart`][builder] method on the `RequestBuilder`.
+
+# Example
+
+```
+use reqwest::blocking::multipart;
+
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let form = multipart::Form::new()
+    // Adding just a simple text field...
+    .text("username", "seanmonstar")
+    // And a file...
+    .file("photo", "/path/to/photo.png")?;
+
+// Customize all the details of a Part if needed...
+let bio = multipart::Part::text("hallo peeps")
+    .file_name("bio.txt")
+    .mime_str("text/plain")?;
+
+// Add the custom part to our form...
+let form = form.part("biography", bio);
+
+// And finally, send the form
+let client = reqwest::blocking::Client::new();
+let resp = client
+    .post("http://localhost:8080/user")
+    .multipart(form)
+    .send()?;
+# Ok(())
+# }
+# fn main() {}
+```
+
+[builder]: ../struct.RequestBuilder.html#method.multipart
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Returns a new no-proxy configuration based on a `no_proxy` string (or `None` if no variables
+are set)
+The rules are as follows:
+* The environment variable `NO_PROXY` is checked, if it is not set, `no_proxy` is checked
+* If neither environment variable is set, `None` is returned
+* Entries are expected to be comma-separated (whitespace between entries is ignored)
+* IP addresses (both IPv4 and IPv6) are allowed, as are optional subnet masks (by adding /size,
+  for example "`192.168.1.0/24`").
+* An entry "`*`" matches all hostnames (this is the only wildcard allowed)
+* Any other entry is considered a domain name (and may contain a leading dot, for example `google.com`
+  and `.google.com` are equivalent) and would match both that domain AND all subdomains.
+
+For example, if `"NO_PROXY=google.com, 192.168.1.0/24"` was set, all the following would match
+(and therefore would bypass the proxy):
+* `http://google.com/`
+* `http://www.google.com/`
+* `http://192.168.1.42/`
+
+The URL `http://notgoogle.com/` would not match.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get a mutable reference to the method.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Constructs a new request.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set a timeout for only the connect phase of a `Client`.
+
+Default is `None`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/upgrade.rs
+An upgraded HTTP connection.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the `Headers` of this `Response`.
+
+# Example
+
+Saving an etag when caching a file:
+
+```
+use reqwest::blocking::Client;
+use reqwest::header::ETAG;
+
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = Client::new();
+
+let mut resp = client.get("http://httpbin.org/cache").send()?;
+if resp.status().is_success() {
+    if let Some(etag) = resp.headers().get(ETAG) {
+        std::fs::write("etag", etag.as_bytes());
+    }
+    let mut file = std::fs::File::create("file")?;
+    resp.copy_to(&mut file)?;
+}
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/dns/mod.rs
+DNS resolution
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Maximum number of bytes to transmit to a peer without acknowledgment
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Create a retry policy that will never retry any request.
+
+This is useful for disabling the `Client`s default behavior of retrying
+protocol nacks.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Enable HTTP basic authentication.
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let resp = client.delete("http://httpbin.org/delete")
+    .basic_auth("admin", Some("good password"))
+    .send()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Use only the provided certificate roots.
+
+This can be used to connect to a server that has a self-signed
+certificate for example.
+
+This option disables any native or built-in roots, and **only** uses
+the roots provided to this method.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Send a form body.
+
+Sets the body to the url encoded serialization of the passed value,
+and also sets the `Content-Type: application/x-www-form-urlencoded`
+header.
+
+```rust
+# use reqwest::Error;
+# use std::collections::HashMap;
+#
+# fn run() -> Result<(), Error> {
+let mut params = HashMap::new();
+params.insert("lang", "rust");
+
+let client = reqwest::blocking::Client::new();
+let res = client.post("http://httpbin.org")
+    .form(&params)
+    .send()?;
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the optional `form` feature to be enabled.
+
+# Errors
+
+This method fails if the passed value cannot be serialized into
+url encoded format
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Add custom root certificates.
+
+This allows connecting to a server that has a self-signed
+certificate for example. This **does not** replace the existing
+trusted store.
+
+# Example
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn build_client() -> Result<(), Box<dyn std::error::Error>> {
+// read a local binary DER encoded certificate
+let der = std::fs::read("my-cert.der")?;
+
+// create a certificate
+let cert = reqwest::Certificate::from_der(&der)?;
+
+// get a client builder
+let client = reqwest::blocking::Client::builder()
+    .tls_certs_merge([cert])
+    .build()?;
+# drop(client);
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+This requires the optional `http3` feature to be
+enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Configure this `Form` to percent-encode using the `attr-char` rules.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the `User-Agent` header to be used by this client.
+
+# Example
+
+```rust
+# async fn doc() -> Result<(), reqwest::Error> {
+// Name your user agent after your app?
+static APP_USER_AGENT: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+);
+
+let client = reqwest::Client::builder()
+    .user_agent(APP_USER_AGENT)
+    .build()?;
+let res = client.get("https://www.rust-lang.org").send().await?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+View the name as a string.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_danger_accept_invalid_hostnames()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Produce a stream of the bytes in this `Form`, consuming it.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Send a form body.
+
+Sets the body to the url encoded serialization of the passed value,
+and also sets the `Content-Type: application/x-www-form-urlencoded`
+header.
+
+```rust
+# use reqwest::Error;
+# use std::collections::HashMap;
+#
+# async fn run() -> Result<(), Error> {
+let mut params = HashMap::new();
+params.insert("lang", "rust");
+
+let client = reqwest::Client::new();
+let res = client.post("http://httpbin.org")
+    .form(&params)
+    .send()
+    .await?;
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the optional `form` feature to be enabled.
+
+# Errors
+
+This method fails if the passed value cannot be serialized into
+url encoded format
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get the body.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Convenience method to make a `DELETE` request to a URL.
+
+# Errors
+
+This method fails whenever the supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets an interval for HTTP2 Ping frames should be sent to keep a connection alive.
+
+Pass `None` to disable HTTP2 keep-alive.
+Default is currently disabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Add a set of Headers to the existing ones on this Request.
+
+The headers will be merged in to any already set.
+
+```rust
+use reqwest::header::{HeaderMap, HeaderValue, USER_AGENT, CONTENT_TYPE};
+# use std::fs;
+
+fn construct_headers() -> HeaderMap {
+    let mut headers = HeaderMap::new();
+    headers.insert(USER_AGENT, HeaderValue::from_static("reqwest"));
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static("image/png"));
+    headers
+}
+
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let file = fs::File::open("much_beauty.png")?;
+let client = reqwest::blocking::Client::new();
+let res = client.post("http://httpbin.org/post")
+    .headers(construct_headers())
+    .body(file)
+    .send()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Enables a request timeout.
+
+The timeout is applied from when the request starts connecting until the
+response body has finished. It affects only this request and overrides
+the timeout configured using `ClientBuilder::timeout()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Constructs the Request and sends it the target URL, returning a Response.
+
+# Errors
+
+This method fails if there was an error while sending request,
+redirect loop was detected or redirect limit was exhausted.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Returns a reference to the associated extensions.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Makes a text parameter.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Configuration of a proxy that a `Client` should pass requests to.
+
+A `Proxy` has a couple pieces to it:
+
+- a URL of how to talk to the proxy
+- rules on what `Client` requests should be directed to the proxy
+
+For instance, let's look at `Proxy::http`:
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let proxy = reqwest::Proxy::http("https://secure.example")?;
+# Ok(())
+# }
+```
+
+This proxy will intercept all HTTP requests, and make use of the proxy
+at `https://secure.example`. A request to `http://hyper.rs` will talk
+to your proxy. A request to `https://hyper.rs` will not.
+
+Multiple `Proxy` rules can be configured for a `Client`. The `Client` will
+check each `Proxy` in the order it was added. This could mean that a
+`Proxy` added first with eager intercept rules, such as `Proxy::all`,
+would prevent a `Proxy` later in the list from ever working, so take care.
+
+By enabling the `"socks"` feature it is possible to use a socks proxy:
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let proxy = reqwest::Proxy::http("socks5://192.168.1.1:9000")?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Override the DNS resolver implementation.
+
+Pass an `Arc` wrapping a trait object implementing `Resolve`.
+Overrides for specific names passed to `resolve` and `resolve_to_addrs` will
+still be applied on top of this resolver.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Adds a new Tower [`Layer`](https://docs.rs/tower/latest/tower/trait.Layer.html) to the
+base connector [`Service`](https://docs.rs/tower/latest/tower/trait.Service.html) which
+is responsible for connection establishment.
+
+Each subsequent invocation of this function will wrap previous layers.
+
+Example usage:
+```
+use std::time::Duration;
+
+let client = reqwest::blocking::Client::builder()
+                     // resolved to outermost layer, meaning while we are waiting on concurrency limit
+                     .connect_timeout(Duration::from_millis(200))
+                     // underneath the concurrency check, so only after concurrency limit lets us through
+                     .connector_layer(tower::timeout::TimeoutLayer::new(Duration::from_millis(50)))
+                     .connector_layer(tower::limit::concurrency::ConcurrencyLimitLayer::new(2))
+                     .build()
+                     .unwrap();
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+The name of the cookie.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Produce a reader over the multipart form data.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Turn a reference to a response into an error if the server returned an error.
+
+# Example
+
+```rust,no_run
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let res = reqwest::blocking::get("http://httpbin.org/status/400")?;
+let res = res.error_for_status_ref();
+if let Err(err) = res {
+    assert_eq!(err.status(), Some(reqwest::StatusCode::BAD_REQUEST));
+}
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get the http version.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+A single HTTP cookie.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Get the Max-Age information.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Adds a generic reader.
+
+Does not set filename or mime.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Maximum number of bytes the peer may transmit across all streams of a connection before
+becoming blocked.
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+# Panics
+
+Panics if the value is over 2^62.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+Returns a reference to the internal data of the `Body`.
+
+`None` is returned, if the underlying data is a stream.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Add TLS information as `TlsInfo` extension to responses.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Maximum number of bytes the peer may transmit without acknowledgement on any one stream
+before becoming blocked.
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+# Panics
+
+Panics if the value is over 2^62.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Adds a file field.
+
+The path will be used to try to guess the filename and mime.
+
+# Examples
+
+```no_run
+# async fn run() -> std::io::Result<()> {
+let form = reqwest::multipart::Form::new()
+    .file("key", "/path/to/file").await?;
+# Ok(())
+# }
+```
+
+# Errors
+
+Errors when the file cannot be opened.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Disable auto response body deflate decompression.
+
+This method exists even if the optional `deflate` feature is not enabled.
+This can be used to ensure a `Client` doesn't use deflate decompression
+even if another dependency were to enable the optional `deflate` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Assemble a builder starting from an existing `Client` and a `Request`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+Returns the body as a byte slice if the body is already buffered in
+memory. For streamed requests this method returns `None`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set the persistent cookie store for the client.
+
+Cookies received in responses will be passed to this store, and
+additional requests will query this store for cookies.
+
+By default, no cookie store is used. It is **not** necessary to also call
+[cookie_store(true)](crate::ClientBuilder::cookie_store) if [cookie_provider(my_cookie_store)](crate::ClientBuilder::cookie_provider) is used; calling
+[cookie_store(true)](crate::ClientBuilder::cookie_store) _after_ [cookie_provider(my_cookie_store)](crate::ClientBuilder::cookie_provider) will result
+in the provided `my_cookie_store` being **overridden** with a default implementation.
+
+# Optional
+
+This requires the optional `cookies` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the final `Url` of this `Response`.
+
+# Example
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let resp = reqwest::blocking::get("http://httpbin.org/redirect/1")?;
+assert_eq!(resp.url().as_str(), "http://httpbin.org/get");
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the maximum idle connection per host allowed in the pool.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Returns an action failing the redirect with an error.
+
+The `Error` will be returned for the result of the sent request.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Sets the filename, builder style.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+An action to perform when a redirect status code is found.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Proxy all HTTPS traffic to the passed URL.
+
+# Example
+
+```
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::Client::builder()
+    .proxy(reqwest::Proxy::https("https://example.prox:4545")?)
+    .build()?;
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the response text.
+
+This method decodes the response body with BOM sniffing
+and with malformed sequences replaced with the [`char::REPLACEMENT_CHARACTER`].
+Encoding is determined from the `charset` parameter of `Content-Type` header,
+and defaults to `utf-8` if not presented.
+
+# Note
+
+If the `charset` feature is disabled the method will only attempt to decode the
+response as UTF-8, regardless of the given `Content-Type`
+
+# Example
+
+```rust
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let content = reqwest::blocking::get("http://httpbin.org/range/26")?.text()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+A builder to construct the properties of a `Request`.
+
+To construct a `RequestBuilder`, refer to the `Client` documentation.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Returns true if  'SameSite' directive is 'Strict'.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+multipart/form-data
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Version 1.2 of the TLS protocol.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+Trait for customizing DNS resolution in reqwest.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set that all sockets have `SO_KEEPALIVE` set with the supplied duration.
+
+If `None`, the option will not be set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Copy the response body into a writer.
+
+This function internally uses [`std::io::copy`] and hence will continuously read data from
+the body and then write it into writer in a streaming fashion until EOF is met.
+
+On success, the total number of bytes that were copied to `writer` is returned.
+
+[`std::io::copy`]: https://doc.rust-lang.org/std/io/fn.copy.html
+
+# Example
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let mut resp = reqwest::blocking::get("http://httpbin.org/range/5")?;
+let mut buf: Vec<u8> = vec![];
+resp.copy_to(&mut buf)?;
+assert_eq!(b"abcde", buf.as_slice());
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Attempt to clone the RequestBuilder.
+
+`None` is returned if the RequestBuilder can not be cloned,
+i.e. if the request body is a stream.
+
+# Examples
+
+```
+# use reqwest::Error;
+#
+# fn run() -> Result<(), Error> {
+let client = reqwest::Client::new();
+let builder = client.post("http://httpbin.org/post")
+    .body("from a &str!");
+let clone = builder.try_clone();
+assert!(clone.is_some());
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set whether connections should emit verbose logs.
+
+Enabling this option will emit [log][] messages at the `TRACE` level
+for read and write operations on connections.
+
+[log]: https://crates.io/crates/log
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Convenience method to make a `DELETE` request to a URL.
+
+# Errors
+
+This method fails whenever supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is from `Response::error_for_status`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Assemble a builder starting from an existing `Client` and a `Request`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns a possible URL related to this error.
+
+# Examples
+
+```
+# async fn run() {
+// displays last stop of a redirect loop
+let response = reqwest::get("http://site.with.redirect.loop").await;
+if let Err(e) = response {
+    if e.is_redirect() {
+        if let Some(final_stop) = e.url() {
+            println!("redirect loop at {final_stop}");
+        }
+    }
+}
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set whether HTTP/1 connections will accept spaces between header
+names and the colon that follow them in responses.
+
+Newline codepoints (\r and \n) will be transformed to spaces when
+parsing.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Convenience method to make a `PATCH` request to a URL.
+
+# Errors
+
+This method fails whenever supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_certs_merge()`] or [`ClientBuilder::tls_certs_only()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set an optional timeout for idle sockets being kept-alive.
+
+Pass `None` to disable timeout.
+
+Default is 90 seconds.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set a `redirect::Policy` for this client.
+
+Default will follow redirects up to a maximum of 10.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Only use HTTP/3.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Set no retry budget.
+
+Sets that no budget will be enforced. This could also be considered
+to be an infinite budget.
+
+This is NOT recommended. Disabling the budget can make your system more
+susceptible to retry storms.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_version_min()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the content length of the response, if it is known.
+
+This value does not directly represents the value of the `Content-Length`
+header, but rather the size of the response's body. To read the header's
+value, please use the [`Response::headers`] method instead.
+
+Reasons it may not be known:
+
+- The response does not include a body (e.g. it responds to a `HEAD`
+  request).
+- The response is gzipped and automatically decoded (thus changing the
+  actual decoded length).
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Builder to configure retries
+
+Construct with [`for_host()`].
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Add a data field with supplied name and value.
+
+# Examples
+
+```
+let form = reqwest::blocking::multipart::Form::new()
+    .text("username", "seanmonstar")
+    .text("password", "secret");
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Configure this `Form` to percent-encode using the `path-segment` rules.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Disable auto response body zstd decompression.
+
+This method exists even if the optional `zstd` feature is not enabled.
+This can be used to ensure a `Client` doesn't use zstd decompression
+even if another dependency were to enable the optional `zstd` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/mod.rs
+Shortcut method to quickly make a *blocking* `GET` request.
+
+**NOTE**: This function creates a new internal `Client` on each call,
+and so should not be used if making many requests. Create a
+[`Client`](./struct.Client.html) instead.
+
+# Examples
+
+```rust
+# fn run() -> Result<(), reqwest::Error> {
+let body = reqwest::blocking::get("https://www.rust-lang.org")?
+    .text()?;
+# Ok(())
+# }
+# fn main() { }
+```
+
+# Errors
+
+This function fails if:
+
+- the native TLS backend cannot be initialized,
+- the supplied `Url` cannot be parsed,
+- there was an error while sending request,
+- a redirect loop was detected,
+- the redirect limit was exhausted, or
+- the total download time exceeds 30 seconds.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Executes a `Request`.
+
+A `Request` can be built manually with `Request::new()` or obtained
+from a RequestBuilder with `RequestBuilder::build()`.
+
+You should prefer to use the `RequestBuilder` and
+`RequestBuilder::send()`.
+
+# Errors
+
+This method fails if there was an error while sending request,
+or redirect limit was exhausted.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+Instantiate a `Body` from a reader.
+
+# Note
+
+While allowing for many types to be used, these bodies do not have
+a way to reset to the beginning and be reused. This means that when
+encountering a 307 or 308 status code, instead of repeating the
+request at the new location, the `Response` will be returned with
+the redirect status code set.
+
+```rust
+# use std::fs::File;
+# use reqwest::blocking::Body;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let file = File::open("national_secrets.txt")?;
+let body = Body::new(file);
+# Ok(())
+# }
+```
+
+If you have a set of bytes, like `String` or `Vec<u8>`, using the
+`From` implementations for `Body` will store the data in a manner
+it can be reused.
+
+```rust
+# use reqwest::blocking::Body;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let s = "A stringy body";
+let body = Body::from(s);
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Maximum duration of inactivity to accept before timing out the QUIC connection.
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Whether to send data on the first flight ("early data") in TLS 1.3 handshakes
+for HTTP/3 connections.
+
+The default is false.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get the url.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Send a JSON body.
+
+Sets the body to the JSON serialization of the passed value, and
+also sets the `Content-Type: application/json` header.
+
+# Optional
+
+This requires the optional `json` feature enabled.
+
+# Examples
+
+```rust
+# use reqwest::Error;
+# use std::collections::HashMap;
+#
+# fn run() -> Result<(), Error> {
+let mut map = HashMap::new();
+map.insert("lang", "rust");
+
+let client = reqwest::blocking::Client::new();
+let res = client.post("http://httpbin.org")
+    .json(&map)
+    .send()?;
+# Ok(())
+# }
+```
+
+# Errors
+
+Serialization can fail if `T`'s implementation of `Serialize` decides to
+fail, or if `T` contains a map with non-string keys.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the default headers for every request.
+
+# Example
+
+```rust
+use reqwest::header;
+# fn build_client() -> Result<(), reqwest::Error> {
+let mut headers = header::HeaderMap::new();
+headers.insert("X-MY-HEADER", header::HeaderValue::from_static("value"));
+headers.insert(header::AUTHORIZATION, header::HeaderValue::from_static("secret"));
+
+// Consider marking security-sensitive headers with `set_sensitive`.
+let mut auth_value = header::HeaderValue::from_static("secret");
+auth_value.set_sensitive(true);
+headers.insert(header::AUTHORIZATION, auth_value);
+
+// get a client builder
+let client = reqwest::blocking::Client::builder()
+    .default_headers(headers)
+    .build()?;
+let res = client.get("https://www.rust-lang.org").send()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Returns true if  'SameSite' directive is 'Lax'.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Start building a `Request` with the `Method` and `Url`.
+
+Returns a `RequestBuilder`, which will allow setting headers and
+request body before sending.
+
+# Errors
+
+This method fails whenever supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Clear all `Proxies`, so `Client` will use no proxy anymore.
+
+# Note
+To add a proxy exclusion list, use [crate::proxy::Proxy::no_proxy()]
+on all desired proxies instead.
+
+This also disables the automatic usage of the "system" proxy.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Parses PEM encoded private key and certificate.
+
+The input should contain a PEM encoded private key
+and at least one PEM encoded certificate.
+
+Note: The private key must be in RSA, SEC1 Elliptic Curve or PKCS#8 format.
+
+# Examples
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn pem() -> Result<(), Box<dyn std::error::Error>> {
+let mut buf = Vec::new();
+File::open("my-ident.pem")?
+    .read_to_end(&mut buf)?;
+let id = reqwest::Identity::from_pem(&buf)?;
+# drop(id);
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the `rustls(-...)` Cargo feature enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Constructs a new `ClientBuilder`.
+
+This is the same as `Client::builder()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set the minimum required TLS version for connections.
+
+By default, the TLS backend's own default is used.
+
+# Errors
+
+A value of `tls::Version::TLS_1_3` will cause an error with the
+`native-tls` backend. This does not mean the version
+isn't supported, just that it can't be set as a minimum due to
+technical limitations.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get the headers.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Convenience method to make a `POST` request to a URL.
+
+# Errors
+
+This method fails whenever supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_crls_only()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set that all sockets have `SO_KEEPALIVE` set with the supplied interval.
+
+If `None`, the option will not be set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Sends a multipart/form-data body.
+
+```
+# use reqwest::Error;
+
+# async fn run() -> Result<(), Error> {
+let client = reqwest::Client::new();
+let form = reqwest::multipart::Form::new()
+    .text("key3", "value3")
+    .text("key4", "value4");
+
+
+let response = client.post("your url")
+    .multipart(form)
+    .send()
+    .await?;
+# Ok(())
+# }
+```
+
+In additional the request's body, the Content-Type and Content-Length fields are
+appropriately set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Retrieve the cookies contained in the response.
+
+Note that invalid 'Set-Cookie' headers will be ignored.
+
+# Optional
+
+This requires the optional `cookies` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Turn a response into an error if the server returned an error.
+
+# Example
+
+```rust,no_run
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let res = reqwest::blocking::get("http://httpbin.org/status/400")?
+    .error_for_status();
+if let Err(err) = res {
+    assert_eq!(err.status(), Some(reqwest::StatusCode::BAD_REQUEST));
+}
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Maximum duration of inactivity to accept before timing out the QUIC connection.
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Constructs a new `ClientBuilder`.
+
+This is the same as `Client::builder()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/connect.rs
+A provider for Unix Domain Socket paths.
+
+This trait is sealed. This allows us expand the support in the future
+by controlling who can implement the trait.
+
+It's available in the docs to see what type may be passed in.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns a mutable reference to the URL related to this error
+
+This is useful if you need to remove sensitive information from the URL
+(e.g. an API key in the query), but do not want to remove the URL
+entirely.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set whether sockets have `TCP_NODELAY` enabled.
+
+Default is `true`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get a mutable reference to the headers.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Controls the use of TLS server name indication.
+
+Defaults to `true`.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Add a `Proxy` to the list of proxies the `Client` will use.
+
+# Note
+
+Adding a proxy will disable the automatic usage of the "system" proxy.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Controls the use of certificate validation.
+
+Defaults to `false`.
+
+# Warning
+
+You should think very carefully before using this method. If
+invalid certificates are trusted, *any* certificate for *any* site
+will be trusted for use. This includes expired certificates. This
+introduces significant vulnerabilities, and should only be used
+as a last resort.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_crls_only()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Disables the hickory-dns async resolver.
+
+This method exists even if the optional `hickory-dns` feature is not enabled.
+This can be used to ensure a `Client` doesn't use the hickory-dns async resolver
+even if another dependency were to enable the optional `hickory-dns` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Enables a request timeout.
+
+The timeout is applied from when the request starts connecting until the
+response body has finished. It affects only this request and overrides
+the timeout configured using `ClientBuilder::timeout()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Adds a file field.
+
+The path will be used to try to guess the filename and mime.
+
+# Examples
+
+```no_run
+# fn run() -> std::io::Result<()> {
+let form = reqwest::blocking::multipart::Form::new()
+    .file("key", "/path/to/file")?;
+# Ok(())
+# }
+```
+
+# Errors
+
+Errors when the file cannot be opened.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Add TLS information as `TlsInfo` extension to responses.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Restrict the Client to be used with HTTPS only requests.
+
+Defaults to false.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Returns a `Client` that uses this `ClientBuilder` configuration.
+
+# Errors
+
+This method fails if TLS backend cannot be initialized, or the resolver
+cannot load the system configuration.
+
+# Panics
+
+This method panics if called from within an async runtime. See docs on
+[`reqwest::blocking`][crate::blocking] for details.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Makes a text parameter.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+A TLS protocol version.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the maximum idle connection per host allowed in the pool.
+
+Default is `usize::MAX` (no limit).
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Stream a chunk of the response body.
+
+When the response body has been exhausted, this will return `None`.
+
+# Example
+
+```
+# async fn run() -> Result<(), Box<dyn std::error::Error>> {
+let mut res = reqwest::get("https://hyper.rs").await?;
+
+while let Some(chunk) = res.chunk().await? {
+    println!("Chunk: {chunk:?}");
+}
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Returns a mutable reference to the associated extensions.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Version 1.3 of the TLS protocol.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Attempts to clone the `Request`.
+
+None is returned if a body is which can not be cloned. This can be because the body is a
+stream.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Disables the hickory-dns async resolver.
+
+This method exists even if the optional `hickory-dns` feature is not enabled.
+This can be used to ensure a `Client` doesn't use the hickory-dns async resolver
+even if another dependency were to enable the optional `hickory-dns` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_danger_accept_invalid_certs()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the default headers for every request.
+
+# Example
+
+```rust
+use reqwest::header;
+# async fn doc() -> Result<(), reqwest::Error> {
+let mut headers = header::HeaderMap::new();
+headers.insert("X-MY-HEADER", header::HeaderValue::from_static("value"));
+
+// Consider marking security-sensitive headers with `set_sensitive`.
+let mut auth_value = header::HeaderValue::from_static("secret");
+auth_value.set_sensitive(true);
+headers.insert(header::AUTHORIZATION, auth_value);
+
+// get a client builder
+let client = reqwest::Client::builder()
+    .default_headers(headers)
+    .build()?;
+let res = client.get("https://www.rust-lang.org").send().await?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Redirect Handling
+
+By default, a `Client` will automatically handle HTTP redirects, having a
+maximum redirect chain of 10 hops. To customize this behavior, a
+`redirect::Policy` can be used with a `ClientBuilder`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Adds a `No Proxy` exclusion list to this Proxy
+
+# Example
+
+```
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let proxy = reqwest::Proxy::https("http://localhost:1234")?
+    .no_proxy(reqwest::NoProxy::from_string("direct.tld, sub.direct2.tld"));
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is related to connect
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Convenience method to make a `GET` request to a URL.
+
+# Errors
+
+This method fails whenever supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+The cookie expiration time.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Convenience method to make a `POST` request to a URL.
+
+# Errors
+
+This method fails whenever the supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enable auto gzip decompression by checking the `Content-Encoding` response header.
+
+If auto gzip decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `gzip`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if it's headers contain a `Content-Encoding` value that
+  equals to `gzip`, both values `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `gzip` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `gzip` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Parses a chain of PEM encoded X509 certificates, with the leaf certificate first.
+`key` is a PEM encoded PKCS #8 formatted private key for the leaf certificate.
+
+The certificate chain should contain any intermediate certificates that should be sent to
+clients to allow them to build a chain to a trusted root.
+
+A certificate chain here means a series of PEM encoded certificates concatenated together.
+
+# Examples
+
+```
+# use std::fs;
+# fn pkcs8() -> Result<(), Box<dyn std::error::Error>> {
+let cert = fs::read("client.pem")?;
+let key = fs::read("key.pem")?;
+let pkcs8 = reqwest::Identity::from_pkcs8_pem(&cert, &key)?;
+# drop(pkcs8);
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the `native-tls` Cargo feature enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Configure this `Form` to skip percent-encoding
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set that all sockets have `SO_KEEPALIVE` set with the supplied duration.
+
+If `None`, the option will not be set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+A `ClientBuilder` can be used to create a `Client` with custom configuration.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Adds a new Tower [`Layer`](https://docs.rs/tower/latest/tower/trait.Layer.html) to the
+base connector [`Service`](https://docs.rs/tower/latest/tower/trait.Service.html) which
+is responsible for connection establishment.
+
+Each subsequent invocation of this function will wrap previous layers.
+
+If configured, the `connect_timeout` will be the outermost layer.
+
+Example usage:
+```
+use std::time::Duration;
+
+# #[cfg(not(feature = "rustls-no-provider"))]
+let client = reqwest::Client::builder()
+                     // resolved to outermost layer, meaning while we are waiting on concurrency limit
+                     .connect_timeout(Duration::from_millis(200))
+                     // underneath the concurrency check, so only after concurrency limit lets us through
+                     .connector_layer(tower::timeout::TimeoutLayer::new(Duration::from_millis(50)))
+                     .connector_layer(tower::limit::concurrency::ConcurrencyLimitLayer::new(2))
+                     .build()
+                     .unwrap();
+```
+
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Disable auto response body brotli decompression.
+
+This method exists even if the optional `brotli` feature is not enabled.
+This can be used to ensure a `Client` doesn't use brotli decompression
+even if another dependency were to enable the optional `brotli` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+The body of a `Request`.
+
+In most cases, this is not needed directly, as the
+[`RequestBuilder.body`][builder] method uses `Into<Body>`, which allows
+passing many things (like a string or vector of bytes).
+
+[builder]: ./struct.RequestBuilder.html#method.body
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Creates a `ClientBuilder` to configure a `Client`.
+
+This is the same as `ClientBuilder::new()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get a mutable reference to the url.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enable or disable automatic setting of the `Referer` header.
+
+Default is `true`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Adds a customized Part.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Disable auto response body gzip decompression.
+
+This method exists even if the optional `gzip` feature is not enabled.
+This can be used to ensure a `Client` doesn't use gzip decompression
+even if another dependency were to enable the optional `gzip` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/response.rs
+Extension trait for http::response::Builder objects
+
+Allows the user to add a `Url` to the http::Response
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Returns a `Client` that uses this `ClientBuilder` configuration.
+
+# Errors
+
+This method fails if a TLS backend cannot be initialized, or the resolver
+cannot load the system configuration.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+Converts streamed requests to their buffered equivalent and
+returns a reference to the buffer. If the request is already
+buffered, this has no effect.
+
+Be aware that for large requests this method is expensive
+and may cause your program to run out of memory.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Creates a `ClientBuilder` to configure a `Client`.
+
+This is the same as `ClientBuilder::new()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_certs_merge()`] or
+[`ClientBuilder::tls_certs_only()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Add a url related to this error (overwriting any existing)
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Add multiple certificate revocation lists.
+
+# Errors
+
+This only works if also using only provided root certificates. This
+cannot work with the native verifier.
+
+If CRLs are added but `tls_certs_only()` is not called, the builder
+will return an error.
+
+# Optional
+
+This requires the `rustls(-...)` Cargo feature enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+A more general trait implemented for types implementing `Resolve`.
+
+Unnameable, only exported to aid seeing what implements this.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Makes a file parameter.
+
+# Errors
+
+Errors when the file cannot be opened.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Represents a X509 certificate revocation list.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Attempts to clone the `RequestBuilder`.
+
+None is returned if a body is which can not be cloned. This can be because the body is a
+stream.
+
+# Examples
+
+With a static body
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let builder = client.post("http://httpbin.org/post")
+    .body("from a &str!");
+let clone = builder.try_clone();
+assert!(clone.is_some());
+# Ok(())
+# }
+```
+
+Without a body
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let builder = client.get("http://httpbin.org/get");
+let clone = builder.try_clone();
+assert!(clone.is_some());
+# Ok(())
+# }
+```
+
+With a non-cloneable body
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let builder = client.get("http://httpbin.org/get")
+    .body(reqwest::blocking::Body::new(std::io::empty()));
+let clone = builder.try_clone();
+assert!(clone.is_none());
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Build a `Request`, which can be inspected, modified and executed with
+`Client::execute()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set a `RedirectPolicy` for this client.
+
+Default will follow redirects up to a maximum of 10.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enables the [hickory-dns](hickory_resolver) async resolver instead of a default threadpool
+using `getaddrinfo`.
+
+If the `hickory-dns` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `hickory-dns` feature to be enabled
+
+# Warning
+
+The hickory resolver does not work exactly the same, or on all the platforms
+that the default resolver does
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Force using the Rustls TLS backend.
+
+Since multiple TLS backends can be optionally enabled, this option will
+force the `rustls` backend to be used for this `Client`.
+
+# Optional
+
+This requires the optional `rustls(-...)` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Override the DNS resolver implementation.
+
+Overrides for specific names passed to `resolve` and `resolve_to_addrs` will
+still be applied on top of this resolver.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Convenience method to make a `GET` request to a URL.
+
+# Errors
+
+This method fails whenever the supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get the url.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Makes a file parameter.
+
+# Errors
+
+Errors when the file cannot be opened.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get a mutable reference to the http version.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set the maximum allowed TLS version for connections.
+
+By default, there's no maximum.
+
+# Errors
+
+A value of `tls::Version::TLS_1_3` will cause an error with the
+`native-tls` backend. This does not mean the version
+isn't supported, just that it can't be set as a maximum due to
+technical limitations.
+
+Cannot set a maximum outside the protocol versions supported by
+`rustls` with the `rustls` backend.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set the persistent cookie store for the client.
+
+Cookies received in responses will be passed to this store, and
+additional requests will query this store for cookies.
+
+By default, no cookie store is used.
+
+# Optional
+
+This requires the optional `cookies` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_danger_accept_invalid_hostnames()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enable auto deflate decompression by checking the `Content-Encoding` response header.
+
+If auto deflate decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `deflate`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if it's headers contain a `Content-Encoding` value that
+  equals to `deflate`, both values `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `deflate` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `deflate` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the remote address used to get this `Response`.
+
+# Example
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let resp = reqwest::blocking::get("http://httpbin.org/redirect/1")?;
+println!("httpbin.org address: {:?}", resp.remote_addr());
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get a mutable reference to the timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Start building a `Request` with the `Method` and `Url`.
+
+Returns a `RequestBuilder`, which will allow setting headers and
+the request body before sending.
+
+# Errors
+
+This method fails whenever the supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Controls the use of hostname verification.
+
+Defaults to `false`.
+
+# Warning
+
+You should think very carefully before you use this method. If
+hostname verification is not used, any valid certificate for any
+site will be trusted for use from any other. This introduces a
+significant vulnerability to man-in-the-middle attacks.
+
+# Errors
+
+Depending on the TLS backend and verifier, this might not work with
+native certificates, only those added with [`ClientBuilder::tls_certs_only()`].
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Build a `Request`, which can be inspected, modified and executed with
+`Client::execute()`.
+
+This is similar to [`RequestBuilder::build()`], but also returns the
+embedded `Client`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enable a persistent cookie store for the client.
+
+Cookies received in responses will be preserved and included in
+additional requests.
+
+By default, no cookie store is used. Enabling the cookie store
+with `cookie_store(true)` will set the store to a default implementation.
+It is **not** necessary to call [cookie_store(true)](crate::ClientBuilder::cookie_store) if [cookie_provider(my_cookie_store)](crate::ClientBuilder::cookie_provider)
+is used; calling [cookie_store(true)](crate::ClientBuilder::cookie_store) _after_ [cookie_provider(my_cookie_store)](crate::ClientBuilder::cookie_provider) will result
+in the provided `my_cookie_store` being **overridden** with a default implementation.
+
+# Optional
+
+This requires the optional `cookies` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the HTTP `Version` of this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+A name that must be resolved to addresses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+Create a retry builder with a request scope.
+
+To provide a scope that isn't a closure, use the more general
+[`Builder::scoped()`].
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Constructs a new `Client`.
+
+# Panic
+
+This method panics if TLS backend cannot be initialized, or the resolver
+cannot load the system configuration.
+
+Use `Client::builder()` if you wish to handle the failure as an `Error`
+instead of panicking.
+
+This method also panics if called from within an async runtime. See docs
+on [`reqwest::blocking`][crate::blocking] for details.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Constructs the Request and sends it to the target URL, returning a
+future Response.
+
+# Errors
+
+This method fails if there was an error while sending request,
+redirect loop was detected or redirect limit was exhausted.
+
+# Example
+
+```no_run
+# use reqwest::Error;
+#
+# async fn run() -> Result<(), Error> {
+let response = reqwest::Client::new()
+    .get("https://hyper.rs")
+    .send()
+    .await?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enable auto brotli decompression by checking the `Content-Encoding` response header.
+
+If auto brotli decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `br`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if its headers contain a `Content-Encoding` value of
+  `br`, both `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `brotli` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `brotli` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Set HTTP version
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Returns an action meaning reqwest should not follow the next URL.
+
+The 30x response will be returned as the `Ok` result.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+A `Client` to make Requests with.
+
+The Client has various configuration values to tweak, but the defaults
+are set to what is usually the most commonly desired value. To configure a
+`Client`, use `Client::builder()`.
+
+The `Client` holds a connection pool internally, so it is advised that
+you create one and **reuse** it.
+
+# Examples
+
+```rust
+use reqwest::blocking::Client;
+#
+# fn run() -> Result<(), reqwest::Error> {
+let client = Client::new();
+let resp = client.get("http://httpbin.org/").send()?;
+#   drop(resp);
+#   Ok(())
+# }
+
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set a timeout for connect, read and write operations of a `Client`.
+
+Default is 30 seconds.
+
+Pass `None` to disable timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set whether connections should emit verbose logs.
+
+Enabling this option will emit [log][] messages at the `TRACE` level
+for read and write operations on connections.
+
+[log]: https://crates.io/crates/log
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Maximum number of bytes to transmit to a peer without acknowledgment
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Bind to a local IP Address.
+
+# Example
+
+```
+# fn doc() -> Result<(), reqwest::Error> {
+use std::net::IpAddr;
+let local_addr = IpAddr::from([12, 4, 1, 8]);
+let client = reqwest::Client::builder()
+    .local_address(local_addr)
+    .build()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Create a custom `Policy` using the passed function.
+
+# Note
+
+The default `Policy` handles a maximum loop
+chain, but the custom variant does not do that for you automatically.
+The custom policy should have some way of handling those.
+
+Information on the next request and previous requests can be found
+on the [`Attempt`] argument passed to the closure.
+
+Actions can be conveniently created from methods on the
+[`Attempt`].
+
+# Example
+
+```rust
+# use reqwest::{Error, redirect};
+#
+# fn run() -> Result<(), Error> {
+let custom = redirect::Policy::custom(|attempt| {
+    if attempt.previous().len() > 5 {
+        attempt.error("too many redirects")
+    } else if attempt.url().host_str() == Some("example.domain") {
+        // prevent redirects to 'example.domain'
+        attempt.stop()
+    } else {
+        attempt.follow()
+    }
+});
+let client = reqwest::Client::builder()
+    .redirect(custom)
+    .build()?;
+# Ok(())
+# }
+```
+
+[`Attempt`]: struct.Attempt.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enable whether to send HTTP/3 protocol grease on the connections.
+
+HTTP/3 uses the concept of "grease"
+
+to prevent potential interoperability issues in the future.
+In HTTP/3, the concept of grease is used to ensure that the protocol can evolve
+and accommodate future changes without breaking existing implementations.
+
+Please see docs in [`Builder`] in [`h3`].
+
+[`Builder`]: https://docs.rs/h3/latest/h3/client/struct.Builder.html#method.send_grease
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the full response body as `Bytes`.
+
+# Example
+
+```
+# async fn run() -> Result<(), Box<dyn std::error::Error>> {
+let bytes = reqwest::get("http://httpbin.org/ip")
+    .await?
+    .bytes()
+    .await?;
+
+println!("bytes: {bytes:?}");
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/upgrade.rs
+Consumes the response and returns a future for a possible HTTP upgrade.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Attempt to clone the request.
+
+`None` is returned if the request can not be cloned, i.e. if the body is a stream.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+A `Result` alias where the `Err` case is `reqwest::Error`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is related to decoding the response's body
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set the minimum required TLS version for connections.
+
+By default, the TLS backend's own default is used.
+
+# Errors
+
+A value of `tls::Version::TLS_1_3` will cause an error with the
+`native-tls` backend. This does not mean the version
+isn't supported, just that it can't be set as a minimum due to
+technical limitations.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enable auto brotli decompression by checking the `Content-Encoding` response header.
+
+If auto brotli decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `br`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if it's headers contain a `Content-Encoding` value that
+  equals to `br`, both values `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `brotli` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `brotli` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the maximum size of received header frames for HTTP2.
+
+Default is currently 16KB, but can change.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_danger_accept_invalid_certs()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Get the boundary that this form will use.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Proxy **all** traffic to the passed URL.
+
+"All" refers to `https` and `http` URLs. Other schemes are not
+recognized by reqwest.
+
+# Example
+
+```
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::Client::builder()
+    .proxy(reqwest::Proxy::all("http://pro.xy")?)
+    .build()?;
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Use a preconfigured TLS backend.
+
+If the passed `Any` argument is not a TLS backend that reqwest
+understands, the `ClientBuilder` will error when calling `build`.
+
+# Advanced
+
+<div class="warning">
+
+There is no semver stability on the internals of this method. Use at
+your own risk.
+
+</div>
+
+This is an advanced option, and can be somewhat brittle. Usage requires
+keeping the preconfigured TLS argument version in sync with reqwest,
+since version mismatches will result in an "unknown" TLS backend.
+
+If possible, it's preferable to use the methods on `ClientBuilder`
+to configure reqwest's TLS.
+
+# Optional
+
+This requires one of the optional features `native-tls` or
+`rustls(-...)` to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is related to the request or response body
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Add a `Header` to this Request.
+
+```rust
+use reqwest::header::USER_AGENT;
+
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let res = client.get("https://www.rust-lang.org")
+    .header(USER_AGENT, "foo")
+    .send()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Add multiple certificate revocation lists.
+
+# Errors
+
+This only works if also using only provided root certificates. This
+cannot work with the native verifier.
+
+If CRLs are added but `tls_certs_only()` is not called, the builder
+will return an error.
+
+# Optional
+
+This requires the `rustls(-...)` Cargo feature enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+A request which can be executed with `Client::execute()`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+Wrap a futures `Stream` in a box inside `Body`.
+
+# Example
+
+```
+# use reqwest::Body;
+# use futures_util;
+# fn main() {
+let chunks: Vec<Result<_, ::std::io::Error>> = vec![
+    Ok("hello"),
+    Ok(" "),
+    Ok("world"),
+];
+
+let stream = futures_util::stream::iter(chunks);
+
+let body = Body::wrap_stream(stream);
+# }
+```
+
+# Optional
+
+This requires the `stream` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Add a data field with supplied name and value.
+
+# Examples
+
+```
+let form = reqwest::multipart::Form::new()
+    .text("username", "seanmonstar")
+    .text("password", "secret");
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Enable HTTP bearer authentication.
+
+```rust
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::blocking::Client::new();
+let resp = client.delete("http://httpbin.org/delete")
+    .bearer_auth("token")
+    .send()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Enable HTTP basic authentication.
+
+```rust
+# use reqwest::Error;
+
+# async fn run() -> Result<(), Error> {
+let client = reqwest::Client::new();
+let resp = client.delete("http://httpbin.org/delete")
+    .basic_auth("admin", Some("good password"))
+    .send()
+    .await?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Only use HTTP/1.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Strip the related url from this error (if, for example, it contains
+sensitive information)
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Only use HTTP/2.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Override the default congestion control algorithm to use [BBR]
+
+The current default congestion control algorithm is [CUBIC]. This method overrides the
+default.
+
+[BBR]: https://datatracker.ietf.org/doc/html/draft-ietf-ccwg-bbr
+[CUBIC]: https://datatracker.ietf.org/doc/html/rfc8312
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is related to the request
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Hyper extension carrying extra TLS layer information.
+Made available to clients on responses when `tls_info` is set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Set HTTP version
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Makes a new parameter from an arbitrary stream with a known length. This is particularly
+useful when adding something like file contents as a stream, where you can know the content
+length beforehand.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enable or disable automatic setting of the `Referer` header.
+
+Default is `true`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enable a persistent cookie store for the client.
+
+Cookies received in responses will be preserved and included in
+additional requests.
+
+By default, no cookie store is used.
+
+# Optional
+
+This requires the optional `cookies` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+A good default `CookieStore` implementation.
+
+This is the implementation used when simply calling `cookie_store(true)`.
+This type is exposed to allow creating one and filling it with some
+existing cookies more easily, before creating a `Client`.
+
+For more advanced scenarios, such as needing to serialize the store or
+manipulate it between requests, you may refer to the
+[reqwest_cookie_store crate](https://crates.io/crates/reqwest_cookie_store).
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get the http version.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Turn a reference to a response into an error if the server returned an error.
+
+# Example
+
+```
+# use reqwest::Response;
+fn on_response(res: &Response) {
+    match res.error_for_status_ref() {
+        Ok(_res) => (),
+        Err(err) => {
+            // asserting a 400 as an example
+            // it could be any status between 400...599
+            assert_eq!(
+                err.status(),
+                Some(reqwest::StatusCode::BAD_REQUEST)
+            );
+        }
+    }
+}
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Parses a PEM encoded CRL.
+
+# Examples
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn crl() -> Result<(), Box<dyn std::error::Error>> {
+let mut buf = Vec::new();
+File::open("my_crl.pem")?
+    .read_to_end(&mut buf)?;
+let crl = reqwest::tls::CertificateRevocationList::from_pem(&buf)?;
+# drop(crl);
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the `rustls(-...)` Cargo feature enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_backend_native()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Executes a `Request`.
+
+A `Request` can be built manually with `Request::new()` or obtained
+from a RequestBuilder with `RequestBuilder::build()`.
+
+You should prefer to use the `RequestBuilder` and
+`RequestBuilder::send()`.
+
+# Errors
+
+This method fails if there was an error while sending request,
+redirect loop was detected or redirect limit was exhausted.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Makes a new parameter from arbitrary bytes.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets whether invalid header lines should be silently ignored in HTTP/1 responses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Get the next URL to redirect to.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Bind to a local IP Address.
+
+# Example
+
+```
+use std::net::IpAddr;
+let local_addr = IpAddr::from([12, 4, 1, 8]);
+let client = reqwest::blocking::Client::builder()
+    .local_address(local_addr)
+    .build().unwrap();
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Clear all `Proxies`, so `Client` will use no proxy anymore.
+
+# Note
+To add a proxy exclusion list, use [Proxy::no_proxy()]
+on all desired proxies instead.
+
+This also disables the automatic usage of the "system" proxy.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Configure this `Form` to skip percent-encoding
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+A type that holds information on the next request and previous requests
+in redirect chain.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets whether HTTP2 keep-alive should apply while the connection is idle.
+
+If disabled, keep-alive pings are only sent while there are open request/responses streams.
+If enabled, pings are also sent when no streams are active.
+Does nothing if `http2_keep_alive_interval` is disabled.
+Default is `false`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the max connection-level flow control for HTTP2
+
+Default is currently 65,535 but may change internally to optimize for common uses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the final `Url` of this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the `SETTINGS_INITIAL_WINDOW_SIZE` option for HTTP2 stream-level flow control.
+
+Default is currently 65,535 but may change internally to optimize for common uses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Force using the Rustls TLS backend.
+
+Since multiple TLS backends can be optionally enabled, this option will
+force the `rustls` backend to be used for this `Client`.
+
+# Optional
+
+This requires the optional `rustls(-...)` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Enable auto deflate decompression by checking the `Content-Encoding` response header.
+
+If auto deflate decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `deflate`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if it's headers contain a `Content-Encoding` value that
+  equals to `deflate`, both values `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `deflate` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `deflate` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Parses a DER-formatted PKCS #12 archive, using the specified password to decrypt the key.
+
+The archive should contain a leaf certificate and its private key, as well any intermediate
+certificates that allow clients to build a chain to a trusted root.
+The chain certificates should be in order from the leaf certificate towards the root.
+
+PKCS #12 archives typically have the file extension `.p12` or `.pfx`, and can be created
+with the OpenSSL `pkcs12` tool:
+
+```bash
+openssl pkcs12 -export -out identity.pfx -inkey key.pem -in cert.pem -certfile chain_certs.pem
+```
+
+# Examples
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn pkcs12() -> Result<(), Box<dyn std::error::Error>> {
+let mut buf = Vec::new();
+File::open("my-ident.pfx")?
+    .read_to_end(&mut buf)?;
+let pkcs12 = reqwest::Identity::from_pkcs12_der(&buf, "my-privkey-password")?;
+# drop(pkcs12);
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the `native-tls` Cargo feature enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+An async multipart/form-data request.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Override DNS resolution for specific domains to particular IP addresses.
+
+Set the port to `0` to use the conventional port for the given scheme (e.g. 80 for http).
+Ports in the URL itself will always be used instead of the port in the overridden addr.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Set the request body.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Version 1.0 of the TLS protocol.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enable auto gzip decompression by checking the `Content-Encoding` response header.
+
+If auto gzip decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `gzip`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if its headers contain a `Content-Encoding` value of
+  `gzip`, both `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `gzip` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `gzip` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets whether to use an adaptive flow control.
+
+Enabling this will override the limits set in `http2_initial_stream_window_size` and
+`http2_initial_connection_window_size`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Retrieve the cookies contained in the response.
+
+Note that invalid 'Set-Cookie' headers will be ignored.
+
+# Optional
+
+This requires the optional `cookies` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Set an optional timeout for idle sockets being kept-alive.
+
+Pass `None` to disable timeout.
+
+Default is 90 seconds.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Turn a response into an error if the server returned an error.
+
+# Example
+
+```
+# use reqwest::Response;
+fn on_response(res: Response) {
+    match res.error_for_status() {
+        Ok(_res) => (),
+        Err(err) => {
+            // asserting a 400 as an example
+            // it could be any status between 400...599
+            assert_eq!(
+                err.status(),
+                Some(reqwest::StatusCode::BAD_REQUEST)
+            );
+        }
+    }
+}
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Disable auto response body deflate decompression.
+
+This method exists even if the optional `deflate` feature is not enabled.
+This can be used to ensure a `Client` doesn't use deflate decompression
+even if another dependency were to enable the optional `deflate` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Returns true if the 'Secure' directive is enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enable auto zstd decompression by checking the `Content-Encoding` response header.
+
+If auto zstd decompression is turned on:
+
+- When sending a request and if the request's headers do not already contain
+  an `Accept-Encoding` **and** `Range` values, the `Accept-Encoding` header is set to `zstd`.
+  The request body is **not** automatically compressed.
+- When receiving a response, if its headers contain a `Content-Encoding` value of
+  `zstd`, both `Content-Encoding` and `Content-Length` are removed from the
+  headers' set. The response body is automatically decompressed.
+
+If the `zstd` feature is turned on, the default option is enabled.
+
+# Optional
+
+This requires the optional `zstd` feature to be enabled
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get the timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/lib.rs
+Shortcut method to quickly make a `GET` request.
+
+See also the methods on the [`reqwest::Response`](./struct.Response.html)
+type.
+
+**NOTE**: This function creates a new internal `Client` on each call,
+and so should not be used if making many requests. Create a
+[`Client`](./struct.Client.html) instead.
+
+# Examples
+
+```rust
+# async fn run() -> Result<(), reqwest::Error> {
+let body = reqwest::get("https://www.rust-lang.org").await?
+    .text().await?;
+# Ok(())
+# }
+```
+
+# Errors
+
+This function fails if:
+
+- native TLS backend cannot be initialized
+- supplied `Url` cannot be parsed
+- there was an error while sending request
+- redirect limit was exhausted
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Create a collection of `Certificate`s from a PEM encoded certificate bundle.
+Example byte sources may be `.crt`, `.cer` or `.pem` files.
+
+# Examples
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn cert() -> Result<(), Box<dyn std::error::Error>> {
+let mut buf = Vec::new();
+File::open("ca-bundle.crt")?
+    .read_to_end(&mut buf)?;
+let certs = reqwest::Certificate::from_pem_bundle(&buf)?;
+# drop(certs);
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Force using the native TLS backend.
+
+Since multiple TLS backends can be optionally enabled, this option will
+force the `native-tls` backend to be used for this `Client`.
+
+# Optional
+
+This requires the optional `native-tls` feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/into_url.rs
+A trait to try to convert some type into a `Url`.
+
+This trait is "sealed", such that only types within reqwest can
+implement it.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+HTTP Cookies
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+Create a `Body` from a `Read` where the size is known in advance
+but the data should not be fully loaded into memory. This will
+set the `Content-Length` header and stream from the `Read`.
+
+```rust
+# use std::fs::File;
+# use reqwest::blocking::Body;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let file = File::open("a_large_file.txt")?;
+let file_size = file.metadata()?.len();
+let body = Body::sized(file, file_size);
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get the headers.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Build a `Request`, which can be inspected, modified and executed with
+`Client::execute()`.
+
+This is similar to [`RequestBuilder::build()`], but also returns the
+embedded `Client`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Add a set of Headers to the existing ones on this Request.
+
+The headers will be merged in to any already set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets a timeout for receiving an acknowledgement of the keep-alive ping.
+
+If the ping is not acknowledged within the timeout, the connection will be closed.
+Does nothing if `http2_keep_alive_interval` is disabled.
+Default is currently disabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the `StatusCode` of this `Response`.
+
+# Examples
+
+Checking for general status class:
+
+```rust
+# #[cfg(feature = "json")]
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let resp = reqwest::blocking::get("http://httpbin.org/get")?;
+if resp.status().is_success() {
+    println!("success!");
+} else if resp.status().is_server_error() {
+    println!("server error!");
+} else {
+    println!("Something else happened. Status: {:?}", resp.status());
+}
+# Ok(())
+# }
+```
+
+Checking for specific status codes:
+
+```rust
+use reqwest::blocking::Client;
+use reqwest::StatusCode;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = Client::new();
+
+let resp = client.post("http://httpbin.org/post")
+    .body("possibly too large")
+    .send()?;
+
+match resp.status() {
+    StatusCode::OK => println!("success!"),
+    StatusCode::PAYLOAD_TOO_LARGE => {
+        println!("Request payload is too large!");
+    }
+    s => println!("Received response status: {s:?}"),
+};
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_backend_preconfigured()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Version 1.1 of the TLS protocol.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Convenience method to make a `PATCH` request to a URL.
+
+# Errors
+
+This method fails whenever the supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the `SETTINGS_INITIAL_WINDOW_SIZE` option for HTTP2 stream-level flow control.
+
+Default is currently 65,535 but may change internally to optimize for common uses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set that all sockets have `SO_KEEPALIVE` set with the supplied interval.
+
+If `None`, the option will not be set.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+Alias for the `Future` type returned by a DNS resolver.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Deprecated: use [`ClientBuilder::tls_crls_only()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Actions for a persistent cookie store providing session support.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+Get the full response text given a specific encoding.
+
+This method decodes the response body with BOM sniffing
+and with malformed sequences replaced with the [`char::REPLACEMENT_CHARACTER`].
+You can provide a default encoding for decoding the raw message, while the
+`charset` parameter of `Content-Type` header is still prioritized. For more information
+about the possible encoding name, please go to [`encoding_rs`] docs.
+
+Note that the BOM is stripped from the returned String.
+
+[`encoding_rs`]: https://docs.rs/encoding_rs/0.8/encoding_rs/#relationship-with-windows-code-pages
+
+# Optional
+
+This requires the optional `encoding_rs` feature enabled.
+
+# Example
+
+```
+# async fn run() -> Result<(), Box<dyn std::error::Error>> {
+let content = reqwest::get("http://httpbin.org/range/26")
+    .await?
+    .text_with_charset("utf-8")
+    .await?;
+
+println!("text: {content:?}");
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the HTTP `Version` of this `Response`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+Get a mutable reference to the http version.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+A field in a multipart form.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Try and deserialize the response body as JSON using `serde`.
+
+# Optional
+
+This requires the optional `json` feature enabled.
+
+# Examples
+
+```rust
+# extern crate reqwest;
+# extern crate serde;
+#
+# use reqwest::Error;
+# use serde::Deserialize;
+#
+// This `derive` requires the `serde` dependency.
+#[derive(Deserialize)]
+struct Ip {
+    origin: String,
+}
+
+# fn run() -> Result<(), Error> {
+let json: Ip = reqwest::blocking::get("http://httpbin.org/ip")?.json()?;
+# Ok(())
+# }
+#
+# fn main() { }
+```
+
+# Errors
+
+This method fails whenever the response body is not in JSON format,
+or it cannot be properly deserialized to target type `T`. For more
+details please see [`serde_json::from_reader`].
+
+[`serde_json::from_reader`]: https://docs.serde.rs/serde_json/fn.from_reader.html
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the maximum size of received header frames for HTTP2.
+
+Default is currently 16KB, but can change.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set a timeout for only the connect phase of a `Client`.
+
+Default is `None`.
+
+# Note
+
+This **requires** the futures be executed in a tokio runtime with
+a tokio timer enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Deprecated: use [`ClientBuilder::tls_crls_only()`] instead.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+Add a cookie to this jar.
+
+# Example
+
+```
+use reqwest::{cookie::Jar, Url};
+
+let cookie = "foo=bar; Domain=yolo.local";
+let url = "https://yolo.local".parse::<Url>().unwrap();
+
+let jar = Jar::default();
+jar.add_cookie_str(cookie, &url);
+
+// and now add to a `ClientBuilder`?
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Trait used for converting into a proxy scheme. This trait supports
+parsing from a URL-like type, whilst also supporting proxy schemes
+built directly using the factory methods.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the maximum frame size to use for HTTP2.
+
+Default is currently 16,384 but may change internally to optimize for common uses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Maximum number of bytes the peer may transmit across all streams of a connection before
+becoming blocked.
+
+Please see docs in [`TransportConfig`] in [`quinn`].
+
+[`TransportConfig`]: https://docs.rs/quinn/latest/quinn/struct.TransportConfig.html
+
+# Panics
+
+Panics if the value is over 2^62.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enables a read timeout.
+
+The timeout applies to each read operation, and resets after a
+successful read. This is more appropriate for detecting stalled
+connections when the size isn't known beforehand.
+
+Default is no timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Creates a collection of `CertificateRevocationList`s from a PEM encoded CRL bundle.
+Example byte sources may be `.crl` or `.pem` files.
+
+# Examples
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn crls() -> Result<(), Box<dyn std::error::Error>> {
+let mut buf = Vec::new();
+File::open("crl-bundle.crl")?
+    .read_to_end(&mut buf)?;
+let crls = reqwest::tls::CertificateRevocationList::from_pem_bundle(&buf)?;
+# drop(crls);
+# Ok(())
+# }
+```
+
+# Optional
+
+This requires the `rustls(-...)` Cargo feature enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Enables a total request timeout.
+
+The timeout is applied from when the request starts connecting until the
+response body has finished. Also considered a total deadline.
+
+Default is no timeout.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Get a mutable reference to the method.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Convenience method to make a `PUT` request to a URL.
+
+# Errors
+
+This method fails whenever supplied `Url` cannot be parsed.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Get the response text given a specific encoding.
+
+This method decodes the response body with BOM sniffing
+and with malformed sequences replaced with the [`char::REPLACEMENT_CHARACTER`].
+You can provide a default encoding for decoding the raw message, while the
+`charset` parameter of `Content-Type` header is still prioritized. For more information
+about the possible encoding name, please go to [`encoding_rs`] docs.
+
+[`encoding_rs`]: https://docs.rs/encoding_rs/0.8/encoding_rs/#relationship-with-windows-code-pages
+
+# Optional
+
+This requires the optional `charset` feature enabled.
+
+# Example
+
+```rust
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let content = reqwest::blocking::get("http://httpbin.org/range/26")?
+    .text_with_charset("utf-8")?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set that all connections will use this Unix socket.
+
+If a request URI uses the `https` scheme, TLS will still be used over
+the Unix socket.
+
+# Note
+
+This option is not compatible with any of the TCP or Proxy options.
+Setting this will ignore all those options previously set.
+
+Likewise, DNS resolution will not be done on the domain name.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+A Response to a submitted `Request`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+Returns true if the error is from a type Builder.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Use only the provided certificate roots.
+
+This can be used to connect to a server that has a self-signed
+certificate for example.
+
+This option disables any native or built-in roots, and **only** uses
+the roots provided to this method.
+
+# Optional
+
+This requires the optional `default-tls`, `native-tls`, or `rustls(-...)`
+feature to be enabled.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Adds a customized Part.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Set the maximum HTTP/3 header size this client is willing to accept.
+
+See [header size constraints] section of the specification for details.
+
+[header size constraints]: https://www.rfc-editor.org/rfc/rfc9114.html#name-header-size-constraints
+
+Please see docs in [`Builder`] in [`h3`].
+
+[`Builder`]: https://docs.rs/h3/latest/h3/client/struct.Builder.html#method.max_field_section_size
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Tries to set the mime of this part.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+Proxy all HTTP traffic to the passed URL.
+
+# Example
+
+```
+# extern crate reqwest;
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let client = reqwest::Client::builder()
+    .proxy(reqwest::Proxy::http("https://my.prox")?)
+    .build()?;
+# Ok(())
+# }
+# fn main() {}
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Only use HTTP/2.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Create a `Policy` with a maximum number of redirects.
+
+An `Error` will be returned if the max is reached.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Disable auto response body gzip decompression.
+
+This method exists even if the optional `gzip` feature is not enabled.
+This can be used to ensure a `Client` doesn't use gzip decompression
+even if another dependency were to enable the optional `gzip` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+Returns a reference to the associated extensions.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+Create a `Certificate` from a binary DER encoded certificate
+
+# Examples
+
+```
+# use std::fs::File;
+# use std::io::Read;
+# fn cert() -> Result<(), Box<dyn std::error::Error>> {
+let mut buf = Vec::new();
+File::open("my_cert.der")?
+    .read_to_end(&mut buf)?;
+let cert = reqwest::Certificate::from_der(&buf)?;
+# drop(cert);
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Modify the query string of the URL.
+
+Modifies the URL of this request, adding the parameters provided.
+This method appends and does not overwrite. This means that it can
+be called multiple times and that existing query parameters are not
+overwritten if the same key is used. The key will simply show up
+twice in the query string.
+Calling `.query(&[("foo", "a"), ("foo", "b")])` gives `"foo=a&foo=b"`.
+
+# Note
+This method does not support serializing a single key-value
+pair. Instead of using `.query(("key", "val"))`, use a sequence, such
+as `.query(&[("key", "val")])`. It's also possible to serialize structs
+and maps into a key-value pair.
+
+# Optional
+
+This requires the optional `query` feature to be enabled.
+
+# Errors
+This method will fail if the object you provide cannot be serialized
+into a query string.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+The value of the cookie.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Get the list of previous URLs that have already been requested in this chain.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+Create a `Policy` that does not follow any redirect.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Sets the `User-Agent` header to be used by this client.
+
+# Example
+
+```rust
+# fn doc() -> Result<(), reqwest::Error> {
+// Name your user agent after your app?
+static APP_USER_AGENT: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+);
+
+let client = reqwest::blocking::Client::builder()
+    .user_agent(APP_USER_AGENT)
+    .build()?;
+let res = client.get("https://www.rust-lang.org").send()?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+Get the boundary that this form will use.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+TLS configuration and types
+
+A `Client` will use transport layer security (TLS) by default to connect to
+HTTPS destinations.
+
+# Backends
+
+reqwest supports several TLS backends, enabled with Cargo features.
+
+## default-tls
+
+reqwest will pick a TLS backend by default. This is true when the
+`default-tls` feature is enabled.
+
+While it currently uses `rustls`, the feature set is designed to only
+enable configuration that is shared among available backends. This allows
+reqwest to change the default to `native-tls` (or another) by configuration.
+
+<div class="warning">This feature is enabled by default, and takes
+precedence if any other crate enables it. This is true even if you declare
+`features = []`. You must set `default-features = false` instead.</div>
+
+Since Cargo features are additive, other crates in your dependency tree can
+cause the default backend to be enabled. If you wish to ensure your
+`Client` uses a specific backend, call the appropriate builder methods
+(such as [`tls_backend_rustls()`][]).
+
+[`tls_backend_rustls()`]: crate::ClientBuilder::tls_backend_rustls()
+
+## native-tls
+
+This backend uses the [native-tls][] crate. That will try to use the system
+TLS on Windows and Mac, and OpenSSL on Linux targets.
+
+Enabling the feature explicitly allows for `native-tls`-specific
+configuration options.
+
+[native-tls]: https://crates.io/crates/native-tls
+
+## rustls
+
+This backend uses the [rustls][] crate, a TLS library written in Rust.
+
+[rustls]: https://crates.io/crates/rustls
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Controls the use of TLS server name indication.
+
+Defaults to `true`.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+Enable HTTP bearer authentication.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+Sets the max connection-level flow control for HTTP2
+
+Default is currently 65,535 but may change internally to optimize for common uses.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+Disable auto response body brotli decompression.
+
+This method exists even if the optional `brotli` feature is not enabled.
+This can be used to ensure a `Client` doesn't use brotli decompression
+even if another dependency were to enable the optional `brotli` feature.
+
+---
+
+## https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+Configure this `Form` to percent-encode using the `attr-char` rules.
+
+---
+

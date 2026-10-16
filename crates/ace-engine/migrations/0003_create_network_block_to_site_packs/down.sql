@@ -1,0 +1,1 @@
+DROP TABLE network_block_to_site_pack;

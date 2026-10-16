@@ -1,0 +1,613 @@
+# regex Documentation (LLMS)
+
+## API Overview
+
+### regex
+Link: https://docs.rs/regex/1.12.3
+
+### build
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### end
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### patterns
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### matches_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### build
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### captures_iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### matches_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### build
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### dot_matches_new_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### shortest_match_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### find_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### split
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### line_terminator
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### replace
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### case_insensitive
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### range
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### Match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### Split
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### SetMatches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### captures_iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### empty
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### is_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### ignore_whitespace
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### crlf
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### dot_matches_new_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### nest_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### captures_len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### is_empty
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### RegexSetBuilder
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### get
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### is_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### matched
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### SetMatchesIter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### CaptureNames
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### is_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### Replacer
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### bytes
+Link: https://docs.rs/crate/regex/1.12.3/source/src/bytes.rs
+
+### extract
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### ignore_whitespace
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### shortest_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### SetMatches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### splitn
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### Error
+Link: https://docs.rs/crate/regex/1.12.3/source/src/error.rs
+
+### unicode
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### SplitN
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### Replacer
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### is_match_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### SubCaptureMatches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### matches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### find_iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### replacen
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### start
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### crlf
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### is_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### SetMatchesIter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### Regex
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### dot_matches_new_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### octal
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### octal
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### patterns
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### matched_all
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### Matches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### crlf
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### shortest_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### start
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### find_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### NoExpand
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### is_match_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### as_str
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### expand
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### dfa_size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### captures
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### name
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### Regex
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### octal
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### case_insensitive
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### RegexSetBuilder
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### multi_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### CaptureNames
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### get
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### unicode
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### as_bytes
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### static_captures_len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### swap_greed
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### crlf
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### replace
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### swap_greed
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### nest_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### empty
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### replace_all
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### is_empty
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### matched
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### swap_greed
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### SubCaptureMatches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### matches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### matched_all
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### static_captures_len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### name
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### RegexSet
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### as_str
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### SetMatchesIntoIter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### dfa_size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### line_terminator
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### Captures
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### case_insensitive
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### captures_read_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### NoExpand
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### case_insensitive
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### matched_any
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### get_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### CaptureLocations
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### swap_greed
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### CaptureLocations
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### is_empty
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### Split
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### escape
+Link: https://docs.rs/crate/regex/1.12.3/source/src/lib.rs
+
+### is_match_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### capture_names
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### captures_read_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### range
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### capture_locations
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### new
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### SetMatchesIntoIter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### multi_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### captures
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### dot_matches_new_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### line_terminator
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### shortest_match_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### ReplacerRef
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### ignore_whitespace
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### Captures
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### is_empty
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### split
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### extract
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### capture_locations
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### CaptureMatches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### find_iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### RegexSet
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/bytes.rs
+
+### find
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### end
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### RegexBuilder
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### octal
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### unicode
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### captures_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### nest_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### Matches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### get
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### as_str
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### find
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### expand
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### replacen
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### dfa_size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### RegexBuilder
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### multi_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### captures_read
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### SplitN
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### captures_len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### len
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### get
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### captures_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### CaptureMatches
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### unicode
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### matched_any
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### build
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### dfa_size_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### ReplacerRef
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### is_match_at
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regexset/string.rs
+
+### captures_read
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### Match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### get_match
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### splitn
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### line_terminator
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### regex
+Link: https://docs.rs/crate/regex/1.12.3/source/src/lib.rs
+
+### iter
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### ignore_whitespace
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### replace_all
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/string.rs
+
+### capture_names
+Link: https://docs.rs/crate/regex/1.12.3/source/src/regex/bytes.rs
+
+### nest_limit
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+
+### multi_line
+Link: https://docs.rs/crate/regex/1.12.3/source/src/builders.rs
+

@@ -1,0 +1,192 @@
+[
+    {
+        "id": "pack-adult-free",
+        "name": "Adult Websites — Free",
+        "description": "Blocks known adult content websites.",
+        "requires_pro": false,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/adult.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 1501263,
+        "compressed_size_bytes": 1502231,
+        "domains_count": 76509
+    },
+    {
+        "id": "pack-social-free",
+        "name": "Social Media Websites — Free",
+        "description": "Blocks social media sites.",
+        "requires_pro": false,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/social.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 1816019,
+        "compressed_size_bytes": 1816987,
+        "domains_count": 82655
+    },
+    {
+        "id": "pack-gaming-free",
+        "name": "Gaming Websites — Free",
+        "description": "Blocks online gaming sites and services.",
+        "requires_pro": false,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/gaming.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 2550770,
+        "compressed_size_bytes": 2551738,
+        "domains_count": 83637
+    },
+    {
+        "id": "pack-adult-pro",
+        "name": "Adult Websites — Pro",
+        "description": "Blocks known adult content websites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/adult-extended.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 183455139,
+        "compressed_size_bytes": 183456983,
+        "domains_count": 13123167
+    },
+    {
+        "id": "pack-gambling-pro",
+        "name": "Gambling Websites — Pro",
+        "description": "Blocks online gambling sites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/gambling.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 5886414,
+        "compressed_size_bytes": 5887382,
+        "domains_count": 310484
+    },
+    {
+        "id": "pack-messaging-pro",
+        "name": "Messaging Websites — Pro",
+        "description": "Blocks popular messaging applications.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-discord.txt",
+                "source_type": "url",
+                "format": "standard"
+            },
+            {
+                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-messenger.txt",
+                "source_type": "url",
+                "format": "standard"
+            },
+            {
+                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-signal.txt",
+                "source_type": "url",
+                "format": "standard"
+            },
+            {
+                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-telegram.txt",
+                "source_type": "url",
+                "format": "standard"
+            },
+            {
+                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-viber.txt",
+                "source_type": "url",
+                "format": "standard"
+            },
+            {
+                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-snapchat.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 99733,
+        "compressed_size_bytes": 100701,
+        "domains_count": 2916
+    },
+    {
+        "id": "pack-streaming-pro",
+        "name": "Streaming Websites — Pro",
+        "description": "Blocks popular streaming services.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/streaming.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 36389,
+        "compressed_size_bytes": 37357,
+        "domains_count": 612
+    },
+    {
+        "id": "pack-shopping-pro",
+        "name": "Shopping Websites — Pro",
+        "description": "Blocks popular shopping services.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/shopping.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 8042,
+        "compressed_size_bytes": 9010,
+        "domains_count": 0
+    },
+    {
+        "id": "pack-phishing-pro",
+        "name": "Phishing Websites — Pro",
+        "description": "Blocks popular phishing sites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-only/hosts",
+                "source_type": "url",
+                "format": "standard"
+            },
+            {
+                "source": "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/phishing/domains",
+                "source_type": "url",
+                "format": "wildcarddomains"
+            }
+        ],
+        "uncompressed_size_bytes": 5493261,
+        "compressed_size_bytes": 5494229,
+        "domains_count": 257761
+    },
+    {
+        "id": "pack-piracy-pro",
+        "name": "Piracy Websites — Pro",
+        "description": "Blocks popular piracy sites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://raw.githubusercontent.com/olbat/ut1-blacklists/refs/heads/master/blacklists/warez/domains",
+                "source_type": "url",
+                "format": "wildcarddomains"
+            }
+        ],
+        "uncompressed_size_bytes": 35397,
+        "compressed_size_bytes": 36365,
+        "domains_count": 1530
+    }
+]

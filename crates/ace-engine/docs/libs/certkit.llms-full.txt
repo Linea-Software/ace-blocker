@@ -1,0 +1,2129 @@
+# certkit Full API Documentation
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::Extensions`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Not before time (in seconds since Unix epoch)
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Creates a new `TbsCertificate` with default values.
+
+# Arguments
+* `issuer` - The distinguished name of the certificate issuer.
+* `subject` - The distinguished name of the certificate subject.
+* `subject_public_key` - The public key of the certificate subject.
+* `signature_algorithm` - The algorithm used to sign the certificate.
+* `extensions` - Additional X.509 extensions for the certificate.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+Creates a new self-signed certificate with the specified valid times.
+
+Generates a self-signed X.509 certificate where the issuer and subject
+are the same entity. This is commonly used for root CA certificates
+or for testing purposes.
+
+# Certificate Properties
+- **Serial Number**: Fixed value of 1
+- **Version**: X.509 v3
+- **Signature Algorithm**: Automatically selected based on key type
+
+# Arguments
+* `cert_info` - The certification request information containing subject details,
+  public key, extensions, and other certificate parameters
+* `key` - The key pair used to sign the certificate (private key for signing,
+  public key typically matches the one in cert_info)
+
+# Returns
+A `Certificate` object representing the self-signed certificate.
+
+# Examples
+
+## Basic Self-Signed Certificate
+
+```rust,no_run
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, params::{CertificationRequestInfo, DistinguishedName}},
+};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+use time::OffsetDateTime;
+let key_pair = KeyPair::generate_rsa(2048)?;
+
+let subject = DistinguishedName::builder()
+    .common_name("My Root CA".to_string())
+    .organization("My Organization".to_string())
+    .country("US".to_string())
+    .build();
+
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .is_ca(true)  // Mark as CA certificate
+    .build();
+
+let now = OffsetDateTime::now_utc();
+
+let root_cert = Certificate::new_self_signed_with_expiration(&cert_info, &key_pair, now, now + time::Duration::days(365));
+println!("Root CA certificate created");
+# Ok(())
+# }
+```
+
+## Self-Signed Certificate with Extensions
+
+```rust,no_run
+use certkit::{
+    key::KeyPair,
+    cert::{
+        Certificate,
+        params::{CertificationRequestInfo, DistinguishedName, ExtensionParam},
+        extensions::{SubjectAltName, ToAndFromX509Extension},
+    },
+};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+use time::OffsetDateTime;
+let key_pair = KeyPair::generate_ecdsa_p256();
+
+// Create Subject Alternative Name extension
+let san = SubjectAltName {
+    names: vec!["localhost".to_string(), "127.0.0.1".to_string()],
+};
+
+let subject = DistinguishedName::builder()
+    .common_name("localhost".to_string())
+    .build();
+
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .extensions(vec![ExtensionParam::from_extension(san, false)])
+    .build();
+
+let now = OffsetDateTime::now_utc();
+
+let cert = Certificate::new_self_signed_with_expiration(&cert_info, &key_pair, now, now + time::Duration::days(365));
+println!("Self-signed certificate with SAN created");
+# Ok(())
+# }
+```
+
+# Use Cases
+- **Root CA certificates**: Top-level certificates in a PKI hierarchy
+- **Development/testing**: Quick certificate generation for testing
+- **Internal services**: Certificates for internal-only applications
+- **Bootstrap certificates**: Initial certificates for certificate enrollment
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Generate an ECDSA P-384 key pair.
+
+Creates a new ECDSA key pair using the NIST P-384 curve (secp384r1).
+This curve provides approximately 192 bits of security, offering a higher
+security level than P-256.
+
+# Returns
+A `KeyPair` containing the ECDSA P-384 key pair.
+
+# Examples
+
+```rust
+use certkit::key::KeyPair;
+
+// Generate a P-384 ECDSA key pair
+let key_pair = KeyPair::generate_ecdsa_p384();
+
+// Convert to SPKI format for certificate use
+let spki = key_pair.as_spki();
+println!("Generated P-384 key pair");
+```
+
+# Security Notes
+- P-384 provides ~192 bits of security
+- Higher security level than P-256
+- Suitable for high-security applications
+- Slightly larger signatures than P-256
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Encodes the `TbsCertificate` into DER format.
+
+# Returns
+A byte vector containing the DER-encoded certificate.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Certificate issuer distinguished name
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::extensions()) / [Option](Self::maybe_extensions()) setters)._
+ _**Default:**_ ```<Vec<ExtensionParam> as Default>::default()```.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+The private key corresponding to the public key in the certificate
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Builder's type state specifies if members are set or not (unset).
+
+You can use the associated types of this trait to control the state of individual members with the [`IsSet`] and [`IsUnset`] traits. You can change the state of the members with the `Set*` structs available in this module.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Creates a public key from a key pair.
+
+Extracts the public key component from a `KeyPair` and creates a
+corresponding `PublicKey` instance. This is useful when you need
+to work with just the public key portion.
+
+# Arguments
+* `key_pair` - A reference to a `KeyPair` object
+
+# Returns
+A `PublicKey` containing the public key component.
+
+# Examples
+
+```rust,no_run
+use certkit::key::{KeyPair, PublicKey};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate different types of key pairs
+let rsa_pair = KeyPair::generate_rsa(2048)?;
+let ecdsa_pair = KeyPair::generate_ecdsa_p256();
+let ed25519_pair = KeyPair::generate_ed25519();
+
+// Extract public keys
+let rsa_public = PublicKey::from_key_pair(&rsa_pair);
+let ecdsa_public = PublicKey::from_key_pair(&ecdsa_pair);
+let ed25519_public = PublicKey::from_key_pair(&ed25519_pair);
+
+println!("Extracted public keys from all key pair types");
+# Ok(())
+# }
+```
+
+# Use Cases
+- Creating certificates (public key goes into the certificate)
+- Sharing public keys for verification
+- Storing public keys separately from private keys
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Subject's public key
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::Country`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::organization()) / [Option](Self::maybe_organization()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::CommonName`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+Represents the Basic Constraints extension.
+
+This extension indicates whether the certificate is a CA certificate and its path length.
+
+# Fields
+* `is_ca` - Indicates if the certificate is a CA.
+* `max_path_length` - The maximum number of intermediate CAs allowed.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsUnset`] implemented for all members.
+
+This is the initial state of the builder before any setters are called.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::state()) / [Option](Self::maybe_state()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+The inner representation of the certificate.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::locality()) / [Option](Self::maybe_locality()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Generate an Ed25519 key pair.
+
+Creates a new Ed25519 key pair using the Edwards curve digital signature algorithm.
+Ed25519 provides high security, fast performance, and resistance to side-channel attacks.
+
+# Returns
+A `KeyPair` containing the Ed25519 key pair.
+
+# Examples
+
+```rust,no_run
+use certkit::key::KeyPair;
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate an Ed25519 key pair
+let key_pair = KeyPair::generate_ed25519();
+
+// Sign data (Ed25519 is very fast)
+let data = b"Fast signing with Ed25519";
+let signature = key_pair.sign_data(data)?;
+println!("Ed25519 signature length: {} bytes", signature.len());
+# Ok(())
+# }
+```
+
+# Security Notes
+- Provides ~128 bits of security (equivalent to P-256)
+- Extremely fast signature generation and verification
+- Resistant to side-channel attacks
+- Fixed 32-byte public keys and 64-byte signatures
+- Deterministic signatures (no random nonce required)
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+Creates a new self-signed certificate.
+
+Generates a self-signed X.509 certificate where the issuer and subject
+are the same entity. This is commonly used for root CA certificates
+or for testing purposes.
+
+# Certificate Properties
+- **Validity**: 365 days from creation time
+- **Serial Number**: Fixed value of 1
+- **Version**: X.509 v3
+- **Signature Algorithm**: Automatically selected based on key type
+
+# Arguments
+* `cert_info` - The certification request information containing subject details,
+  public key, extensions, and other certificate parameters
+* `key` - The key pair used to sign the certificate (private key for signing,
+  public key typically matches the one in cert_info)
+
+# Returns
+A `Certificate` object representing the self-signed certificate.
+
+# Examples
+
+## Basic Self-Signed Certificate
+
+```rust,no_run
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, params::{CertificationRequestInfo, DistinguishedName}},
+};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+let key_pair = KeyPair::generate_rsa(2048)?;
+
+let subject = DistinguishedName::builder()
+    .common_name("My Root CA".to_string())
+    .organization("My Organization".to_string())
+    .country("US".to_string())
+    .build();
+
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .is_ca(true)  // Mark as CA certificate
+    .build();
+
+let root_cert = Certificate::new_self_signed(&cert_info, &key_pair);
+println!("Root CA certificate created");
+# Ok(())
+# }
+```
+
+## Self-Signed Certificate with Extensions
+
+```rust,no_run
+use certkit::{
+    key::KeyPair,
+    cert::{
+        Certificate,
+        params::{CertificationRequestInfo, DistinguishedName, ExtensionParam},
+        extensions::{SubjectAltName, ToAndFromX509Extension},
+    },
+};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+let key_pair = KeyPair::generate_ecdsa_p256();
+
+// Create Subject Alternative Name extension
+let san = SubjectAltName {
+    names: vec!["localhost".to_string(), "127.0.0.1".to_string()],
+};
+
+let subject = DistinguishedName::builder()
+    .common_name("localhost".to_string())
+    .build();
+
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .extensions(vec![ExtensionParam::from_extension(san, false)])
+    .build();
+
+let cert = Certificate::new_self_signed(&cert_info, &key_pair);
+println!("Self-signed certificate with SAN created");
+# Ok(())
+# }
+```
+
+# Use Cases
+- **Root CA certificates**: Top-level certificates in a PKI hierarchy
+- **Development/testing**: Quick certificate generation for testing
+- **Internal services**: Certificates for internal-only applications
+- **Bootstrap certificates**: Initial certificates for certificate enrollment
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Certificate subject distinguished name
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Supported key types for certificate operations.
+
+This enum represents different types of cryptographic key pairs supported by CertKit.
+Each variant contains the necessary cryptographic primitives for signing and verification
+operations.
+
+# Supported Algorithms
+
+- **RSA**: Variable key sizes (typically 2048, 3072, or 4096 bits)
+- **ECDSA P-256**: NIST P-256 curve (secp256r1)
+- **ECDSA P-384**: NIST P-384 curve (secp384r1)  
+- **ECDSA P-521**: NIST P-521 curve (secp521r1)
+- **Ed25519**: Edwards curve digital signature algorithm
+
+# Examples
+
+```rust,no_run
+use certkit::key::KeyPair;
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate different types of key pairs
+let rsa_key = KeyPair::generate_rsa(2048)?;
+let p256_key = KeyPair::generate_ecdsa_p256();
+let p384_key = KeyPair::generate_ecdsa_p384();
+let p521_key = KeyPair::generate_ecdsa_p521();
+let ed25519_key = KeyPair::generate_ed25519();
+
+// All key types can be used for signing
+let data = b"Hello, world!";
+let signature = rsa_key.sign_data(data)?;
+println!("Signature length: {} bytes", signature.len());
+# Ok(())
+# }
+```
+
+# Security Considerations
+
+- RSA keys should be at least 2048 bits for security
+- ECDSA keys provide equivalent security with smaller key sizes
+- Ed25519 provides high security and performance
+- Choose the appropriate algorithm based on your security requirements and compatibility needs
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+Encodes the certificate into DER format.
+
+Converts the certificate to Distinguished Encoding Rules (DER) format,
+which is a binary encoding commonly used for certificate storage and
+transmission in protocols like TLS.
+
+# Returns
+A `Result` containing the DER-encoded certificate bytes, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::EncodingError` if the certificate cannot be encoded,
+typically due to malformed internal structures.
+
+# Examples
+
+```rust,no_run
+use certkit::{key::KeyPair, cert::{Certificate, params::{CertificationRequestInfo, DistinguishedName}}};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let key_pair = KeyPair::generate_rsa(2048)?;
+let subject = DistinguishedName::builder().common_name("test.com".to_string()).build();
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .build();
+
+let certificate = Certificate::new_self_signed(&cert_info, &key_pair);
+let der_bytes = certificate.to_der()?;
+
+// Save to file or transmit over network
+std::fs::write("certificate.der", &der_bytes)?;
+println!("Certificate saved as DER: {} bytes", der_bytes.len());
+# Ok(())
+# }
+```
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Represents the "To Be Signed" (TBS) portion of an X.509 certificate.
+This struct contains all the fields required to generate a valid X.509 certificate.
+
+# Fields
+* `serial_number` - The unique identifier for the certificate.
+* `signature_algorithm` - The algorithm used to sign the certificate.
+* `issuer` - The distinguished name of the certificate issuer.
+* `not_before` - The start of the certificate's validity period.
+* `not_after` - The end of the certificate's validity period.
+* `subject` - The distinguished name of the certificate subject.
+* `subject_public_key` - The public key of the certificate subject.
+* `extensions` - Additional X.509 extensions for the certificate.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::locality()) / [Option](Self::maybe_locality()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Converts the `TbsCertificate` into a `TbsCertificateInner` for DER encoding.
+
+# Returns
+A `TbsCertificateInner` object suitable for DER encoding.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Decodes an `ExtensionParam` into a specific extension.
+
+# Returns
+A decoded extension object.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Signs the provided data using the private key.
+
+Creates a digital signature over the provided data using the appropriate
+signature algorithm for the key type. The signature can be verified using
+the corresponding public key.
+
+# Signature Algorithms Used
+- RSA: RSASSA-PKCS1-v1_5 with SHA-256
+- ECDSA (all curves): ECDSA with SHA-256
+- Ed25519: Pure Ed25519 (no hash function needed)
+
+# Arguments
+* `data` - A byte slice containing the data to sign
+
+# Returns
+A `Result` containing the signature bytes on success, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError` if:
+- The signing operation fails
+- The key is invalid or corrupted
+- System resources are insufficient
+
+# Examples
+
+```rust,no_run
+use certkit::key::KeyPair;
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Sign data with different key types
+let rsa_key = KeyPair::generate_rsa(2048)?;
+let ecdsa_key = KeyPair::generate_ecdsa_p256();
+let ed25519_key = KeyPair::generate_ed25519();
+
+let message = b"Important message to sign";
+
+let rsa_sig = rsa_key.sign_data(message)?;
+let ecdsa_sig = ecdsa_key.sign_data(message)?;
+let ed25519_sig = ed25519_key.sign_data(message)?;
+
+println!("RSA signature: {} bytes", rsa_sig.len());
+println!("ECDSA signature: {} bytes", ecdsa_sig.len());
+println!("Ed25519 signature: {} bytes", ed25519_sig.len());
+# Ok(())
+# }
+```
+
+# Security Notes
+- RSA signatures are deterministic with PKCS#1 v1.5 padding
+- ECDSA signatures include randomness and vary between calls
+- Ed25519 signatures are deterministic and consistent
+- All algorithms provide strong security when used properly
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::usages()) / [Option](Self::maybe_usages()) setters)._
+ _**Default:**_ ```<Vec<ExtendedKeyUsageOption> as Default>::default()```.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+Represents the Key Usage extension.
+
+This extension defines the purpose of the key contained in the certificate.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Required.**_
+
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/error.rs
+Error types and handling for the CertKit library.
+
+This module defines the comprehensive error system used throughout CertKit,
+providing detailed error information for debugging and error handling.
+
+# Error Categories
+
+- **Encoding/Decoding**: Issues with data format conversion
+- **Input Validation**: Problems with user-provided data
+- **Cryptographic Operations**: Key generation and signing failures
+- **Certificate Operations**: Certificate creation and validation issues
+
+# Examples
+
+```rust
+use certkit::{key::KeyPair, error::CertKitError};
+
+// Handle different error types
+match KeyPair::import_from_pkcs8_pem("invalid pem") {
+    Ok(key) => println!("Key imported successfully"),
+    Err(CertKitError::DecodingError(msg)) => {
+        eprintln!("Failed to decode PEM: {}", msg);
+    }
+    Err(CertKitError::InvalidInput(msg)) => {
+        eprintln!("Invalid input provided: {}", msg);
+    }
+    Err(e) => eprintln!("Other error: {}", e),
+}
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+Represents the Subject Alternative Name (SAN) extension.
+
+This extension specifies additional identities for the subject of the certificate.
+
+# Fields
+* `names` - A list of DNS names.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Creates a public key from DER-encoded data.
+
+Attempts to decode DER-encoded public key data. Currently supports
+RSA public keys in PKCS#1 format. Support for other key types may
+be added in future versions.
+
+# Arguments
+* `der` - A byte slice containing the DER-encoded public key data
+
+# Returns
+A `Result` containing the `PublicKey` on success, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::DecodingError` if:
+- The DER data is malformed
+- The key type is not supported
+- The key format is not recognized
+
+# Examples
+
+```rust,no_run
+use certkit::key::{KeyPair, PublicKey};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate a key pair and extract public key DER
+let key_pair = KeyPair::generate_rsa(2048)?;
+let public_key = PublicKey::from_key_pair(&key_pair);
+let der_bytes = public_key.to_der()?;
+
+// Recreate public key from DER
+let restored_key = PublicKey::from_der(&der_bytes)?;
+# Ok(())
+# }
+```
+
+# Limitations
+Currently only supports RSA public keys. ECDSA and Ed25519 support
+will be added in future versions.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Certificate signature algorithm
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Not after time (in seconds since Unix epoch)
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Generate an ECDSA P-256 key pair.
+
+Creates a new ECDSA key pair using the NIST P-256 curve (secp256r1).
+This curve provides approximately 128 bits of security and is widely supported.
+
+# Returns
+A `KeyPair` containing the ECDSA P-256 key pair.
+
+# Examples
+
+```rust,no_run
+use certkit::key::KeyPair;
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate a P-256 ECDSA key pair
+let key_pair = KeyPair::generate_ecdsa_p256();
+
+// Sign some data
+let data = b"Message to sign";
+let signature = key_pair.sign_data(data)?;
+println!("P-256 signature length: {} bytes", signature.len());
+# Ok(())
+# }
+```
+
+# Security Notes
+- P-256 provides ~128 bits of security
+- Widely supported across different systems and libraries
+- Smaller key and signature sizes compared to RSA
+- Fast signature generation and verification
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::country()) / [Option](Self::maybe_country()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Marker trait that indicates that all required members are set.
+
+In this state, you can finish building by calling the method [`CertificationRequestInfoBuilder::build()`](super::CertificationRequestInfoBuilder::build())
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::is_ca()) / [Option](Self::maybe_is_ca()) setters)._
+ _**Default:**_ ```false```.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Certificate serial number
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::Organization`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Converts the distinguished name to an X.509-compatible format.
+
+# Returns
+An `x509_cert::name::DistinguishedName` object.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Certificate validity period.
+
+This struct represents the `notBefore` and `notAfter` fields in a certificate.
+
+# Fields
+* `not_before` - The start of the validity period.
+* `not_after` - The end of the validity period.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Use builder syntax to set the inputs and finish with [`build()`](Self::build()).
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Creates a `TbsCertificate` from a `TbsCertificateInner`.
+
+# Arguments
+* `inner` - The `TbsCertificateInner` object to convert from.
+
+# Returns
+A `TbsCertificate` object.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Creates a public key from an X.509 SubjectPublicKeyInfo object.
+
+Parses a SubjectPublicKeyInfo (SPKI) structure and extracts the public key.
+This is commonly used when parsing X.509 certificates or certificate
+signing requests.
+
+# Supported Algorithms
+- RSA (rsaEncryption OID)
+- ECDSA P-256 (id-ecPublicKey with secp256r1 parameters)
+- ECDSA P-384 (id-ecPublicKey with secp384r1 parameters)
+- ECDSA P-521 (id-ecPublicKey with secp521r1 parameters)
+- Ed25519 (id-Ed25519 OID)
+
+# Arguments
+* `spki` - A reference to an `x509_cert::spki::SubjectPublicKeyInfoOwned` object
+
+# Returns
+A `Result` containing the `PublicKey` on success, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::DecodingError` if:
+- The algorithm OID is not supported
+- The public key data is malformed
+- Required algorithm parameters are missing
+- The key format is invalid for the specified algorithm
+
+# Examples
+
+```rust,no_run
+use certkit::key::{KeyPair, PublicKey};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate a key pair and convert to SPKI
+let key_pair = KeyPair::generate_ecdsa_p384();
+let spki = key_pair.as_spki();
+
+// Recreate public key from SPKI
+let public_key = PublicKey::from_x509spki(&spki)?;
+println!("Successfully parsed public key from SPKI");
+# Ok(())
+# }
+```
+
+# Use Cases
+- Parsing public keys from X.509 certificates
+- Processing certificate signing requests
+- Validating certificate chains
+- Interoperability with other X.509 implementations
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::State`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::extensions()) / [Option](Self::maybe_extensions()) setters)._
+ _**Default:**_ ```<Vec<ExtensionParam> as Default>::default()```.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::IsCa`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+DER-encoded extension value
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/lib.rs
+# CertKit - A Pure Rust Certificate Management Library
+
+CertKit is a comprehensive certificate management library built entirely with rustcrypto libraries,
+providing an alternative to rcgen without dependencies on ring or openssl (except for testing).
+It supports creating and managing X.509 certificate chains, including loading intermediate CAs
+and generating server and client certificates.
+
+## Supported Key Types
+
+CertKit supports the following cryptographic key types:
+- **RSA**: 2048, 3072, and 4096-bit keys
+- **ECDSA**: P-256, P-384, and P-521 curves
+- **Ed25519**: Edwards curve digital signature algorithm
+
+## Supported Certificate Formats
+
+- **DER**: Distinguished Encoding Rules (binary format)
+- **PEM**: Privacy-Enhanced Mail (base64-encoded text format)
+
+## Key Features
+
+- **Pure Rust**: Built entirely with rustcrypto libraries
+- **Certificate Chain Management**: Create and validate certificate hierarchies
+- **Self-Signed Certificates**: Generate root CA certificates
+- **Intermediate CAs**: Support for multi-level certificate authorities
+- **X.509 Extensions**: Comprehensive support for standard extensions
+- **Format Flexibility**: Import/export in both PEM and DER formats
+
+## Quick Start
+
+### Generating a Self-Signed Certificate
+
+```rust,no_run
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, params::{CertificationRequestInfo, DistinguishedName}},
+};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate an RSA key pair
+let key_pair = KeyPair::generate_rsa(2048)?;
+
+// Create certificate parameters
+let subject = DistinguishedName::builder()
+    .common_name("example.com".to_string())
+    .organization("Example Corp".to_string())
+    .country("US".to_string())
+    .build();
+
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .build();
+
+// Generate the self-signed certificate
+let certificate = Certificate::new_self_signed(&cert_info, &key_pair);
+
+// Export to PEM format
+let pem_cert = certificate.to_pem()?;
+println!("Certificate:\n{}", pem_cert);
+# Ok(())
+# }
+```
+
+### Creating a Certificate Chain
+
+```rust,no_run
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, CertificateWithPrivateKey, params::{CertificationRequestInfo, DistinguishedName, Validity}},
+    issuer::Issuer,
+};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate keys for CA and end-entity
+let ca_key = KeyPair::generate_ecdsa_p256();
+let server_key = KeyPair::generate_ecdsa_p256();
+
+// Create CA certificate
+let ca_subject = DistinguishedName::builder()
+    .common_name("Example CA".to_string())
+    .organization("Example Corp".to_string())
+    .build();
+
+let ca_cert_info = CertificationRequestInfo::builder()
+    .subject(ca_subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&ca_key))
+    .is_ca(true)
+    .build();
+
+let ca_cert = Certificate::new_self_signed(&ca_cert_info, &ca_key);
+let ca_with_key = CertificateWithPrivateKey {
+    cert: ca_cert,
+    key: ca_key,
+};
+
+// Create server certificate signed by CA
+let server_subject = DistinguishedName::builder()
+    .common_name("server.example.com".to_string())
+    .build();
+
+let server_cert_info = CertificationRequestInfo::builder()
+    .subject(server_subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&server_key))
+    .build();
+
+let validity = Validity::for_days(365);
+let server_cert = ca_with_key.issue(&server_cert_info, validity);
+
+println!("Server certificate issued successfully!");
+# Ok(())
+# }
+```
+
+### Working with Certificate Extensions
+
+```rust,no_run
+use certkit::{
+    key::KeyPair,
+    cert::{
+        Certificate,
+        params::{CertificationRequestInfo, DistinguishedName, ExtensionParam},
+        extensions::{SubjectAltName, ExtendedKeyUsage, ExtendedKeyUsageOption, ToAndFromX509Extension},
+    },
+};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+let key_pair = KeyPair::generate_ed25519();
+
+// Create Subject Alternative Name extension
+let san = SubjectAltName {
+    names: vec!["example.com".to_string(), "www.example.com".to_string()],
+};
+
+// Create Extended Key Usage extension
+let eku = ExtendedKeyUsage {
+    usage: vec![ExtendedKeyUsageOption::ServerAuth, ExtendedKeyUsageOption::ClientAuth],
+};
+
+let subject = DistinguishedName::builder()
+    .common_name("example.com".to_string())
+    .build();
+
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .extensions(vec![
+        ExtensionParam::from_extension(san, false),
+        ExtensionParam::from_extension(eku, true),
+    ])
+    .build();
+
+let certificate = Certificate::new_self_signed(&cert_info, &key_pair);
+println!("Certificate with extensions created successfully!");
+# Ok(())
+# }
+```
+
+## Error Handling
+
+CertKit uses a comprehensive error system that provides detailed information about failures:
+
+```rust
+use certkit::{key::KeyPair, error::CertKitError};
+
+match KeyPair::import_from_pkcs8_pem("invalid pem data") {
+    Ok(key_pair) => println!("Key imported successfully"),
+    Err(CertKitError::DecodingError(msg)) => println!("Failed to decode key: {}", msg),
+    Err(CertKitError::InvalidInput(msg)) => println!("Invalid input: {}", msg),
+    Err(e) => println!("Other error: {}", e),
+}
+```
+
+## Module Organization
+
+- [`key`]: Key generation, import/export, and cryptographic operations
+- [`cert`]: Certificate creation, encoding/decoding, and management
+- [`issuer`]: Certificate issuing functionality and CA operations
+- [`error`]: Comprehensive error types and handling
+- [`tbs_certificate`]: Low-level certificate structure manipulation
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/error.rs
+Represents errors that can occur in the CertKit library.
+
+This enum provides comprehensive error reporting for all operations
+in CertKit, with detailed error messages and context information
+to help with debugging and error handling.
+
+# Error Handling Strategy
+
+CertKit uses a centralized error type that covers all possible failure
+scenarios. Each error variant includes a descriptive message and,
+where appropriate, the underlying cause of the error.
+
+# Examples
+
+## Basic Error Handling
+
+```rust
+use certkit::{key::KeyPair, error::CertKitError};
+
+fn handle_key_generation() -> Result<(), CertKitError> {
+    let key = KeyPair::generate_rsa(2048)?;
+    println!("Key generated successfully");
+    Ok(())
+}
+
+match handle_key_generation() {
+    Ok(()) => println!("Success!"),
+    Err(e) => eprintln!("Error: {}", e),
+}
+```
+
+## Specific Error Type Matching
+
+```rust
+use certkit::{key::KeyPair, error::CertKitError};
+
+let result = KeyPair::import_from_pkcs8_pem("invalid data");
+match result {
+    Ok(key) => println!("Key imported"),
+    Err(CertKitError::DecodingError(msg)) => {
+        eprintln!("Decoding failed: {}", msg);
+        // Handle decoding-specific error
+    }
+    Err(CertKitError::InvalidInput(msg)) => {
+        eprintln!("Invalid input: {}", msg);
+        // Handle input validation error
+    }
+    Err(e) => eprintln!("Unexpected error: {}", e),
+}
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Retrieves the public key in DER format.
+
+Extracts the public key component and encodes it in Distinguished Encoding Rules (DER) format.
+The encoding format varies by key type:
+- RSA: PKCS#1 RSAPublicKey format
+- ECDSA: SEC1 uncompressed point format
+- Ed25519: Raw 32-byte public key
+
+# Returns
+A byte vector containing the DER-encoded public key.
+
+# Examples
+
+```rust,no_run
+use certkit::key::KeyPair;
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+let rsa_key = KeyPair::generate_rsa(2048)?;
+let p256_key = KeyPair::generate_ecdsa_p256();
+let ed25519_key = KeyPair::generate_ed25519();
+
+// Get public keys in DER format
+let rsa_der = rsa_key.get_public_key_der();
+let p256_der = p256_key.get_public_key_der();
+let ed25519_der = ed25519_key.get_public_key_der();
+
+println!("RSA public key: {} bytes", rsa_der.len());
+println!("P-256 public key: {} bytes", p256_der.len());
+println!("Ed25519 public key: {} bytes", ed25519_der.len());
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Create an instance of [`DistinguishedName`] using the builder syntax
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+Trait for converting to and from X.509 extensions.
+
+This trait provides methods to encode and decode X.509 extension values.
+
+# Example
+```
+use certkit::cert::extensions::SubjectAltName;
+use crate::certkit::cert::extensions::ToAndFromX509Extension;
+let san = SubjectAltName { names: vec!["example.com".to_string()] };
+let encoded = san.to_x509_extension_value().unwrap();
+let decoded = SubjectAltName::from_x509_extension_value(&encoded).unwrap();
+assert_eq!(san.names, decoded.names);
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Converts the public key to DER format.
+
+Encodes the public key in Distinguished Encoding Rules (DER) format.
+The specific encoding depends on the key type:
+- RSA: PKCS#1 RSAPublicKey format
+- ECDSA: SEC1 uncompressed point format
+- Ed25519: Raw 32-byte public key
+
+# Returns
+A `Result` containing the DER-encoded public key bytes, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::EncodingError` if the key cannot be encoded to DER format.
+
+# Examples
+
+```rust,no_run
+use certkit::key::{KeyPair, PublicKey};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+let key_pair = KeyPair::generate_rsa(2048)?;
+let public_key = PublicKey::from_key_pair(&key_pair);
+
+let der_bytes = public_key.to_der()?;
+println!("RSA public key DER: {} bytes", der_bytes.len());
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+Represents an X.509 certificate.
+
+This struct encapsulates a complete X.509 certificate and provides methods
+for encoding, decoding, and extracting certificate information. Certificates
+can be created as self-signed root certificates or issued by certificate
+authorities.
+
+# Certificate Components
+- **Subject**: The entity the certificate identifies
+- **Issuer**: The entity that signed the certificate
+- **Public Key**: The subject's public key
+- **Validity Period**: When the certificate is valid (not before/not after)
+- **Extensions**: Additional certificate attributes and constraints
+- **Signature**: Digital signature from the issuer
+
+# Examples
+
+## Creating a Self-Signed Certificate
+
+```rust
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, params::{CertificationRequestInfo, DistinguishedName}},
+};
+
+// Generate a key pair
+let key_pair = KeyPair::generate_ecdsa_p256();
+
+// Define the certificate subject
+let subject = DistinguishedName::builder()
+    .common_name("example.com".to_string())
+    .organization("Example Corp".to_string())
+    .country("US".to_string())
+    .build();
+
+// Create certificate request info
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .build();
+
+// Generate the self-signed certificate
+let certificate = Certificate::new_self_signed(&cert_info, &key_pair);
+
+// Export to different formats
+let der_bytes = certificate.to_der()?;
+let pem_string = certificate.to_pem()?;
+
+println!("Certificate created: {} bytes DER, {} bytes PEM",
+         der_bytes.len(), pem_string.len());
+# Ok::<(), certkit::error::CertKitError>(())
+```
+
+## Extracting Certificate Information
+
+```rust
+use certkit::cert::Certificate;
+# use certkit::{key::KeyPair, cert::params::{CertificationRequestInfo, DistinguishedName}};
+# let key_pair = KeyPair::generate_ecdsa_p256();
+# let subject = DistinguishedName::builder().common_name("test".to_string()).build();
+# let cert_info = CertificationRequestInfo::builder()
+#     .subject(subject).subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair)).build();
+# let certificate = Certificate::new_self_signed(&cert_info, &key_pair);
+
+// Extract certificate information
+let cert_info = certificate.to_cert_info()?;
+println!("Subject: {}", cert_info.subject.common_name);
+println!("Is CA: {}", cert_info.is_ca);
+println!("Extensions: {}", cert_info.extensions.len());
+# Ok::<(), certkit::error::CertKitError>(())
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::usages()) / [Option](Self::maybe_usages()) setters)._
+ _**Default:**_ ```<Vec<ExtendedKeyUsageOption> as Default>::default()```.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::organization_unit()) / [Option](Self::maybe_organization_unit()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsUnset`] implemented for all members.
+
+This is the initial state of the builder before any setters are called.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Generate an RSA key pair with the specified number of bits.
+
+Creates a new RSA key pair using cryptographically secure random number generation.
+The key size directly affects both security and performance characteristics.
+
+# Arguments
+* `bits` - The number of bits for the RSA key (recommended: 2048, 3072, or 4096)
+
+# Returns
+A `Result` containing the `KeyPair` on success, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::KeyGenerationError` if key generation fails due to:
+- Invalid key size
+- Insufficient entropy
+- System resource constraints
+
+# Examples
+
+```rust,no_run
+use certkit::key::KeyPair;
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Generate a 2048-bit RSA key (recommended minimum)
+let key_2048 = KeyPair::generate_rsa(2048)?;
+
+// Generate a 4096-bit RSA key (higher security)
+let key_4096 = KeyPair::generate_rsa(4096)?;
+
+// Get the public key in DER format
+let public_der = key_2048.get_public_key_der();
+println!("Public key size: {} bytes", public_der.len());
+# Ok(())
+# }
+```
+
+# Security Notes
+- 2048-bit keys are considered secure for most applications
+- 3072-bit keys provide additional security margin
+- 4096-bit keys offer maximum security but with performance trade-offs
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+Represents an option for the Extended Key Usage extension.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/issuer.rs
+Represents an entity capable of issuing X.509 certificates.
+
+This trait defines the interface for certificate authorities (CAs) and other
+entities that can sign and issue certificates. Implementors must provide
+the issuer's identity, signing key, and serial number generation.
+
+# Certificate Issuance Process
+
+1. **Validation**: Verify the certificate request information
+2. **Extension Processing**: Add appropriate extensions based on request and CA policy
+3. **Signature Algorithm Selection**: Choose algorithm based on CA's key type
+4. **TBS Certificate Creation**: Build the "To Be Signed" certificate structure
+5. **Signing**: Create digital signature using the CA's private key
+6. **Certificate Assembly**: Combine TBS certificate with signature
+
+# Implementations
+
+CertKit provides implementations for:
+- **Self-signed certificates**: Internal `SelfIssuer` for root CAs
+- **Certificate authorities**: `CertificateWithPrivateKey` for intermediate and root CAs
+
+# Examples
+
+## Using a CA to Issue Certificates
+
+```rust
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, CertificateWithPrivateKey, params::{CertificationRequestInfo, DistinguishedName, Validity}},
+    issuer::Issuer,
+};
+
+// Create a CA certificate with private key
+let ca_key = KeyPair::generate_ecdsa_p384();
+let ca_subject = DistinguishedName::builder()
+    .common_name("Example CA".to_string())
+    .organization("Example Corp".to_string())
+    .build();
+
+let ca_cert_info = CertificationRequestInfo::builder()
+    .subject(ca_subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&ca_key))
+    .is_ca(true)
+    .build();
+
+let ca_cert = Certificate::new_self_signed(&ca_cert_info, &ca_key);
+let ca_issuer = CertificateWithPrivateKey {
+    cert: ca_cert,
+    key: ca_key,
+};
+
+// Issue an end-entity certificate
+let end_entity_key = KeyPair::generate_rsa(2048)?;
+let end_entity_subject = DistinguishedName::builder()
+    .common_name("client.example.com".to_string())
+    .build();
+
+let end_entity_info = CertificationRequestInfo::builder()
+    .subject(end_entity_subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&end_entity_key))
+    .build();
+
+let validity = Validity::for_days(90);
+let issued_cert = ca_issuer.issue(&end_entity_info, validity);
+
+println!("Certificate issued successfully");
+# Ok::<(), certkit::error::CertKitError>(())
+```
+
+## Custom Issuer Implementation
+
+```rust
+use certkit::{
+    issuer::Issuer,
+    key::KeyPair,
+    cert::params::{DistinguishedName, CertificationRequestInfo, Validity},
+};
+
+struct CustomCA {
+    name: DistinguishedName,
+    key: KeyPair,
+    next_serial: std::cell::Cell<u64>,
+}
+
+impl Issuer for CustomCA {
+    fn issuer_name(&self) -> DistinguishedName {
+        self.name.clone()
+    }
+
+    fn signing_key(&self) -> &KeyPair {
+        &self.key
+    }
+
+    fn serial_number(&self) -> Vec<u8> {
+        let serial = self.next_serial.get();
+        self.next_serial.set(serial + 1);
+        serial.to_be_bytes().to_vec()
+    }
+}
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::Usages`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Imports a key pair from DER-encoded data.
+
+Attempts to decode DER-encoded private key data and create a `KeyPair`.
+The function automatically detects the key type and format by trying
+different decoding methods in order.
+
+# Supported Formats
+- RSA: PKCS#1 and PKCS#8 formats
+- ECDSA (P-256, P-384, P-521): PKCS#8 format
+- Ed25519: PKCS#8 format
+
+# Arguments
+* `der` - A byte slice containing the DER-encoded private key data
+
+# Returns
+A `Result` containing the `KeyPair` on success, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::DecodingError` if:
+- The DER data is malformed
+- The key type is unsupported
+- The key format is not recognized
+
+# Examples
+
+```rust
+use certkit::key::KeyPair;
+
+// Generate a key and export to DER
+let original_key = KeyPair::generate_ecdsa_p256();
+// Note: In practice, you'd get DER data from external sources
+
+// Import from DER data (example with hypothetical DER bytes)
+let der_data = &[/* DER-encoded key bytes */];
+match KeyPair::import_from_der(der_data) {
+    Ok(imported_key) => println!("Key imported successfully"),
+    Err(e) => println!("Import failed: {}", e),
+}
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Finish building and return the requested object
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::Subject`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Parameters for building an X.509 certificate.
+
+This struct contains the subject, public key, and optional extensions for the certificate.
+
+# Fields
+* `subject` - The distinguished name of the certificate subject.
+* `subject_public_key` - The public key of the certificate subject.
+* `usages` - A list of extended key usage options.
+* `is_ca` - Indicates if the certificate is a CA.
+* `extensions` - Additional X.509 extensions.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::Locality`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Creates a `DistinguishedName` from an X.509-compatible format.
+
+# Arguments
+* `x509dn` - An `x509_cert::name::DistinguishedName` object.
+
+# Returns
+A `DistinguishedName` object.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+Extracts certificate information into a `CertificationRequestInfo` object.
+
+Parses the certificate and extracts key information including the subject,
+public key, extensions, and CA status. This is useful for certificate
+analysis, validation, and creating derived certificates.
+
+# Returns
+A `Result` containing the `CertificationRequestInfo` with extracted details,
+or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::DecodingError` if:
+- The certificate structure is malformed
+- Required fields are missing
+- Extensions cannot be parsed
+
+# Examples
+
+```rust,no_run
+use certkit::{key::KeyPair, cert::{Certificate, params::{CertificationRequestInfo, DistinguishedName}}};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Create a certificate
+let key_pair = KeyPair::generate_ecdsa_p384();
+let subject = DistinguishedName::builder()
+    .common_name("CA Certificate".to_string())
+    .organization("Example CA".to_string())
+    .build();
+
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .is_ca(true)
+    .build();
+
+let certificate = Certificate::new_self_signed(&cert_info, &key_pair);
+
+// Extract information back from the certificate
+let extracted_info = certificate.to_cert_info()?;
+println!("Subject CN: {}", extracted_info.subject.common_name);
+println!("Is CA: {}", extracted_info.is_ca);
+println!("Number of extensions: {}", extracted_info.extensions.len());
+println!("Key usages: {:?}", extracted_info.usages);
+# Ok(())
+# }
+```
+
+The extracted information includes:
+
+- **Subject**: Distinguished name of the certificate holder
+- **Public Key**: The public key of the subject
+- **CA Status**: Whether this is a CA certificate
+- **Key Usages**: Extended key usage extensions
+- **Extensions**: All X.509 extensions present in the certificate
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Creates a validity period starting now for the given number of days.
+
+# Arguments
+* `days` - The number of days for the validity period.
+
+# Returns
+A `Validity` object.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+A certificate paired with its corresponding private key.
+
+This struct combines an X.509 certificate with the private key that corresponds
+to the public key in the certificate. This pairing is essential for certificate
+authorities that need to issue new certificates, as they require both the CA
+certificate (for the issuer name and extensions) and the private key (for signing).
+
+# Use Cases
+
+- **Certificate Authorities**: CA certificates with their signing keys
+- **Intermediate CAs**: Intermediate certificates that can issue end-entity certificates
+- **Server Certificates**: Web server certificates with their private keys
+- **Client Certificates**: Client authentication certificates with private keys
+
+# Examples
+
+## Creating a CA Certificate with Private Key
+
+```rust
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, CertificateWithPrivateKey, params::{CertificationRequestInfo, DistinguishedName}},
+};
+
+// Generate CA key pair
+let ca_key = KeyPair::generate_ecdsa_p256();
+
+// Create CA certificate
+let ca_subject = DistinguishedName::builder()
+    .common_name("Example Root CA".to_string())
+    .organization("Example Corp".to_string())
+    .build();
+
+let ca_cert_info = CertificationRequestInfo::builder()
+    .subject(ca_subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&ca_key))
+    .is_ca(true)
+    .build();
+
+let ca_cert = Certificate::new_self_signed(&ca_cert_info, &ca_key);
+
+// Combine certificate and private key
+let ca_with_key = CertificateWithPrivateKey {
+    cert: ca_cert,
+    key: ca_key,
+};
+
+println!("CA certificate with private key created");
+# Ok::<(), certkit::error::CertKitError>(())
+```
+
+## Using CA to Issue End-Entity Certificates
+
+```rust
+use certkit::{
+    key::KeyPair,
+    cert::{Certificate, CertificateWithPrivateKey, params::{CertificationRequestInfo, DistinguishedName, Validity}},
+    issuer::Issuer,
+};
+
+# let ca_key = KeyPair::generate_ecdsa_p256();
+# let ca_subject = DistinguishedName::builder().common_name("CA".to_string()).build();
+# let ca_cert_info = CertificationRequestInfo::builder()
+    .subject(ca_subject).subject_public_key(certkit::key::PublicKey::from_key_pair(&ca_key)).is_ca(true).build();
+# let ca_cert = Certificate::new_self_signed(&ca_cert_info, &ca_key);
+# let ca_with_key = CertificateWithPrivateKey { cert: ca_cert, key: ca_key };
+
+// Generate end-entity key pair
+let server_key = KeyPair::generate_rsa(2048)?;
+
+// Create server certificate request
+let server_subject = DistinguishedName::builder()
+    .common_name("server.example.com".to_string())
+    .build();
+
+let server_cert_info = CertificationRequestInfo::builder()
+    .subject(server_subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&server_key))
+    .build();
+
+// Issue the server certificate using the CA
+let validity = Validity::for_days(365);
+let server_cert = ca_with_key.issue(&server_cert_info, validity);
+
+println!("Server certificate issued by CA");
+# Ok::<(), certkit::error::CertKitError>(())
+```
+
+# Security Considerations
+
+- **Private Key Protection**: The private key should be stored securely
+- **Key Rotation**: Consider regular key rotation for long-lived CAs
+- **Access Control**: Limit access to certificate/key pairs
+- **Backup and Recovery**: Ensure secure backup of CA key material
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Use builder syntax to set the inputs and finish with [`build()`](Self::build()).
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+Encodes the certificate into PEM format.
+
+Converts the certificate to Privacy-Enhanced Mail (PEM) format, which
+is a base64-encoded text format commonly used for certificate storage
+in configuration files and human-readable contexts.
+
+# Returns
+A `Result` containing the PEM-encoded certificate string, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::EncodingError` if the certificate cannot be encoded.
+
+# Examples
+
+```rust,no_run
+use certkit::{key::KeyPair, cert::{Certificate, params::{CertificationRequestInfo, DistinguishedName}}};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let key_pair = KeyPair::generate_ed25519();
+let subject = DistinguishedName::builder().common_name("server.example.com".to_string()).build();
+let cert_info = CertificationRequestInfo::builder()
+    .subject(subject)
+    .subject_public_key(certkit::key::PublicKey::from_key_pair(&key_pair))
+    .build();
+
+let certificate = Certificate::new_self_signed(&cert_info, &key_pair);
+let pem_string = certificate.to_pem()?;
+
+println!("Certificate in PEM format:\n{}", pem_string);
+
+// Save to configuration file
+std::fs::write("server.crt", &pem_string)?;
+# Ok(())
+# }
+```
+
+The PEM format includes:
+
+- "-----BEGIN CERTIFICATE-----" header
+- Base64-encoded DER data (64 characters per line)
+- "-----END CERTIFICATE-----" footer
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::country()) / [Option](Self::maybe_country()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents an X.509 extension.
+
+This struct contains the OID, criticality, and value of an extension.
+
+# Fields
+* `oid` - The object identifier of the extension.
+* `critical` - Indicates if the extension is critical.
+* `value` - The DER-encoded value of the extension.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Finish building and return the requested object
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Generate an ECDSA P-521 key pair.
+
+Creates a new ECDSA key pair using the NIST P-521 curve (secp521r1).
+This curve provides approximately 256 bits of security, the highest
+security level among the NIST curves.
+
+# Returns
+A `KeyPair` containing the ECDSA P-521 key pair.
+
+# Examples
+
+```rust
+use certkit::key::KeyPair;
+
+// Generate a P-521 ECDSA key pair
+let key_pair = KeyPair::generate_ecdsa_p521();
+
+// Get public key in DER format
+let public_der = key_pair.get_public_key_der();
+println!("P-521 public key size: {} bytes", public_der.len());
+```
+
+# Security Notes
+- P-521 provides ~256 bits of security
+- Highest security level among NIST curves
+- Suitable for applications requiring maximum security
+- Larger key and signature sizes than P-256/P-384
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+The X.509 certificate
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Creates an `ExtensionParam` from a specific extension.
+
+# Arguments
+* `extension` - The extension to encode.
+* `critical` - Indicates if the extension is critical.
+
+# Returns
+An `ExtensionParam` object.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::is_ca()) / [Option](Self::maybe_is_ca()) setters)._
+ _**Default:**_ ```false```.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Builder's type state specifies if members are set or not (unset).
+
+You can use the associated types of this trait to control the state of individual members with the [`IsSet`] and [`IsUnset`] traits. You can change the state of the members with the `Set*` structs available in this module.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Marker trait that indicates that all required members are set.
+
+In this state, you can finish building by calling the method [`DistinguishedNameBuilder::build()`](super::DistinguishedNameBuilder::build())
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::state()) / [Option](Self::maybe_state()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::organization_unit()) / [Option](Self::maybe_organization_unit()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+Represents the Authority Key Identifier (AKI) extension.
+
+This extension identifies the public key corresponding to the private key used to sign the certificate.
+
+# Fields
+* `key_identifier` - The key identifier.
+* `authority_cert_issuer` - The issuer's distinguished name.
+* `authority_cert_serial_number` - The issuer's certificate serial number.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Represents a public key for cryptographic operations.
+
+This enum encapsulates public keys from various cryptographic algorithms
+supported by CertKit. Public keys are used for signature verification,
+encryption (in the case of RSA), and inclusion in X.509 certificates.
+
+# Supported Key Types
+- **RSA**: Variable key sizes, commonly 2048-4096 bits
+- **ECDSA P-256**: NIST P-256 curve public keys
+- **ECDSA P-384**: NIST P-384 curve public keys
+- **ECDSA P-521**: NIST P-521 curve public keys
+- **Ed25519**: Edwards curve public keys (32 bytes)
+
+# Examples
+
+```rust,no_run
+use certkit::key::{KeyPair, PublicKey};
+
+# fn main() -> Result<(), certkit::error::CertKitError> {
+// Extract public key from a key pair
+let key_pair = KeyPair::generate_ecdsa_p256();
+let public_key = PublicKey::from_key_pair(&key_pair);
+
+// Convert to DER format for storage or transmission
+let der_bytes = public_key.to_der()?;
+println!("Public key DER size: {} bytes", der_bytes.len());
+
+// Note: from_der currently only supports RSA keys
+// let restored_key = PublicKey::from_der(&der_bytes)?;
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Required.**_
+
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Imports a key pair from PEM-encoded data.
+
+Parses PEM-encoded private key data and creates a `KeyPair`. The function
+expects PKCS#8 format private keys with the "PRIVATE KEY" label.
+
+# Arguments
+* `pem_str` - A string slice containing the PEM-encoded private key data
+
+# Returns
+A `Result` containing the `KeyPair` on success, or a `CertKitError` on failure.
+
+# Errors
+Returns `CertKitError::DecodingError` if:
+- The PEM format is invalid
+- The PEM label is not "PRIVATE KEY"
+- The underlying DER data cannot be decoded
+
+# Examples
+
+```rust
+use certkit::key::KeyPair;
+
+let pem_data = r#"-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg...
+-----END PRIVATE KEY-----"#;
+
+match KeyPair::import_from_pkcs8_pem(pem_data) {
+    Ok(key_pair) => {
+        println!("Successfully imported key from PEM");
+        let signature = key_pair.sign_data(b"test data")?;
+        println!("Signature created: {} bytes", signature.len());
+    }
+    Err(e) => println!("Failed to import key: {}", e),
+}
+# Ok::<(), certkit::error::CertKitError>(())
+```
+
+# Format Requirements
+The PEM data must:
+- Use the "PRIVATE KEY" label (PKCS#8 format)
+- Contain valid base64-encoded DER data
+- Represent a supported key type (RSA, ECDSA P-256/P-384/P-521, Ed25519)
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::SubjectPublicKey`].
+
+The state for all other members is left the same as in the input state.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Distinguished name parameters for building an X.509 certificate.
+
+This struct represents the subject or issuer name in a certificate.
+
+# Fields
+* `common_name` - The common name (CN).
+* `country` - The country (C).
+* `state` - The state or province (ST).
+* `locality` - The locality or city (L).
+* `organization` - The organization (O).
+* `organization_unit` - The organizational unit (OU).
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+Certificate extensions
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Optional** ([Some](Self::organization()) / [Option](Self::maybe_organization()) setters)._
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Converts the key pair to an X.509 SubjectPublicKeyInfo format.
+
+Creates a SubjectPublicKeyInfo (SPKI) structure containing the public key
+and its algorithm identifier. This format is used in X.509 certificates
+and certificate signing requests.
+
+# Returns
+An `x509_cert::spki::SubjectPublicKeyInfoOwned` object containing:
+- Algorithm identifier with appropriate OID
+- Public key data in the correct format
+- Algorithm parameters (if required)
+
+# Examples
+
+```rust
+use certkit::key::KeyPair;
+
+let key_pair = KeyPair::generate_ecdsa_p256();
+let spki = key_pair.as_spki();
+
+println!("Algorithm OID: {}", spki.algorithm.oid);
+println!("Public key bits: {} bytes", spki.subject_public_key.raw_bytes().len());
+```
+
+# Algorithm Identifiers
+- RSA: rsaEncryption (1.2.840.113549.1.1.1)
+- ECDSA P-256: id-ecPublicKey with secp256r1 parameters
+- ECDSA P-384: id-ecPublicKey with secp384r1 parameters  
+- ECDSA P-521: id-ecPublicKey with secp521r1 parameters
+- Ed25519: id-Ed25519 (1.3.101.112)
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+Represents the supported signature algorithms for certificates.
+
+This enum defines the cryptographic signature algorithms that can be used
+for signing X.509 certificates. Each algorithm combines a hash function
+with a signature scheme and maps to a specific Object Identifier (OID)
+as defined in various RFCs.
+
+# Algorithm Selection
+
+The signature algorithm is typically chosen based on:
+- **Key Type**: RSA keys use RSA algorithms, ECDSA keys use ECDSA algorithms
+- **Security Requirements**: Different hash functions provide different security levels
+- **Compatibility**: Some systems may not support all algorithms
+- **Performance**: Different algorithms have varying computational costs
+
+# Examples
+
+```rust
+use certkit::cert::SignatureAlgorithm;
+use certkit::key::KeyPair;
+
+// Algorithm selection is typically automatic based on key type
+let rsa_key = KeyPair::generate_rsa(2048)?;
+// Would use SignatureAlgorithm::Sha256WithRSA
+
+let ecdsa_key = KeyPair::generate_ecdsa_p256();
+// Would use SignatureAlgorithm::Sha256WithECDSA
+
+let ed25519_key = KeyPair::generate_ed25519();
+// Would use SignatureAlgorithm::Sha256WithEdDSA
+# Ok::<(), certkit::error::CertKitError>(())
+```
+
+# Security Considerations
+
+- **SHA-256**: Minimum recommended hash function for new certificates
+- **SHA-384/SHA-512**: Higher security for sensitive applications
+- **Algorithm Deprecation**: SHA-1 is deprecated and not supported
+- **Key Size Matching**: Hash function strength should match key strength
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Create an instance of [`CertificationRequestInfo`] using the builder syntax
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+Represents the Extended Key Usage extension.
+
+This extension indicates purposes for which the public key may be used.
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+_**Required.**_
+
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+Encodes the private key in PKCS8 PEM format
+
+# Examples
+
+```rust
+use certkit::key::KeyPair;
+
+fn some_func() -> Result<(), certkit::error::CertKitError> {
+    let rsa_key = KeyPair::generate_rsa(2048)?;
+    println!("Random RSA private key pem:\n{}", rsa_key.encode_private_key_pem().unwrap());
+    Ok(())
+}
+```
+
+---
+
+## https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+Represents a [`State`] that has [`IsSet`] implemented for [`State::OrganizationUnit`].
+
+The state for all other members is left the same as in the input state.
+
+---
+

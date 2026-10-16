@@ -1,0 +1,2164 @@
+# utoipa Documentation (LLMS)
+
+## API Overview
+
+### utoipa
+Link: https://docs.rs/utoipa/5.4.0
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### add_path_operation
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### style
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ArrayItems
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### HttpAuthScheme
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### property_name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### allow_reserved
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### format
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### content_encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### content_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### content
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### path
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### options
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### from_http_methods
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### merge
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### info
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### open_id_connect_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### ExternalDocs
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### parameter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### tags
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### discriminator
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### external_docs
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### AllOf
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### style
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### license
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### with_description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### pattern
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### header
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### Schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### exclusive_maximum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### request_body
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### tags
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### request_body
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### allow_reserved
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### SchemaType
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ParameterIn
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### format
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### with_capacity
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### unique_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### post
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### wrapped
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### authorization_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### required
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### wrapped
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### IntoParams
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### required
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### examples_from_iter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### multiple_of
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Responses
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### OpenApiBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### external_docs
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### with_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### RequestBody
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### server
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### version
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### to_yaml
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### HeaderBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### OperationBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### content
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### required
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Number
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### put
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ArrayBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Paths
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### responses_from_iter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### parameter_in
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### HttpMethod
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### SecurityRequirement
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### server
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### operation_id
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### attribute
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### default_value
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ComponentsBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### XmlBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### scheme
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### request_body
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Array
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### token_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### terms_of_service
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### ref_location
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ResponseBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### xml
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Ref
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### required
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ApiKey
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### paths
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### namespace
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### scopes
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### TupleUnit
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### OAuth2
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### style
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### merge
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### Tag
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### to_array_builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### additional_properties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### PathItem
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### required
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### security_schemes
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### Example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### identifier
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### Content
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### from_response_name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### maximum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Contact
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### with_mapping
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### Flow
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### response
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### link
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### AnyOf
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### request_body
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### get
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### from_schema_name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### security_scheme
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### maximum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ClientCredentials
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### nest
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Operation
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### securities
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### explode
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Discriminator
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### enum_values
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### content_encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### external_docs
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### ServerBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### tags
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### tags
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### content_media_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### exclusive_maximum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### path
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### with_description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### servers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### OpenApi
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### exclusive_minimum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### info
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### ExtensionsBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### with_refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### parameters
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### to_json
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### PathItemBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ToResponse
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### response_from
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### patch
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### style
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### content
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### min_length
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### OpenIdConnect
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### headers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### head
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### content
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### max_length
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### explode
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### Scopes
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### PartialSchema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### required
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### xml
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### paths
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### RequestBodyExt
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### enum_values
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### prefix
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ExternalDocsBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### content_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### to_array_builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Server
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### servers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### item
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### LicenseBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### Http
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### value
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### OpenApiVersion
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### HttpBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### to_array_builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### xml
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### value
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### parameters
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### Header
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### servers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### is_any_value
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### parameters
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ref_location
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### operation_ref
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### request_body
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### xml
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### bearer_format
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ToSchema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### xml
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### max_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### flows
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### discriminator
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### item
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### scopes
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### path_from
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### license
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### security
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ApiKeyValue
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### multiple_of
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### variables
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### responses
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### operation_id
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### any
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### paths
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### schema_from
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### with_refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### version
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### ContactBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### item
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### AnyOfBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### scopes
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### KnownFormat
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### responses
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### email
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### components
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### mapping
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### scopes
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### exclusive_minimum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ServerVariableBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ref_location_from_schema_name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### discriminator
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Response
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### get_path_item
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### external_docs
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### content_media_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### scheme
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### nest_with_path_composer
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### responses_from_iter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### OneOf
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### License
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### OpenApi
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### min_length
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### RequestBodyBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### read_only
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### external_docs
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### allow_reserved
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### discriminator
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### openapi
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### token_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### external_value
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### RefOr
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### allow_reserved
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### prefix
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### to_pretty_json
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### security
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### AdditionalProperties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### minimum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### operation
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### ContentBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### external_docs
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### InfoBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### operation_id
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### response
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### parameter_in
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### to_array_builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### Path
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### property_names
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### TagBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### Xml
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### PathsBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### explode
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### max_properties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ToArray
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### discriminator
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### security
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### content
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### namespace
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### min_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### responses
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### pattern
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### parameter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### Implicit
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### ResponsesBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### servers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### min_properties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ExampleBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### ServerVariable
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### merge_from
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### header
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### add_security_schemes_from_iter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### parameter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Password
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### security
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### operation_id
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### content_encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### schemas_from_iter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### deprecated
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### read_only
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new_nullable
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### minimum
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### to_array_builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### headers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### add
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### additional_properties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### prefix_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### link
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### max_length
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### merge_operations
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### SchemaFormat
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### AllOfBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### merge
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### token_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### responses
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### explode
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### trace
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### ParameterStyle
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### with_refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### info
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Required
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### servers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### with_capacity
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### LinkBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### to_array_builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### with_refresh_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### operation_ref
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### RefBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+
+### property
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ObjectBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### IntoResponses
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### parameters
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### enum_values
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### parameters
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Object
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### contact
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### min_properties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### discriminator
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### openapi
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### components
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### schema_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### server
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### with_capacity
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### AuthorizationCode
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### enum_values
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### prefix_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### write_only
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### security
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+
+### response
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Link
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+
+### identifier
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### tag
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### attribute
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### contact
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### EncodingBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### with_description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### max_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### content_encoding
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### empty
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### schema
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+
+### add_security_scheme
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### links
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### tag
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ResponseExt
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### get_path_operation
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### authorization_url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### summary
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### schemas
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### unique_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### builder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+
+### SecurityScheme
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### utoipa
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Info
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### terms_of_service
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### Components
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### servers
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### header
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+
+### Parameter
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### max_properties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### title
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### ParameterBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### email
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### content_media_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### external_value
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+
+### url
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+
+### server
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### description
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### property_names
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### example
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### examples
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### content_media_type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### bearer_format
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### responses_from_into_responses
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+
+### properties
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### name
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+
+### default_value
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### add
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### delete
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+
+### Type
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### default
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### Modify
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+
+### build
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### one
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### min_items
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+
+### OneOfBuilder
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### new
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+
+### response
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+### extensions
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+
+### write_only
+Link: https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+

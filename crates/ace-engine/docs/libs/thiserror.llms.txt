@@ -1,0 +1,10 @@
+# thiserror Documentation (LLMS)
+
+## API Overview
+
+### thiserror
+Link: https://docs.rs/thiserror/2.0.18
+
+### thiserror
+Link: https://docs.rs/crate/thiserror/2.0.18/source/src/lib.rs
+

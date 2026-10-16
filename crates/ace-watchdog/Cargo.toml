@@ -1,0 +1,30 @@
+[package]
+name = "ace-watchdog"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "ace-watchdog"
+path = "src/main.rs"
+
+[features]
+default = []
+experimental-ace-guard = ["dep:ace-engine", "ace-engine/experimental-ace-guard"]
+
+[dependencies]
+ace-watchdog-protocol = { path = "../ace-watchdog-protocol" }
+ace-engine = { path = "../ace-engine", optional = true }
+eyre = "~0.6"
+serde_json = "~1.0"
+tokio = { version = "~1.53", features = ["full"] }
+uuid = { version = "~1.28", features = ["v4", "v7", "serde"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-service = "~0.8"
+windows = { version = "~0.62", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_System_Pipes",
+    "Win32_System_Threading",
+] }

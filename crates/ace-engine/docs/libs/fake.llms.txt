@@ -1,0 +1,76 @@
+# fake Documentation (LLMS)
+
+## API Overview
+
+### fake
+Link: https://docs.rs/fake/4.4.0
+
+### vec
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/std/collections/vec.rs
+
+### PathFaker
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/std/path.rs
+
+### src/lib.rs
+Link: https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+
+### bson_oid
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/bson_oid/mod.rs
+
+### faker
+Link: https://docs.rs/crate/fake/4.4.0/source/src/faker/mod.rs
+
+### UUIDv4
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### UUIDv6
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### ResultFaker
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/std/result.rs
+
+### new
+Link: https://docs.rs/crate/fake/4.4.0/source/src/utils.rs
+
+### ulid
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/ulid/mod.rs
+
+### Dummy
+Link: https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+
+### UUIDv1
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### UUIDv3
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### Fake
+Link: https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+
+### locales
+Link: https://docs.rs/crate/fake/4.4.0/source/src/locales/mod.rs
+
+### uuid
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### UUIDv7
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### UUIDv5
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### Faker
+Link: https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+
+### UUIDv8
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+
+### ferroid
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/ferroid/mod.rs
+
+### fake
+Link: https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+
+### StringFaker
+Link: https://docs.rs/crate/fake/4.4.0/source/src/impls/std/string.rs
+

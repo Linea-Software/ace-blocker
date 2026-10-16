@@ -1,0 +1,319 @@
+# certkit Documentation (LLMS)
+
+## API Overview
+
+### certkit
+Link: https://docs.rs/certkit/0.1.1
+
+### SetExtensions
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### not_before
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### new
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### new_self_signed_with_expiration
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### generate_ecdsa_p384
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### to_der
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### issuer
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### extensions
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### key
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### State
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### from_key_pair
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### subject_public_key
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### SetCountry
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### maybe_organization
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### SetCommonName
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### BasicConstraints
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+
+### Empty
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### maybe_state
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### inner
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### maybe_locality
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### generate_ed25519
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### new_self_signed
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### subject
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### KeyPair
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### to_der
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### TbsCertificate
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### locality
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### to_tbs_certificate_inner
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### to_extension
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### sign_data
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### usages
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### KeyUsage
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+
+### common_name
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### error
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/error.rs
+
+### SubjectAltName
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+
+### from_der
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### signature_algorithm
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### not_after
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### generate_ecdsa_p256
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### country
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### IsComplete
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### maybe_is_ca
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### serial_number
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### SetOrganization
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### as_x509_name
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### Validity
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### DistinguishedNameBuilder
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### from_tbs_certificate_inner
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### from_x509spki
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### SetState
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### maybe_extensions
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### SetIsCa
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### value
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### certkit
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/lib.rs
+
+### CertKitError
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/error.rs
+
+### get_public_key_der
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### builder
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### ToAndFromX509Extension
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+
+### to_der
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### Certificate
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### maybe_usages
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### maybe_organization_unit
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### Empty
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### generate_rsa
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### ExtendedKeyUsageOption
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+
+### Issuer
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/issuer.rs
+
+### SetUsages
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### import_from_der
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### build
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### SetSubject
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### CertificationRequestInfo
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### SetLocality
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### from_x509_name
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### to_cert_info
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### for_days
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### CertificateWithPrivateKey
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### CertificationRequestInfoBuilder
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### to_pem
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### maybe_country
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### ExtensionParam
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### build
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### generate_ecdsa_p521
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### cert
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### from_extension
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### is_ca
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### State
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### IsComplete
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### state
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### organization_unit
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### AuthorityKeyIdentifier
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+
+### PublicKey
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### subject_public_key
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### import_from_pkcs8_pem
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### SetSubjectPublicKey
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### DistinguishedName
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### extensions
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/tbs_certificate.rs
+
+### organization
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### as_spki
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### SignatureAlgorithm
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/mod.rs
+
+### builder
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### ExtendedKeyUsage
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/extensions.rs
+
+### subject
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+
+### encode_private_key_pem
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/key.rs
+
+### SetOrganizationUnit
+Link: https://docs.rs/crate/certkit/0.1.1/source/src/cert/params.rs
+

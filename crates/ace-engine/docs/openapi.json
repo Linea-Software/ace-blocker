@@ -1,0 +1,3219 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ace-engine",
+    "description": "\n\nDatetime format: `%Y-%m-%dT%H:%M:%S`\nTime format: `%H:%M:%S`",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/account/accept-tos": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "accept_tos",
+        "responses": {
+          "200": {
+            "description": "Terms of Service accepted"
+          }
+        }
+      }
+    },
+    "/account/api-key": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "set_api_key",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetApiKeyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Set API key and fetch account details"
+          }
+        }
+      }
+    },
+    "/account/info": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "get_account_info",
+        "responses": {
+          "200": {
+            "description": "Get current account information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/logout": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "Logout and revoke API key"
+          }
+        }
+      }
+    },
+    "/account/refresh": {
+      "post": {
+        "tags": [
+          "Account"
+        ],
+        "summary": "Re-read the account's Pro status after an event that may have changed it\n(login, logout, subscription change, focus regain).",
+        "description": "The engine never calls the Ace server when the last successful\nverification is less than one day old: this endpoint returns the cached\nstatus in that case and performs exactly one single-flight remote\nre-verification only when the cache is stale or absent. Transient errors\nkeep the previous entitlement; authorization failures clear the API key\nand transition the account to free.",
+        "operationId": "refresh_account",
+        "responses": {
+          "200": {
+            "description": "Re-read account status; remote re-verification runs only when the last successful check is older than one day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup/cloud/export": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "operationId": "export_backup_to_cloud",
+        "responses": {
+          "200": {
+            "description": "Export backup to the cloud"
+          }
+        }
+      }
+    },
+    "/backup/cloud/import": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "operationId": "import_backup_from_cloud",
+        "responses": {
+          "200": {
+            "description": "Import backup from the cloud"
+          }
+        }
+      }
+    },
+    "/backup/export": {
+      "get": {
+        "tags": [
+          "Backup"
+        ],
+        "operationId": "export_backup",
+        "responses": {
+          "200": {
+            "description": "Export engine configuration backup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EngineBackup"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/backup/import": {
+      "post": {
+        "tags": [
+          "Backup"
+        ],
+        "operationId": "import_backup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EngineBackup"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Import engine configuration backup"
+          }
+        }
+      }
+    },
+    "/dev/pro-policy": {
+      "get": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "get_debug_pro_policy",
+        "responses": {
+          "200": {
+            "description": "Current debug licence policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebugProPolicy"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/pro-policy/{policy}": {
+      "post": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "set_debug_pro_policy",
+        "parameters": [
+          {
+            "name": "policy",
+            "in": "path",
+            "description": "The debug licence policy to set",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DebugProPolicy"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Debug licence policy set successfully"
+          }
+        }
+      }
+    },
+    "/dev/protection/hide-files": {
+      "post": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "hide_files",
+        "responses": {
+          "200": {
+            "description": "Files hidden successfully"
+          }
+        }
+      }
+    },
+    "/dev/protection/show-files": {
+      "post": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "show_files",
+        "responses": {
+          "200": {
+            "description": "Files restored successfully"
+          }
+        }
+      }
+    },
+    "/dev/reset-tos": {
+      "post": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "reset_tos",
+        "responses": {
+          "200": {
+            "description": "TOS and privacy policy acceptance has been reset"
+          }
+        }
+      }
+    },
+    "/dev/resistance-level": {
+      "get": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "get_debug_resistance_level",
+        "responses": {
+          "200": {
+            "description": "Current debug resistance level",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebugResistanceLevel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/resistance-level/{level}": {
+      "post": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "set_debug_resistance_level",
+        "parameters": [
+          {
+            "name": "level",
+            "in": "path",
+            "description": "The debug resistance level to set",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DebugResistanceLevel"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Debug resistance level set successfully"
+          }
+        }
+      }
+    },
+    "/dev/update-check-interval": {
+      "get": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "get_update_check_interval",
+        "responses": {
+          "200": {
+            "description": "Current background update-check interval in seconds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCheckIntervalResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/update-check-interval/{seconds}": {
+      "post": {
+        "tags": [
+          "Dev"
+        ],
+        "operationId": "set_update_check_interval",
+        "parameters": [
+          {
+            "name": "seconds",
+            "in": "path",
+            "description": "New interval in seconds for the background update check",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Interval updated successfully"
+          }
+        }
+      }
+    },
+    "/network-blocks": {
+      "get": {
+        "tags": [
+          "Network Blocks"
+        ],
+        "operationId": "get_all_network_blocks",
+        "responses": {
+          "200": {
+            "description": "List of all network blocks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAllNetworkBlocksResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Network Blocks"
+        ],
+        "operationId": "create_network_block",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNetworkBlockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Create a new network block",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateNetworkBlockResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/network-blocks/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "get_dashboard_snapshot",
+        "responses": {
+          "200": {
+            "description": "Full dashboard snapshot with all block data and settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSnapshotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}": {
+      "post": {
+        "tags": [
+          "Network Blocks"
+        ],
+        "operationId": "rename_network_block",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameNetworkBlockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Network block renamed successfully"
+          },
+          "403": {
+            "description": "Network block is locked"
+          },
+          "404": {
+            "description": "Network block not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Network Blocks"
+        ],
+        "operationId": "delete_network_block",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a network block"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/enabled": {
+      "post": {
+        "tags": [
+          "Network Blocks"
+        ],
+        "operationId": "set_network_block_enabled",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEnabledRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Network block enabled state updated successfully"
+          },
+          "403": {
+            "description": "Network block is locked and cannot be disabled"
+          },
+          "404": {
+            "description": "Network block not found"
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/icon": {
+      "post": {
+        "tags": [
+          "Network Blocks"
+        ],
+        "operationId": "set_network_block_icon",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetIconRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Icon updated successfully"
+          },
+          "404": {
+            "description": "Network block not found"
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/lock": {
+      "get": {
+        "tags": [
+          "Locks"
+        ],
+        "operationId": "get_lock",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network List ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get lock status of a network list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetNetworkLockResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Locks"
+        ],
+        "operationId": "set_lock",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNetworkLockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Set lock status of a network list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetNetworkLockResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/safe-search": {
+      "post": {
+        "tags": [
+          "Network Blocks"
+        ],
+        "operationId": "set_network_block_safe_search",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEnabledRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Safe search setting updated successfully"
+          },
+          "403": {
+            "description": "Network block is locked"
+          },
+          "404": {
+            "description": "Network block not found"
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/schedule": {
+      "get": {
+        "tags": [
+          "Schedule"
+        ],
+        "operationId": "get_schedule_entries",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get schedule entries for a network list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetScheduleEntriesResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Schedule"
+        ],
+        "operationId": "add_schedule_entries",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddScheduleEntriesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Add schedule entries to a network list"
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/site-lists": {
+      "get": {
+        "tags": [
+          "Network block to site list"
+        ],
+        "operationId": "get_net_block_to_site_pack_connections",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get site lists connected to a network block",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetNetListToSitePacksResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Network block to sites list"
+        ],
+        "operationId": "add_net_block_to_site_pack_connection",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNetListToSitePackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Add a connection between a network block and a sites list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddNetListToSitePackResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/site-lists/{site_pack_id}": {
+      "delete": {
+        "tags": [
+          "Network block to sites list"
+        ],
+        "operationId": "remove_net_block_to_site_pack_connection",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "site_pack_id",
+            "in": "path",
+            "description": "Sites List ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remove the connection between a network block and a sites list"
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/unlock/confirm": {
+      "post": {
+        "tags": [
+          "Locks"
+        ],
+        "operationId": "confirm_unlock",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnlockChallengeConfirmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Unlock successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnlockChallengeConfirmResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Challenge ID mismatch"
+          },
+          "404": {
+            "description": "No active challenge for this block"
+          },
+          "425": {
+            "description": "Cooldown not yet elapsed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TooEarlyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/unlock/initiate": {
+      "post": {
+        "tags": [
+          "Locks"
+        ],
+        "operationId": "initiate_unlock",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Challenge initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnlockChallengeInitiateResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Block lock is not SoftUnlockable"
+          },
+          "404": {
+            "description": "Network block not found"
+          }
+        }
+      }
+    },
+    "/network-blocks/{network_block_id}/user-rules": {
+      "get": {
+        "tags": [
+          "User Rules"
+        ],
+        "operationId": "get_user_rules",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get user defined rules for a network list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetUserDefinedRulesResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "User Rules"
+        ],
+        "operationId": "add_user_rules",
+        "parameters": [
+          {
+            "name": "network_block_id",
+            "in": "path",
+            "description": "Network Block ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserDefinedRulesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Add user defined rules to a network list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddUserDefinedRulesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/open-pro": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "open_pro_page",
+        "responses": {
+          "200": {
+            "description": "Open the Pro page in the default browser"
+          },
+          "500": {
+            "description": "Failed to open browser"
+          }
+        }
+      }
+    },
+    "/ping": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "ping",
+        "responses": {
+          "200": {
+            "description": "Ping the engine",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resistance-mode/download-scripts": {
+      "post": {
+        "tags": [
+          "Resistance Mode"
+        ],
+        "operationId": "download_resistance_scripts",
+        "responses": {
+          "200": {
+            "description": "Resistance scripts downloaded successfully"
+          }
+        }
+      }
+    },
+    "/resistance-mode/scripts": {
+      "get": {
+        "tags": [
+          "Resistance Mode"
+        ],
+        "operationId": "get_all_scripts",
+        "responses": {
+          "200": {
+            "description": "Get all scripts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAllScriptsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resistance-mode/scripts/{script_id}": {
+      "get": {
+        "tags": [
+          "Resistance Mode"
+        ],
+        "operationId": "get_script",
+        "parameters": [
+          {
+            "name": "script_id",
+            "in": "path",
+            "description": "Script ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get script by ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptInfo"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Script not found"
+          }
+        }
+      }
+    },
+    "/resistance-mode/scripts/{script_id}/set-enabled": {
+      "post": {
+        "tags": [
+          "Resistance Mode"
+        ],
+        "operationId": "set_script_enabled",
+        "parameters": [
+          {
+            "name": "script_id",
+            "in": "path",
+            "description": "Script ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEnabledRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Script enabled/disabled successfully"
+          },
+          "403": {
+            "description": "Resistance engine is locked"
+          },
+          "404": {
+            "description": "Script not found"
+          }
+        }
+      }
+    },
+    "/resistance-mode/set-enabled": {
+      "post": {
+        "tags": [
+          "Resistance Mode"
+        ],
+        "operationId": "set_resistance_mode_enabled",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEnabledRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Resistance engine enabled/disabled successfully"
+          },
+          "403": {
+            "description": "Resistance engine is locked"
+          }
+        }
+      }
+    },
+    "/resistance-mode/set-lock": {
+      "post": {
+        "tags": [
+          "Resistance Mode"
+        ],
+        "operationId": "set_resistance_mode_lock",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetNetworkLockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Resistance engine lock updated successfully"
+          },
+          "403": {
+            "description": "Resistance engine is locked or disabled"
+          }
+        }
+      }
+    },
+    "/resistance-mode/settings": {
+      "get": {
+        "tags": [
+          "Resistance Mode"
+        ],
+        "operationId": "get_resistance_mode_settings",
+        "responses": {
+          "200": {
+            "description": "Get resistance engine settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResistanceModeSettings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resistance-mode/type": {
+      "get": {
+        "tags": [
+          "User Rules"
+        ],
+        "operationId": "get_resistance_mode_type",
+        "responses": {
+          "200": {
+            "description": "Get current resistance mode type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResistanceModeTypeResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "User Rules"
+        ],
+        "operationId": "set_resistance_mode_type",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PunishmentMode"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Set resistance mode type",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResistanceModeTypeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid mode type or unsupported mode (dynamic is not available in v1 beta)"
+          },
+          "403": {
+            "description": "Resistance mode is locked"
+          }
+        }
+      }
+    },
+    "/schedule/{schedule_entry_id}": {
+      "put": {
+        "tags": [
+          "Schedule"
+        ],
+        "operationId": "edit_schedule_entry",
+        "parameters": [
+          {
+            "name": "schedule_entry_id",
+            "in": "path",
+            "description": "Schedule Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaseScheduleEntrySchema"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Edit a schedule entry"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Schedule"
+        ],
+        "operationId": "delete_schedule_entry",
+        "parameters": [
+          {
+            "name": "schedule_entry_id",
+            "in": "path",
+            "description": "Schedule Entry ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a schedule entry"
+          }
+        }
+      }
+    },
+    "/site-lists": {
+      "get": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "get_all_site_packs",
+        "responses": {
+          "200": {
+            "description": "List of all site lists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAllSitePacksResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "create_site_pack",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSitePackRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Create a new site list, returns an SSE Stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePackCreationStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/site-lists/remote/re-enable": {
+      "post": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "re_enable_remote_site_packs",
+        "responses": {
+          "200": {
+            "description": "Re-enable all ignored remote site lists and re-fetch their metadata"
+          }
+        }
+      }
+    },
+    "/site-lists/sources/{source_id}": {
+      "delete": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "delete_site_pack_source",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "path",
+            "description": "Site List Source ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a site list source"
+          }
+        }
+      }
+    },
+    "/site-lists/{site_pack_id}": {
+      "delete": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "delete_site_pack",
+        "parameters": [
+          {
+            "name": "site_pack_id",
+            "in": "path",
+            "description": "Site List ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a site list. For remote site lists, marks them as ignored instead of deleting."
+          },
+          "409": {
+            "description": "Site list is in use by a network block and cannot be deleted"
+          }
+        }
+      }
+    },
+    "/site-lists/{site_pack_id}/resync": {
+      "post": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "resync_site_pack",
+        "parameters": [
+          {
+            "name": "site_pack_id",
+            "in": "path",
+            "description": "Site List ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resync a site list, returns an SSE Stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SitePackCreationStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/site-lists/{site_pack_id}/sources": {
+      "get": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "get_site_pack_sources",
+        "parameters": [
+          {
+            "name": "site_pack_id",
+            "in": "path",
+            "description": "Site List ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get sources of a site list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetSitePackSourcesResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Site Lists"
+        ],
+        "operationId": "add_site_pack_source",
+        "parameters": [
+          {
+            "name": "site_pack_id",
+            "in": "path",
+            "description": "Site List ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSitePackSourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Add a source to a site list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddSitePackSourceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/shutdown": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "shutdown",
+        "responses": {
+          "200": {
+            "description": "Shutdown initiated"
+          },
+          "423": {
+            "description": "Cannot shut down: locks are active"
+          }
+        }
+      }
+    },
+    "/system/update/check": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "check_updates",
+        "responses": {
+          "200": {
+            "description": "Aggregated update status for engine and content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCheckResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/update/content": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "trigger_content_update",
+        "responses": {
+          "200": {
+            "description": "Content update check triggered and applied"
+          },
+          "500": {
+            "description": "Update check or application failed"
+          }
+        }
+      }
+    },
+    "/system/version": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "operationId": "get_version",
+        "responses": {
+          "200": {
+            "description": "Engine version info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user-rules/{user_rule_id}": {
+      "delete": {
+        "tags": [
+          "User Rules"
+        ],
+        "operationId": "delete_user_rule",
+        "parameters": [
+          {
+            "name": "user_rule_id",
+            "in": "path",
+            "description": "User Rule ID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a user defined rule"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AccountInfoResponse": {
+        "type": "object",
+        "required": [
+          "isPro",
+          "tosAccepted"
+        ],
+        "properties": {
+          "isPro": {
+            "type": "boolean"
+          },
+          "tosAccepted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AddNetListToSitePackRequest": {
+        "type": "object",
+        "required": [
+          "sitesListId"
+        ],
+        "properties": {
+          "sitesListId": {
+            "type": "string"
+          }
+        }
+      },
+      "AddNetListToSitePackResponse": {
+        "type": "object",
+        "required": [
+          "connection"
+        ],
+        "properties": {
+          "connection": {
+            "$ref": "#/components/schemas/NetworkBlockToSitePackConnection"
+          }
+        }
+      },
+      "AddScheduleEntriesRequest": {
+        "type": "object",
+        "required": [
+          "scheduleEntries"
+        ],
+        "properties": {
+          "scheduleEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseScheduleEntrySchema"
+            }
+          }
+        }
+      },
+      "AddSitePackSourceRequest": {
+        "type": "object",
+        "required": [
+          "source",
+          "sourceType",
+          "format"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/SitePackFormat"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/SitePackSourceType"
+          }
+        }
+      },
+      "AddSitePackSourceResponse": {
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/SitePackSourceSchema"
+          }
+        }
+      },
+      "AddUserDefinedRulesRequest": {
+        "type": "object",
+        "required": [
+          "rules"
+        ],
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDefinedRule"
+            }
+          }
+        }
+      },
+      "AddUserDefinedRulesResponse": {
+        "type": "object",
+        "required": [
+          "userDefinedRules"
+        ],
+        "properties": {
+          "userDefinedRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDefinedRuleSchema"
+            }
+          }
+        }
+      },
+      "ApiConstants": {
+        "type": "object",
+        "description": "Application configuration constants",
+        "required": [
+          "datetime_format",
+          "time_format"
+        ],
+        "properties": {
+          "datetime_format": {
+            "type": "string",
+            "description": "The configured datetime format string",
+            "default": "%Y-%m-%dT%H:%M:%S",
+            "enum": [
+              "%Y-%m-%dT%H:%M:%S"
+            ],
+            "examples": [
+              [
+                "%Y-%m-%dT%H:%M:%S"
+              ]
+            ]
+          },
+          "time_format": {
+            "type": "string",
+            "description": "The configured time format string",
+            "default": "%H:%M:%S",
+            "enum": [
+              "%H:%M:%S"
+            ],
+            "examples": [
+              [
+                "%H:%M:%S"
+              ]
+            ]
+          }
+        }
+      },
+      "BackupNetworkBlock": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "safeSearch",
+          "schedules",
+          "userRules",
+          "connectedSitePacks"
+        ],
+        "properties": {
+          "connectedSitePacks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "safeSearch": {
+            "type": "boolean"
+          },
+          "schedules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupScheduleEntry"
+            }
+          },
+          "userRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDefinedRule"
+            }
+          }
+        }
+      },
+      "BackupScheduleEntry": {
+        "type": "object",
+        "required": [
+          "startTime",
+          "endTime",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ],
+        "properties": {
+          "endTime": {
+            "type": "string"
+          },
+          "friday": {
+            "type": "boolean"
+          },
+          "monday": {
+            "type": "boolean"
+          },
+          "saturday": {
+            "type": "boolean"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "sunday": {
+            "type": "boolean"
+          },
+          "thursday": {
+            "type": "boolean"
+          },
+          "tuesday": {
+            "type": "boolean"
+          },
+          "wednesday": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BackupSitePack": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "sources"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "description": "The pack's local row id. For built-in/default and updater-registered\nremote packs this can be the canonical catalog id (`pack-adult-free`,\n...) — never assume a UUID — or a UUIDv7 for engine-created rows."
+          },
+          "name": {
+            "type": "string"
+          },
+          "remoteId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "requiresPro": {
+            "type": "boolean"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupSitePackSource"
+            }
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "BackupSitePackSource": {
+        "type": "object",
+        "required": [
+          "source",
+          "sourceType",
+          "format"
+        ],
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          }
+        }
+      },
+      "BaseScheduleEntrySchema": {
+        "type": "object",
+        "description": "Represents the data of a ScheduleEntry without the ID",
+        "required": [
+          "startTime",
+          "endTime",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ],
+        "properties": {
+          "endTime": {
+            "type": "string"
+          },
+          "friday": {
+            "type": "boolean"
+          },
+          "monday": {
+            "type": "boolean"
+          },
+          "saturday": {
+            "type": "boolean"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "sunday": {
+            "type": "boolean"
+          },
+          "thursday": {
+            "type": "boolean"
+          },
+          "tuesday": {
+            "type": "boolean"
+          },
+          "wednesday": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BaseSitePackSourceSchema": {
+        "type": "object",
+        "required": [
+          "source",
+          "sourceType",
+          "format"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/SitePackFormat"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/SitePackSourceType"
+          }
+        }
+      },
+      "BinaryUpdateInfo": {
+        "type": "object",
+        "required": [
+          "currentVersion",
+          "available"
+        ],
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "currentVersion": {
+            "type": "string"
+          },
+          "latestVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "ContentUpdateInfo": {
+        "type": "object",
+        "required": [
+          "sitePacksNeedingUpdate",
+          "resistanceScriptsNeedUpdate"
+        ],
+        "properties": {
+          "resistanceScriptsNeedUpdate": {
+            "type": "boolean"
+          },
+          "sitePacksNeedingUpdate": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SitePackUpdateEntry"
+            }
+          }
+        }
+      },
+      "CreateNetworkBlockRequest": {
+        "type": "object",
+        "required": [
+          "blockName"
+        ],
+        "properties": {
+          "blockName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "CreateNetworkBlockResponse": {
+        "type": "object",
+        "required": [
+          "networkBlock"
+        ],
+        "properties": {
+          "networkBlock": {
+            "$ref": "#/components/schemas/NetworkBlockSchema"
+          }
+        }
+      },
+      "CreateSitePackRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "sources"
+        ],
+        "properties": {
+          "customFolder": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BaseSitePackSourceSchema"
+            }
+          }
+        }
+      },
+      "DashboardSnapshotResponse": {
+        "type": "object",
+        "description": "Single-call response that returns all data the dashboard needs.",
+        "required": [
+          "blocks",
+          "blockedAttempts"
+        ],
+        "properties": {
+          "blockedAttempts": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Today's aggregate blocked-attempts count.",
+            "minimum": 0
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkBlockSnapshot"
+            }
+          },
+          "resistanceModeSettings": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ResistanceModeSettings"
+              }
+            ]
+          }
+        }
+      },
+      "DebugProPolicy": {
+        "type": "string",
+        "enum": [
+          "Pro",
+          "Free",
+          "Default"
+        ]
+      },
+      "DebugResistanceLevel": {
+        "type": "string",
+        "enum": [
+          "None",
+          "Low",
+          "Medium",
+          "High",
+          "Extreme",
+          "Default"
+        ]
+      },
+      "EnforcementStatus": {
+        "type": "string",
+        "description": "Machine-readable enforcement status for Resistance Mode.\n\nThe engine never reports `operational` merely because the master setting\nis enabled: scripts must be loaded, eligible for injection, and a\nnon-`none` intensity must be configured. Priority order when multiple\nconditions fail: `disabled` > `not_pro` > `scripts_missing` >\n`scripts_invalid` > `no_scripts_enabled` > `intensity_none`.",
+        "enum": [
+          "operational",
+          "disabled",
+          "not_pro",
+          "scripts_missing",
+          "scripts_invalid",
+          "no_scripts_enabled",
+          "intensity_none"
+        ]
+      },
+      "EngineBackup": {
+        "type": "object",
+        "required": [
+          "version",
+          "customSitePacks",
+          "networkBlocks",
+          "deactivatedResistanceScripts"
+        ],
+        "properties": {
+          "customSitePacks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupSitePack"
+            }
+          },
+          "deactivatedResistanceScripts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "networkBlocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BackupNetworkBlock"
+            }
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
+      "GetAllNetworkBlocksResponse": {
+        "type": "object",
+        "required": [
+          "networkBlocks"
+        ],
+        "properties": {
+          "networkBlocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkBlockSchema"
+            }
+          }
+        }
+      },
+      "GetAllScriptsResponse": {
+        "type": "object",
+        "required": [
+          "scripts"
+        ],
+        "properties": {
+          "scripts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScriptInfo"
+            }
+          }
+        }
+      },
+      "GetAllSitePacksResponse": {
+        "type": "object",
+        "required": [
+          "sitePacks"
+        ],
+        "properties": {
+          "sitePacks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SitePackSchema"
+            }
+          }
+        }
+      },
+      "GetNetListToSitePacksResponse": {
+        "type": "object",
+        "required": [
+          "connections"
+        ],
+        "properties": {
+          "connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkBlockToSitePackConnection"
+            }
+          }
+        }
+      },
+      "GetNetworkLockResponse": {
+        "type": "object",
+        "required": [
+          "lock"
+        ],
+        "properties": {
+          "lock": {
+            "$ref": "#/components/schemas/NetworkListLockSchema"
+          }
+        }
+      },
+      "GetScheduleEntriesResponse": {
+        "type": "object",
+        "required": [
+          "scheduleEntries"
+        ],
+        "properties": {
+          "scheduleEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleEntrySchema"
+            }
+          }
+        }
+      },
+      "GetSitePackSourcesResponse": {
+        "type": "object",
+        "required": [
+          "sources"
+        ],
+        "properties": {
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SitePackSourceSchema"
+            }
+          }
+        }
+      },
+      "GetUserDefinedRulesResponse": {
+        "type": "object",
+        "required": [
+          "userDefinedRules"
+        ],
+        "properties": {
+          "userDefinedRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserDefinedRuleSchema"
+            }
+          }
+        }
+      },
+      "LockState": {
+        "type": "object",
+        "required": [
+          "state"
+        ],
+        "properties": {
+          "end": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          }
+        }
+      },
+      "NetworkBlockSchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "isActive",
+          "isLocked",
+          "lockState",
+          "safeSearch"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isLocked": {
+            "type": "boolean"
+          },
+          "lockState": {
+            "$ref": "#/components/schemas/LockState"
+          },
+          "name": {
+            "type": "string"
+          },
+          "safeSearch": {
+            "type": "boolean"
+          }
+        }
+      },
+      "NetworkBlockSnapshot": {
+        "type": "object",
+        "description": "A flattened snapshot of a single network block with all nested data included.",
+        "required": [
+          "block",
+          "scheduleEntries",
+          "sitePackConnectionCount",
+          "userRulesCount"
+        ],
+        "properties": {
+          "block": {
+            "$ref": "#/components/schemas/NetworkBlockSchema"
+          },
+          "lock": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NetworkListLockSchema"
+              }
+            ]
+          },
+          "scheduleEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleEntrySchema"
+            }
+          },
+          "sitePackConnectionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "userRulesCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "NetworkBlockToSitePackConnection": {
+        "type": "object",
+        "required": [
+          "networkBlockId",
+          "sitePackId"
+        ],
+        "properties": {
+          "networkBlockId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sitePackId": {
+            "type": "string"
+          }
+        }
+      },
+      "NetworkListLockSchema": {
+        "type": "object",
+        "required": [
+          "networkBlockId",
+          "isActive",
+          "lockState"
+        ],
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          },
+          "lockEnd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lockState": {
+            "$ref": "#/components/schemas/LockState"
+          },
+          "networkBlockId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "Percentage": {
+        "type": "number",
+        "format": "double"
+      },
+      "PunishmentIntensity": {
+        "type": "string",
+        "description": "Represents the resistance intensity levels.",
+        "enum": [
+          "none",
+          "low",
+          "medium",
+          "high",
+          "extreme"
+        ]
+      },
+      "PunishmentMode": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "intensity": {
+                "$ref": "#/components/schemas/PunishmentIntensity"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "static"
+                ]
+              }
+            }
+          }
+        ],
+        "description": "The intensity scale is a static, user-configured level. There is no\nautomatic escalation/de-escalation ladder: the dynamic mode (and the whole\ntracking pipeline that fed it) has been removed (MGR-24)."
+      },
+      "RenameNetworkBlockRequest": {
+        "type": "object",
+        "required": [
+          "newName"
+        ],
+        "properties": {
+          "newName": {
+            "type": "string"
+          }
+        }
+      },
+      "ResistanceModeSettings": {
+        "type": "object",
+        "required": [
+          "enabled",
+          "isLocked",
+          "lockState",
+          "mode",
+          "currentIntensity",
+          "staticIntensity",
+          "scriptsLoaded",
+          "scriptsTotal",
+          "scriptsEnabled",
+          "proEligible",
+          "enforcementStatus"
+        ],
+        "properties": {
+          "currentIntensity": {
+            "$ref": "#/components/schemas/PunishmentIntensity",
+            "description": "Currently effective intensity (static intensity)"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "enforcementStatus": {
+            "$ref": "#/components/schemas/EnforcementStatus",
+            "description": "Whether enforcement is operational right now, plus a stable reason."
+          },
+          "isLocked": {
+            "type": "boolean"
+          },
+          "lockEnd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lockState": {
+            "$ref": "#/components/schemas/LockState"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PunishmentMode",
+            "description": "Current mode (static only in v1 beta)"
+          },
+          "proEligible": {
+            "type": "boolean",
+            "description": "Whether the user is currently eligible under the Pro state (cached)."
+          },
+          "scriptsEnabled": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of loaded scripts that are enabled.",
+            "minimum": 0
+          },
+          "scriptsLoaded": {
+            "type": "boolean",
+            "description": "True when a valid script catalog/tree is loaded in memory."
+          },
+          "scriptsTotal": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of loaded scripts (all domains, including generic).",
+            "minimum": 0
+          },
+          "scriptsVersion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Installed scripts version (from the last successful download)."
+          },
+          "staticIntensity": {
+            "$ref": "#/components/schemas/PunishmentIntensity",
+            "description": "Static mode intensity"
+          }
+        }
+      },
+      "ResistanceModeTypeResponse": {
+        "type": "object",
+        "required": [
+          "mode",
+          "currentIntensity"
+        ],
+        "properties": {
+          "currentIntensity": {
+            "$ref": "#/components/schemas/PunishmentIntensity"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PunishmentMode"
+          }
+        }
+      },
+      "ScheduleEntrySchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "networkBlockId",
+          "startTime",
+          "endTime",
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ],
+        "properties": {
+          "endTime": {
+            "type": "string"
+          },
+          "friday": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "monday": {
+            "type": "boolean"
+          },
+          "networkBlockId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "saturday": {
+            "type": "boolean"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "sunday": {
+            "type": "boolean"
+          },
+          "thursday": {
+            "type": "boolean"
+          },
+          "tuesday": {
+            "type": "boolean"
+          },
+          "wednesday": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ScriptInfo": {
+        "type": "object",
+        "required": [
+          "id",
+          "domain",
+          "name",
+          "description",
+          "isEnabled"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "isEnabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "SetApiKeyRequest": {
+        "type": "object",
+        "required": [
+          "apiKey"
+        ],
+        "properties": {
+          "apiKey": {
+            "type": "string"
+          }
+        }
+      },
+      "SetEnabledRequest": {
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SetIconRequest": {
+        "type": "object",
+        "properties": {
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "SetNetworkLockRequest": {
+        "type": "object",
+        "required": [
+          "lockState"
+        ],
+        "properties": {
+          "lockEnd": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lockState": {
+            "type": "string"
+          }
+        }
+      },
+      "SetNetworkLockResponse": {
+        "type": "object",
+        "required": [
+          "lock"
+        ],
+        "properties": {
+          "lock": {
+            "$ref": "#/components/schemas/NetworkListLockSchema"
+          }
+        }
+      },
+      "SitePackCreationStatus": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "STARTED"
+            ],
+            "properties": {
+              "STARTED": {
+                "type": "object",
+                "required": [
+                  "site_pack_id",
+                  "progress",
+                  "phase"
+                ],
+                "properties": {
+                  "phase": {
+                    "$ref": "#/components/schemas/SitePackImportPhase"
+                  },
+                  "progress": {
+                    "$ref": "#/components/schemas/Percentage"
+                  },
+                  "site_pack_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "IN_PROGRESS"
+            ],
+            "properties": {
+              "IN_PROGRESS": {
+                "type": "object",
+                "required": [
+                  "site_pack_id",
+                  "progress",
+                  "phase"
+                ],
+                "properties": {
+                  "phase": {
+                    "$ref": "#/components/schemas/SitePackImportPhase"
+                  },
+                  "progress": {
+                    "$ref": "#/components/schemas/Percentage"
+                  },
+                  "site_pack_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "COMPLETED"
+            ],
+            "properties": {
+              "COMPLETED": {
+                "type": "object",
+                "required": [
+                  "site_pack_id",
+                  "progress",
+                  "phase"
+                ],
+                "properties": {
+                  "phase": {
+                    "$ref": "#/components/schemas/SitePackImportPhase"
+                  },
+                  "progress": {
+                    "$ref": "#/components/schemas/Percentage"
+                  },
+                  "site_pack_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "FAILED"
+            ],
+            "properties": {
+              "FAILED": {
+                "type": "object",
+                "required": [
+                  "error"
+                ],
+                "properties": {
+                  "error": {
+                    "type": "string"
+                  },
+                  "phase": {
+                    "oneOf": [
+                      {
+                        "type": "null"
+                      },
+                      {
+                        "$ref": "#/components/schemas/SitePackImportPhase"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "SitePackFormat": {
+        "type": "string",
+        "enum": [
+          "standard",
+          "wildcarddomains",
+          "auto"
+        ]
+      },
+      "SitePackImportPhase": {
+        "type": "string",
+        "description": "Represents the current phase of a site pack import/resync operation",
+        "enum": [
+          "INITIALIZING",
+          "DOWNLOADING",
+          "EXTRACTING",
+          "IMPORTING",
+          "RESTORING",
+          "FINALIZING",
+          "COMPLETED"
+        ]
+      },
+      "SitePackSchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "isSynced",
+          "isBundled",
+          "entriesCount",
+          "requiresPro",
+          "isLocked"
+        ],
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "entriesCount": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "isBundled": {
+            "type": "boolean",
+            "description": "True when the local data was installed from the installer's offline\nbundle (a `.bundled` marker next to `pack.db`). Cleared automatically\nwhenever the engine swaps the pack directory with downloaded data."
+          },
+          "isLocked": {
+            "type": "boolean",
+            "description": "Lock-state exposure (canonical invariant): true when the pack is\nsynchronized AND at least one currently-locked network block\nreferences it. Locked packs must not be deleted or resynced; the\nengine enforces this server-side regardless of the UI state."
+          },
+          "isSynced": {
+            "type": "boolean"
+          },
+          "lastUpdatedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "requiresPro": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Content version of the local pack data (`site_packs.version`): the\nserver release version when downloaded/updated, or the bundle content\nversion (`YYYY.MM.DD`) when installed from the installer."
+          }
+        }
+      },
+      "SitePackSourceSchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "sitePackId",
+          "source",
+          "sourceType",
+          "format"
+        ],
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/SitePackFormat"
+          },
+          "id": {
+            "type": "string"
+          },
+          "sitePackId": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceType": {
+            "$ref": "#/components/schemas/SitePackSourceType"
+          }
+        }
+      },
+      "SitePackSourceType": {
+        "type": "string",
+        "enum": [
+          "url",
+          "file"
+        ]
+      },
+      "SitePackUpdateEntry": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "currentVersion",
+          "latestVersion"
+        ],
+        "properties": {
+          "currentVersion": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "latestVersion": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "TooEarlyResponse": {
+        "type": "object",
+        "description": "Body for the 425 Too Early response — includes how many seconds to wait.",
+        "required": [
+          "error",
+          "retryAfterSeconds"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "retryAfterSeconds": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UnlockChallengeConfirmRequest": {
+        "type": "object",
+        "required": [
+          "challengeId"
+        ],
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      },
+      "UnlockChallengeConfirmResponse": {
+        "type": "object",
+        "required": [
+          "networkBlock"
+        ],
+        "properties": {
+          "networkBlock": {
+            "$ref": "#/components/schemas/NetworkBlockSchema"
+          }
+        }
+      },
+      "UnlockChallengeInitiateResponse": {
+        "type": "object",
+        "required": [
+          "challengeId",
+          "reflectionPrompt",
+          "minWords",
+          "cooldownSeconds",
+          "initiatedAt"
+        ],
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cooldownSeconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "initiatedAt": {
+            "type": "string"
+          },
+          "minWords": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "reflectionPrompt": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateCheckIntervalResponse": {
+        "type": "object",
+        "required": [
+          "intervalSeconds"
+        ],
+        "properties": {
+          "intervalSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "UpdateCheckResponse": {
+        "type": "object",
+        "required": [
+          "engine",
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/ContentUpdateInfo"
+          },
+          "engine": {
+            "$ref": "#/components/schemas/BinaryUpdateInfo"
+          }
+        }
+      },
+      "UserDefinedRule": {
+        "type": "object",
+        "required": [
+          "rule",
+          "ruleType"
+        ],
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "ruleType": {
+            "$ref": "#/components/schemas/UserDefinedRuleType"
+          }
+        }
+      },
+      "UserDefinedRuleSchema": {
+        "type": "object",
+        "required": [
+          "id",
+          "networkBlockId",
+          "rule",
+          "ruleType"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "networkBlockId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rule": {
+            "type": "string"
+          },
+          "ruleType": {
+            "$ref": "#/components/schemas/UserDefinedRuleType"
+          }
+        }
+      },
+      "UserDefinedRuleType": {
+        "type": "string",
+        "enum": [
+          "domain",
+          "regex"
+        ]
+      },
+      "VersionInfo": {
+        "type": "object",
+        "required": [
+          "version",
+          "build"
+        ],
+        "properties": {
+          "build": {
+            "type": "string",
+            "description": "Build profile: \"debug\" or \"release\""
+          },
+          "version": {
+            "type": "string",
+            "description": "Semantic version of the engine (from Cargo.toml)"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Network Blocks",
+      "description": "Network Block management items"
+    },
+    {
+      "name": "Sites Lists",
+      "description": "Sites List management items"
+    },
+    {
+      "name": "User Rules",
+      "description": "User Defined Rules management items"
+    },
+    {
+      "name": "Schedule",
+      "description": "Schedule management items"
+    },
+    {
+      "name": "Locks",
+      "description": "Lock management items"
+    },
+    {
+      "name": "Connections",
+      "description": "Connection management items"
+    },
+    {
+      "name": "Resistance Mode",
+      "description": "Resistance engine management items"
+    },
+    {
+      "name": "Backup",
+      "description": "Backup and restore items"
+    },
+    {
+      "name": "System",
+      "description": "System utilities"
+    },
+    {
+      "name": "Dashboard",
+      "description": "Aggregated dashboard data"
+    },
+    {
+      "name": "Dev",
+      "description": "Development only items"
+    }
+  ]
+}

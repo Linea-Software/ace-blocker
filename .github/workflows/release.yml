@@ -1,0 +1,149 @@
+name: Release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Three-part MSI version (for example 0.3.0)
+        required: true
+        type: string
+      stage_on_site:
+        description: Upload MSI to the site as a staged release candidate
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ace-blocker-release-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Windows release candidate
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - name: Validate version
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ($env:VERSION -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Version must be X.Y.Z."
+          }
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+
+      - name: Install frontend dependencies
+        working-directory: apps/ace-app
+        run: bun install --frozen-lockfile
+
+      - name: Build engine and watchdog
+        run: cargo build --release -p ace-engine -p ace-watchdog --bins
+
+      - name: Build desktop app
+        working-directory: apps/ace-app
+        run: bun run tauri build
+
+      - name: Install WiX 4
+        shell: pwsh
+        run: |
+          dotnet tool install -g wix --version 4.0.5
+          & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.Util.wixext/4.0.5
+
+      - name: Prepare MSI inputs
+        shell: pwsh
+        run: |
+          $engine = Join-Path $PWD "release-input\engine"
+          $app = Join-Path $PWD "release-input\app"
+          New-Item -ItemType Directory -Force -Path $engine, $app | Out-Null
+          foreach ($name in @("ace-engine.exe", "ace-watchdog.exe", "ace-redirect.exe", "install-cert.exe")) {
+            Copy-Item "target\release\$name" $engine
+          }
+          $wintun = "crates\ace-tun\thirdparty\wintun"
+          Copy-Item "$wintun\bin\amd64\wintun.dll" $engine
+          Copy-Item "$wintun\LICENSE.txt" (Join-Path $engine "WINTUN-LICENSE.txt")
+          Copy-Item "target\release\ace-app.exe" $app
+
+      - name: Package MSI
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          & ".\installer\package.ps1" -Version $env:VERSION -EngineArtifacts ".\release-input\engine" -AppArtifacts ".\release-input\app"
+          if ($LASTEXITCODE -ne 0) { throw "MSI packaging failed" }
+
+      - name: Build provenance manifest
+        id: candidate
+        shell: pwsh
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          $msi = (Resolve-Path "installer\dist\AceBlocker-$env:VERSION.msi").Path
+          $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $msi).Hash.ToLowerInvariant()
+          $manifest = [ordered]@{
+            version = $env:VERSION
+            os = "windows"
+            architecture = "x64"
+            sha256 = $sha
+            sourceRepository = "${{ github.repository }}"
+            sourceCommit = "${{ github.sha }}"
+            sourceRunId = "${{ github.run_id }}"
+            sourceRunUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            engineCommit = "${{ github.sha }}"
+            appCommit = "${{ github.sha }}"
+          }
+          $manifest | ConvertTo-Json | Set-Content "installer\dist\release-candidate.json" -Encoding utf8
+          "sha256=$sha" >> $env:GITHUB_OUTPUT
+
+      - name: Upload release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: AceBlocker-${{ inputs.version }}-candidate
+          path: |
+            installer/dist/AceBlocker-${{ inputs.version }}.msi
+            installer/dist/release-candidate.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stage MSI on Ace website
+        if: ${{ inputs.stage_on_site }}
+        shell: pwsh
+        env:
+          INGEST_URL: ${{ vars.ACE_RELEASE_INGEST_URL }}
+          INGEST_TOKEN: ${{ secrets.ACE_RELEASE_INGEST_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          SHA256: ${{ steps.candidate.outputs.sha256 }}
+        run: |
+          if (-not $env:INGEST_URL -or -not $env:INGEST_TOKEN) {
+            throw "Release ingestion URL and token are required for staging."
+          }
+          $form = @{
+            file = Get-Item "installer\dist\AceBlocker-$env:VERSION.msi"
+            version = $env:VERSION
+            os = "windows"
+            architecture = "x64"
+            sha256 = $env:SHA256
+            sourceRepository = "${{ github.repository }}"
+            sourceCommit = "${{ github.sha }}"
+            sourceRunId = "${{ github.run_id }}"
+            sourceRunUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            engineCommit = "${{ github.sha }}"
+            appCommit = "${{ github.sha }}"
+          }
+          Invoke-RestMethod -Uri $env:INGEST_URL -Method Post -Headers @{ Authorization = "Bearer $env:INGEST_TOKEN" } -Form $form

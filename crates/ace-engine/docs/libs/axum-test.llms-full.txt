@@ -1,0 +1,2320 @@
+# axum-test Full API Documentation
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Iterates over all of the headers for a specific name, contained in the response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+Sets the file name for this part of a multipart form.
+
+By default there is no filename. This will set one.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP DELETE request, using the typed path provided.
+
+See [`axum-extra`](https://docs.rs/axum-extra) for full documentation on [`TypedPath`](axum_extra::routing::TypedPath).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Set the content type to use for this request in the header.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+This asserts if the text given is contained, somewhere, within the response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Iterate over all of the cookies in the response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Requests made using this `TestServer` will _not_ save their cookies for future requests to send up.
+
+This is the default behaviour.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 422.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Clears all headers set so far.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_port.rs
+Returns a randomly selected port that is not in use.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Marks that this request is expected to return a HTTP status code
+outside of the 2xx range.
+
+If a code _within_ the 2xx range is returned,
+then this will panic.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 503.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+The full URL that was used to produce this response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+A `TestRequest` is for building and executing a HTTP request to the [`TestServer`](crate::TestServer).
+
+## Building
+
+Requests are created by the [`TestServer`](crate::TestServer), using it's builder functions.
+They correspond to the appropriate HTTP method: [`TestServer::get()`](crate::TestServer::get()),
+[`TestServer::post()`](crate::TestServer::post()), etc.
+
+See there for documentation.
+
+## Customising
+
+The `TestRequest` allows the caller to fill in the rest of the request
+to be sent to the server. Including the headers, the body, cookies,
+and the content type, using the relevant functions.
+
+The TestRequest struct provides a number of methods to set up the request,
+such as json, text, bytes, expect_failure, content_type, etc.
+
+## Sending
+
+Once fully configured you send the request by awaiting the request object.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+# use axum::Router;
+# use axum_test::TestServer;
+#
+# let server = TestServer::new(Router::new())?;
+#
+// Build your request
+let request = server.get(&"/user")
+    .add_header("x-custom-header", "example.com")
+    .content_type("application/yaml");
+
+// await request to execute
+let response = request.await;
+#
+# Ok(()) }
+```
+
+You will receive a `TestResponse`.
+
+## Cookie Saving
+
+[`TestRequest::save_cookies()`](crate::TestRequest::save_cookies()) and [`TestRequest::do_not_save_cookies()`](crate::TestRequest::do_not_save_cookies())
+methods allow you to set the request to save cookies to the `TestServer`,
+for reuse on any future requests.
+
+This behaviour is **off** by default, and can be changed for all `TestRequests`
+when building the `TestServer`. By building it with a `TestServerConfig` where `save_cookies` is set to true.
+
+## Expecting Failure and Success
+
+When making a request you can mark it to expect a response within,
+or outside, of the 2xx range of HTTP status codes.
+
+If the response returns a status code different to what is expected,
+then it will panic.
+
+This is useful when making multiple requests within a test.
+As it can find issues earlier than later.
+
+See the [`TestRequest::expect_failure()`](crate::TestRequest::expect_failure()),
+and [`TestRequest::expect_success()`](crate::TestRequest::expect_success()).
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+The `TestResponse` is the result of a request created using a [`TestServer`](crate::TestServer).
+The `TestServer` builds a [`TestRequest`](crate::TestRequest), which when awaited,
+will produce the response.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::Router;
+use axum::routing::get;
+use axum_test::TestServer;
+use serde::Deserialize;
+use serde::Serialize;
+
+let app = Router::new()
+    .route(&"/test", get(|| async { "hello!" }));
+
+let server = TestServer::new(app)?;
+
+// This builds a `TestResponse`
+let response = server.get(&"/todo").await;
+#
+# Ok(())
+# }
+```
+
+# Extracting Response
+
+The functions [`TestResponse::json()`](crate::TestResponse::json()), [`TestResponse::text()`](crate::TestResponse::text()),
+and [`TestResponse::form()`](crate::TestResponse::form()),
+allow you to extract the underlying response content in different formats.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+# use axum::Json;
+# use axum::Router;
+# use axum::routing::get;
+# use serde::Deserialize;
+# use serde::Serialize;
+# use axum_test::TestServer;
+#
+# #[derive(Serialize, Deserialize, Debug)]
+# struct Todo {}
+#
+# let app = Router::new()
+#     .route(&"/test", get(|| async { "hello!" }));
+#
+# let server = TestServer::new(app)?;
+let todo_response = server.get(&"/todo")
+        .await
+        .json::<Todo>();
+
+let response_as_raw_text = server.get(&"/todo")
+        .await
+        .text();
+#
+# Ok(())
+# }
+```
+
+[`TestResponse::as_bytes()`](crate::TestResponse::as_bytes()) and [`TestResponse::into_bytes()`](crate::TestResponse::into_bytes()),
+offer the underlying raw bytes to allow custom decoding.
+
+Full code examples can be found within their documentation.
+
+# Assertions
+
+The result of a response can also be asserted using the many assertion functions.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::Router;
+use axum_test::TestServer;
+use axum::routing::get;
+use serde::Deserialize;
+use serde::Serialize;
+
+let app = Router::new()
+    .route(&"/test", get(|| async { "hello!" }));
+
+let server = TestServer::new(app)?;
+
+let response = server.get(&"/todo").await;
+
+// These assertions will panic if they are not fulfilled by the response.
+response.assert_status_ok();
+response.assert_text("hello!");
+#
+# Ok(())
+# }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Adds extra cookies to be used on *all* future requests.
+
+Any cookies which have the same name as the new cookies,
+will get replaced.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+Creates a new part of a multipart form, that will upload bytes.
+
+The default mime type for this part will be `application/octet-stream`,
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Marks that this request is expected to always return a HTTP
+status code within the 2xx range (200 to 299).
+
+If a code _outside_ of that range is returned,
+then this will panic.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::Router;
+use axum::http::StatusCode;
+use axum::routing::put;
+use serde_json::json;
+
+use axum_test::TestServer;
+
+let app = Router::new()
+    .route(&"/todo", put(|| async { StatusCode::NOT_FOUND }));
+
+let server = TestServer::new(app)?;
+
+// If this doesn't return a value in the 2xx range,
+// then it will panic.
+server.put(&"/todo")
+    .expect_success()
+    .json(&json!({
+        "task": "buy milk",
+    }))
+    .await;
+#
+# Ok(())
+# }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+Creates a new part of a multipart form, that will send text.
+
+The default mime type for this part will be `text/plain`,
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+The `TestServer` runs your Axum application,
+allowing you to make HTTP requests against it.
+
+# Building
+
+A `TestServer` can be used to run an [`axum::Router`], an [`::axum::routing::IntoMakeService`],
+and others.
+
+The most straight forward approach is to call [`crate::TestServer::new`],
+and pass in your application:
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::routing::get;
+
+use axum_test::TestServer;
+
+let app = Router::new()
+    .route(&"/hello", get(|| async { "hello!" }));
+
+let server = TestServer::new(app)?;
+#
+# Ok(())
+# }
+```
+
+# Requests
+
+Requests are built by calling [`TestServer::get()`](crate::TestServer::get()),
+[`TestServer::post()`](crate::TestServer::post()), [`TestServer::put()`](crate::TestServer::put()),
+[`TestServer::delete()`](crate::TestServer::delete()), and [`TestServer::patch()`](crate::TestServer::patch()) methods.
+Each returns a [`TestRequest`](crate::TestRequest), which allows for customising the request content.
+
+For example:
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::routing::get;
+
+use axum_test::TestServer;
+
+let app = Router::new()
+    .route(&"/hello", get(|| async { "hello!" }));
+
+let server = TestServer::new(app)?;
+
+let response = server.get(&"/hello")
+    .authorization_bearer("password12345")
+    .add_header("x-custom-header", "custom-value")
+    .await;
+
+response.assert_text("hello!");
+#
+# Ok(())
+# }
+```
+
+Request methods also exist for using Axum Extra [`axum_extra::routing::TypedPath`],
+or for building Reqwest [`reqwest::RequestBuilder`]. See those methods for detauls.
+
+# Customising
+
+A `TestServer` can be built from a builder, by calling [`crate::TestServer::builder`],
+and customising settings. This allows one to set **mocked** (default when possible)
+or **real http** networking for your service.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::routing::get;
+
+use axum_test::TestServer;
+
+let app = Router::new()
+    .route(&"/hello", get(|| async { "hello!" }));
+
+// Customise server when building
+let mut server = TestServer::builder()
+    .http_transport()
+    .expect_success_by_default()
+    .save_cookies()
+    .build(app)?;
+
+// Add items to be sent on _all_ all requests
+server.add_header("x-custom-for-all", "common-value");
+
+let response = server.get("/hello").await;
+#
+# Ok(())
+# }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+Sets the mime type for this part of a multipart form.
+
+The default mime type is `text/plain` or `application/octet-stream`,
+depending on how this instance was created.
+This function will replace that.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Returns the local web address for the test server,
+if an address is available.
+
+The address is available when running as a real web server,
+by setting the [`TestServerConfig`](crate::TestServerConfig) `transport` field to `Transport::HttpRandomPort` or `Transport::HttpIpPort`.
+
+This will return `None` when there is mock HTTP transport (the default).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds the structure given as query parameters for this request.
+
+This is designed to take a list of parameters, or a body of parameters,
+and then serializes them into the parameters of the request.
+
+# Sending a body of parameters using `json!`
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use serde_json::json;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let response = server.get(&"/my-end-point")
+    .add_query_params(json!({
+        "username": "Brian",
+        "age": 20
+    }))
+    .await;
+#
+# Ok(()) }
+```
+
+# Sending a body of parameters with Serde
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use serde::Deserialize;
+use serde::Serialize;
+
+#[derive(Serialize, Deserialize)]
+struct UserQueryParams {
+    username: String,
+    age: u32,
+}
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let response = server.get(&"/my-end-point")
+    .add_query_params(UserQueryParams {
+        username: "Brian".to_string(),
+        age: 20
+    })
+    .await;
+#
+# Ok(()) }
+```
+
+# Sending a list of parameters
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let response = server.get(&"/my-end-point")
+    .add_query_params(&[
+        ("username", "Brian"),
+        ("age", "20"),
+    ])
+    .await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Adds a raw query param, with no urlencoding of any kind,
+to be send on *all* future requests.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Iterates over all of the headers contained in the response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+This is shorthand for calling [`crate::TestServer::new_with_config`],
+and passing this config.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::TestServerConfig;
+
+let app = Router::new();
+let config = TestServerConfig {
+    save_cookies: true,
+    default_content_type: Some("application/json".to_string()),
+    ..Default::default()
+};
+let server = TestServer::new_with_config(app, config)?;
+#
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Requests made using this `TestServer` will assert a HTTP status in the 2xx range will be returned, unless marked otherwise.
+
+By default this behaviour is off.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code matches the one given.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Sends a payload as plain text, with the contents coming from a file.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the contents of the request as Yaml,
+and asserts it matches the value given.
+
+If `other` does not match, or the response is not Yaml,
+then this will panic.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/multipart_form.rs
+Adds a new section to this multipart form to be sent.
+
+See [`Part`](crate::multipart::Part).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds query parameters to be sent with this request.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+Adds a header to be sent with the Part of this Multiform.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::multipart::MultipartForm;
+use axum_test::multipart::Part;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let readme_bytes = include_bytes!("../../README.md");
+let readme_part = Part::bytes(readme_bytes.as_slice())
+    .file_name(&"README.md")
+    // Add a header to the Part
+    .add_header("x-text-category", "readme");
+
+let multipart_form = MultipartForm::new()
+    .add_part("file", readme_part);
+
+let response = server.post(&"/my-form")
+    .multipart(multipart_form)
+    .await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a request to the server, to start a Websocket connection,
+on the path given.
+
+This is the requivalent of making a GET request to the endpoint,
+and setting the various headers needed for making an upgrade request.
+
+*Note*, this requires the server to be running on a real HTTP
+port. Either using a randomly assigned port, or a specified one.
+See the [`TestServerConfig::transport`](crate::TestServerConfig::transport) for more details.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::builder()
+    .http_transport()
+    .build(app)?;
+
+let mut websocket = server
+    .get_websocket(&"/my-web-socket-end-point")
+    .await
+    .into_websocket()
+    .await;
+
+websocket.send_text("Hello!").await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+The Method used to produce this response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Adds query parameters to be sent on *all* future requests.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a typed HTTP request, using the method provided.
+
+See [`axum-extra`](https://docs.rs/axum-extra) for full documentation on [`TypedPath`](axum_extra::routing::TypedPath).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_socket_addr.rs
+Generates a `SocketAddr` on the IP 127.0.0.1, using a random port.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP PUT request to the path.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Read json file from given path and assert it with json response.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::routing::get;
+use axum::routing::Router;
+use axum_test::TestServer;
+use serde_json::json;
+
+let app = Router::new()
+    .route(&"/json", get(|| async {
+        Json(json!({
+            "name": "Joe",
+            "age": 20,
+        }))
+    }));
+
+let server = TestServer::new(app).unwrap();
+server
+    .get(&"/json")
+    .await
+    .assert_json_from_file("files/example.json");
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+For turning this into a [`crate::TestServerConfig`] object,
+with can be passed to [`crate::TestServer::new_with_config`].
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let my_app = Router::new();
+let config = TestServer::builder()
+    .save_cookies()
+    .default_content_type(&"application/json")
+    .into_config();
+
+// Build the Test Server
+let server = TestServer::new_with_config(my_app, config)?;
+#
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds an 'AUTHORIZATION' HTTP header to the request,
+with no internal formatting of what is given.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Asserts the header named is present in the response.
+
+If the header is not present, then the assertion fails.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Sends a payload as a Yaml request, with the contents coming from a file.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tokio_tcp_listener.rs
+Binds a [`tokio::net::TcpListener`] on the IP 127.0.0.1, using a random port.
+
+This is the best way to pick a local port.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 404.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Set the body of the request to send up data as MsgPack,
+and changes the content type to `application/msgpack`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the response, as MsgPack, into the type given.
+
+If deserialization fails then this will panic.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::routing::get;
+use axum_msgpack::MsgPack;
+use serde::Deserialize;
+use serde::Serialize;
+
+use axum_test::TestServer;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Todo {
+    description: String,
+}
+
+async fn route_get_todo() -> MsgPack<Todo> {
+    MsgPack(Todo {
+        description: "buy milk".to_string(),
+    })
+}
+
+let app = Router::new()
+    .route(&"/todo", get(route_get_todo));
+
+let server = TestServer::new(app)?;
+let response = server.get(&"/todo").await;
+
+// Extract the response as a `Todo` item.
+let todo = response.msgpack::<Todo>();
+#
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Finds a [`Cookie`](::cookie::Cookie) with the given name.
+If there are multiple matching cookies,
+then only the first will be returned.
+
+If no `Cookie` is found, then this will panic.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/transport.rs
+Transport is for setting which transport mode for the `TestServer`
+to use when making requests.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/serve_handle.rs
+A handle to a running Axum service.
+
+When the handle is dropped, it will attempt to terminate the service.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds a Cookie to be sent with this request.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tokio_tcp_listener.rs
+Binds a [`tokio::net::TcpListener`] on the IP 127.0.0.1, using a random port.
+
+It is returned with the [`std::net::SocketAddr`] available.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Set raw text as the body of the request,
+and sets the content type to `text/plain`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP PUT request, using the typed path provided.
+
+See [`axum-extra`](https://docs.rs/axum-extra) for full documentation on [`TypedPath`](axum_extra::routing::TypedPath).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+Creates a new [`crate::TestServer`], running the application given,
+and with all settings from this `TestServerBuilder` applied.
+
+```rust
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::builder()
+    .save_cookies()
+    .default_content_type(&"application/json")
+    .build(app);
+```
+
+This is the equivalent to building [`crate::TestServerConfig`] yourself,
+and calling [`crate::TestServer::new_with_config`].
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the status code is within the range given.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::routing::get;
+use axum::routing::Router;
+use axum_test::TestServer;
+use http::StatusCode;
+
+let app = Router::new()
+    .route(&"/json", get(|| async {
+        StatusCode::OK
+    }));
+let server = TestServer::new(app).unwrap();
+
+// Within success statuses
+server
+    .get(&"/json")
+    .await
+    .assert_status_in_range(200..=299);
+
+// Outside success
+server
+    .get(&"/json")
+    .await
+    .assert_status_in_range(300..);
+
+// Before server error
+server
+    .get(&"/json")
+    .await
+    .assert_status_in_range(..StatusCode::INTERNAL_SERVER_ERROR);
+#
+# Ok(()) }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Any cookies returned will be saved to the [`TestServer`](crate::TestServer) that created this,
+which will continue to use those cookies on future requests.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+This is for customising the [`TestServer`](crate::TestServer) on construction.
+It implements [`Default`] to ease building.
+
+```rust
+use axum_test::TestServerConfig;
+
+let config = TestServerConfig {
+    save_cookies: true,
+    ..TestServerConfig::default()
+};
+```
+
+These can be passed to `TestServer::new_with_config`:
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::TestServerConfig;
+
+let my_app = Router::new();
+
+let config = TestServerConfig {
+    save_cookies: true,
+    ..TestServerConfig::default()
+};
+
+// Build the Test Server
+let server = TestServer::new_with_config(my_app, config)?;
+#
+# Ok(())
+# }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Read yaml file from given path and assert it with yaml response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Adds a header to be sent with all future requests built from this `TestServer`.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let mut server = TestServer::new(app)?;
+
+server.add_header("x-custom-header", "custom-value");
+server.add_header(http::header::CONTENT_LENGTH, 12345);
+server.add_header(http::header::HOST, "example.com");
+
+let response = server.get(&"/my-end-point")
+    .await;
+#
+# Ok(()) }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Returns the headers returned from the response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP POST request, using the typed path provided.
+
+See [`axum-extra`](https://docs.rs/axum-extra) for full documentation on [`TypedPath`](axum_extra::routing::TypedPath).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP request, to the method and path provided.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Set raw bytes as the body of the request.
+
+The content type is left unchanged.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 400.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+Creates a default `TestServerBuilder`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Sets the scheme to use when making the request. i.e. http or https.
+The default scheme is 'http'.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let response = server
+    .get(&"/my-end-point")
+    .scheme(&"https")
+    .await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP DELETE request to the path.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Clears all of the cookies stored internally.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Returns all of the cookies contained in the response,
+within a [`CookieJar`](::cookie::CookieJar) object.
+
+See the `cookie` crate for details.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Clears all headers set.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tcp_listener.rs
+Binds a [`std::net::TcpListener`] on the IP 127.0.0.1, using a random port.
+
+It is returned with the [`std::net::SocketAddr`] available.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Sends a payload as a Json request, with the contents coming from a file.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/multipart_form.rs
+Creates a text part, and adds it to be sent.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Adds a query parameter to be sent on *all* future requests.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds many cookies to be used with this request.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 401.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+Asserts that requests made to the test server,
+will by default,
+return a status code in the 2xx range.
+
+This can be overridden on a per request basis using
+[`TestRequest::expect_failure()`](crate::TestRequest::expect_failure()).
+
+This is useful when making multiple requests at a start of test
+which you presume should always work.
+
+**Defaults** to false (being turned off).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the contents of the request as an url encoded form,
+and asserts it matches the value given.
+
+If `other` does not match, or the response cannot be deserialized,
+then this will panic.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is **not** 200.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Sets the scheme to use when making _all_ requests from the `TestServer`.
+i.e. http or https.
+
+The default scheme is 'http'.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let mut server = TestServer::new(app)?;
+server
+    .scheme(&"https");
+
+let response = server
+    .get(&"/my-end-point")
+    .await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+For sending multipart forms.
+The payload is built using [`MultipartForm`](crate::multipart::MultipartForm) and [`Part`](crate::multipart::Part).
+
+This will be sent with the content type of 'multipart/form-data'.
+
+# Simple example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::multipart::MultipartForm;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let multipart_form = MultipartForm::new()
+    .add_text("name", "Joe")
+    .add_text("animals", "foxes");
+
+let response = server.post(&"/my-form")
+    .multipart(multipart_form)
+    .await;
+#
+# Ok(()) }
+```
+
+# Sending byte parts
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::multipart::MultipartForm;
+use axum_test::multipart::Part;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let readme_bytes = include_bytes!("../README.md");
+let readme_part = Part::bytes(readme_bytes.as_slice())
+    .file_name(&"README.md")
+    .mime_type(&"text/markdown");
+
+let multipart_form = MultipartForm::new()
+    .add_part("file", readme_part);
+
+let response = server.post(&"/my-form")
+    .multipart(multipart_form)
+    .await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Returns true or false if the underlying service inside the `TestServer`
+is still running. For many types of services this will always return `true`.
+
+When a `TestServer` is built using [`axum::serve::WithGracefulShutdown`],
+this will return false if the service has shutdown.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 403.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/transport_layer/into_transport_layer.rs
+
+This exists to unify how to send mock or real messages to different services.
+This includes differences between [`Router`](::axum::Router),
+[`IntoMakeService`](::axum::routing::IntoMakeService),
+and [`IntoMakeServiceWithConnectInfo`](::axum::extract::connect_info::IntoMakeServiceWithConnectInfo).
+
+Implementing this will allow you to use the `TestServer` against other types.
+
+**Warning**, this trait may change in a future release.
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+The status_code of the response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert that the status code is **outside** the 2xx range.
+i.e. A status code less than 200, or 300 or more.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 303.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Consumes the request, turning it into a `TestWebSocket`.
+If this cannot be done, then the response will panic.
+
+*Note*, this requires the server to be running on a real HTTP
+port. Either using a randomly assigned port, or a specified one.
+See the [`TestServerConfig::transport`](crate::TestServerConfig::transport) for more details.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::builder()
+    .http_transport()
+    .build(app)?;
+
+let mut websocket = server
+    .get_websocket(&"/my-web-socket-end-point")
+    .await
+    .into_websocket()
+    .await;
+
+websocket.send_text("Hello!").await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Finds a header with the given name.
+If there are multiple headers with the same name,
+then only the first [`HeaderValue`](::http::HeaderValue) will be returned.
+
+`None` is returned when no header was found.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the contents of the request as MsgPack,
+and asserts it matches the value given.
+
+If `other` does not match, or the response is not MsgPack,
+then this will panic.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 500.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Asserts the response from the server matches the contents of the file.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+
+For creating a section of a MultipartForm.
+
+Use [`Part::text()`](crate::multipart::Part::text()) and [`Part::bytes()`](crate::multipart::Part::bytes()) for creating new instances.
+Then attach them to a `MultipartForm` using [`MultipartForm::add_part()`](crate::multipart::MultipartForm::add_part()).
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the response, as Json, into the type given.
+
+If deserialization fails then this will panic.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::Router;
+use axum::routing::get;
+use serde::Deserialize;
+use serde::Serialize;
+
+use axum_test::TestServer;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Todo {
+    description: String,
+}
+
+async fn route_get_todo() -> Json<Todo> {
+    Json(Todo {
+        description: "buy milk".to_string(),
+    })
+}
+
+let app = Router::new()
+    .route(&"/todo", get(route_get_todo));
+
+let server = TestServer::new(app)?;
+let response = server.get(&"/todo").await;
+
+// Extract the response as a `Todo` item.
+let todo = response.json::<Todo>();
+#
+# Ok(())
+# }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+This will run the given Axum app,
+allowing you to make requests against it.
+
+This is the same as creating a new `TestServer` with a configuration,
+and passing [`crate::TestServerConfig::default()`].
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::routing::get;
+use axum_test::TestServer;
+
+let app = Router::new()
+    .route(&"/hello", get(|| async { "hello!" }));
+
+let server = TestServer::new(app)?;
+#
+# Ok(())
+# }
+```
+
+The of applications that can be passed in include:
+
+ - [`axum::Router`]
+ - [`axum::routing::IntoMakeService`]
+ - [`axum::extract::connect_info::IntoMakeServiceWithConnectInfo`]
+ - [`axum::serve::Serve`]
+ - [`axum::serve::WithGracefulShutdown`]
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Returns the underlying response, extracted as a UTF-8 string.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::Router;
+use axum::routing::get;
+use serde_json::json;
+use serde_json::Value;
+
+use axum_test::TestServer;
+
+async fn route_get_todo() -> Json<Value> {
+    Json(json!({
+        "description": "buy milk",
+    }))
+}
+
+let app = Router::new()
+    .route(&"/todo", get(route_get_todo));
+
+let server = TestServer::new(app)?;
+let response = server.get(&"/todo").await;
+
+// Extract the response as a string on it's own.
+let raw_text = response.text();
+#
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Clears all query params set,
+including any that came from the [`TestServer`](crate::TestServer).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds a header to be sent with this request.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let response = server.get(&"/my-end-point")
+    .add_header("x-custom-header", "custom-value")
+    .add_header(http::header::CONTENT_LENGTH, 12345)
+    .add_header(http::header::HOST, "example.com")
+    .await;
+#
+# Ok(()) }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Similar to [`TestServer::new()`], with a customised configuration.
+This includes type of transport in use (i.e. specify a specific port),
+or change default settings (like the default content type for requests).
+
+This can take a [`crate::TestServerConfig`] or a [`crate::TestServerBuilder`].
+See those for more information on configuration settings.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Adds a single cookie to be included on *all* future requests.
+
+If a cookie with the same name already exists,
+then it will be replaced.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/expect_json.rs
+For implementing your own expectations.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert that the status code is **within** the 2xx range.
+i.e. The range from 200-299.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the response, as an urlencoded Form, into the type given.
+
+If deserialization fails then this will panic.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Form;
+use axum::Router;
+use axum::routing::get;
+use serde::Deserialize;
+use serde::Serialize;
+
+use axum_test::TestServer;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Todo {
+    description: String,
+}
+
+async fn route_get_todo() -> Form<Todo> {
+    Form(Todo {
+        description: "buy milk".to_string(),
+    })
+}
+
+let app = Router::new()
+    .route(&"/todo", get(route_get_todo));
+
+let server = TestServer::new(app)?;
+let response = server.get(&"/todo").await;
+
+// Extract the response as a `Todo` item.
+let todo = response.form::<Todo>();
+#
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+This turns a relative path, into an absolute path to the server.
+i.e. A path like `/users/123` will become something like `http://127.0.0.1:1234/users/123`.
+
+The absolute address can be used to make requests to the running server,
+using any appropriate client you wish.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::builder()
+        .http_transport()
+        .build(app)?;
+
+let full_url = server.server_url(&"/users/123?filter=enabled")?;
+
+// Prints something like ... http://127.0.0.1:1234/users/123?filter=enabled
+println!("{full_url}");
+#
+# Ok(()) }
+```
+
+This will return an error if you are using the mock transport.
+Real HTTP transport is required to use this method (see [`TestServerConfig`](crate::TestServerConfig) `transport` field).
+
+It will also return an error if you provide an absolute path,
+for example if you pass in `http://google.com`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 409.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Cookies returned by this will _not_ be saved to the `TestServer`.
+For use by future requests.
+
+This is the default behaviour.
+You can change that default in [`TestServerConfig`](crate::TestServerConfig).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+Set for the server to save cookies that are returned,
+for use in future requests.
+
+This is useful for automatically saving session cookies (and similar)
+like a browser would do.
+
+**Defaults** to false (being turned off).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Asserts the content is within the json returned.
+This is useful for when servers return times and IDs that you
+wish to ignore.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::extract::Json;
+use axum::routing::get;
+use axum_test::TestServer;
+use serde_json::json;
+use std::time::Instant;
+
+let app = Router::new()
+    .route(&"/user", get(|| async {
+        let id = Instant::now().elapsed().as_millis();
+
+        Json(json!({
+           "id": id,
+           "name": "Joe",
+           "age": 20,
+       }))
+    }));
+let server = TestServer::new(app)?;
+
+// Checks the response contains _only_ the values listed here,
+// and ignores the rest.
+server.get(&"/user")
+    .await
+    .assert_json_contains(&json!({
+        "name": "Joe",
+        "age": 20,
+    }));
+#
+# Ok(()) }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the response, as Yaml, into the type given.
+
+If deserialization fails then this will panic.
+
+# Example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::routing::get;
+use axum_yaml::Yaml;
+use serde::Deserialize;
+use serde::Serialize;
+
+use axum_test::TestServer;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct Todo {
+    description: String,
+}
+
+async fn route_get_todo() -> Yaml<Todo> {
+    Yaml(Todo {
+        description: "buy milk".to_string(),
+    })
+}
+
+let app = Router::new()
+    .route(&"/todo", get(route_get_todo));
+
+let server = TestServer::new(app)?;
+let response = server.get(&"/todo").await;
+
+// Extract the response as a `Todo` item.
+let todo = response.yaml::<Todo>();
+#
+# Ok(())
+# }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP GET request, using the typed path provided.
+
+See [`axum-extra`](https://docs.rs/axum-extra) for full documentation on [`TypedPath`](axum_extra::routing::TypedPath).
+
+# Example Test
+
+Using a `TypedPath` you can write build and test a route like below:
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::Router;
+use axum::routing::get;
+use axum_extra::routing::RouterExt;
+use axum_extra::routing::TypedPath;
+use serde::Deserialize;
+use serde::Serialize;
+
+use axum_test::TestServer;
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/users/{user_id}")]
+struct UserPath {
+    pub user_id: u32,
+}
+
+// Build a typed route:
+async fn route_get_user(UserPath { user_id }: UserPath) -> String {
+    format!("hello user {user_id}")
+}
+
+let app = Router::new()
+    .typed_get(route_get_user);
+
+// Then test the route:
+let server = TestServer::new(app)?;
+server
+    .typed_get(&UserPath { user_id: 123 })
+    .await
+    .assert_text("hello user 123");
+#
+# Ok(())
+# }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the status code is not within the range given.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Json;
+use axum::routing::get;
+use axum::routing::Router;
+use axum_test::TestServer;
+use http::StatusCode;
+
+let app = Router::new()
+    .route(&"/json", get(|| async {
+        StatusCode::NOT_FOUND
+    }));
+let server = TestServer::new(app).unwrap();
+
+// Is not success
+server
+    .get(&"/json")
+    .await
+    .assert_status_not_in_range(200..=299);
+
+// 300 or higher
+server
+    .get(&"/json")
+    .await
+    .assert_status_not_in_range(300..);
+
+// After server error
+server
+    .get(&"/json")
+    .await
+    .assert_status_not_in_range(..StatusCode::INTERNAL_SERVER_ERROR);
+#
+# Ok(()) }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 413.
+
+The payload is too large.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+A helper function to create a builder for creating a [`TestServer`].
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Set the body of the request to send up data as Yaml,
+and changes the content type to `application/yaml`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 101.
+
+This type of code is used in Web Socket connection when
+first request.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Returns the raw underlying response as `Bytes`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Clears all query params set.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP request, using Reqwest, using the method + path described.
+This expects a relative url to the `TestServer`.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let my_app = Router::new();
+let server = TestServer::builder()
+    .http_transport() // Important, must be HTTP!
+    .build(my_app)?;
+
+// Build your request
+let request = server.get(&"/user")
+    .add_header("x-custom-header", "example.com")
+    .content_type("application/yaml");
+
+// await request to execute
+let response = request.await;
+#
+# Ok(()) }
+```
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+This performs an assertion comparing the whole body of the response,
+against the text provided.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code does **not** match the one given.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/lib.rs
+
+Axum Test is a library for writing tests for web servers written using Axum:
+
+ * You create a [`TestServer`] within a test,
+ * use that to build [`TestRequest`] against your application,
+ * receive back a [`TestResponse`],
+ * then assert the response is how you expect.
+
+It includes built in support for serializing and deserializing request and response bodies using Serde,
+support for cookies and headers, and other common bits you would expect.
+
+`TestServer` will pass http requests directly to the handler,
+or can be run on a random IP / Port address.
+
+## Getting Started
+
+Create a [`TestServer`] running your Axum [`Router`](::axum::Router):
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::extract::Json;
+use axum::routing::put;
+use axum_test::TestServer;
+use serde_json::json;
+use serde_json::Value;
+
+async fn route_put_user(Json(user): Json<Value>) -> () {
+    // todo
+}
+
+let my_app = Router::new()
+    .route("/users", put(route_put_user));
+
+let server = TestServer::new(my_app)?;
+#
+# Ok(())
+# }
+```
+
+Then make requests against it:
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+# use axum::Router;
+# use axum::extract::Json;
+# use axum::routing::put;
+# use axum_test::TestServer;
+# use serde_json::json;
+# use serde_json::Value;
+#
+# async fn put_user(Json(user): Json<Value>) -> () {}
+#
+# let my_app = Router::new()
+#     .route("/users", put(put_user));
+#
+# let server = TestServer::new(my_app)?;
+#
+let response = server.put("/users")
+    .json(&json!({
+        "username": "Terrance Pencilworth",
+    }))
+    .await;
+#
+# Ok(())
+# }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+If you make a request with a 'http://' schema,
+then it will ignore the Test Server's address.
+
+For example if the test server is running at `http://localhost:1234`,
+and you make a request to `http://google.com`.
+Then the request will go to `http://google.com`.
+Ignoring the `localhost:1234` part.
+
+Turning this setting on will change this behaviour.
+
+After turning this on, the same request will go to
+`http://localhost:1234/http://google.com`.
+
+**Defaults** to false (being turned off).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP PATCH request, using the typed path provided.
+
+See [`axum-extra`](https://docs.rs/axum-extra) for full documentation on [`TypedPath`](axum_extra::routing::TypedPath).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+Which transport mode to use to process requests.
+For setting if the server should use mocked http (which uses [`tower::util::Oneshot`](tower::util::Oneshot)),
+or if it should run on a named or random IP address.
+
+The default is to use mocking, apart from services built using [`axum::extract::connect_info::IntoMakeServiceWithConnectInfo`](axum::extract::connect_info::IntoMakeServiceWithConnectInfo)
+(this is because it needs a real TCP stream).
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Clears all cookies used internally within this Request,
+including any that came from the `TestServer`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tcp_listener.rs
+Binds a [`std::net::TcpListener`] on the IP 127.0.0.1, using a random port.
+
+This is the best way to pick a local port.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 200.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 204.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds an 'AUTHORIZATION' HTTP header to the request,
+in the 'Bearer {token}' format.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Sets the body of the request, with the content type
+of 'application/x-www-form-urlencoded'.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/mod.rs
+
+This supplies the building blocks for sending multipart forms using
+[`TestRequest::multipart()`](crate::TestRequest::multipart()).
+
+The request body can be built using [`MultipartForm`] and [`Part`].
+
+# Simple example
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::multipart::MultipartForm;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let multipart_form = MultipartForm::new()
+    .add_text("name", "Joe")
+    .add_text("animals", "foxes");
+
+let response = server.post(&"/my-form")
+    .multipart(multipart_form)
+    .await;
+#
+# Ok(()) }
+```
+
+# Sending byte parts
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::multipart::MultipartForm;
+use axum_test::multipart::Part;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let image_bytes = include_bytes!("../../README.md");
+let image_part = Part::bytes(image_bytes.as_slice())
+    .file_name(&"README.md")
+    .mime_type(&"text/markdown");
+
+let multipart_form = MultipartForm::new()
+    .add_part("file", image_part);
+
+let response = server.post(&"/my-form")
+    .multipart(multipart_form)
+    .await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+Creates a default `TestServerConfig`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/multipart_form.rs
+Returns the content type this form will use when it is sent.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+Set the default scheme to use for all requests created by the `TestServer`.
+
+This overrides the default 'http'.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Consumes this returning the underlying `Bytes`
+in the response.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Set the body of the request to send up data as Json,
+and changes the content type to `application/json`.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/util/spawn_serve.rs
+A wrapper around [`axum::serve()`] for tests,
+which spawns the service in a new thread.
+
+The [`crate::util::ServeHandle`] returned will automatically attempt
+to terminate the service when dropped.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Finds a header with the given name.
+If there are multiple headers with the same name,
+then only the first will be returned.
+
+If no header is found, then this will panic.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+A builder for [`crate::TestServer`]. Inside is a [`crate::TestServerConfig`],
+configured by each method, and then turn into a server by [`crate::TestServerBuilder::build`].
+
+The recommended way to make instances is to call [`crate::TestServer::builder`].
+
+# Creating a [`crate::TestServer`]
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServerBuilder;
+
+let my_app = Router::new();
+let server = TestServerBuilder::new()
+    .save_cookies()
+    .default_content_type(&"application/json")
+    .build(my_app)?;
+#
+# Ok(())
+# }
+```
+
+# Creating a [`crate::TestServerConfig`]
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+use axum_test::TestServerBuilder;
+
+let my_app = Router::new();
+let config = TestServerBuilder::new()
+    .save_cookies()
+    .default_content_type(&"application/json")
+    .into_config();
+
+// Build the Test Server
+let server = TestServer::new_with_config(my_app, config)?;
+#
+# Ok(())
+# }
+```
+
+These can be passed to [`crate::TestServer::new_with_config`].
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP POST request to the given path.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Adds a query param onto the end of the request,
+with no urlencoding of any kind.
+
+This exists to allow custom query parameters,
+such as for the many versions of query param arrays.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum_test::TestServer;
+
+let app = Router::new();
+let server = TestServer::new(app)?;
+
+let response = server.get(&"/my-end-point")
+    .add_raw_query_param(&"my-flag")
+    .add_raw_query_param(&"array[]=123")
+    .add_raw_query_param(&"filter[value]=some-value")
+    .await;
+#
+# Ok(()) }
+```
+
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Requests made using this `TestServer` will assert a HTTP status is outside the 2xx range will be returned, unless marked otherwise.
+
+By default this behaviour is off.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Requests made using this `TestServer` will save their cookies for future requests to send.
+
+This behaviour is off by default.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+Set the default content type for all requests created by the `TestServer`.
+
+This overrides the default 'best efforts' approach of requests.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Assert the response status code is 429.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP GET request to the path.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+Reads the contents of the file as raw bytes, and sends it within the request.
+
+The content type is left unchanged, and no parsing of the file is done.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Finds a [`Cookie`] with the given name.
+If there are multiple matching cookies,
+then only the first will be returned.
+
+`None` is returned if no Cookie is found.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+Creates a HTTP PATCH request to the path.
+
+---
+
+## https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+Deserializes the contents of the request as Json,
+and asserts it matches the value given.
+
+If `other` does not match, or the response is not Json,
+then this will panic.
+
+This includes all of the abilities from [`crate::expect_json`],
+to allow you to check if things partially match. See that module
+for more information.
+
+```rust
+# async fn test() -> Result<(), Box<dyn ::std::error::Error>> {
+#
+use axum::Router;
+use axum::extract::Json;
+use axum::routing::get;
+use axum_test::TestServer;
+use serde_json::json;
+
+let app = Router::new()
+    .route(&"/user", get(|| async {
+        Json(json!({
+           "name": "Joe",
+           "age": 20,
+       }))
+    }));
+let server = TestServer::new(app)?;
+
+// Example 1
+server.get(&"/user")
+    .await
+    .assert_json(&json!({
+        "name": "Joe",
+        "age": 20,
+    }));
+
+// Example 2
+server.get(&"/user")
+    .await
+    .assert_json(&json!({
+        "name": axum_test::expect_json::string(),
+        "age": axum_test::expect_json::integer().in_range(18..=30),
+    }));
+#
+# Ok(()) }
+```
+
+This supports the ability to
+
+---
+

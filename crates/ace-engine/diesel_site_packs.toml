@@ -1,0 +1,9 @@
+# diesel migration run --config-file=diesel_site_packs.toml --database-url=./target/dev_site_packs.db
+
+[print_schema]
+file = "src/schema_site_packs.rs"
+custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
+sqlite_integer_primary_key_is_bigint = true
+
+[migrations_directory]
+dir = "migrations_site_packs"

@@ -1,0 +1,1477 @@
+# chrono Documentation (LLMS)
+
+## API Overview
+
+### chrono
+Link: https://docs.rs/chrono/0.4.43
+
+### and_hms_milli_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### week0
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/isoweek.rs
+
+### new_lenient
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/strftime.rs
+
+### to_naive_datetime_with_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### west_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### from_ymd_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### precision
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### num_minutes
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### succ
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### and_hms_nano_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### abs_diff
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### ParseErrorKind
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### prelude
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### checked_first_day
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### TimeDelta
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### format_localized_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### new
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### timezone
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### number_from_month
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### timestamp
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### and_hms_milli_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### ArchivedUtc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/utc.rs
+
+### parse_and_remainder
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### last
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### ArchivedMonth
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### num_nanoseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### ts_milliseconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### DateResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### abs
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### to_fixed_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### Month
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### from_hms_nano
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### timestamp_millis
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### single
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### MAX
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### to_datetime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### from_yo
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### set_timestamp
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### new
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### serde
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### to_datetime_with_timezone
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### Timelike
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/traits.rs
+
+### from_yo_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### max_value
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### from_utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### set_year
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### format
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### checked_last_day
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### from_weekday_of_month_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### ArchivedWeekday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### pred
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### year_mod_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### from_hms_milli_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### checked_mul
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### ParseMonthError
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### and_hms_milli_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### MIN
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### try_hours
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### InternalFixed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### from_timestamp_nanos
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### set_year_mod_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### MIN_DATE
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### from_hms
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### NaiveDateTime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### ArchivedFixedOffset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### first_day
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### ts_microseconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### NaiveDate
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### format_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### NaiveTime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### last_day
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### WeekdaySetIter
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### from_hms_micro_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### try_seconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### format
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### subsec_millis
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### Offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### num_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### write_to
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### Pad
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### checked_add_months
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### naive_local
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### from_timestamp_nanos
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### today
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/utc.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### new
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### and_time
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### checked_sub_months
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### set_ampm
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### today
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/local/mod.rs
+
+### checked_sub_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### west
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### from_timestamp_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### MAX_DATETIME
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### ParseResult
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### parse_from_rfc2822
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### now
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/utc.rs
+
+### ts_microseconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### ordinal
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### and_hms_micro_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### from_isoywd_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### ALL
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### signed_duration_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### FixedOffsetResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### new
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### union
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### from_timestamp_micros
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### fixed_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### ts_seconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### overflowing_add_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### earliest
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### timestamp_nanos_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### succ
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### difference
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### and_time
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### days_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### checked_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### num_milliseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### parse_from_str
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### single_day
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### EMPTY
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### succ
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### utc_minus_local
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### StrftimeItems
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/strftime.rs
+
+### checked_add_months
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### iter_weeks
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### milliseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### subsec_nanos
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### with_timezone
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### date
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### is_empty
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### as_u32
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### from_num_days_from_ce
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### succ_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### and_hms_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### signed_duration_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### and_hms_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### succ
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### overflowing_sub_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### hours
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### ArchivedDate
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### is_subset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### parse_and_remainder
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parse.rs
+
+### Utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/utc.rs
+
+### number_from_monday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### new
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### pred
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### from_hms_nano_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### weekday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### first
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### from_timestamp_secs
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### symmetric_difference
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### Days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### checked_sub_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### pred
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### Numeric
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### is_zero
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### map
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### ts_microseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### ArchivedNaiveDate
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### signed_duration_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### parse_from_rfc3339
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### format_localized
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### from_weekday_of_month
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### UNIX_EPOCH
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### checked_add_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### checked_add_months
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### timestamp_nanos
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### format
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### format_localized
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### set_isoyear
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### IsoWeekResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/isoweek.rs
+
+### timestamp
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### from_timestamp
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### Datelike
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/traits.rs
+
+### WeekdayResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### MIN
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### set_hour
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### NaiveDateDaysIterator
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### ArchivedTimeDelta
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### SecondsFormat
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### serde
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### NaiveDateTimeResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### MAX_UTC
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### number_from_sunday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### colons
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### DelayedFormat
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### set_isoweek
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### LocalResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/local/mod.rs
+
+### to_owned
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### new
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### NaiveTimeResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### and_hms_nano
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### parse_from_str
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### format
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### num_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### intersection
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### leap_year
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### timezone
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### ts_seconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### Fixed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### set_month
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### insert
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### ArchivedIsoWeek
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/isoweek.rs
+
+### parse
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parse.rs
+
+### from_timestamp
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### format
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### weeks
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### RoundingError
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/round.rs
+
+### and_hms_micro
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### try_milliseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### from_timestamp_millis
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### day
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### OutOfRangeError
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### to_epoch_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### Months
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### MIN_DATETIME
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### nanosecond
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### checked_sub_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### and_hms_nano
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### and_hms_milli
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### set_second
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### and_hms_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### year
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/isoweek.rs
+
+### num_seconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### FixedOffset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### naive_utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### TimeDeltaResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### from_timestamp_micros
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### checked_add
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### new
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/strftime.rs
+
+### MAX_UTC
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### from_num_seconds_from_midnight_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### pred_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### week_from_mon
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### timestamp_micros
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### NaiveWeek
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### zero
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### allow_zulu
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### parse_to_owned
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/strftime.rs
+
+### ts_seconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### checked_add_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### latest
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### year
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### checked_add_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### to_rfc3339_opts
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### timestamp_subsec_micros
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### from_ymd
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### num_microseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### ts_nanoseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### date
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### succ_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### now
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/local/mod.rs
+
+### Item
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### format_localized_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### minute
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### and_local_timezone
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### ts_nanoseconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### and_utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### from_timestamp_millis
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### checked_sub_months
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### ArchivedDateTime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### and_hms_nano_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### minutes
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### from_naive_utc_and_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### MIN_DATE
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### as_seconds_f32
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### MAX_DATETIME
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### week
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/isoweek.rs
+
+### UtcResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/utc.rs
+
+### to_naive_time
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### subsec_micros
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### MAX_DATE
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### ts_milliseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### format_localized_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### nanoseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### isoyear_div_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### and_hms
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### to_naive_date
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### num_weeks
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### years_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### format_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### signed_duration_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### NaiveDateWeeksIterator
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### and_hms_milli
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### checked_sub_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### to_rfc3339
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### and_hms_micro_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### microseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### pred
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### year_div_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### set_week_from_mon
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### ArchivedNaiveDateTime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### timestamp_subsec_micros
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### with_time
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### to_std
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### LocalResult
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### set_day
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### and_hms_micro_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### Local
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/local/mod.rs
+
+### seconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### rkyv
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### set_isoyear_mod_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### InternalNumeric
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### DurationRound
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/round.rs
+
+### from_epoch_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### new_with_offset_and_locale
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### new_with_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### with_timezone
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### len
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### ArchivedNaiveTime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### parse_from_str
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### try_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### format
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### isoyear_mod_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### strftime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/strftime.rs
+
+### padding
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### IsoWeek
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/isoweek.rs
+
+### DateTime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### naive_local
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### SubsecRound
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/round.rs
+
+### timestamp
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### isoyear
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### new_with_locale
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### from_hms_micro
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### try_minutes
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### set_year_div_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### checked_add_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### WeekdaySet
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### from_hms_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### Weekday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### date_naive
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### from_array
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### timestamp_subsec_millis
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### num_hours
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### parse_and_remainder
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### MIN
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### east
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### ts_microseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### deserialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### format_item
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/formatting.rs
+
+### chrono
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### and_hms_nano_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### parse_from_str
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### OffsetFormat
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### time
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### naive_utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### contains
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### timestamp_subsec_millis
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### to_rfc2822
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### checked_add_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### TimeZone
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### timestamp_nanos_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### set_isoyear_div_100
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### timestamp_subsec_nanos
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### from_local
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### ts_nanoseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### ArchivedDuration
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### to_utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### second
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### OffsetPrecision
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### Duration
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### format_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### new_with_locale
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/strftime.rs
+
+### from_utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### try_weeks
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### local_minus_utc
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### MAX_DATE
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### checked_sub_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### week
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### checked_add_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### timestamp_millis
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### naive
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/mod.rs
+
+### kind
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### set_nanosecond
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### single
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### MIN_UTC
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### east_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/fixed.rs
+
+### iter
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### Parsed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### and_hms
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### format_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### years_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### num_days_from_sunday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### hour_mod_12
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### unwrap
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### timestamp_micros
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### Date
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### quarter
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### week_from_sun
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### UNIX_EPOCH
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### src/lib.rs
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### OutOfRange
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/lib.rs
+
+### set_ordinal
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### ts_seconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### from_hms_milli
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### remove
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday_set.rs
+
+### checked_sub_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### ts_nanoseconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### ParseWeekdayError
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### checked_sub_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### parse
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/strftime.rs
+
+### ParseError
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### ts_milliseconds_option
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### set_minute
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### set_quarter
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### timestamp_nanos
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### serialize
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/serde.rs
+
+### round
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/round.rs
+
+### and_time
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### MIN
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### ArchivedLocal
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/local/mod.rs
+
+### signed_duration_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### DateTimeResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### num_days_from_monday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/weekday.rs
+
+### parse_and_remainder
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### pred_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### time
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### checked_div
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### set_week_from_sun
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### MAX
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### as_seconds_f64
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### format_with_items
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### min_value
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### MIN_DATETIME
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### ts_milliseconds
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/serde.rs
+
+### checked_add_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### format_localized
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/date.rs
+
+### years_since
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### MappedLocalTime
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/offset/mod.rs
+
+### timestamp_subsec_nanos
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### hour_div_12
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### from_num_seconds_from_midnight
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/time/mod.rs
+
+### format
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### from_num_days_from_ce_opt
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### set_weekday
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### isoweek
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### name
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### from_std
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+
+### MAX
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### iter_days
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### set_hour12
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### checked_add_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/datetime/mod.rs
+
+### checked_sub_signed
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### MIN_UTC
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### NaiveDateResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### MonthResolver
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/month.rs
+
+### and_hms_micro
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### checked_sub_months
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### set_offset
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### from_isoywd
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/naive/date/mod.rs
+
+### parse_and_remainder
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/datetime/mod.rs
+
+### month
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/parsed.rs
+
+### Colons
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/format/mod.rs
+
+### checked_sub
+Link: https://docs.rs/crate/chrono/0.4.43/source/src/time_delta.rs
+

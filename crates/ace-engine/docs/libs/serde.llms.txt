@@ -1,0 +1,226 @@
+# serde Documentation (LLMS)
+
+## API Overview
+
+### serde
+Link: https://docs.rs/serde/1.0.228
+
+### BytesDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### IgnoredAny
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/ignored_any.rs
+
+### F32Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### serde
+Link: https://docs.rs/crate/serde/1.0.228/source/src/lib.rs
+
+### SerializeStructVariant
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### DeserializeSeed
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### I8Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### SerializeTupleStruct
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### Impossible
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/impossible.rs
+
+### SerializeStruct
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### NeverDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### end
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### src/lib.rs
+Link: https://docs.rs/crate/serde/1.0.228/source/src/lib.rs
+
+### Expected
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### IntoDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### IsizeDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### Deserialize
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### value
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### SeqDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### BorrowedBytesDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### CharDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### MapAccess
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### Unexpected
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### ser
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### F64Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### BorrowedStrDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### EnumAccessDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### VariantAccess
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### UsizeDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### EnumAccess
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### StrDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### U64Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### SerializeTupleVariant
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### Serialize
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### StringDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### src/lib.rs
+Link: https://docs.rs/crate/serde/1.0.228/source/src/lib.rs
+
+### U16Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### DeserializeOwned
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### Serializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### Error
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### Pair
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### SerializeMap
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### CowStrDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### U128Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### UnitDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### U8Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### SeqAccessDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### SerializeSeq
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### BoolDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### I16Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### MapDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### forward_to_deserialize_any
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/macros.rs
+
+### de
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### end
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### U32Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### I64Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### Visitor
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### I128Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### MapAccessDeserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### Error
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### SerializeTuple
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### SeqAccess
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/mod.rs
+
+### Error
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/ser/mod.rs
+
+### new
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+
+### I32Deserializer
+Link: https://docs.rs/crate/serde/1.0.228/source/src/core/de/value.rs
+

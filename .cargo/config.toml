@@ -1,0 +1,6 @@
+[target.x86_64-pc-windows-msvc]
+linker = "lld-link.exe"
+# Link the CRT statically for every Windows x64 MSVC binary, including release/CI.
+rustflags = ["-C", "target-feature=+crt-static"]
+
+

@@ -1,0 +1,1398 @@
+# schemars Full API Documentation
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Creates `SchemaSettings` that conform to [JSON Schema Draft 7](https://json-schema.org/specification-links#draft-7).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is an object, mutably borrows the object as a `Map`
+of properties.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is an object, looks up a value within the schema
+by a JSON Pointer.
+
+If the given pointer begins with a `#`, then the rest of the value is assumed to be in
+"URI Fragment Identifier Representation", and will be percent-decoded accordingly.
+
+For more information on JSON Pointer, read [RFC6901](https://tools.ietf.org/html/rfc6901).
+
+This always returns `None` for bool schemas.
+
+# Example
+```
+use schemars::json_schema;
+use serde_json::json;
+
+let schema = json_schema!({
+    "properties": {
+        "anything": true
+    },
+    "$defs": {
+        "🚀": true
+    }
+});
+
+assert_eq!(schema.pointer("/properties/anything").unwrap(), &json!(true));
+assert_eq!(schema.pointer("#/$defs/%F0%9F%9A%80").unwrap(), &json!(true));
+assert_eq!(schema.pointer("/does/not/exist"), None);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Whether to read the schema's `$schema` property to determine which version of JSON Schema
+is being used, and allow only formats defined in that standard. If this is `true` but the
+JSON Schema version can't be determined because `$schema` is missing or unknown, then no
+`format` values will be removed.
+
+If this is set to `false`, then only the formats explicitly included in
+[`allowed_formats`](Self::allowed_formats) will be allowed.
+
+By default, this is `true`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Generates a JSON Schema for the type `T`.
+
+If `T`'s schema depends on any [non-inlined](JsonSchema::inline_schema) schemas, then
+this method will include them in the returned `Schema` at the [definitions
+path](SchemaSettings::definitions_path) (by default `"$defs"`).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Returns true if `self` is the `Deserialize` contract.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Removes any `format` values that are not defined by the JSON Schema standard or explicitly
+allowed by a custom list.
+
+This also applies to subschemas.
+
+By default, this will infer the version of JSON Schema from the schema's `$schema` property,
+and no additional formats will be allowed (even when the JSON schema allows nonstandard
+formats).
+
+# Example
+```
+use schemars::json_schema;
+use schemars::transform::{RestrictFormats, Transform};
+
+let mut schema = schemars::json_schema!({
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "anyOf": [
+        {
+            "type": "string",
+            "format": "uuid"
+        },
+        {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "string",
+            "format": "uuid"
+        },
+        {
+            "type": "string",
+            "format": "allowed-custom-format"
+        },
+        {
+            "type": "string",
+            "format": "forbidden-custom-format"
+        }
+    ]
+});
+
+let mut transform = RestrictFormats::default();
+transform.allowed_formats.insert("allowed-custom-format".into());
+transform.transform(&mut schema);
+
+assert_eq!(
+    schema,
+    json_schema!({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "anyOf": [
+            {
+                // "uuid" format is defined in draft 2020-12.
+                "type": "string",
+                "format": "uuid"
+            },
+            {
+                // "uuid" format is not defined in draft-07, so is removed from this subschema.
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "string"
+            },
+            {
+                // "allowed-custom-format" format was present in `allowed_formats`...
+                "type": "string",
+                "format": "allowed-custom-format"
+            },
+            {
+                // ...but "forbidden-custom-format" format was not, so is also removed.
+                "type": "string"
+            }
+        ]
+    })
+);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Removes the `examples` schema property and (if present) set its first value as the `example`
+property.
+
+This also applies to subschemas.
+
+This is useful for dialects of JSON Schema (e.g. OpenAPI 3.0) that do not support the `examples`
+property.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Whether to include enum variant names in their schema's `title` when using the [untagged
+enum representation](https://serde.rs/enum-representations.html#untagged).
+
+This setting is respected by `#[derive(JsonSchema)]` on enums, but manual implementations
+of `JsonSchema` may ignore this setting.
+
+Defaults to `false`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Borrows the collection of all [non-inlined](JsonSchema::inline_schema) schemas that
+have been generated.
+
+The keys of the returned `Map` are the [schema names](JsonSchema::schema_name), and the
+values are the schemas themselves.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/macros.rs
+Generates a [`Schema`](crate::Schema) for the given type using default settings.
+The default settings currently conform to [JSON Schema 2020-12](https://json-schema.org/specification-links#2020-12), but this is liable to change in a future version of Schemars if support for other JSON Schema versions is added.
+
+The type must implement [`JsonSchema`](crate::JsonSchema).
+
+# Example
+```
+use schemars::{schema_for, JsonSchema};
+
+#[derive(JsonSchema)]
+struct MyStruct {
+    foo: i32,
+}
+
+let my_schema = schema_for!(MyStruct);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is a bool, returns the bool value.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+Known values of the `$schema` property.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Adds a `"nullable": true` property to schemas that allow `null` types.
+
+This also applies to subschemas.
+
+This is useful for dialects of JSON Schema (e.g. OpenAPI 3.0) that use `nullable` instead of
+explicit null types.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Rename the `prefixItems` schema property to `items`.
+
+This also applies to subschemas.
+
+If the schema contains both `prefixItems` and `items`, then this additionally renames `items` to
+`additionalItems`.
+
+This is useful for versions of JSON Schema (e.g. Draft 7) that do not support the `prefixItems`
+property.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+When set to `true` (the default), `"null"` will also be removed from the schemas `type`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is an object, borrows the object as a `Map` of
+properties.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Creates `SchemaSettings` that conform to [OpenAPI 3.0](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.4.md#schema).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Replaces the `unevaluatedProperties` schema property with the `additionalProperties` property,
+adding properties from a schema's subschemas to its `properties` where necessary.
+
+This also applies to subschemas.
+
+This is useful for versions of JSON Schema (e.g. Draft 7) that do not support the
+`unevaluatedProperties` property.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Consumes `self` and generates a JSON Schema for the type `T`.
+
+If `T`'s schema depends on any [non-inlined](JsonSchema::inline_schema) schemas, then
+this method will include them in the returned `Schema` at the [definitions
+path](SchemaSettings::definitions_path) (by default `"$defs"`).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Returns true if `self` is the `Serialize` contract.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Replaces boolean JSON Schemas with equivalent object schemas.
+
+This also applies to subschemas.
+
+This is useful for dialects of JSON Schema (e.g. OpenAPI 3.0) that do not support booleans as
+schemas.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is an object, gets a reference to that object's
+value for the given key if it exists.
+
+This always returns `None` for bool schemas.
+
+# Example
+```
+use schemars::json_schema;
+use serde_json::json;
+
+let obj_schema = json_schema!({"type": "array"});
+assert_eq!(obj_schema.get("type"), Some(&json!("array")));
+assert_eq!(obj_schema.get("format"), None);
+
+let bool_schema = json_schema!(true);
+assert_eq!(bool_schema.get("type"), None);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Trait used to modify a constructed schema and optionally its subschemas.
+
+See the [module documentation](self) for more details on implementing this trait.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Settings to customize how Schemas are generated.
+
+The default settings currently conform to [JSON Schema 2020-12](https://json-schema.org/specification-links#2020-12), but this is liable to change in a future version of Schemars if support for other JSON Schema versions is added.
+If you rely on generated schemas conforming to draft 2020-12, consider using the
+[`SchemaSettings::draft2020_12()`] method.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/lib.rs
+A type which can be described as a JSON Schema document.
+
+This is implemented for many Rust primitive and standard library types.
+
+This can also be automatically derived on most custom types with `#[derive(JsonSchema)]` by
+enabling the `derive` feature flag (which is enabled by default).
+For more info on deriving `JsonSchema`, see [the derive macro documentation](derive@JsonSchema).
+
+# Examples
+Deriving an implementation:
+```
+use schemars::{schema_for, JsonSchema};
+
+#[derive(JsonSchema)]
+struct MyStruct {
+    foo: i32,
+}
+
+let my_schema = schema_for!(MyStruct);
+```
+
+When manually implementing `JsonSchema`, as well as determining an appropriate schema,
+you will need to determine an appropriate name and ID for the type.
+For non-generic types, the type name/path are suitable for this:
+```
+use schemars::{SchemaGenerator, Schema, JsonSchema, json_schema};
+use std::borrow::Cow;
+
+struct NonGenericType;
+
+impl JsonSchema for NonGenericType {
+    fn schema_name() -> Cow<'static, str> {
+        // Exclude the module path to make the name in generated schemas clearer.
+        "NonGenericType".into()
+    }
+
+    fn schema_id() -> Cow<'static, str> {
+        // Include the module, in case a type with the same name is in another module/crate
+        concat!(module_path!(), "::NonGenericType").into()
+    }
+
+    fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+        json_schema!({
+            "foo": "bar"
+        })
+    }
+}
+
+assert_eq!(NonGenericType::schema_id(), <&mut NonGenericType>::schema_id());
+```
+
+But generic type parameters which may affect the generated schema should typically be included
+in the name/ID:
+```
+use schemars::{SchemaGenerator, Schema, JsonSchema, json_schema};
+use std::{borrow::Cow, marker::PhantomData};
+
+struct GenericType<T>(PhantomData<T>);
+
+impl<T: JsonSchema> JsonSchema for GenericType<T> {
+    fn schema_name() -> Cow<'static, str> {
+        format!("GenericType_{}", T::schema_name()).into()
+    }
+
+    fn schema_id() -> Cow<'static, str> {
+        format!(
+            "{}::GenericType<{}>",
+            module_path!(),
+            T::schema_id()
+        ).into()
+    }
+
+    fn json_schema(_gen: &mut SchemaGenerator) -> Schema {
+        json_schema!({
+            "foo": "bar"
+        })
+    }
+}
+
+assert_eq!(<GenericType<i32>>::schema_id(), <&mut GenericType<&i32>>::schema_id());
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Returns an iterator over the [transforms](SchemaSettings::transforms) being used by this
+`SchemaGenerator`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Returns the collection of all [non-inlined](JsonSchema::inline_schema) schemas that
+have been generated, leaving an empty `Map` in its place.
+
+The keys of the returned `Map` are the [schema names](JsonSchema::schema_name), and the
+values are the schemas themselves.
+
+To apply this generator's [transforms](SchemaSettings::transforms) to each of the returned
+schemas, set `apply_transforms` to `true`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is an object, gets a mutable reference to that
+object's value for the given key if it exists.
+
+This always returns `None` for bool schemas.
+
+# Example
+```
+use schemars::json_schema;
+use serde_json::{json, Value};
+
+let mut obj_schema = json_schema!({ "properties": {} });
+if let Some(Value::Object(properties)) = obj_schema.get_mut("properties") {
+    properties.insert("anything".to_owned(), true.into());
+}
+assert_eq!(obj_schema, json_schema!({ "properties": { "anything": true } }));
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Applies the given [`Transform`] to all direct subschemas of the [`Schema`].
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+A JSON pointer to the expected location of referenceable subschemas within the resulting
+root schema.
+
+A single leading `#` and/or single trailing `/` are ignored.
+
+Defaults to `"/$defs"`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+A list of [`Transform`]s that get applied to generated root schemas.
+
+Defaults to an empty vec (no transforms).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Creates `SchemaSettings` that conform to [JSON Schema 2020-12](https://json-schema.org/specification-links#2020-12).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+When set to `true` (the default), a schema that has a type only allowing `null` will also
+have the equivalent `"const": null` inserted.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+A setting to specify whether generated schemas should describe how types are serialized or
+*de*serialized.
+
+This enum is marked as `#[non_exhaustive]` to reserve space to introduce further variants
+in future.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Values of the `format` property in schemas that will always be allowed, regardless of the
+inferred version of JSON Schema.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+The meta-schema for [JSON Schema 2020-12](https://json-schema.org/specification-links#2020-12)
+(`https://json-schema.org/draft/2020-12/schema`).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+The meta-schema for [JSON Schema Draft 7](https://json-schema.org/specification-links#draft-7)
+(`http://json-schema.org/draft-07/schema#`).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Generates a JSON Schema for the type `T`, and returns either the schema itself or a `$ref`
+schema referencing `T`'s schema.
+
+If `T` is not [inlined](JsonSchema::inline_schema), this will add `T`'s schema to
+this generator's definitions, and return a `$ref` schema referencing that schema.
+Otherwise, this method behaves identically to [`JsonSchema::json_schema`].
+
+If `T`'s schema depends on any [non-inlined](JsonSchema::inline_schema) schemas, then
+this method will add them to the `SchemaGenerator`'s schema definitions.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/lib.rs
+# Schemars
+
+[![CI Build](https://img.shields.io/github/actions/workflow/status/GREsau/schemars/ci.yml?branch=master&logo=GitHub)](https://github.com/GREsau/schemars/actions)
+[![Crates.io](https://img.shields.io/crates/v/schemars)](https://crates.io/crates/schemars)
+[![API Docs](https://img.shields.io/docsrs/schemars/latest?label=API%20docs)](https://docs.rs/schemars/latest)
+[![Usage Docs](https://img.shields.io/badge/Usage%20docs-graham.cool%2Fschemars-blue)](https://graham.cool/schemars)
+[![MSRV 1.74+](https://img.shields.io/badge/msrv-1.74-blue)](https://blog.rust-lang.org/2023/11/16/Rust-1.74.0/)
+
+Generate JSON Schema documents from Rust code
+
+## Basic Usage
+
+_For more detailed information, see the full [API documentation on docs.rs](https://docs.rs/schemars/latest), and the [detailed usage documentation website](https://graham.cool/schemars)._
+
+If you don't really care about the specifics, the easiest way to generate a JSON schema for your types is to `#[derive(JsonSchema)]` and use the `schema_for!` macro. All fields of the type must also implement `JsonSchema` - Schemars implements this for many standard library types.
+
+```rust
+use schemars::{schema_for, JsonSchema};
+
+#[derive(JsonSchema)]
+pub struct MyStruct {
+    pub my_int: i32,
+    pub my_bool: bool,
+    pub my_nullable_enum: Option<MyEnum>,
+}
+
+#[derive(JsonSchema)]
+pub enum MyEnum {
+    StringNewType(String),
+    StructVariant { floats: Vec<f32> },
+}
+
+let schema = schema_for!(MyStruct);
+println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+```
+
+<details>
+<summary>Click to see the output JSON schema...</summary>
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MyStruct",
+  "type": "object",
+  "properties": {
+    "my_bool": {
+      "type": "boolean"
+    },
+    "my_int": {
+      "type": "integer",
+      "format": "int32"
+    },
+    "my_nullable_enum": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MyEnum"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": ["my_int", "my_bool"],
+  "$defs": {
+    "MyEnum": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "StringNewType": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": ["StringNewType"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "StructVariant": {
+              "type": "object",
+              "properties": {
+                "floats": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "format": "float"
+                  }
+                }
+              },
+              "required": ["floats"]
+            }
+          },
+          "additionalProperties": false,
+          "required": ["StructVariant"]
+        }
+      ]
+    }
+  }
+}
+```
+
+</details>
+
+### Serde Compatibility
+
+One of the main aims of this library is compatibility with [Serde](https://github.com/serde-rs/serde). Any generated schema _should_ match how [serde_json](https://github.com/serde-rs/json) would serialize/deserialize to/from JSON. To support this, Schemars will check for any `#[serde(...)]` attributes on types that derive `JsonSchema`, and adjust the generated schema accordingly.
+
+```rust
+use schemars::{schema_for, JsonSchema};
+use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MyStruct {
+    #[serde(rename = "myNumber")]
+    pub my_int: i32,
+    pub my_bool: bool,
+    #[serde(default)]
+    pub my_nullable_enum: Option<MyEnum>,
+}
+
+#[derive(Deserialize, Serialize, JsonSchema)]
+#[serde(untagged)]
+pub enum MyEnum {
+    StringNewType(String),
+    StructVariant { floats: Vec<f32> },
+}
+
+let schema = schema_for!(MyStruct);
+println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+```
+
+<details>
+<summary>Click to see the output JSON schema...</summary>
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MyStruct",
+  "type": "object",
+  "properties": {
+    "myBool": {
+      "type": "boolean"
+    },
+    "myNullableEnum": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MyEnum"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "myNumber": {
+      "type": "integer",
+      "format": "int32"
+    }
+  },
+  "additionalProperties": false,
+  "required": ["myNumber", "myBool"],
+  "$defs": {
+    "MyEnum": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "floats": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "format": "float"
+              }
+            }
+          },
+          "required": ["floats"]
+        }
+      ]
+    }
+  }
+}
+```
+
+</details>
+
+`#[serde(...)]` attributes can be overriden using `#[schemars(...)]` attributes, which behave identically (e.g. `#[schemars(rename_all = "camelCase")]`). You may find this useful if you want to change the generated schema without affecting Serde's behaviour, or if you're just not using Serde.
+
+### Schema from Example Value
+
+If you want a schema for a type that can't/doesn't implement `JsonSchema`, but does implement `serde::Serialize`, then you can generate a JSON schema from a value of that type. However, this schema will generally be less precise than if the type implemented `JsonSchema` - particularly when it involves enums, since schemars will not make any assumptions about the structure of an enum based on a single variant.
+
+```rust
+use schemars::schema_for_value;
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct MyStruct {
+    pub my_int: i32,
+    pub my_bool: bool,
+    pub my_nullable_enum: Option<MyEnum>,
+}
+
+#[derive(Serialize)]
+pub enum MyEnum {
+    StringNewType(String),
+    StructVariant { floats: Vec<f32> },
+}
+
+let schema = schema_for_value!(MyStruct {
+    my_int: 123,
+    my_bool: true,
+    my_nullable_enum: Some(MyEnum::StringNewType("foo".to_string()))
+});
+println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+```
+
+<details>
+<summary>Click to see the output JSON schema...</summary>
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MyStruct",
+  "examples": [
+    {
+      "my_bool": true,
+      "my_int": 123,
+      "my_nullable_enum": {
+        "StringNewType": "foo"
+      }
+    }
+  ],
+  "type": "object",
+  "properties": {
+    "my_bool": {
+      "type": "boolean"
+    },
+    "my_int": {
+      "type": "integer"
+    },
+    "my_nullable_enum": true
+  }
+}
+```
+
+</details>
+
+## Versioning and Stability
+
+Schemars follows semantic versioning, with the following caveats:
+
+- Increasing MSRV (Minimum Supported Rust Version) is considered a semver-minor change. Schemars aims to support the past year of stable rust versions, but this is not guaranteed.
+- External libraries that are supported via optional dependencies (see [Feature Flags](#feature-flags)) _may_ be removed in a minor version change, particularly if a newer semver-incompatible version has been released for a long time.
+- The exact structure of generated schemas (both for built-in implementations on standard library types, and for `#[derive(JsonSchema)]` implementations) may change between versions of schemars - this is not considered a breaking change.
+- Exported items that are marked with `#[doc(hidden)]` and have names beginning with `_` are not part of the public API, and may be changed or removed without notice.
+- If a bug is found in schemars that causes attributes to be incorrectly processed or silently ignored by `#[derive(JsonSchema)]`, a subsequent version of schemars may instead fail compilation when encountering such attributes. This is considered a bug fix, and not a breaking change.
+
+## Feature Flags
+
+- `std` (enabled by default) - implements `JsonSchema` for types in the rust standard library (`JsonSchema` is still implemented on types in `core` and `alloc`, even when this feature is disabled). Disable this feature to use schemars in `no_std` environments.
+- `derive` (enabled by default) - provides `#[derive(JsonSchema)]` macro
+- `preserve_order` - keep the order of struct fields in `Schema` properties
+- `raw_value` - implements `JsonSchema` for `serde_json::value::RawValue` (enables the serde_json `raw_value` feature)
+
+Schemars can implement `JsonSchema` on types from several popular crates, enabled via feature flags (dependency versions are shown in brackets):
+
+- `arrayvec07` - [arrayvec](https://crates.io/crates/arrayvec) (^0.7)
+- `bigdecimal04` - [bigdecimal](https://crates.io/crates/bigdecimal) (^0.4)
+- `bytes1` - [bytes](https://crates.io/crates/bytes) (^1.0)
+- `chrono04` - [chrono](https://crates.io/crates/chrono) (^0.4)
+- `either1` - [either](https://crates.io/crates/either) (^1.3)
+- `indexmap2` - [indexmap](https://crates.io/crates/indexmap) (^2.0)
+- `jiff02` - [jiff](https://crates.io/crates/jiff) (^0.2)
+- `rust_decimal1` - [rust_decimal](https://crates.io/crates/rust_decimal) (^1.0)
+- `semver1` - [semver](https://crates.io/crates/semver) (^1.0.9)
+- `smallvec1` - [smallvec](https://crates.io/crates/smallvec) (^1.0)
+- `smol_str02` - [smol_str](https://crates.io/crates/smol_str) (^0.2.1)
+- `smol_str03` - [smol_str](https://crates.io/crates/smol_str) (^0.3)
+- `url2` - [url](https://crates.io/crates/url) (^2.0)
+- `uuid1` - [uuid](https://crates.io/crates/uuid) (^1.0)
+
+Bear in mind that each of these feature flags _may_ be removed in a future semver-minor change of Schemars, particularly if a newer semver-incompatible version of the external library has been released for a long time. This is unfortunately necessary to avoid supporting old/unmaintained libraries indefinitely.
+
+For example, to implement `JsonSchema` on types from `chrono`, enable it as a feature in the `schemars` dependency in your `Cargo.toml` like so:
+
+```toml
+[dependencies]
+schemars = { version = "1.0", features = ["chrono04"] }
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Contains the [`Transform`] trait, used to modify a constructed schema and optionally its subschemas.
+This trait is automatically implemented for functions of the form `fn(&mut Schema) -> ()`.
+
+# Recursive Transforms
+
+To make a transform recursive (i.e. apply it to subschemas), you have two options:
+1. call the [`transform_subschemas`] function within the transform function
+2. wrap the `Transform` in a [`RecursiveTransform`]
+
+# Examples
+
+To add a custom property to all object schemas:
+
+```
+# use schemars::{Schema, json_schema};
+use schemars::transform::{Transform, transform_subschemas};
+
+pub struct MyTransform;
+
+impl Transform for MyTransform {
+    fn transform(&mut self, schema: &mut Schema) {
+        // First, make our change to this schema
+        schema.insert("my_property".to_string(), "hello world".into());
+
+        // Then apply the transform to any subschemas
+        transform_subschemas(self, schema);
+    }
+}
+
+let mut schema = json_schema!({
+    "type": "array",
+    "items": {}
+});
+
+MyTransform.transform(&mut schema);
+
+assert_eq!(
+    schema,
+    json_schema!({
+        "type": "array",
+        "items": {
+            "my_property": "hello world"
+        },
+        "my_property": "hello world"
+    })
+);
+```
+
+The same example with a `fn` transform:
+```
+# use schemars::{Schema, json_schema};
+use schemars::transform::transform_subschemas;
+
+fn add_property(schema: &mut Schema) {
+    schema.insert("my_property".to_string(), "hello world".into());
+
+    transform_subschemas(&mut add_property, schema)
+}
+
+let mut schema = json_schema!({
+    "type": "array",
+    "items": {}
+});
+
+add_property(&mut schema);
+
+assert_eq!(
+    schema,
+    json_schema!({
+        "type": "array",
+        "items": {
+            "my_property": "hello world"
+        },
+        "my_property": "hello world"
+    })
+);
+```
+
+And the same example using a closure wrapped in a `RecursiveTransform`:
+```
+# use schemars::{Schema, json_schema};
+use schemars::transform::{Transform, RecursiveTransform};
+
+let mut transform = RecursiveTransform(|schema: &mut Schema| {
+    schema.insert("my_property".to_string(), "hello world".into());
+});
+
+let mut schema = json_schema!({
+    "type": "array",
+    "items": {}
+});
+
+transform.transform(&mut schema);
+
+assert_eq!(
+    schema,
+    json_schema!({
+        "type": "array",
+        "items": {
+            "my_property": "hello world"
+        },
+        "my_property": "hello world"
+    })
+);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/macros.rs
+Generates a [`Schema`](crate::Schema) for the given example value using default settings.
+The default settings currently conform to [JSON Schema 2020-12](https://json-schema.org/specification-links#2020-12), but this is liable to change in a future version of Schemars if support for other JSON Schema versions is added.
+
+The value must implement [`Serialize`](serde::Serialize). If the value also implements
+[`JsonSchema`](crate::JsonSchema), then prefer using the [`schema_for!(Type)`](schema_for) macro
+which will generally produce a more precise schema, particularly when the value contains any
+enums.
+
+If the `Serialize` implementation of the value decides to fail, this macro will panic.
+For a non-panicking alternative, create a [`SchemaGenerator`](crate::SchemaGenerator) and use
+its [`into_root_schema_for_value`](crate::SchemaGenerator::into_root_schema_for_value) method.
+
+# Example
+```
+use schemars::schema_for_value;
+
+#[derive(serde::Serialize)]
+struct MyStruct {
+    foo: i32,
+}
+
+let my_schema = schema_for_value!(MyStruct { foo: 123 });
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is an object, removes and returns its value for the
+given key.
+
+This always returns `None` for bool schemas, without modifying them.
+
+# Example
+```
+use schemars::json_schema;
+use serde_json::json;
+
+let mut schema = json_schema!({"type": "array"});
+assert_eq!(schema.remove("type"), Some(json!("array")));
+assert_eq!(schema, json_schema!({}));
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Mutably borrows the collection of all [non-inlined](JsonSchema::inline_schema)
+schemas that have been generated.
+
+The keys of the returned `Map` are the [schema names](JsonSchema::schema_name), and the
+values are the schemas themselves.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Creates a new [`SchemaGenerator`] using these settings.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+A [`Transform`] which implements additional traits required to be included in a
+[`SchemaSettings`].
+
+You will rarely need to use this trait directly as it is automatically implemented for any type
+which implements all of:
+- [`Transform`]
+- [`std::any::Any`] (implemented for all `'static` types)
+- [`std::clone::Clone`]
+- [`std::marker::Send`]
+
+# Example
+```
+use schemars::transform::Transform;
+use schemars::generate::GenTransform;
+
+#[derive(Debug, Clone)]
+struct MyTransform;
+
+impl Transform for MyTransform {
+  fn transform(&mut self, schema: &mut schemars::Schema) {
+    todo!()
+  }
+}
+
+let v: &dyn GenTransform = &MyTransform;
+assert!(v.is::<MyTransform>());
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+The URI of the meta-schema describing the structure of the generated schemas.
+
+Defaults to [`meta_schemas::DRAFT2020_12`] (`https://json-schema.org/draft/2020-12/schema`).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/macros.rs
+Construct a [`Schema`](crate::Schema) from a JSON literal. This can either be a JSON object, or
+a boolean (`true` or `false`).
+
+You can interpolate variables or expressions into a JSON object using the same rules as the
+[`serde_json::json`] macro.
+
+# Example
+```
+use schemars::{Schema, json_schema};
+
+let desc = "A helpful description.";
+let my_schema: Schema = json_schema!({
+    "description": desc,
+    "type": ["object", "null"]
+});
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+A helper struct that can wrap a non-recursive [`Transform`] (i.e. one that does not apply to
+subschemas) into a recursive one.
+
+Its implementation of `Transform` will first apply the inner transform to the "parent" schema,
+and then its subschemas (and their subschemas, and so on).
+
+# Example
+```
+# use schemars::{Schema, json_schema};
+use schemars::transform::{Transform, RecursiveTransform};
+
+let mut transform = RecursiveTransform(|schema: &mut Schema| {
+    schema.insert("my_property".to_string(), "hello world".into());
+});
+
+let mut schema = json_schema!({
+    "type": "array",
+    "items": {}
+});
+
+transform.transform(&mut schema);
+
+assert_eq!(
+    schema,
+    json_schema!({
+        "type": "array",
+        "items": {
+            "my_property": "hello world"
+        },
+        "my_property": "hello world"
+    })
+);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+Returns the `Schema`'s underlying JSON value.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Updates the settings to generate schemas describing how types are **deserialized**.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+Inserts a property into the schema, replacing any previous value.
+
+If the schema wraps a bool value, it will first be converted into an equivalent object
+schema.
+
+If the schema did not have this key present, `None` is returned.
+
+If the schema did have this key present, the value is updated, and the old value is
+returned.
+
+# Example
+```
+use schemars::json_schema;
+use serde_json::json;
+
+let mut schema = json_schema!(true);
+assert_eq!(schema.insert("type".to_owned(), "array".into()), None);
+assert_eq!(schema.insert("type".to_owned(), "object".into()), Some(json!("array")));
+
+assert_eq!(schema, json_schema!({"type": "object"}));
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+Converts the `Schema` (if it wraps a bool value) into an equivalent object schema. Then
+mutably borrows the object as a `Map` of properties.
+
+`true` is transformed into an empty schema `{}`, which successfully validates against all
+possible values. `false` is transformed into the schema `{"not": {}}`, which does not
+successfully validate against any value.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+A JSON Schema.
+
+This wraps a JSON [`Value`] that must be either an [object](Value::Object) or a
+[bool](Value::Bool).
+
+A custom JSON schema can be created using the [`json_schema!`](crate::json_schema) macro:
+```
+use schemars::{Schema, json_schema};
+
+let my_schema: Schema = json_schema!({
+    "type": ["object", "null"]
+});
+```
+
+Because a `Schema` is a thin wrapper around a `Value`, you can also use
+[`TryFrom::try_from`]/[`TryInto::try_into`] to create a `Schema` from an existing `Value`.
+This operation is fallible, because only [objects](Value::Object) and [bools](Value::Bool) can
+be converted in this way.
+
+```
+use schemars::{Schema, json_schema};
+use serde_json::json;
+
+let json_object = json!({"type": ["object", "null"]});
+let object_schema: Schema = json_object.try_into().unwrap();
+
+let json_bool = json!(true);
+let bool_schema: Schema = json_bool.try_into().unwrap();
+
+let json_string = json!("This is neither an object nor a bool!");
+assert!(Schema::try_from(json_string).is_err());
+
+// You can also convert a `&Value`/`&mut Value` to a `&Schema`/`&mut Schema` the same way:
+
+let json_object = json!({"type": ["object", "null"]});
+let object_schema_ref: &Schema = (&json_object).try_into().unwrap();
+
+let mut json_object = json!({"type": ["object", "null"]});
+let object_schema_mut: &mut Schema = (&mut json_object).try_into().unwrap();
+```
+
+Similarly, you can use [`From`]/[`Into`] to (infallibly) create a `Schema` from an existing
+[`Map<String, Value>`] or [`bool`].
+
+```
+use schemars::{Schema, json_schema};
+use serde_json::{Map, json};
+
+let mut map = Map::new();
+map.insert("type".to_owned(), json!(["object", "null"]));
+let object_schema: Schema = map.into();
+
+let bool_schema: Schema = true.into();
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Creates a new `SchemaGenerator` using the given settings.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Creates `SchemaSettings` that conform to [JSON Schema 2019-09](https://json-schema.org/specification-links#draft-2019-09-(formerly-known-as-draft-8)).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+JSON Schema generator and settings.
+
+This module is useful if you want more control over how the schema generated than the [`schema_for!`] macro gives you.
+There are two main types in this module:
+* [`SchemaSettings`], which defines what JSON Schema features should be used when generating schemas (for example, how `Option`s should be represented).
+* [`SchemaGenerator`], which manages the generation of a schema document.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Borrows the [`SchemaSettings`] being used by this `SchemaGenerator`.
+
+# Example
+```
+use schemars::SchemaGenerator;
+
+let generator = SchemaGenerator::default();
+let settings = generator.settings();
+
+assert_eq!(settings.inline_subschemas, false);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Appends the given transform to the list of [transforms](SchemaSettings::transforms) for
+these `SchemaSettings`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Updates the settings to generate schemas describing how types are **serialized**.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+The meta-schema for [JSON Schema 2019-09](https://json-schema.org/specification-links#draft-2019-09-(formerly-known-as-draft-8))
+(`https://json-schema.org/draft/2019-09/schema`).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Generates a JSON Schema for the given example value.
+
+If the value implements [`JsonSchema`], then prefer using the
+[`root_schema_for()`](Self::root_schema_for()) function which will generally produce a
+more precise schema, particularly when the value contains any enums.
+
+If the `Serialize` implementation of the value decides to fail, this will return an [`Err`].
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Returns a reference to the [contract](SchemaSettings::contract) for the settings on this
+`SchemaGenerator`.
+
+This specifies whether generated schemas describe serialize or *de*serialize behaviour.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+The main type used to generate JSON Schemas.
+
+# Example
+```
+use schemars::{JsonSchema, SchemaGenerator};
+
+#[derive(JsonSchema)]
+struct MyStruct {
+    foo: i32,
+}
+
+let generator = SchemaGenerator::default();
+let schema = generator.into_root_schema_for::<MyStruct>();
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+The meta-schema for [OpenAPI 3.0 schemas](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.4.md#schema)
+(`https://spec.openapis.org/oas/3.0/schema/2024-10-18#/definitions/Schema`).
+
+This should rarely be encountered in practice, as OpenAPI schemas are typically only
+embedded within OpenAPI documents, so do not have a `$schema` property set.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Whether the generated schemas should describe how types are serialized or *de*serialized.
+
+Defaults to `Contract::Deserialize`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Restructures JSON Schema objects so that the `$ref` property will never appear alongside any
+other properties.
+
+This also applies to subschemas.
+
+This is useful for versions of JSON Schema (e.g. Draft 7) that do not support other properties
+alongside `$ref`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+Constants associated with JSON Schema generation.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Inline all subschemas instead of using references.
+
+Some references may still be generated in schemas for recursive types.
+
+Defaults to `false`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+Replaces the `const` schema property with a single-valued `enum` property.
+
+This also applies to subschemas.
+
+This is useful for dialects of JSON Schema (e.g. OpenAPI 3.0) that do not support the `const`
+property.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Modifies the `SchemaSettings` by calling the given function.
+
+# Example
+```
+use schemars::generate::{SchemaGenerator, SchemaSettings};
+
+let settings = SchemaSettings::default().with(|s| {
+    s.meta_schema = None;
+    s.inline_subschemas = true;
+});
+let generator = settings.into_generator();
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+Borrows the `Schema`'s underlying JSON value.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+When set to `true`, a schema's `additionalProperties` property will not be changed from a
+boolean.
+
+Defaults to `false`.
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+Creates a new schema object with a single string property `"$ref"`.
+
+The given reference string should be a URI reference. This will usually be a JSON Pointer
+in [URI Fragment representation](https://tools.ietf.org/html/rfc6901#section-6).
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+If the `Schema`'s underlying JSON value is an object, looks up a value by a JSON Pointer
+and returns a mutable reference to that value.
+
+If the given pointer begins with a `#`, then the rest of the value is assumed to be in
+"URI Fragment Identifier Representation", and will be percent-decoded accordingly.
+
+For more information on JSON Pointer, read [RFC6901](https://tools.ietf.org/html/rfc6901).
+
+This always returns `None` for bool schemas.
+
+# Example
+```
+use schemars::{json_schema, Schema};
+use serde_json::json;
+
+let mut schema = json_schema!({
+    "properties": {
+        "anything": true
+    },
+    "$defs": {
+        "🚀": true
+    }
+});
+
+assert_eq!(schema.pointer_mut("/properties/anything").unwrap(), &json!(true));
+assert_eq!(schema.pointer_mut("#/$defs/%F0%9F%9A%80").unwrap(), &json!(true));
+assert_eq!(schema.pointer_mut("/does/not/exist"), None);
+```
+
+---
+
+## https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+Consumes `self` and generates a JSON Schema for the given example value.
+
+If the value  implements [`JsonSchema`], then prefer using the
+[`into_root_schema_for()!`](Self::into_root_schema_for()) function which will generally
+produce a more precise schema, particularly when the value contains any enums.
+
+If the `Serialize` implementation of the value decides to fail, this will return an [`Err`].
+
+---
+

@@ -1,0 +1,1 @@
+-- No-op. Broad proxy exclusions are obsolete because TLS is opaque by default.

@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ace-domain-blocklist",
+    "crates/ace-engine",
+    "crates/ace-tun",
+    "crates/ace-watchdog",
+    "crates/ace-watchdog-protocol",
+    "crates/mitm-proxy",
+    "apps/ace-app/src-tauri",
+]
+default-members = [
+    "crates/ace-domain-blocklist",
+    "crates/ace-engine",
+    "crates/ace-tun",
+    "crates/ace-watchdog",
+    "crates/ace-watchdog-protocol",
+    "crates/mitm-proxy",
+]
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+
+[profile.dev]
+debug = false
+
+[profile.dev.package."*"]
+debug = 0
+opt-level = 1

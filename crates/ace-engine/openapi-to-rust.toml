@@ -1,0 +1,17 @@
+[generator]
+spec_path = "openapi.json"
+output_dir = "src/ace_server_api"
+module_name = "api"
+
+[features]
+enable_async_client = true
+
+[http_client]
+base_url = "https://aceblocker.com"
+timeout_seconds = 30
+
+[http_client.retry]
+max_retries = 3
+
+[http_client.tracing]
+enabled = true

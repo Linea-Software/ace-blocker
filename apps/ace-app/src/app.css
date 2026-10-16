@@ -1,0 +1,224 @@
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+@import "@fontsource/ibm-plex-sans-condensed/500.css";
+@import "@fontsource/ibm-plex-sans-condensed/600.css";
+@import "@fontsource/ibm-plex-sans-condensed/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+    --ace-signal: #ffb000;
+    --ace-signal-bright: #ffc533;
+    --ace-signal-deep: #d58b00;
+    --ace-ink: #10100e;
+    --ace-graphite: #1a1a17;
+    --ace-steel: #292925;
+    --ace-ash: #8b8a82;
+    --ace-paper: #f3f0e8;
+    --ace-paper-strong: #fffdf7;
+    --ace-line: #d7d2c7;
+    --ace-success: #77a86a;
+    --ace-danger: #df5145;
+    --ace-information: #668db3;
+
+    --radius: 0.375rem;
+    --background: #f3f0e8;
+    --foreground: #10100e;
+    --card: #fffdf7;
+    --card-foreground: #10100e;
+    --popover: #fffdf7;
+    --popover-foreground: #10100e;
+    --primary: #10100e;
+    --primary-foreground: #fffdf7;
+    --secondary: #e9e5db;
+    --secondary-foreground: #10100e;
+    --muted: #e9e5db;
+    --muted-foreground: #65645e;
+    --accent: #e4dfd4;
+    --accent-foreground: #10100e;
+    --destructive: #df5145;
+    --destructive-foreground: #fffdf7;
+    --border: #d7d2c7;
+    --input: #c9c4b9;
+    --ring: #d58b00;
+    --chart-1: #ffb000;
+    --chart-2: #668db3;
+    --chart-3: #77a86a;
+    --chart-4: #8b8a82;
+    --chart-5: #df5145;
+    --sidebar: #e9e5db;
+    --sidebar-foreground: #10100e;
+    --sidebar-primary: #10100e;
+    --sidebar-primary-foreground: #fffdf7;
+    --sidebar-accent: #ddd8cd;
+    --sidebar-accent-foreground: #10100e;
+    --sidebar-border: #cbc6bb;
+    --sidebar-ring: #d58b00;
+}
+
+.dark {
+    --background: #10100e;
+    --foreground: #f3f0e8;
+    --card: #1a1a17;
+    --card-foreground: #fffdf7;
+    --popover: #1a1a17;
+    --popover-foreground: #fffdf7;
+    --primary: #fffdf7;
+    --primary-foreground: #10100e;
+    --secondary: #292925;
+    --secondary-foreground: #f3f0e8;
+    --muted: #292925;
+    --muted-foreground: #aaa89f;
+    --accent: #34342f;
+    --accent-foreground: #fffdf7;
+    --destructive: #df5145;
+    --destructive-foreground: #fffdf7;
+    --border: #3c3b35;
+    --input: #45443e;
+    --ring: #ffb000;
+    --chart-1: #ffc533;
+    --chart-2: #7ea1c3;
+    --chart-3: #8fba84;
+    --chart-4: #aaa89f;
+    --chart-5: #ea6a60;
+    --sidebar: #151512;
+    --sidebar-foreground: #f3f0e8;
+    --sidebar-primary: #fffdf7;
+    --sidebar-primary-foreground: #10100e;
+    --sidebar-accent: #292925;
+    --sidebar-accent-foreground: #fffdf7;
+    --sidebar-border: #34342f;
+    --sidebar-ring: #ffb000;
+}
+
+@theme inline {
+    --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-condensed: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+    --shadow-sm: 0 1px 2px rgba(16, 16, 14, 0.08);
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.5rem;
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    --color-signal: var(--ace-signal);
+    --color-signal-bright: var(--ace-signal-bright);
+    --color-signal-deep: var(--ace-signal-deep);
+    --color-ink: var(--ace-ink);
+    --color-graphite: var(--ace-graphite);
+    --color-steel: var(--ace-steel);
+    --color-ash: var(--ace-ash);
+    --color-paper: var(--ace-paper);
+    --color-paper-strong: var(--ace-paper-strong);
+    --color-line: var(--ace-line);
+    --color-success: var(--ace-success);
+    --color-danger: var(--ace-danger);
+    --color-information: var(--ace-information);
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    html,
+    body {
+        min-width: 320px;
+        min-height: 100%;
+    }
+
+    body {
+        @apply bg-background text-foreground font-sans antialiased;
+        margin: 0;
+        text-rendering: optimizeLegibility;
+    }
+
+    button,
+    a,
+    input,
+    textarea,
+    select {
+        font: inherit;
+    }
+
+    :where(button, a, input, textarea, select, [tabindex]):focus-visible {
+        outline: 2px solid var(--ace-signal-deep);
+        outline-offset: 2px;
+    }
+
+    ::selection {
+        background: color-mix(in srgb, var(--ace-signal) 34%, transparent);
+        color: var(--foreground);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            scroll-behavior: auto !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+}
+
+@layer utilities {
+    .ace-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--foreground) 28%, transparent)
+            transparent;
+    }
+
+    .ace-notch {
+        clip-path: polygon(
+            0 0,
+            calc(100% - 10px) 0,
+            100% 10px,
+            100% 100%,
+            10px 100%,
+            0 calc(100% - 10px)
+        );
+    }
+}

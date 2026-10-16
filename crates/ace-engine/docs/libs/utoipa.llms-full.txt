@@ -1,0 +1,5816 @@
+# utoipa Full API Documentation
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add url pointing to the license used in API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append path operation to the list of paths.
+
+Method accepts three arguments; `path` to add operation for, `http_methods` list of
+allowed HTTP methods for the [`Operation`] and `operation` to be added under the _`path`_.
+
+If _`path`_ already exists, the provided [`Operation`] will be set to existing path item for
+given list of [`HttpMethod`]s.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Construct a new ExtensionsBuilder.
+
+This is effectively same as calling [`ExtensionsBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`Parameter`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Describes how [`Parameter`] is being serialized depending on [`Parameter::schema`] (type of a content).
+Default value is based on [`ParameterIn`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Represents [`Array`] items in [JSON Schema Array][json_schema_array].
+
+[json_schema_array]: <https://json-schema.org/understanding-json-schema/reference/array#items>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Implements types according [RFC7235](https://datatracker.ietf.org/doc/html/rfc7235#section-5.1).
+
+Types are maintained at <https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Defines a discriminator property name which must be found within all composite
+objects.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Construct a new API [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Defines whether parameter should allow reserved characters defined by
+[RFC3986](https://tools.ietf.org/html/rfc3986#section-2.2) _`:/?#[]@!$&'()*+,;=`_.
+This is only applicable with [`ParameterIn::Query`]. Default value is _`false`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change additional format for detailing the schema type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new client credentials oauth flow.
+
+Accepts two arguments: one which is a token url and
+two a map of scopes for oauth flow.
+
+# Examples
+
+Create new client credentials flow with scopes.
+```rust
+# use utoipa::openapi::security::{ClientCredentials, Scopes};
+ClientCredentials::new(
+    "https://localhost/token",
+    Scopes::from_iter([
+        ("edit:items", "edit my items"),
+        ("read:items", "read my items")
+    ]),
+);
+```
+
+Create new client credentials flow without any scopes.
+```rust
+# use utoipa::openapi::security::{ClientCredentials, Scopes};
+ClientCredentials::new(
+    "https://localhost/token",
+    Scopes::new(),
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+The `content_encoding` keyword specifies the encoding used to store the contents, as specified in
+[RFC 2054, part 6.1](https://tools.ietf.org/html/rfc2045) and [RFC 4648](RFC 2054, part 6.1).
+
+Typically this is either unset for _`string`_ content types which then uses the content
+encoding of the underlying JSON document. If the content is in _`binary`_ format such as an image or an audio
+set it to `base64` to encode it as _`Base64`_.
+
+See more details at <https://json-schema.org/understanding-json-schema/reference/non_json_data#contentencoding>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Description of the [`AnyOf`]. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Set the content type. See [`Encoding::content_type`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Construct a new ResponsesBuilder.
+
+This is effectively same as calling [`ResponsesBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Description of the [`Array`]. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new authorization code oauth flow.
+
+Accepts three arguments: one which is authorization url, two a token url and
+three a map of scopes for oauth flow.
+
+# Examples
+
+Create new authorization code flow with scopes.
+```rust
+# use utoipa::openapi::security::{AuthorizationCode, Scopes};
+AuthorizationCode::new(
+    "https://localhost/auth/dialog",
+    "https://localhost/token",
+    Scopes::from_iter([
+        ("edit:items", "edit my items"),
+        ("read:items", "read my items")
+    ]),
+);
+```
+
+Create new authorization code flow without any scopes.
+```rust
+# use utoipa::openapi::security::{AuthorizationCode, Scopes};
+AuthorizationCode::new(
+    "https://localhost/auth/dialog",
+    "https://localhost/token",
+    Scopes::new(),
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Short description for the [`Example`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Map of request body contents mapped by content type e.g. `application/json`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Implements [OpenAPI Path Object][paths] types.
+
+[paths]: https://spec.openapis.org/oas/latest.html#paths-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change deprecated status of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Add or change a long description for the [`Example`]. Markdown syntax is supported for rich
+text representation.
+
+Setting this to empty `String` will make it not render in the generated
+OpenAPI document.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Options [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Declares the parameter deprecated status.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`PathItem`] with given [`Operation`] set for provided [`HttpMethod`]s.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Merge other [`Extensions`] into _`self`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Add [`Info`] metadata of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Url of the [`OpenIdConnect`] to discover OAuth2 connect values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Reference of external resource allowing extended documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`RefBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Construct a new ContentBuilder.
+
+This is effectively same as calling [`ContentBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Schema of the parameter. Typically [`Schema::Object`] is used.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change description of the property. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Target url for external documentation location.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append parameter to [`Operation`] parameters.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Add iterator of [`Tag`]s to add additional documentation for **operations** tags.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change discriminator field of the composite [`AnyOf`] type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Add [`ExternalDocs`] for referring additional documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional refresh token url for the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Constructs a new [`Responses`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+AllOf [Composite Object][allof] component holds
+multiple components together where API endpoint will return a combination of all of them.
+
+See [`Schema::AllOf`] for more details.
+
+[allof]: https://spec.openapis.org/oas/latest.html#components-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add openapi extensions (x-something) of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new OAuth2 security schema configuration object.
+
+Oauth flow accepts slice of [`Flow`] configuration objects and can be optionally provided with description.
+
+# Examples
+
+Create new OAuth2 flow with multiple authentication flows.
+```rust
+# use utoipa::openapi::security::{OAuth2, Flow, Password, AuthorizationCode, Scopes};
+OAuth2::new([Flow::Password(
+    Password::with_refresh_url(
+        "https://localhost/oauth/token",
+        Scopes::from_iter([
+            ("edit:items", "edit my items"),
+            ("read:items", "read my items")
+        ]),
+        "https://localhost/refresh/token"
+    )),
+    Flow::AuthorizationCode(
+        AuthorizationCode::new(
+        "https://localhost/authorization/token",
+        "https://localhost/token/url",
+        Scopes::from_iter([
+            ("edit:items", "edit my items"),
+            ("read:items", "read my items")
+        ])),
+   ),
+]);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Describes how a specific property value will be serialized depending on its type. See
+Parameter Object for details on the style property. The behavior follows the same values as
+query parameters, including default values. This property SHALL be ignored if the request
+body media type is not `application/x-www-form-urlencoded`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change the title of the [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add license of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Create new http authentication security schema.
+
+Accepts one argument which defines the scheme of the http authentication.
+
+# Examples
+
+Create http security schema with basic authentication.
+```rust
+# use utoipa::openapi::security::{SecurityScheme, Http, HttpAuthScheme};
+SecurityScheme::Http(Http::new(HttpAuthScheme::Basic));
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add openapi extensions (`x-something`) for [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new [`OpenIdConnect`] [`SecurityScheme`] with optional description
+supporting markdown syntax.
+
+# Examples
+
+```rust
+# use utoipa::openapi::security::OpenIdConnect;
+OpenIdConnect::with_description("https://localhost/openid", "my pet api open id connect");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Long explanation of [`Operation`] behaviour. Markdown syntax is supported.
+
+When used with derive [`#[utoipa::path(...)]`][derive_path] attribute macro the
+doc comment is used as value for description.
+
+[derive_path]: ../../attr.path.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change a valid regular expression for `string` value to match.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Add a [`Header`]. See [`Encoding::headers`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Is super type for [OpenAPI Schema Object][schemas]. Schema is reusable resource what can be
+referenced from path operations and other components using [`Ref`].
+
+[schemas]: https://spec.openapis.org/oas/latest.html#schema-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`Array`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change exclusive maximum value for `number` and `integer` values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Construct a new OpenApiBuilder.
+
+This is effectively same as calling [`OpenApiBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change optional description for `AnyOf` component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change request body of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change tags of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+A literal value or an [expression][expression] to be used as request body when operation is called.
+
+[expression]: https://spec.openapis.org/oas/latest.html#runtime-expressions
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change whether [`Parameter`] should allow reserved characters.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Represents type of [`Schema`].
+
+This is a collection type for [`Type`] that can be represented as a single value
+or as [`slice`] of [`Type`]s.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+In definition of [`Parameter`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Additional format for detailing the schema type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`AllOf`] component with given capacity.
+
+AllOf component is then able to contain number of components without
+reallocating.
+
+# Examples
+
+Create [`AllOf`] component with initial capacity of 5.
+```rust
+# use utoipa::openapi::schema::AllOf;
+let one_of = AllOf::with_capacity(5);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Add an encoding.
+
+The `property_name` MUST exist in the [`Content::schema`] as a property,
+with `schema` being a [`Schema::Object`] and this object containing the same property
+key in [`Object::properties`](crate::openapi::schema::Object::properties).
+
+The encoding object SHALL only apply to `request_body` objects when the media type is
+multipart or `application/x-www-form-urlencoded`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Constructs a new [`HeaderBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change whether [`Array`] should enforce all items to be unique.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Post [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Flag only usable with array definition. If set to true the output xml will wrap the array of items
+`<pets><pet></pet></pets>` instead of unwrapped `<pet></pet>`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Url for authorization token.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change optional description for `OneOf` component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Construct a new empty [`Example`]. This is effectively same as calling
+[`Example::default`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add required declaration of the [`Parameter`]. If [`ParameterIn::Path`] is
+defined this is always [`Required::True`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Mark [`Xml`] object wrapped. See [`Xml::wrapped`].
+
+Builder style chainable consuming add wrapped method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Trait used to convert implementing type to OpenAPI parameters.
+
+This trait is [derivable][derive] for structs which are used to describe `path` or `query` parameters.
+For more details of `#[derive(IntoParams)]` refer to [derive documentation][derive].
+
+# Examples
+
+Derive [`IntoParams`] implementation. This example will fail to compile because [`IntoParams`] cannot
+be used alone and it need to be used together with endpoint using the params as well. See
+[derive documentation][derive] for more details.
+```
+use utoipa::{IntoParams};
+
+#[derive(IntoParams)]
+struct PetParams {
+    /// Id of pet
+    id: i64,
+    /// Name of pet
+    name: String,
+}
+```
+
+Roughly equal manual implementation of [`IntoParams`] trait.
+```rust
+# struct PetParams {
+#    /// Id of pet
+#    id: i64,
+#    /// Name of pet
+#    name: String,
+# }
+impl utoipa::IntoParams for PetParams {
+    fn into_params(
+        parameter_in_provider: impl Fn() -> Option<utoipa::openapi::path::ParameterIn>
+    ) -> Vec<utoipa::openapi::path::Parameter> {
+        vec![
+            utoipa::openapi::path::ParameterBuilder::new()
+                .name("id")
+                .required(utoipa::openapi::Required::True)
+                .parameter_in(parameter_in_provider().unwrap_or_default())
+                .description(Some("Id of pet"))
+                .schema(Some(
+                    utoipa::openapi::ObjectBuilder::new()
+                        .schema_type(utoipa::openapi::schema::Type::Integer)
+                        .format(Some(utoipa::openapi::SchemaFormat::KnownFormat(utoipa::openapi::KnownFormat::Int64))),
+                ))
+                .build(),
+            utoipa::openapi::path::ParameterBuilder::new()
+                .name("name")
+                .required(utoipa::openapi::Required::True)
+                .parameter_in(parameter_in_provider().unwrap_or_default())
+                .description(Some("Name of pet"))
+                .schema(Some(
+                    utoipa::openapi::ObjectBuilder::new()
+                        .schema_type(utoipa::openapi::schema::Type::String),
+                ))
+                .build(),
+        ]
+    }
+}
+```
+[derive]: derive.IntoParams.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Construct a new [`Contact`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Determines whether request body is required in the request or not.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Construct a new [`Server`] with given url. Url can be valid http url or context path of the url.
+
+If url is valid http url then all path operation request's will be forwarded to the selected [`Server`].
+
+If url is path of url e.g. `/api/v1` then the url will be appended to the servers address and the
+operations will be forwarded to location `server address + url`.
+
+
+# Examples
+
+Create new server with url path.
+```rust
+# use utoipa::openapi::server::Server;
+ Server::new("/api/v1");
+```
+
+Create new server with alternative server.
+```rust
+# use utoipa::openapi::server::Server;
+ Server::new("https://alternative.pet-api.test/api/v1");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Add iterator of _`(N, V)`_ where `N` is name of example and `V` is [`Example`][example] to
+[`Content`] of a request body or response body.
+
+[`Content::examples`] and [`Content::example`] are mutually exclusive. If both are defined
+`examples` will override value in `example`.
+
+[example]: ../example/Example.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change _`multiple_of`_ validation flag for `number` and `integer` type values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Constructs a new [`ResponseBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`AllOfBuilder::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Implements [OpenAPI Responses Object][responses].
+
+Responses is a map holding api operation responses identified by their status code.
+
+[responses]: https://spec.openapis.org/oas/latest.html#responses-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Builder for [`OpenApi`] with chainable configuration methods to create a new [`OpenApi`].
+ # Examples
+
+ Create [`OpenApi`] using [`OpenApiBuilder`].
+ ```rust
+ # use utoipa::openapi::{Info, Paths, Components, OpenApiBuilder};
+ let openapi = OpenApiBuilder::new()
+      .info(Info::new("My api", "1.0.0"))
+      .paths(Paths::new())
+      .components(Some(
+          Components::new()
+      ))
+      .build();
+ ```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`OneOf`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Construct a new LicenseBuilder.
+
+This is effectively same as calling [`LicenseBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`Object::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Constructs a new [`HttpBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add title of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add or change description of substituted parameter.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Optional global additional documentation reference.
+
+See more details at <https://spec.openapis.org/oas/latest.html#external-documentation-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional refresh token url.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Initialize new [`Object`] with given [`SchemaType`].
+
+Create [`std::string`] object type which can be used to define `string` field of an object.
+```rust
+# use utoipa::openapi::schema::{Object, Type};
+let object = Object::with_type(Type::String);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change deprecated status for [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`Array::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Implements [OpenAPI Request Body][request_body].
+
+[request_body]: https://spec.openapis.org/oas/latest.html#request-body-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+A [`Server`][server] object to be used by the target operation.
+
+[server]: ../server/struct.Server.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Document version typically the API version.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Converts this [`OpenApi`] to YAML String. This method essentially calls [`serde_norway::to_string`] method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Builder for [`Header`] with chainable configuration methods to create a new [`Header`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Builder for [`Operation`] with chainable configuration methods to create a new [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Implements content object for request body and response.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Construct a new EncodingBuilder.
+
+This is effectively same as calling [`EncodingBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Declares whether the parameter is required or not for api.
+
+* For [`ParameterIn::Path`] this must and will be [`Required::True`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Flexible number wrapper used by validation schema attributes to seamlessly support different
+number syntaxes.
+
+# Examples
+
+_**Define object with two different number fields with minimum validation attribute.**_
+
+```rust
+# use utoipa::Number;
+# use utoipa::openapi::schema::{ObjectBuilder, SchemaType, Type};
+let _ = ObjectBuilder::new()
+            .property("int_value", ObjectBuilder::new()
+                .schema_type(Type::Integer).minimum(Some(1))
+            )
+            .property("float_value", ObjectBuilder::new()
+                .schema_type(Type::Number).minimum(Some(-2.5))
+            )
+            .build();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Construct a new ServerBuilder.
+
+This is effectively same as calling [`ServerBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Put [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Builder for [`Array`] with chainable configuration methods to create a new [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Implements [OpenAPI Paths Object][paths].
+
+Holds relative paths to matching endpoints and operations. The path is appended to the url
+from [`Server`] object to construct a full url for endpoint.
+
+[paths]: https://spec.openapis.org/oas/latest.html#paths-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add responses from an iterator over a pair of `(status_code, response): (String, Response)`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Construct a new [`Header`] with custom schema. If you wish to construct a default
+header with `String` type you can use [`Header::default`] function.
+
+# Examples
+
+Create new [`Header`] with integer type.
+```rust
+# use utoipa::openapi::header::Header;
+# use utoipa::openapi::{Object, Type};
+let header = Header::new(Object::with_type(Type::Integer));
+```
+
+Create a new [`Header`] with default type `String`
+```rust
+# use utoipa::openapi::header::Header;
+let header = Header::default();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Description of the the [`ApiKey`] [`SecurityScheme`]. Supports markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Parameter location.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Example for request body or response body.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Add additional description for header.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+HTTP method of the operation.
+
+List of supported HTTP methods <https://spec.openapis.org/oas/latest.html#path-item-object>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+OpenAPI [security requirement][security] object.
+
+Security requirement holds list of required [`SecurityScheme`] *names* and possible *scopes* required
+to execute the operation. They can be defined in [`#[utoipa::path(...)]`][path] or in `#[openapi(...)]`
+of [`OpenApi`][openapi].
+
+Applying the security requirement to [`OpenApi`][openapi] will make it globally
+available to all operations. When applied to specific [`#[utoipa::path(...)]`][path] will only
+make the security requirements available for that operation. Only one of the requirements must be
+satisfied.
+
+[security]: https://spec.openapis.org/oas/latest.html#security-requirement-object
+[path]: ../../attr.path.html
+[openapi]: ../../derive.OpenApi.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Set a [`Server`][server] object to be used by the target operation.
+
+[server]: ../server/struct.Server.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Set the name of an existing, resolvable OAS operation, as defined with a unique
+_`operation_id`_.
+This field is mutually exclusive of the _`operation_ref`_ field.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Mark [`Xml`] object as attribute. See [`Xml::attribute`].
+
+Builder style chainable consuming add attribute method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Default value used to substitute parameter if no other value is being provided.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add openapi extensions (x-something) to this [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Builder for [`Components`] with chainable configuration methods to create a new [`Components`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Builder for [`Xml`] with chainable configuration methods to create a new [`Xml`].
+ # Examples
+
+ Create [`Xml`] with [`XmlBuilder`].
+ ```rust
+ # use utoipa::openapi::xml::XmlBuilder;
+  let xml = XmlBuilder::new()
+     .name(Some("some_name"))
+     .prefix(Some("prefix"))
+     .build();
+ ```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Add or change http authentication scheme used.
+
+# Examples
+
+Create new [`Http`] [`SecurityScheme`] via [`HttpBuilder`].
+```rust
+# use utoipa::openapi::security::{HttpBuilder, HttpAuthScheme};
+let http = HttpBuilder::new().scheme(HttpAuthScheme::Basic).build();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Optional request body for this [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Array represents [`Vec`] or [`slice`] type  of items.
+
+See [`Schema::Array`] for more details.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional extensions `x-something`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Additional description for the tag shown in the document.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Construct a new ExternalDocsBuilder.
+
+This is effectively same as calling [`ExternalDocsBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Token url used for [`ClientCredentials`] flow. OAuth2 standard requires TLS.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Optional description describing the variable of substitution. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Changes the [`OneOf`] title.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Optional url for terms of service.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change reference location of the actual component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Construct a new [`Response`].
+
+Function takes description as argument.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Components of _AllOf_ component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Builder for [`Response`] with chainable configuration methods to create a new [`Response`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set [`Xml`] formatting for [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Implements [OpenAPI Reference Object][reference] that can be used to reference
+reusable components such as [`Schema`]s or [`Response`]s.
+
+[reference]: https://spec.openapis.org/oas/latest.html#reference-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Constructs a new [`Example`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add field to the required fields of [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Api key authentication [`SecurityScheme`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`Components`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Map of relative paths with [`PathItem`]s holding [`Operation`]s matching
+api endpoints.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Add [`Xml::namespace`] to xml object.
+
+Builder style chainable consuming add namespace method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Add schema.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Scopes required by the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Constructs a new [`ContentBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Represents _`nullable`_ type. This can be used anywhere where "nothing" needs to be evaluated.
+This will serialize to _`null`_ in JSON and [`openapi::schema::empty`] is used to create the
+[`openapi::schema::Schema`] for the type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+OAuth2 [`Flow`] configuration for [`SecurityScheme`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change short summary which by default should override that of the referenced component. If
+referenced component does not support summary field this does not have effect.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Constructs new api key value.
+
+# Examples
+
+Create new api key security schema with name `api_key`.
+```rust
+# use utoipa::openapi::security::ApiKeyValue;
+let api_key = ApiKeyValue::new("api_key");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add openapi extensions (x-something) to the [`Header`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`AllOf`] component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Constructs a new [`InfoBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change serialization style of [`Parameter`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Merge _`other_paths`_ into `self`. On conflicting path the path item operations will be
+merged into existing [`PathItem`]. Otherwise path with [`PathItem`] will be appended to
+`self`. All [`Extensions`] will be merged from _`other_paths`_ into `self`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Constructs a new [`Server`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Implements [OpenAPI Tag Object][tag].
+
+Tag can be used to provide additional metadata for tags used by path operations.
+
+[tag]: https://spec.openapis.org/oas/latest.html#tag-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Marks the [`Array`] deprecated.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`ArrayBuilder`] with this component set to [`ArrayBuilder::items`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Add additional description for the tag.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add additional [`Schema`] for non specified fields (Useful for typed maps).
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Implements [OpenAPI Path Item Object][path_item] what describes [`Operation`]s available on
+a single path.
+
+[path_item]: https://spec.openapis.org/oas/latest.html#path-item-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Constructs a new [`ExtensionsBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Vector of required field names.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Map of reusable [OpenAPI Security Scheme Object][security_scheme]s.
+
+[security_scheme]: https://spec.openapis.org/oas/latest.html#security-scheme-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Construct a new PathItemBuilder.
+
+This is effectively same as calling [`PathItemBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Value used to indicate whether reusable schema, parameter or operation is deprecated.
+
+The value will serialize to boolean.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Implements [OpenAPI Example Object][example].
+
+Example is used on path operations to describe possible response bodies.
+
+[example]: https://spec.openapis.org/oas/latest.html#example-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Set identifier of the licence as [SPDX-Licenses][spdx_licence] expression for the API.
+The _`identifier`_ field is mutually exclusive of the _`url`_ field. E.g. Apache-2.0
+
+[spdx_licence]: <https://spdx.org/licenses/>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Content holds request body content or response content.
+
+[`Content`] implements OpenAPI spec [Media Type Object][media_type]
+
+[media_type]: <https://spec.openapis.org/oas/latest.html#media-type-object>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`Ref`] from provided response name. This will create a [`Ref`] that
+references the reusable response.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change inclusive maximum value for `number` and `integer` values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+OpenAPI [Contact][contact] information of the API.
+
+You can use [`Contact::new`] to construct a new [`Contact`] object or alternatively
+use [`ContactBuilder::new`] to construct a new [`Contact`] with chainable configuration methods.
+
+[contact]: <https://spec.openapis.org/oas/latest.html#contact-object>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Add additional description of external documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+ Construct a new [`Discriminator`] object with property name and mappings.
+
+
+ Method accepts two arguments. First _`property_name`_ to use as `discriminator` and
+ _`mapping`_ for custom property name mappings.
+
+ # Examples
+
+_**Construct an ew [`Discriminator`] with custom mapping.**_
+
+ ```rust
+ # use utoipa::openapi::schema::Discriminator;
+ let discriminator = Discriminator::with_mapping("pet_type", [
+     ("cat","#/components/schemas/Cat")
+ ]);
+ ```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional description for the [`OAuth2`] [`Flow`] [`SecurityScheme`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+[`OAuth2`] flow configuration object.
+
+See more details at <https://spec.openapis.org/oas/latest.html#oauth-flows-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append status code and a [`Response`] to the [`Operation`] responses map.
+
+* `code` must be valid HTTP status code.
+* `response` is instances of [`Response`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Description of [`OpenIdConnect`] [`SecurityScheme`] supporting markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Implements [Open API Link Object][link_object] for responses.
+
+[link_object]: https://spec.openapis.org/oas/latest.html#link-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Add description for [`RequestBody`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Url pointing to contact information of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+AnyOf [Composite Object][anyof] component holds
+multiple components together where API endpoint will return a combination of one or more of them.
+
+See [`Schema::AnyOf`] for more details.
+
+[anyof]: https://spec.openapis.org/oas/latest.html#components-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Set a literal value or an [expression][expression] to be used as request body when operation is called.
+
+[expression]: https://spec.openapis.org/oas/latest.html#runtime-expressions
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Get [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`Ref`] from provided schema name. This will create a [`Ref`] that
+references the the reusable schemas.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Items of the [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`OneOfBuilder::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Construct a new XmlBuilder.
+
+This is effectively same as calling [`XmlBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add [`SecurityScheme`] to [`Components`].
+
+Accepts two arguments where first is the name of the [`SecurityScheme`]. This is later when
+referenced by [`SecurityRequirement`][requirement]s. Second parameter is the [`SecurityScheme`].
+
+[requirement]: ../security/struct.SecurityRequirement.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change [`Parameter`] deprecated declaration.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Constructs a new [`Link`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify inclusive upper limit for the [`Object`]'s value. Number is considered valid if
+it is equal or less than the _`maximum`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Client credentials [`Flow`] configuration for [`OAuth2`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Nest `other` [`OpenApi`] to this [`OpenApi`].
+
+Nesting performs custom [`OpenApi::merge`] where `other` [`OpenApi`] paths are prepended with given
+`path` and then appended to _`paths`_ of this [`OpenApi`] instance. Rest of the  `other`
+[`OpenApi`] instance is merged to this [`OpenApi`] with [`OpenApi::merge_from`] method.
+
+**If multiple** APIs are being nested with same `path` only the **last** one will be retained.
+
+Method accepts two arguments, first is the path to prepend .e.g. _`/user`_. Second argument
+is the [`OpenApi`] to prepend paths for.
+
+# Examples
+
+_**Merge `user_api` to `api` nesting `user_api` paths under `/api/v1/user`**_
+```rust
+ # use utoipa::openapi::{OpenApi, OpenApiBuilder};
+ # use utoipa::openapi::path::{PathsBuilder, PathItemBuilder, PathItem,
+ # HttpMethod, OperationBuilder};
+ let api = OpenApiBuilder::new()
+     .paths(
+         PathsBuilder::new().path(
+             "/api/v1/status",
+             PathItem::new(
+                 HttpMethod::Get,
+                 OperationBuilder::new()
+                     .description(Some("Get status"))
+                     .build(),
+             ),
+         ),
+     )
+     .build();
+ let user_api = OpenApiBuilder::new()
+    .paths(
+        PathsBuilder::new().path(
+            "/",
+            PathItem::new(HttpMethod::Post, OperationBuilder::new().build()),
+        )
+    )
+    .build();
+ let nested = api.nest("/api/v1/user", user_api);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new RefBuilder.
+
+This is effectively same as calling [`RefBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Construct a new ParameterBuilder.
+
+This is effectively same as calling [`ParameterBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Implements [OpenAPI Operation Object][operation] object.
+
+[operation]: https://spec.openapis.org/oas/latest.html#operation-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change list of [`SecurityRequirement`]s that are available for [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+When this is true, property values of type array or object generate separate parameters for
+each value of the array, or key-value-pair of the map. For other types of properties this
+property has no effect. When style is form, the default value is true. For all other
+styles, the default value is false. This property SHALL be ignored if the request body
+media type is not `application/x-www-form-urlencoded`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new required [`Parameter`] with given name.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+OpenAPI [Discriminator][discriminator] object which can be optionally used together with
+[`OneOf`] composite object.
+
+[discriminator]: https://spec.openapis.org/oas/latest.html#discriminator-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Constructs a new [`OpenApiBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Enum values can be used to limit possible options for substitution. If enum values is used
+the [`ServerVariable::default_value`] must contain one of the enum values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new ArrayBuilder.
+
+This is effectively same as calling [`ArrayBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new OneOfBuilder.
+
+This is effectively same as calling [`OneOfBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+The `content_encoding` keyword specifies the encoding used to store the contents, as specified in
+[RFC 2054, part 6.1](https://tools.ietf.org/html/rfc2045) and [RFC 4648](RFC 2054, part 6.1).
+
+Typically this is either unset for _`string`_ content types which then uses the content
+encoding of the underlying JSON document. If the content is in _`binary`_ format such as an image or an audio
+set it to `base64` to encode it as _`Base64`_.
+
+See more details at <https://json-schema.org/understanding-json-schema/reference/non_json_data#contentencoding>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add openapi extensions (`x-something`) for [`AnyOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change [`Parameter`]s schema.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Implements [OpenAPI External Docs Object][external_docs] types.
+
+[external_docs]: https://spec.openapis.org/oas/latest.html#xml-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Builder for [`Server`] with chainable configuration methods to create a new [`Server`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+List of tags used for grouping operations.
+
+When used with derive [`#[utoipa::path(...)]`][derive_path] attribute macro the default
+value used will be resolved from handler path provided in `#[openapi(paths(...))]` with
+[`#[derive(OpenApi)]`][derive_openapi] macro. If path resolves to `None` value `crate` will
+be used by default.
+
+[derive_path]: ../../attr.path.html
+[derive_openapi]: ../../derive.OpenApi.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Optional list of tags can be used to add additional documentation to matching tags of operations.
+
+See more details at <https://spec.openapis.org/oas/latest.html#tag-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set of change [`Object::content_media_type`]. Value must be valid MIME type e.g.
+`application/json`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Description of the [`Object`]. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Constructs a new [`RequestBody`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify exclusive upper limit for the [`Object`]'s value. Number value is considered
+valid if it is strictly less than _`exclusive_maximum`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change optional description for `AllOf` component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Construct a new [`RequestBody`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append [`PathItem`] with path to map of paths. If path already exists it will merge [`Operation`]s of
+[`PathItem`] with already found path item operations.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new OAuth2 flow with optional description supporting markdown syntax.
+
+# Examples
+
+Create new OAuth2 flow with multiple authentication flows with description.
+```rust
+# use utoipa::openapi::security::{OAuth2, Flow, Password, AuthorizationCode, Scopes};
+OAuth2::with_description([Flow::Password(
+    Password::with_refresh_url(
+        "https://localhost/oauth/token",
+        Scopes::from_iter([
+            ("edit:items", "edit my items"),
+            ("read:items", "read my items")
+        ]),
+        "https://localhost/refresh/token"
+    )),
+    Flow::AuthorizationCode(
+        AuthorizationCode::new(
+        "https://localhost/authorization/token",
+        "https://localhost/token/url",
+        Scopes::from_iter([
+            ("edit:items", "edit my items"),
+            ("read:items", "read my items")
+        ])
+     ),
+   ),
+], "my oauth2 flow");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Optional list of servers that provides the connectivity information to target servers.
+
+This is implicitly one server with `url` set to `/`.
+
+See more details at <https://spec.openapis.org/oas/latest.html#server-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add extensions to the paths section.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Trait for implementing OpenAPI specification in Rust.
+
+This trait is derivable and can be used with `#[derive]` attribute. The derived implementation
+will use Cargo provided environment variables to implement the default information. For a details of
+`#[derive(ToSchema)]` refer to [derive documentation][derive].
+
+# Examples
+
+Below is derived example of `OpenApi`.
+```rust
+use utoipa::OpenApi;
+#[derive(OpenApi)]
+#[openapi()]
+struct OpenApiDoc;
+```
+
+This manual `OpenApi` trait implementation is approximately equal to the above derived one except the derive
+implementation will by default use the Cargo environment variables to set defaults for *application name,
+version, application description, license, author name & email*.
+
+```rust
+struct OpenApiDoc;
+
+impl utoipa::OpenApi for OpenApiDoc {
+    fn openapi() -> utoipa::openapi::OpenApi {
+        use utoipa::{ToSchema, Path};
+        utoipa::openapi::OpenApiBuilder::new()
+            .info(utoipa::openapi::InfoBuilder::new()
+                .title("application name")
+                .version("version")
+                .description(Some("application description"))
+                .license(Some(utoipa::openapi::License::new("MIT")))
+                .contact(
+                    Some(utoipa::openapi::ContactBuilder::new()
+                        .name(Some("author name"))
+                        .email(Some("author email")).build()),
+            ).build())
+            .paths(utoipa::openapi::path::Paths::new())
+            .components(Some(utoipa::openapi::Components::new()))
+            .build()
+    }
+}
+```
+[derive]: derive.OpenApi.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Constructs a new [`Info`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Changes the [`Object`] title.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`Ref`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change exclusive minimum value for `number` and `integer` values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Implements [OpenAPI Metadata][info] types.
+
+Refer to [`OpenApi`][openapi_trait] trait and [derive documentation][derive]
+for examples and usage details.
+
+[info]: <https://spec.openapis.org/oas/latest.html#info-object>
+[openapi_trait]: ../../trait.OpenApi.html
+[derive]: ../../derive.OpenApi.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Add target url for external documentation location.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Builder for [`Extensions`] with chainable configuration methods to create a new [`Extensions`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new  [`AuthorizationCode`] OAuth2 flow with additional refresh token url.
+
+This is essentially same as [`AuthorizationCode::new`] but allows defining extra parameter `refresh_url`
+for fetching refresh token.
+
+# Examples
+
+Create [`AuthorizationCode`] OAuth2 flow with refresh url.
+```rust
+# use utoipa::openapi::security::{AuthorizationCode, Scopes};
+AuthorizationCode::with_refresh_url(
+    "https://localhost/auth/dialog",
+    "https://localhost/token",
+    Scopes::new(),
+    "https://localhost/refresh-token"
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+List of [`Parameter`]s common to all [`Operation`]s in this [`PathItem`]. Parameters cannot
+contain duplicate parameters. They can be overridden in [`Operation`] level but cannot be
+removed there.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new open id connect security schema.
+
+# Examples
+
+```rust
+# use utoipa::openapi::security::OpenIdConnect;
+OpenIdConnect::new("https://localhost/openid");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Construct a new [`PathItem`] with provided [`Operation`] mapped to given [`HttpMethod`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Converts this [`OpenApi`] to JSON String. This method essentially calls [`serde_json::to_string`] method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Builder for [`PathItem`] with chainable configuration methods to create a new [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+This trait is implemented to document a type which represents a single response which can be
+referenced or reused as a component in multiple operations.
+
+_`ToResponse`_ trait can also be derived with [`#[derive(ToResponse)]`][derive].
+
+# Examples
+
+```
+use utoipa::{
+    openapi::{RefOr, Response, ResponseBuilder},
+    ToResponse,
+};
+
+struct MyResponse;
+
+impl<'__r> ToResponse<'__r> for MyResponse {
+    fn response() -> (&'__r str, RefOr<Response>) {
+        (
+            "MyResponse",
+            ResponseBuilder::new().description("My Response").build().into(),
+        )
+    }
+}
+```
+
+[derive]: derive.ToResponse.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Constructs a new [`Extensions`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Construct a new [`Paths`] object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add [`struct@Response`] to [`Components`].
+
+This behaves the same way as [`ComponentsBuilder::schema_from`] but for responses. It
+allows adding response from type implementing [`trait@ToResponse`] trait. Method is
+expected to be called with one generic argument that implements the trait.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Patch [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Set the style [`ParameterStyle`]. See [`Encoding::style`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Constructs a new [`XmlBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Map of response [`Content`] objects identified by response body content type e.g `application/json`.
+
+[`Content`]s are stored within [`IndexMap`] to retain their insertion order. Swagger UI
+will create and show default example according to the first entry in `content` map.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change minimum length for `string` values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Open id connect [`SecurityScheme`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Construct a new ServerVariableBuilder.
+
+This is effectively same as calling [`ServerVariableBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Map of headers identified by their name. `Content-Type` header will be ignored.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`Operation`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Constructs a new [`Encoding`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Head [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Type of [`AllOf`] e.g. `SchemaType::new(Type::Object)` for `object`.
+
+By default this is [`SchemaType::AnyValue`] as the type is defined by items
+themselves.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Add [`Content`] by content type e.g `application/json` to [`RequestBody`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new HttpBuilder.
+
+This is effectively same as calling [`HttpBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change maximum length for `string` values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`AllOf`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Override default `$schema` dialect for the Open API doc.
+
+# Examples
+
+_**Override default schema dialect.**_
+```rust
+# use utoipa::openapi::OpenApiBuilder;
+let _ = OpenApiBuilder::new()
+    .schema("http://json-schema.org/draft-07/schema#")
+    .build();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Set the explode. See [`Encoding::explode`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+[`OAuth2`] flow scopes object defines required permissions for oauth flow.
+
+Scopes must be given to oauth2 flow but depending on need one of few initialization methods
+could be used.
+
+* Create empty map of scopes you can use [`Scopes::new`].
+* Create map with only one scope you can use [`Scopes::one`].
+* Create multiple scopes from iterator with [`Scopes::from_iter`].
+
+# Examples
+
+Create empty map of scopes.
+```rust
+# use utoipa::openapi::security::Scopes;
+let scopes = Scopes::new();
+```
+
+Create [`Scopes`] holding one scope.
+```rust
+# use utoipa::openapi::security::Scopes;
+let scopes = Scopes::one("edit:item", "edit pets");
+```
+
+Create map of scopes from iterator.
+```rust
+# use utoipa::openapi::security::Scopes;
+let scopes = Scopes::from_iter([
+    ("edit:items", "edit my items"),
+    ("read:items", "read my items")
+]);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Trait used to implement only _`Schema`_ part of the OpenAPI doc.
+
+This trait is by default implemented for Rust [`primitive`][primitive] types and some well known types like
+[`Vec`], [`Option`], [`std::collections::HashMap`] and [`BTreeMap`]. The default implementation adds `schema()`
+method to the implementing type allowing simple conversion of the type to the OpenAPI Schema
+object. Moreover this allows handy way of constructing schema objects manually if ever so
+wished.
+
+The trait can be implemented manually easily on any type. This trait comes especially handy
+with [`macro@schema`] macro that can be used to generate schema for arbitrary types.
+```rust
+# use utoipa::PartialSchema;
+# use utoipa::openapi::schema::{SchemaType, KnownFormat, SchemaFormat, ObjectBuilder, Schema};
+# use utoipa::openapi::RefOr;
+#
+struct MyType;
+
+impl PartialSchema for MyType {
+    fn schema() -> RefOr<Schema> {
+        // ... impl schema generation here
+        RefOr::T(Schema::Object(ObjectBuilder::new().build()))
+    }
+}
+```
+
+# Examples
+
+_**Create number schema from u64.**_
+```rust
+# use utoipa::PartialSchema;
+# use utoipa::openapi::schema::{Type, KnownFormat, SchemaFormat, ObjectBuilder, Schema};
+# use utoipa::openapi::RefOr;
+#
+let number: RefOr<Schema> = i64::schema().into();
+
+let number2 = RefOr::T(
+    Schema::Object(
+        ObjectBuilder::new()
+            .schema_type(Type::Integer)
+            .format(Some(SchemaFormat::KnownFormat(KnownFormat::Int64)))
+            .build()
+        )
+    );
+# assert_eq!(serde_json::to_value(&number).unwrap(), serde_json::to_value(&number2).unwrap());
+```
+
+_**Construct a Pet object schema manually.**_
+```rust
+# use utoipa::PartialSchema;
+# use utoipa::openapi::schema::ObjectBuilder;
+struct Pet {
+    id: i32,
+    name: String,
+}
+
+let pet_schema = ObjectBuilder::new()
+    .property("id", i32::schema())
+    .property("name", String::schema())
+    .required("id").required("name")
+    .build();
+```
+
+[primitive]: https://doc.rust-lang.org/std/primitive/index.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Define [`RequestBody`] required.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add openapi extensions (`x-something`) for [`AllOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Constructs a new [`Header`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Implements [OpenAPI Xml Object][xml_object] types.
+
+[xml_object]: https://spec.openapis.org/oas/latest.html#xml-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`AnyOf::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Add [`Paths`] to configure operations and endpoints of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Trait with convenience functions for documenting request bodies.
+
+With a single method call we can add [`Content`] to our [`RequestBodyBuilder`] and
+[`RequestBody`] that references a [schema][schema] using
+content-type `"application/json"`.
+
+_**Add json request body from schema ref.**_
+```rust
+use utoipa::openapi::request_body::{RequestBodyBuilder, RequestBodyExt};
+
+let request = RequestBodyBuilder::new().json_schema_ref("EmailPayload").build();
+```
+
+If serialized to JSON, the above will result in a requestBody schema like this.
+```json
+{
+  "content": {
+    "application/json": {
+      "schema": {
+        "$ref": "#/components/schemas/EmailPayload"
+      }
+    }
+  }
+}
+```
+
+[schema]: crate::ToSchema
+
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add or change possible values used to substitute parameter.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Examples of the request body or response body. [`Content::examples`] should match to
+media type and specified schema if present. [`Content::examples`] and
+[`Content::example`] are mutually exclusive. If both are defined `examples` will
+override value in `example`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+A description which by default should override that of the referenced component.
+Description supports markdown syntax. If referenced object type does not support
+description this field does not have effect.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Constructs a new [`Response`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Type of [`Object`] e.g. [`Type::Object`] for `object` and [`Type::String`] for
+`string` types.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change type of the object e.g. to change type to _`string`_
+use value `SchemaType::Type(Type::String)`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Short summary what [`Operation`] does.
+
+When used with derive [`#[utoipa::path(...)]`][derive_path] attribute macro the value
+is taken from **first line** of doc comment.
+
+[derive_path]: ../../attr.path.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Add [`Xml::prefix`] to xml object.
+
+Builder style chainable consuming add prefix method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add description. Description supports markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Description of the link. Value supports Markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`AnyOfBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Builder for [`ExternalDocs`] with chainable configuration methods to create a new [`ExternalDocs`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+The Content-Type for encoding a specific property. Default value depends on the property
+type: for string with format being binary – `application/octet-stream`; for other primitive
+types – `text/plain`; for object - `application/json`; for array – the default is defined
+based on the inner type. The value can be a specific media type (e.g. `application/json`),
+a wildcard media type (e.g. `image/*`), or a comma-separated list of the two types.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`ArrayBuilder`] with this component set to [`ArrayBuilder::items`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`Ref`] with custom ref location. In most cases this is not necessary
+and [`Ref::from_schema_name`] could be used instead.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Represents target server object. It can be used to alter server connection for
+_**path operations**_.
+
+By default OpenAPI will implicitly implement [`Server`] with `url = "/"` if no servers is provided to
+the [`OpenApi`][openapi].
+
+[openapi]: ../struct.OpenApi.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Alternative [`Server`]s for this [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change description which by default should override that of the referenced component.
+Description supports markdown syntax. If referenced object type does not support
+description this field does not have effect.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Adds a given [`Schema`] to [`AnyOf`] [Composite Object][composite].
+
+[composite]: https://spec.openapis.org/oas/latest.html#components-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Builder for [`License`] with chainable configuration methods to create a new [`License`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+A short summary which by default should override that of the referenced component. If
+referenced component does not support summary field this does not have effect.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Constructs a new [`ContactBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Http authentication [`SecurityScheme`] builder.
+
+Methods can be chained to configure _bearer_format_ or to add _description_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Embedded literal example value. [`Example::value`] and [`Example::external_value`] are
+mutually exclusive.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Represents available [OpenAPI versions][version].
+
+[version]: <https://spec.openapis.org/oas/latest.html#versions>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Name of the license used e.g MIT or Apache-2.0.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Set description of the link. Value supports Markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Builder for [`Http`] with chainable configuration methods to create a new [`Http`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`ArrayBuilder`] with this component set to [`ArrayBuilder::items`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Xml format of the array.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Implements [OpenAPI Schema Object][schema] types which can be
+used to define field properties, enum values, array or object types.
+
+[schema]: https://spec.openapis.org/oas/latest.html#schema-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Add or change embedded literal example value. [`Example::value`] and [`Example::external_value`]
+are mutually exclusive.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append list of [`Parameter`]s common to all [`Operation`]s to this [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Constructs a new [`Http`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+A map between a property name and its encoding information.
+
+The key, being the property name, MUST exist in the [`Content::schema`] as a property, with
+`schema` being a [`Schema::Object`] and this object containing the same property key in
+[`Object::properties`](crate::openapi::schema::Object::properties).
+
+The encoding object SHALL only apply to `request_body` objects when the media type is
+multipart or `application/x-www-form-urlencoded`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Constructs a new [`Content`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Implements [OpenAPI Header Object][header] for response headers.
+
+[header]: https://spec.openapis.org/oas/latest.html#header-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Alternative [`Server`] array to serve all [`Operation`]s in this [`PathItem`] overriding
+the global server array.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Check whether this [`SchemaType`] is any value _(typeless)_ returning true on any value
+schema type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change parameters of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Reference location of the actual component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Set a relative or absolute URI reference to an OAS operation. This field is
+mutually exclusive of the _`operation_id`_ field, and **must** point to an [Operation
+Object][operation].
+
+[operation]: ../path/struct.Operation.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Implements [OpenAPI Request Body][request_body] types.
+
+[request_body]: https://spec.openapis.org/oas/latest.html#request-body-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Additional [`Xml`] formatting of the [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Additional [data for extending][extensions] the OpenAPI specification.
+
+[extensions]: https://spec.openapis.org/oas/latest.html#specification-extensions
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Add or change informative bearer format for http security schema.
+
+This is only applicable to [`HttpAuthScheme::Bearer`].
+
+# Examples
+
+Add JTW bearer format for security schema.
+```rust
+# use utoipa::openapi::security::{HttpBuilder, HttpAuthScheme};
+HttpBuilder::new().scheme(HttpAuthScheme::Bearer).bearer_format("JWT").build();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Default value which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Construct a new [`Content`] object for provided _`schema`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Components of _AnyOf component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Constructs a new [`EncodingBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Optional description describing the target server url. Description supports markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Constructs a new [`Xml`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Trait for implementing OpenAPI Schema object.
+
+Generated schemas can be referenced or reused in path operations.
+
+This trait is derivable and can be used with `[#derive]` attribute. For a details of
+`#[derive(ToSchema)]` refer to [derive documentation][derive].
+
+[derive]: derive.ToSchema.html
+
+# Examples
+
+Use `#[derive]` to implement `ToSchema` trait.
+```rust
+# use utoipa::ToSchema;
+#[derive(ToSchema)]
+#[schema(example = json!({"name": "bob the cat", "id": 1}))]
+struct Pet {
+    id: u64,
+    name: String,
+    age: Option<i32>,
+}
+```
+
+Following manual implementation is equal to above derive one.
+```rust
+# struct Pet {
+#     id: u64,
+#     name: String,
+#     age: Option<i32>,
+# }
+#
+impl utoipa::ToSchema for Pet {
+    fn name() -> std::borrow::Cow<'static, str> {
+        std::borrow::Cow::Borrowed("Pet")
+    }
+}
+impl utoipa::PartialSchema for Pet {
+    fn schema() -> utoipa::openapi::RefOr<utoipa::openapi::schema::Schema> {
+        utoipa::openapi::ObjectBuilder::new()
+            .property(
+                "id",
+                utoipa::openapi::ObjectBuilder::new()
+                    .schema_type(utoipa::openapi::schema::Type::Integer)
+                    .format(Some(utoipa::openapi::SchemaFormat::KnownFormat(
+                        utoipa::openapi::KnownFormat::Int64,
+                    ))),
+            )
+            .required("id")
+            .property(
+                "name",
+                utoipa::openapi::ObjectBuilder::new()
+                    .schema_type(utoipa::openapi::schema::Type::String),
+            )
+            .required("name")
+            .property(
+                "age",
+                utoipa::openapi::ObjectBuilder::new()
+                    .schema_type(utoipa::openapi::schema::Type::Integer)
+                    .format(Some(utoipa::openapi::SchemaFormat::KnownFormat(
+                        utoipa::openapi::KnownFormat::Int32,
+                    ))),
+            )
+            .example(Some(serde_json::json!({
+              "name":"bob the cat","id":1
+            })))
+            .into()
+    }
+}
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change additional [`Xml`] formatting of the [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Target url of the [`Server`]. It can be valid http url or relative path.
+
+Url also supports variable substitution with `{variable}` syntax. The substitutions
+then can be configured with [`Server::variables`] map.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new [`SecurityRequirement`].
+
+Accepts name for the security requirement which must match to the name of available [`SecurityScheme`].
+Second parameter is [`IntoIterator`] of [`Into<String>`] scopes needed by the [`SecurityRequirement`].
+Scopes must match to the ones defined in [`SecurityScheme`].
+
+# Examples
+
+Create new security requirement with scopes.
+```rust
+# use utoipa::openapi::security::SecurityRequirement;
+SecurityRequirement::new("api_oauth2_flow", ["edit:items", "read:items"]);
+```
+
+You can also create an empty security requirement with `Default::default()`.
+```rust
+# use utoipa::openapi::security::SecurityRequirement;
+SecurityRequirement::default();
+```
+
+If you have more than one name in the security requirement you can use
+[`SecurityRequirement::add`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Constructs a new [`Contact`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set maximum allowed length for [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Map of supported OAuth2 flows.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional discriminator field can be used to aid deserialization, serialization and validation of a
+specific schema.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Additional description supporting markdown syntax of the external documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Adds a given [`Schema`] to [`AllOf`] [Composite Object][composite].
+
+[composite]: https://spec.openapis.org/oas/latest.html#components-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Construct a new [`License`] object.
+
+Function takes name of the license as an argument e.g MIT.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Optional url pointing to the license.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Construct a new RequestBodyBuilder.
+
+This is effectively same as calling [`RequestBodyBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Scopes required by the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Implements [OpenAPI Extensions][extensions].
+
+[extensions]: https://spec.openapis.org/oas/latest.html#specification-extensions
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Appends a [`Path`] to map of paths. Method must be called with one generic argument that
+implements [`trait@Path`] trait.
+
+# Examples
+
+_**Append `MyPath` content to the paths.**_
+```rust
+# struct MyPath;
+# impl utoipa::Path for MyPath {
+#   fn methods() -> Vec<utoipa::openapi::path::HttpMethod> { vec![] }
+#   fn path() -> String { String::new() }
+#   fn operation() -> utoipa::openapi::path::Operation {
+#        utoipa::openapi::path::Operation::new()
+#   }
+# }
+let paths = utoipa::openapi::path::PathsBuilder::new();
+let _ = paths.path_from::<MyPath>();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+A single encoding definition applied to a single schema [`Object
+property`](crate::openapi::schema::Object::properties).
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Changes the [`Object`] deprecated status.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+License of the API.
+
+See more details at: <https://spec.openapis.org/oas/latest.html#license-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append [`SecurityRequirement`] to [`Operation`] security requirements.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Value object for [`ApiKey`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Must be a number strictly greater than `0`. Numeric value is considered valid if value
+divided by the _`multiple_of`_ value results an integer.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Optional map of variable name and its substitution value used in [`Server::url`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Type will always be [`SchemaType::Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change responses of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`Paths`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Unique identifier for the API [`Operation`]. Most typically this is mapped to handler function name.
+
+When used with derive [`#[utoipa::path(...)]`][derive_path] attribute macro the handler function
+name will be used by default.
+
+[derive_path]: ../../attr.path.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change example of [`Parameter`]'s potential value.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+
+This is same as calling [`SchemaType::AnyValue`] but in a function form `() -> SchemaType`
+allowing it to be used as argument for _serde's_ _`default = "..."`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Available paths and operations for the API.
+
+See more details at <https://spec.openapis.org/oas/latest.html#paths-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add [`Schema`] to [`Components`].
+
+This is effectively same as calling [`ComponentsBuilder::schema`] but expects to be called
+with one generic argument that implements [`ToSchema`][trait@ToSchema] trait.
+
+# Examples
+
+_**Add schema from `Value` type that derives `ToSchema`.**_
+
+```rust
+# use utoipa::{ToSchema, openapi::schema::ComponentsBuilder};
+ #[derive(ToSchema)]
+ struct Value(String);
+
+ let _ = ComponentsBuilder::new().schema_from::<Value>().build();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new password oauth flow with additional refresh url.
+
+This is essentially same as [`Password::new`] but allows defining third parameter for `refresh_url`
+for fetching refresh tokens.
+
+# Examples
+
+Create new password flow with refresh url.
+```rust
+# use utoipa::openapi::security::{Password, Scopes};
+Password::with_refresh_url(
+    "https://localhost/token",
+    Scopes::from_iter([
+        ("edit:items", "edit my items"),
+        ("read:items", "read my items")
+    ]),
+    "https://localhost/refres-token"
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add version of the api document typically the API version.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Builder for [`Contact`] with chainable configuration methods to create a new [`Contact`].
+ See the [`InfoBuilder`] for combined usage example.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Adds a given [`Schema`] to [`OneOf`] [Composite Object][composite].
+
+[composite]: https://spec.openapis.org/oas/latest.html#components-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Builder for [`AnyOf`] with chainable configuration methods to create a new [`AnyOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new AllOfBuilder.
+
+This is effectively same as calling [`AllOfBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`AnyOf`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Scopes required by the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Additional description of the header value.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Known schema format modifier property to provide fine detail of the primitive type.
+
+Known format is defined in <https://spec.openapis.org/oas/latest.html#data-types> and
+<https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-validation-00#section-7.3> as
+well as by few known data types that are enabled by specific feature flag e.g. _`uuid`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional refresh token url for the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Map of reusable response name, to [OpenAPI Response Object][response]s or [OpenAPI
+Reference][reference]s to [OpenAPI Response Object][response]s.
+
+[response]: https://spec.openapis.org/oas/latest.html#response-object
+[reference]: https://spec.openapis.org/oas/latest.html#reference-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`ArrayBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add email of the contact person or organization of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`Object`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`Components`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Optional description intended to apply all operations in this [`PathItem`].
+Description supports markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Implements [OpenAPI Example Object][example] can be used to define examples for [`Response`][response]s and
+[`RequestBody`][request_body]s.
+
+[example]: https://spec.openapis.org/oas/latest.html#example-object
+[response]: response/struct.Response.html
+[request_body]: request_body/struct.RequestBody.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Holds various reusable schemas for the OpenAPI document.
+
+Few of these elements are security schemas and object schemas.
+
+See more details at <https://spec.openapis.org/oas/latest.html#components-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Constructs a new [`ExampleBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+An object to hold mappings between payload values and schema names or references.
+This field can only be populated manually. There is no macro support and no
+validation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Scopes required by the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify exclusive lower limit for the [`Object`]'s value. Number value is considered
+valid if it is strictly above the _`exclusive_minimum`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Builder for [`ServerVariable`] with chainable configuration methods to create a new [`ServerVariable`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Changes the [`Array`] title.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`OperationBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change reference location of the actual component automatically formatting the $ref
+to `#/components/schemas/...` format.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new AnyOfBuilder.
+
+This is effectively same as calling [`AnyOfBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional discriminator field can be used to aid deserialization, serialization and validation of a
+specific schema.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Implements [OpenAPI Response Object][response].
+
+Response is api operation response.
+
+[response]: https://spec.openapis.org/oas/latest.html#response-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Return _`Option`_ of reference to [`PathItem`] by given relative path _`P`_ if one exists
+in [`Paths::paths`] map. Otherwise will return `None`.
+
+# Examples
+
+_**Get user path item.**_
+```rust
+# use utoipa::openapi::path::{Paths, HttpMethod};
+# let paths = Paths::new();
+let path_item = paths.get_path_item("/api/v1/user");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Additional external documentation for this operation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+The _`content_media_type`_ keyword specifies the MIME type of the contents of a string,
+as described in [RFC 2046](https://tools.ietf.org/html/rfc2046).
+
+See more details at <https://json-schema.org/understanding-json-schema/reference/non_json_data#contentmediatype>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change default value for the object which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Http authorization scheme in HTTP `Authorization` header value.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Nest `other` [`OpenApi`] with custom path composer.
+
+In most cases you should use [`OpenApi::nest`] instead.
+Only use this method if you need custom path composition for a specific use case.
+
+`composer` is a function that takes two strings, the base path and the path to nest, and returns the composed path for the API Specification.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add multiple [`struct@Response`]s to [`Components`] from iterator.
+
+Like the [`ComponentsBuilder::schemas_from_iter`] this allows adding multiple responses by
+any iterator what returns tuples of (name, response) values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+OneOf [Composite Object][oneof] component holds
+multiple components together where API endpoint could return any of them.
+
+See [`Schema::OneOf`] for more details.
+
+[oneof]: https://spec.openapis.org/oas/latest.html#components-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Add [`Xml::name`] to xml object.
+
+Builder style chainable consuming add name method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change short summary of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+OpenAPI [License][license] information of the API.
+
+[license]: <https://spec.openapis.org/oas/latest.html#license-object>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Root object of the OpenAPI document.
+
+You can use [`OpenApi::new`] function to construct a new [`OpenApi`] instance and then
+use the fields with mutable access to modify them. This is quite tedious if you are not simply
+just changing one thing thus you can also use the [`OpenApiBuilder::new`] to use builder to
+construct a new [`OpenApi`] object.
+
+See more details at <https://spec.openapis.org/oas/latest.html#openapi-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Name of the tag. Should match to tag of **operation**.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Add or change optional description supporting markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify minimum length for `string` values. _`min_length`_ cannot be a negative integer
+value. Setting this to _`0`_ has the same effect as omitting this field. Value is
+considered valid if content length is equal or more than the _`min_length`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Builder for [`RequestBody`] with chainable configuration methods to create a new [`RequestBody`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Constructs a new [`TagBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change read only flag for [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Additional external documentation for the tag.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Determines whether the parameter value SHOULD allow reserved characters, as defined by
+RFC3986 `:/?#[]@!$&'()*+,;=` to be included without percent-encoding. The default value is
+false. This property SHALL be ignored if the request body media type is not
+`application/x-www-form-urlencoded`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change the title of the [`OneOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change discriminator field of the composite [`AllOf`] type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Rust implementation of Openapi Spec V3.1.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Token url for the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional description of [`Http`] [`SecurityScheme`] supporting markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+An URI that points to a literal example value. [`Example::external_value`] provides the
+capability to references an example that cannot be easily included in JSON or YAML.
+[`Example::value`] and [`Example::external_value`] are mutually exclusive.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+A [`Ref`] or some other type `T`.
+
+Typically used in combination with [`Components`] and is an union type between [`Ref`] and any
+other given type such as [`Schema`] or [`Response`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Set the allow reserved. See [`Encoding::allow_reserved`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional refresh token url.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`OneOf::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Prefix for xml element [`Xml::name`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Converts this [`OpenApi`] to pretty JSON String. This method essentially calls [`serde_json::to_string_pretty`] method.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Implements [OpenAPI Security Schema][security] types.
+
+Refer to [`SecurityScheme`] for usage and more details.
+
+[security]: https://spec.openapis.org/oas/latest.html#security-scheme-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+AdditionalProperties is used to define values of map fields of the [`Schema`].
+
+The value can either be [`RefOr`] or _`bool`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`AllOfBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Construct a new OperationBuilder.
+
+This is effectively same as calling [`OperationBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change inclusive minimum value for `number` and `integer` values.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Construct a new [`Responses`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append a new [`Operation`] by [`HttpMethod`] to this [`PathItem`]. Operations can
+hold only one operation per [`HttpMethod`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change description of the [`Parameter`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Construct a new [`ExternalDocs`].
+
+Function takes target url argument for the external documentation location.
+
+# Examples
+
+```rust
+# use utoipa::openapi::external_docs::ExternalDocs;
+let external_docs = ExternalDocs::new("https://pet-api.external.docs");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Builder for [`Content`] with chainable configuration methods to create a new [`Content`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Add additional external documentation for the tag.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Builder for [`Info`] with chainable configuration methods to create a new [`Info`].
+ # Examples
+
+ Create [`Info`] using [`InfoBuilder`].
+ ```rust
+ # use utoipa::openapi::{Info, InfoBuilder, ContactBuilder};
+ let info = InfoBuilder::new()
+      .title("My api")
+      .version("1.0.0")
+      .contact(Some(ContactBuilder::new()
+           .name(Some("Admin Admin"))
+           .email(Some("amdin@petapi.com"))
+           .build()
+       ))
+      .build();
+ ```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change type of the object e.g. to change type to _`string`_
+use value `SchemaType::Type(Type::String)`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Add openapi extensions (x-something) to the tag.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change operation id of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Default value which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add a [`Response`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add in of the [`Parameter`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`AllOfBuilder::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`ArrayBuilder`] with this component set to [`ArrayBuilder::items`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Implements encoding object for content.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Trait for implementing OpenAPI PathItem object with path.
+
+This trait is implemented via [`#[utoipa::path(...)]`][derive] attribute macro and there
+is no need to implement this trait manually.
+
+# Examples
+
+Use `#[utoipa::path(..)]` to implement Path trait
+```rust
+# #[derive(utoipa::ToSchema)]
+# struct Pet {
+#   id: u64,
+#   name: String,
+# }
+#
+#
+/// Get pet by id
+///
+/// Get pet from database by pet database id
+#[utoipa::path(
+    get,
+    path = "/pets/{id}",
+    responses(
+        (status = 200, description = "Pet found successfully", body = Pet),
+        (status = 404, description = "Pet was not found")
+    ),
+    params(
+        ("id" = u64, Path, description = "Pet database id to get Pet for"),
+    )
+)]
+async fn get_pet_by_id(pet_id: u64) -> Pet {
+    Pet {
+        id: pet_id,
+        name: "lightning".to_string(),
+    }
+}
+```
+
+Example of what would manual implementation roughly look like of above `#[utoipa::path(...)]` macro.
+```rust
+utoipa::openapi::PathsBuilder::new().path(
+        "/pets/{id}",
+        utoipa::openapi::PathItem::new(
+            utoipa::openapi::HttpMethod::Get,
+            utoipa::openapi::path::OperationBuilder::new()
+                .responses(
+                    utoipa::openapi::ResponsesBuilder::new()
+                        .response(
+                            "200",
+                            utoipa::openapi::ResponseBuilder::new()
+                                .description("Pet found successfully")
+                                .content("application/json",
+                                    utoipa::openapi::Content::new(
+                                        Some(utoipa::openapi::Ref::from_schema_name("Pet")),
+                                    ),
+                            ),
+                        )
+                        .response("404", utoipa::openapi::Response::new("Pet was not found")),
+                )
+                .operation_id(Some("get_pet_by_id"))
+                .deprecated(Some(utoipa::openapi::Deprecated::False))
+                .summary(Some("Get pet by id"))
+                .description(Some("Get pet by id\n\nGet pet from database by pet database id\n"))
+                .parameter(
+                    utoipa::openapi::path::ParameterBuilder::new()
+                        .name("id")
+                        .parameter_in(utoipa::openapi::path::ParameterIn::Path)
+                        .required(utoipa::openapi::Required::True)
+                        .deprecated(Some(utoipa::openapi::Deprecated::False))
+                        .description(Some("Pet database id to get Pet for"))
+                        .schema(
+                            Some(utoipa::openapi::ObjectBuilder::new()
+                                .schema_type(utoipa::openapi::schema::Type::Integer)
+                                .format(Some(utoipa::openapi::SchemaFormat::KnownFormat(utoipa::openapi::KnownFormat::Int64)))),
+                        ),
+                )
+                .tag("pet_api"),
+        ),
+    );
+```
+
+[derive]: attr.path.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add additional [`Schema`] to describe property names of an object such as a map. See more
+details <https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-01#name-propertynames>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Builder for [`Tag`] with chainable configuration methods to create a new [`Tag`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Implements [OpenAPI Xml Object][xml_object].
+
+Can be used to modify xml output format of specific [OpenAPI Schema Object][schema_object] which are
+implemented in [`schema`][schema] module.
+
+[xml_object]: https://spec.openapis.org/oas/latest.html#xml-object
+[schema_object]: https://spec.openapis.org/oas/latest.html#schema-object
+[schema]: ../schema/index.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Builder for [`Paths`] with chainable configuration methods to create a new [`Paths`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+When _`true`_ it will generate separate parameter value for each parameter with _`array`_ and _`object`_ type.
+This is also _`true`_ by default for [`ParameterStyle::Form`].
+
+With explode _`false`_:
+```text
+color=blue,black,brown
+```
+
+With explode _`true`_:
+```text
+color=blue&color=black&color=brown
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional extensions `x-something`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Type of [`AnyOf`] e.g. `SchemaType::new(Type::Object)` for `object`.
+
+By default this is [`SchemaType::AnyValue`] as the type is defined by items
+themselves.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change maximum number of properties the [`Object`] can hold.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+This convenience trait allows quick way to wrap any `RefOr<Schema>` with [`Array`] schema.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Name of the parameter.
+
+* For [`ParameterIn::Path`] this must in accordance to path templating.
+* For [`ParameterIn::Query`] `Content-Type` or `Authorization` value will be ignored.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add description of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`AnyOf`] component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change discriminator field of the composite [`OneOf`] type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Add iterator of [`SecurityRequirement`]s that are globally available for all operations.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add [`Content`] of the [`Response`] with content type e.g `application/json`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Add example of schema.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Valid uri definition of namespace used in xml.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set minimum allowed length for [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+List of possible responses returned by the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Define a valid `ECMA-262` dialect regular expression. The `string` content is
+considered valid if the _`pattern`_ matches the value successfully.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change default value for the object which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Add parameter to be passed to [Operation][operation] upon execution.
+
+[operation]: ../path/struct.Operation.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Implicit [`Flow`] configuration for [`OAuth2`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Builder for [`Responses`] with chainable configuration methods to create a new [`Responses`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Additional description of [`RequestBody`] supporting markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Add schema of header.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add openapi extensions (`x-something`) for [`OneOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Construct a new HeaderBuilder.
+
+This is effectively same as calling [`HeaderBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add list of alternative [`Server`]s to serve all [`Operation`]s in this [`PathItem`] overriding
+the global server array.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`PathItem`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Construct a new [`Info`] object.
+
+This function accepts two arguments. One which is the title of the API and two the
+version of the api document typically the API version.
+
+# Examples
+
+```rust
+# use utoipa::openapi::Info;
+let info = Info::new("Pet api", "1.1.0");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Construct a new [`Xml`] object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Components of _OneOf_ component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Markdown supported description of the parameter.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change description of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set or change minimum number of properties the [`Object`] can hold.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Add or change a short description for the [`Example`]. Setting this to empty `String`
+will make it not render in the generated OpenAPI document.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Optional description of the API.
+
+Value supports markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`Array`] component from given [`Schema`].
+
+# Examples
+
+_**Create a `String` array component**_.
+```rust
+# use utoipa::openapi::schema::{Schema, Array, Type, Object};
+let string_array = Array::new(Object::with_type(Type::String));
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Constructs a new [`ExternalDocs`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change description of the property. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Builder for [`Example`] with chainable configuration methods to create a new [`Example`].
+ # Examples
+
+ _**Construct a new [`Example`] via builder**_
+ ```rust
+ # use utoipa::openapi::example::ExampleBuilder;
+ let example = ExampleBuilder::new()
+     .summary("Example string response")
+     .value(Some(serde_json::json!("Example value")))
+     .build();
+ ```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new implicit oauth2 flow.
+
+Accepts two arguments: one which is authorization url and second map of scopes. Scopes can
+also be an empty map.
+
+# Examples
+
+Create new implicit flow with scopes.
+```rust
+# use utoipa::openapi::security::{Implicit, Scopes};
+Implicit::new(
+    "https://localhost/auth/dialog",
+    Scopes::from_iter([
+        ("edit:items", "edit my items"),
+        ("read:items", "read my items")
+    ]),
+);
+```
+
+Create new implicit flow without any scopes.
+```rust
+# use utoipa::openapi::security::{Implicit, Scopes};
+Implicit::new(
+    "https://localhost/auth/dialog",
+    Scopes::new(),
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Implements [OpenAPI Server Variable][server_variable] used to substitute variables in [`Server::url`].
+
+[server_variable]: https://spec.openapis.org/oas/latest.html#server-variable-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Constructs a new [`ServerBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change the title of the [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`PathItemBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Title of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Merge `other` [`OpenApi`] moving `self` and returning combined [`OpenApi`].
+
+In functionality wise this is exactly same as calling [`OpenApi::merge`] but but provides
+leaner API for chaining method calls.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add response [`Header`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional extensions `x-something`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add iterator of [`SecurityScheme`]s to [`Components`].
+
+Accepts two arguments where first is the name of the [`SecurityScheme`]. This is later when
+referenced by [`SecurityRequirement`][requirement]s. Second parameter is the [`SecurityScheme`].
+
+[requirement]: ../security/struct.SecurityRequirement.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add parameter to [`Server`] which is used to substitute values in [`Server::url`].
+
+* `name` Defines name of the parameter which is being substituted within the url. If url has
+  `{username}` substitution then the name should be `username`.
+* `parameter` Use [`ServerVariableBuilder`] to define how the parameter is being substituted
+  within the url.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Define whether the operation is deprecated or not and thus should be avoided consuming.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Password [`Flow`] configuration for [`OAuth2`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Construct a new InfoBuilder.
+
+This is effectively same as calling [`InfoBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`Object::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Description of the response. Response support markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Declaration which security mechanisms can be used for for the operation. Only one
+[`SecurityRequirement`] must be met.
+
+Security for the [`Operation`] can be set to optional by adding empty security with
+[`SecurityRequirement::default`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+The name of an existing, resolvable OAS operation, as defined with a unique
+_`operation_id`_.
+This field is mutually exclusive of the _`operation_ref`_ field.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional extensions `x-something`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set of change [`Object::content_encoding`]. Typically left empty but could be `base64` for
+example.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add [`Schema`]s from iterator.
+
+# Examples
+```rust
+# use utoipa::openapi::schema::{ComponentsBuilder, ObjectBuilder,
+#    Type, Schema};
+ComponentsBuilder::new().schemas_from_iter([(
+    "Pet",
+    Schema::from(
+        ObjectBuilder::new()
+            .property(
+                "name",
+                ObjectBuilder::new().schema_type(Type::String),
+            )
+            .required("name")
+    ),
+)]);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change deprecated status for [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Read only property will be only sent in _read_ requests like _GET_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Initialize a new [`Object`] with default [`SchemaType`]. This effectively same as calling
+`Object::with_type(SchemaType::Object)`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Default value which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change type of the object e.g. to change type to _`string`_
+use value `SchemaType::Type(Type::String)`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new nullable [`Array`] component from given [`Schema`].
+
+# Examples
+
+_**Create a nullable `String` array component**_.
+```rust
+# use utoipa::openapi::schema::{Schema, Array, Type, Object};
+let string_array = Array::new_nullable(Object::with_type(Type::String));
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify inclusive lower limit for the [`Object`]'s value. Number value is considered
+valid if it is equal or greater than the _`minimum`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`ArrayBuilder`] with this component set to [`ArrayBuilder::items`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Default value which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Add name of the tag.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change optional description intended to apply all operations in this [`PathItem`].
+Description supports markdown syntax.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+A map allowing additional information to be provided as headers, for example
+Content-Disposition. Content-Type is described separately and SHALL be ignored in this
+section. This property SHALL be ignored if the request body media type is not a multipart.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/extensions.rs
+Adds a key-value pair to the extensions. Extensions keys are prefixed with `"x-"` if
+not done already.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Type of [`OneOf`] e.g. `SchemaType::new(Type::Object)` for `object`.
+
+By default this is [`SchemaType::AnyValue`] as the type is defined by items
+themselves.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Additional [`Schema`] for non specified fields (Useful for typed maps).
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add prefix items of [`Array`] to define item validation of tuples according [JSON schema
+item validation][item_validation].
+
+[item_validation]: <https://json-schema.org/understanding-json-schema/reference/array#tupleValidation>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add link that can be followed from the response.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify maximum length for `string` values. _`max_length`_ cannot be a negative integer
+value. Value is considered valid if content length is equal or less than the _`max_length`_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Merge all defined [`Operation`]s from given [`PathItem`] to `self` if `self` does not have
+existing operation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Additional format for [`SchemaType`] to fine tune the data type used. If the **format** is not
+supported by the UI it may default back to [`SchemaType`] alone.
+Format is an open value, so you can use any formats, even not those defined by the
+OpenAPI Specification.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Identifying name of the contact person or organization of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add name of the [`Parameter`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Builder for [`AllOf`] with chainable configuration methods to create a new [`AllOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Merge `other` [`OpenApi`] consuming it and resuming it's content.
+
+Merge function will take all `self` nonexistent _`servers`, `paths`, `schemas`, `responses`,
+`security_schemes`, `security_requirements` and `tags`_ from _`other`_ [`OpenApi`].
+
+This function performs a shallow comparison for `paths`, `schemas`, `responses` and
+`security schemes` which means that only _`name`_ and _`path`_ is used for comparison. When
+match occurs the whole item will be ignored from merged results. Only items not
+found will be appended to `self`.
+
+For _`servers`_, _`tags`_ and _`security_requirements`_ the whole item will be used for
+comparison. Items not found from `self` will be appended to `self`.
+
+**Note!** `info`, `openapi`, `external_docs` and `schema` will not be merged.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Constructs a new [`ServerVariableBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Name of the [`ApiKey`] parameter.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Construct a new LinkBuilder.
+
+This is effectively same as calling [`LinkBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`ComponentsBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Token url for this OAuth2 flow. OAuth2 standard requires TLS.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Map containing status code as a key with represented response as a value.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Construct a new ExampleBuilder.
+
+This is effectively same as calling [`ExampleBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Change type of the array e.g. to change type to _`string`_
+use value `SchemaType::Type(Type::String)`.
+
+# Examples
+
+_**Make nullable string array.**_
+```rust
+# use utoipa::openapi::schema::{ArrayBuilder, SchemaType, Type, Object};
+let _ = ArrayBuilder::new()
+    .schema_type(SchemaType::from_iter([Type::Array, Type::Null]))
+    .items(Object::with_type(Type::String))
+    .build();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Constructs a new [`LicenseBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Constructs a new [`OpenApi`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Define whether [`Parameter`]s are exploded or not.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Constructs a new [`License`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Trace [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Defines how [`Parameter`] should be serialized.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add [`Schema`] to [`Components`].
+
+Accepts two arguments where first is name of the schema and second is the schema itself.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new client credentials oauth flow with additional refresh url.
+
+This is essentially same as [`ClientCredentials::new`] but allows defining third parameter for
+`refresh_url`.
+
+# Examples
+
+Create new client credentials for with refresh url.
+```rust
+# use utoipa::openapi::security::{ClientCredentials, Scopes};
+ClientCredentials::with_refresh_url(
+    "https://localhost/token",
+    Scopes::from_iter([
+        ("edit:items", "edit my items"),
+        ("read:items", "read my items")
+    ]),
+    "https://localhost/refresh-url"
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Provides metadata about the API.
+
+See more details at <https://spec.openapis.org/oas/latest.html#info-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Description of the [`AllOf`]. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add openapi extensions (x-something) to the [`Parameter`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`OneOfBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Value used to indicate whether parameter or property is required.
+
+The value will serialize to boolean.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Add iterator of [`Server`]s to configure target servers.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Constructs a new [`LinkBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`AnyOf`] component with given capacity.
+
+AnyOf component is then able to contain number of components without
+reallocating.
+
+# Examples
+
+Create [`AnyOf`] component with initial capacity of 5.
+```rust
+# use utoipa::openapi::schema::AnyOf;
+let one_of = AnyOf::with_capacity(5);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Builder for [`Link`] with chainable configuration methods to create a new [`Link`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`ArrayBuilder`] with this component set to [`ArrayBuilder::items`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add url to the target [`Server`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new implicit oauth2 flow with refresh url for getting refresh tokens.
+
+This is essentially same as [`Implicit::new`] but allows defining `refresh_url` for the [`Implicit`]
+oauth2 flow.
+
+# Examples
+
+Create a new implicit oauth2 flow with refresh token.
+```rust
+# use utoipa::openapi::security::{Implicit, Scopes};
+Implicit::with_refresh_url(
+    "https://localhost/auth/dialog",
+    Scopes::new(),
+    "https://localhost/refresh-token"
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+A relative or absolute URI reference to an OAS operation. This field is
+mutually exclusive of the _`operation_id`_ field, and **must** point to an [Operation
+Object][operation].
+Relative _`operation_ref`_ values may be used to locate an existing [Operation
+Object][operation] in the OpenAPI definition. See the rules for resolving [Relative
+References][relative_references].
+
+[relative_references]: https://spec.openapis.org/oas/latest.html#relative-references-in-uris
+[operation]: ../path/struct.Operation.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Builder for [`Ref`] with chainable configuration methods to create a new [`Ref`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/external_docs.rs
+Constructs a new [`ExternalDocsBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add new property to the [`Object`].
+
+Method accepts property name and property component as an arguments.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Builder for [`Object`] with chainable configuration methods to create a new [`Object`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add openapi extensions (`x-something`) for [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+This trait is implemented to document a type (like an enum) which can represent multiple
+responses, to be used in operation.
+
+# Examples
+
+```
+use std::collections::BTreeMap;
+use utoipa::{
+    openapi::{Response, ResponseBuilder, ResponsesBuilder, RefOr},
+    IntoResponses,
+};
+
+enum MyResponse {
+    Ok,
+    NotFound,
+}
+
+impl IntoResponses for MyResponse {
+    fn responses() -> BTreeMap<String, RefOr<Response>> {
+        ResponsesBuilder::new()
+            .response("200", ResponseBuilder::new().description("Ok"))
+            .response("404", ResponseBuilder::new().description("Not Found"))
+            .build()
+            .into()
+    }
+}
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+A map representing parameters to pass to an operation as specified with _`operation_id`_
+or identified by _`operation_ref`_. The key is parameter name to be used and value can
+be any value supported by JSON or an [expression][expression] e.g. `$path.id`
+
+[expression]: https://spec.openapis.org/oas/latest.html#runtime-expressions
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`ParameterBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Enum variants of fields that can be represented as `unit` type `enums`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+List of applicable parameters for this [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Implements subset of [OpenAPI Schema Object][schema] which allows
+adding other [`Schema`]s as **properties** to this [`Schema`].
+
+This is a generic OpenAPI schema object which can used to present `object`, `field` or an `enum`.
+
+[schema]: https://spec.openapis.org/oas/latest.html#schema-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add name of the license used in API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add contact information of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Optional summary intended to apply all operations in this [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify inclusive minimum amount of properties an [`Object`] can hold. Setting this to
+`0` will have same effect as omitting the attribute.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional discriminator field can be used to aid deserialization, serialization and validation of a
+specific schema.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change default value for the object which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set [`Schema`] type for the [`Array`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+OpenAPI document version.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Add [`Components`] to configure reusable schemas.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Construct a new TagBuilder.
+
+This is effectively same as calling [`TagBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change type of the object e.g. to change type to _`string`_
+use value `SchemaType::Type(Type::String)`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Construct a new [`OpenApi`] object.
+
+Function accepts two arguments one which is [`Info`] metadata of the API; two which is [`Paths`]
+containing operations for the API.
+
+# Examples
+
+```rust
+# use utoipa::openapi::{Info, Paths, OpenApi};
+#
+let openapi = OpenApi::new(Info::new("pet api", "0.1.0"), Paths::new());
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append a new [`Server`] to the [`Operation`] servers.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`OneOf`] component with given capacity.
+
+OneOf component is then able to contain number of components without
+reallocating.
+
+# Examples
+
+Create [`OneOf`] component with initial capacity of 5.
+```rust
+# use utoipa::openapi::schema::OneOf;
+let one_of = OneOf::with_capacity(5);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional extensions `x-something`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Authorization code [`Flow`] configuration for [`OAuth2`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new ComponentsBuilder.
+
+This is effectively same as calling [`ComponentsBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change enum property variants.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Construct a new PathsBuilder.
+
+This is effectively same as calling [`PathsBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add name contact person or organization of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Prefix items of [`Array`] is used to define item validation of tuples according [JSON schema
+item validation][item_validation].
+
+[item_validation]: <https://json-schema.org/understanding-json-schema/reference/array#tupleValidation>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Schema keyword can be used to override default _`$schema`_ dialect which is by default
+“<https://spec.openapis.org/oas/3.1/dialect/base>”.
+
+All the references and individual files could use their own schema dialect.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Write only property will be only sent in _write_ requests like _POST, PUT_.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Constructs a new [`ObjectBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi.rs
+Declaration of global security mechanisms that can be used across the API. The individual operations
+can override the declarations. You can use `SecurityRequirement::default()` if you wish to make security
+optional by adding it to the list of securities.
+
+See more details at <https://spec.openapis.org/oas/latest.html#security-requirement-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Implements [OpenApi Responses][responses].
+
+[responses]: https://spec.openapis.org/oas/latest.html#responses-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`Array::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/link.rs
+Implements [Open API Link Object][link_object] for responses.
+
+The `Link` represents possible design time link for a response. It does not guarantee
+callers ability to invoke it but rather provides known relationship between responses and
+other operations.
+
+For computing links, and providing instructions to execute them,
+a runtime [expression][expression] is used for accessing values in an operation
+and using them as parameters while invoking the linked operation.
+
+[expression]: https://spec.openapis.org/oas/latest.html#runtime-expressions
+[link_object]: https://spec.openapis.org/oas/latest.html#link-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+An [SPDX-Licenses][spdx_licence] expression for the API. The _`identifier`_ field
+is mutually exclusive of the _`url`_ field. E.g. Apache-2.0
+
+[spdx_licence]: <https://spdx.org/licenses/>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Append tag to [`Operation`] tags.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add or change description of the [`Server`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Flag deciding will this attribute translate to element attribute instead of xml element.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`OneOf`] component.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Contact information of exposed API.
+
+See more details at: <https://spec.openapis.org/oas/latest.html#contact-object>.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Builder for [`Encoding`] with chainable configuration methods to create a new [`Encoding`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Construct a new ContactBuilder.
+
+This is effectively same as calling [`ContactBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Instantiate new [`SchemaType`] of given [`Type`]
+
+Method accepts one argument `type` to create [`SchemaType`] for.
+
+# Examples
+
+_**Create string [`SchemaType`]**_
+```rust
+# use utoipa::openapi::schema::{SchemaType, Type};
+let ty = SchemaType::new(Type::String);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Schema of header type.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new api key with optional description supporting markdown syntax.
+
+# Examples
+
+Create new api key security schema with name `api_key` with description.
+```rust
+# use utoipa::openapi::security::ApiKeyValue;
+let api_key = ApiKeyValue::with_description("api_key", "my api_key token");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new ObjectBuilder.
+
+This is effectively same as calling [`ObjectBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Max length of the array.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set of change [`Object::content_encoding`]. Typically left empty but could be `base64` for
+example.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Construct a new [`Discriminator`] object with property name.
+
+# Examples
+
+Create a new [`Discriminator`] object for `pet_type` property.
+```rust
+# use utoipa::openapi::schema::Discriminator;
+let discriminator = Discriminator::new("pet_type");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/encoding.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct a new password oauth flow.
+
+Accepts two arguments: one which is a token url and
+two a map of scopes for oauth flow.
+
+# Examples
+
+Create new password flow with scopes.
+```rust
+# use utoipa::openapi::security::{Password, Scopes};
+Password::new(
+    "https://localhost/token",
+    Scopes::from_iter([
+        ("edit:items", "edit my items"),
+        ("read:items", "read my items")
+    ]),
+);
+```
+
+Create new password flow without any scopes.
+```rust
+# use utoipa::openapi::security::{Password, Scopes};
+Password::new(
+    "https://localhost/token",
+    Scopes::new(),
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Create an _`empty`_ [`Schema`] that serializes to _`null`_.
+
+Can be used in places where an item can be serialized as `null`. This is used with unit type
+enum variants and tuple unit types.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/content.rs
+Schema used in response body or request body.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add [`SecurityScheme`] to [`Components`].
+
+Accepts two arguments where first is the name of the [`SecurityScheme`]. This is later when
+referenced by [`SecurityRequirement`][requirement]s. Second parameter is the [`SecurityScheme`].
+
+[requirement]: ../security/struct.SecurityRequirement.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+A map of operations links that can be followed from the response. The key of the
+map is a short name for the link.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Implements [OpenAPI Tag Object][tag] types.
+
+[tag]: https://spec.openapis.org/oas/latest.html#tag-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Optional extensions "x-something".
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Trait with convenience functions for documenting response bodies.
+
+With a single method call we can add [`Content`] to our [`ResponseBuilder`] and [`Response`]
+that references a [schema][schema] using content-type `"application/json"`.
+
+_**Add json response from schema ref.**_
+```rust
+use utoipa::openapi::response::{ResponseBuilder, ResponseExt};
+
+let request = ResponseBuilder::new()
+    .description("A sample response")
+    .json_schema_ref("MyResponsePayload").build();
+```
+
+If serialized to JSON, the above will result in a response schema like this.
+```json
+{
+  "description": "A sample response",
+  "content": {
+    "application/json": {
+      "schema": {
+        "$ref": "#/components/schemas/MyResponsePayload"
+      }
+    }
+  }
+}
+```
+
+[response]: crate::ToResponse
+[schema]: crate::ToSchema
+
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change the title of the [`AllOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Return _`Option`_ of reference to [`Operation`] from map of paths or `None` if not found.
+
+* First will try to find [`PathItem`] by given relative path _`P`_ e.g. `"/api/v1/user"`.
+* Then tries to find [`Operation`] from [`PathItem`]'s operations by given [`HttpMethod`].
+
+# Examples
+
+_**Get user operation from paths.**_
+```rust
+# use utoipa::openapi::path::{Paths, HttpMethod};
+# let paths = Paths::new();
+let operation = paths.get_path_operation("/api/v1/user", HttpMethod::Get);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change default value for the object which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Authorization token url for the flow.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change summary intended to apply all operations in this [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Map of reusable [OpenAPI Schema Object][schema]s.
+
+[schema]: https://spec.openapis.org/oas/latest.html#schema-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Setting this to `true` will validate successfully if all elements of this [`Array`] are
+unique.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Construct a new ResponseBuilder.
+
+This is effectively same as calling [`ResponseBuilder::new`]
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/request_body.rs
+Constructs a new [`RequestBodyBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+OpenAPI [security scheme][security] for path operations.
+
+[security]: https://spec.openapis.org/oas/latest.html#security-scheme-object
+
+# Examples
+
+Create implicit oauth2 flow security schema for path operations.
+```rust
+# use utoipa::openapi::security::{SecurityScheme, OAuth2, Implicit, Flow, Scopes};
+SecurityScheme::OAuth2(
+    OAuth2::with_description([Flow::Implicit(
+        Implicit::new(
+            "https://localhost/auth/dialog",
+            Scopes::from_iter([
+                ("edit:items", "edit my items"),
+                ("read:items", "read my items")
+            ]),
+        ),
+    )], "my oauth2 flow")
+);
+```
+
+Create JWT header authentication.
+```rust
+# use utoipa::openapi::security::{SecurityScheme, HttpAuthScheme, HttpBuilder};
+SecurityScheme::Http(
+    HttpBuilder::new().scheme(HttpAuthScheme::Bearer).bearer_format("JWT").build()
+);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Want to have your API documented with OpenAPI? But you don't want to see the
+trouble with manual yaml or json tweaking? Would like it to be so easy that it would almost
+be like utopic? Don't worry utoipa is just there to fill this gap. It aims to do if not all then
+the most of heavy lifting for you enabling you to focus writing the actual API logic instead of
+documentation. It aims to be *minimal*, *simple* and *fast*. It uses simple proc macros which
+you can use to annotate your code to have items documented.
+
+Utoipa crate provides autogenerated OpenAPI documentation for Rust REST APIs. It treats
+code first approach as a first class citizen and simplifies API documentation by providing
+simple macros for generating the documentation from your code.
+
+It also contains Rust types of OpenAPI spec allowing you to write the OpenAPI spec only using
+Rust if auto-generation is not your flavor or does not fit your purpose.
+
+Long term goal of the library is to be the place to go when OpenAPI documentation is needed in Rust
+codebase.
+
+Utoipa is framework agnostic and could be used together with any web framework or even without one. While
+being portable and standalone one of it's key aspects is simple integration with web frameworks.
+
+Currently utoipa provides simple integration with actix-web framework but is not limited to the actix-web
+framework. All functionalities are not restricted to any specific framework.
+
+# Choose your flavor and document your API with ice cold IPA
+
+|Flavor|Support|
+|--|--|
+|[actix-web](https://github.com/actix/actix-web)|Parse path, path parameters and query parameters, recognize request body and response body, [`utoipa-actix-web` bindings](https://docs.rs/utoipa-actix-web). See more at [docs][actix_path]|
+|[axum](https://github.com/tokio-rs/axum)|Parse path and query parameters, recognize request body and response body, [`utoipa-axum` bindings](https://docs.rs/utoipa-axum). See more at [docs][axum_path]|
+|[rocket](https://github.com/SergioBenitez/Rocket)| Parse path, path parameters and query parameters, recognize request body and response body. See more at [docs][rocket_path]|
+|Others*| Plain `utoipa` without extra flavor. This gives you all the basic benefits listed below in **[Features](#features)** section but with little less automation.|
+
+> Others* = For example [warp](https://github.com/seanmonstar/warp) but could be anything.
+
+Refer to the existing [examples](https://github.com/juhaku/utoipa/tree/master/examples) to find out more.
+
+## Features
+
+* OpenAPI 3.1
+* Pluggable, easy setup and integration with frameworks.
+* No bloat, enable what you need.
+* Support for generic types
+  * **Note!**<br>
+    Tuples, arrays and slices cannot be used as generic arguments on types. Types implementing `ToSchema` manually should not have generic arguments, as
+    they are not composeable and will result compile error.
+* Automatic schema collection from usages recursively.
+  * Request body from either handler function arguments (if supported by framework) or from `request_body` attribute.
+  * Response body from response `body` attribute or response `content` attribute.
+* Various OpenAPI visualization tools supported out of the box.
+* Rust type aliases via [`utoipa-config`][utoipa_config].
+
+# What's up with the word play?
+
+The name comes from words `utopic` and `api` where `uto` is the first three letters of _utopic_
+and the `ipa` is _api_ reversed. Aaand... `ipa` is also awesome type of beer.
+
+# Crate Features
+
+* **`macros`** Enable `utoipa-gen` macros. **This is enabled by default.**
+* **`yaml`** Enables **serde_norway** serialization of OpenAPI objects.
+* **`actix_extras`** Enhances [actix-web](https://github.com/actix/actix-web/) integration with being able to
+  parse `path`, `path` and `query` parameters from actix web path attribute macros. See [actix extras support][actix_path] or
+  [examples](https://github.com/juhaku/utoipa/tree/master/examples) for more details.
+* **`rocket_extras`** Enhances [rocket](https://github.com/SergioBenitez/Rocket) framework integration with being
+  able to parse `path`, `path` and `query` parameters from rocket path attribute macros. See [rocket extras support][rocket_path]
+  or [examples](https://github.com/juhaku/utoipa/tree/master/examples) for more details
+* **`axum_extras`** Enhances [axum](https://github.com/tokio-rs/axum) framework integration allowing users to use `IntoParams`
+  without defining the `parameter_in` attribute. See [axum extras support][axum_path]
+  or [examples](https://github.com/juhaku/utoipa/tree/master/examples) for more details.
+* **`debug`** Add extra traits such as debug traits to openapi definitions and elsewhere.
+* **`chrono`** Add support for [chrono](https://crates.io/crates/chrono) `DateTime`, `Date`, `NaiveDate`, `NaiveTime` and `Duration`
+  types. By default these types are parsed to `string` types with additional `format` information.
+  `format: date-time` for `DateTime` and `format: date` for `Date` and `NaiveDate` according
+  [RFC3339](https://xml2rfc.ietf.org/public/rfc/html/rfc3339.html#anchor14) as `ISO-8601`. To
+  override default `string` representation users have to use `value_type` attribute to override the type.
+  See [docs](https://docs.rs/utoipa/latest/utoipa/derive.ToSchema.html) for more details.
+* **`time`** Add support for [time](https://crates.io/crates/time) `OffsetDateTime`, `PrimitiveDateTime`, `Date`, and `Duration` types.
+  By default these types are parsed as `string`. `OffsetDateTime` and `PrimitiveDateTime` will use `date-time` format. `Date` will use
+  `date` format and `Duration` will not have any format. To override default `string` representation users have to use `value_type` attribute
+  to override the type. See [docs](https://docs.rs/utoipa/latest/utoipa/derive.ToSchema.html) for more details.
+* **`jiff_0_2`** Add support for [jiff 0.2](https://crates.io/crates/jiff) `Zoned`, and `civil::Date` types.
+  By default these types are parsed as `string`. `Zoned` will use `date-time` format. `civil::Date` will use
+  `date` format. To override default `string` representation users have to use `value_type` attribute
+  to override the type. See [docs](https://docs.rs/utoipa/latest/utoipa/derive.ToSchema.html) for more details.
+* **`decimal`** Add support for [rust_decimal](https://crates.io/crates/rust_decimal) `Decimal` type. **By default**
+  it is interpreted as `String`. If you wish to change the format you need to override the type.
+  See the `value_type` in [`ToSchema` derive docs][to_schema_derive].
+* **`decimal_float`** Add support for [rust_decimal](https://crates.io/crates/rust_decimal) `Decimal` type. **By default**
+  it is interpreted as `Number`. This feature is mutually exclusive with **decimal** and allow to change the default type used in your
+  documentation for `Decimal` much like `serde_with_float` feature exposed by rust_decimal.
+* **`uuid`** Add support for [uuid](https://github.com/uuid-rs/uuid). `Uuid` type will be presented as `String` with
+  format `uuid` in OpenAPI spec.
+* **`ulid`** Add support for [ulid](https://github.com/dylanhart/ulid-rs). `Ulid` type will be presented as `String` with
+  format `ulid` in OpenAPI spec.
+* **`url`** Add support for [url](https://github.com/servo/rust-url). `Url` type will be presented as `String` with
+  format `uri` in OpenAPI spec.
+* **`smallvec`** Add support for [smallvec](https://crates.io/crates/smallvec). `SmallVec` will be treated as `Vec`.
+* **`openapi_extensions`** Adds convenience functions for documenting common scenarios, such as JSON request bodies and responses.
+  See the [`request_body`](https://docs.rs/utoipa/latest/utoipa/openapi/request_body/index.html) and
+  [`response`](https://docs.rs/utoipa/latest/utoipa/openapi/response/index.html) docs for examples.
+* **`repr`** Add support for [repr_serde](https://github.com/dtolnay/serde-repr)'s `repr(u*)` and `repr(i*)` attributes to unit type enums for
+  C-like enum representation. See [docs](https://docs.rs/utoipa/latest/utoipa/derive.ToSchema.html) for more details.
+* **`preserve_order`** Preserve order of properties when serializing the schema for a component.
+  When enabled, the properties are listed in order of fields in the corresponding struct definition.
+  When disabled, the properties are listed in alphabetical order.
+* **`preserve_path_order`** Preserve order of OpenAPI Paths according to order they have been
+  introduced to the `#[openapi(paths(...))]` macro attribute. If disabled the paths will be
+  ordered in alphabetical order. **However** the operations order under the path **will** be always constant according to
+  [specification](https://spec.openapis.org/oas/latest.html#fixed-fields-6)
+* **`indexmap`** Add support for [indexmap](https://crates.io/crates/indexmap). When enabled `IndexMap` will be rendered as a map similar to
+  `BTreeMap` and `HashMap`.
+* **`non_strict_integers`** Add support for non-standard integer formats `int8`, `int16`, `uint8`, `uint16`, `uint32`, and `uint64`.
+* **`rc_schema`** Add `ToSchema` support for `Arc<T>` and `Rc<T>` types. **Note!** serde `rc` feature flag must be enabled separately to allow
+  serialization and deserialization of `Arc<T>` and `Rc<T>` types. See more about [serde feature flags](https://serde.rs/feature-flags.html).
+* **`config`** Enables [`utoipa-config`](https://docs.rs/utoipa-config/) for the project which allows
+  defining global configuration options for `utoipa`.
+
+### Default Library Support
+
+* Implicit partial support for `serde` attributes. See [`ToSchema` derive][serde] for more details.
+* Support for [http](https://crates.io/crates/http) `StatusCode` in responses.
+
+# Install
+
+Add dependency declaration to Cargo.toml.
+```toml
+[dependencies]
+utoipa = "5"
+```
+
+# Examples
+
+_**Create type with `ToSchema` and use it in `#[utoipa::path(...)]` that is registered to the `OpenApi`.**_
+
+```rust
+use utoipa::{OpenApi, ToSchema};
+
+#[derive(ToSchema)]
+struct Pet {
+   id: u64,
+   name: String,
+   age: Option<i32>,
+}
+# #[derive(Debug)]
+# struct NotFound;
+#
+# impl std::error::Error for NotFound {}
+#
+# impl std::fmt::Display for NotFound {
+#    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+#        f.write_str("NotFound")
+#    }
+# }
+
+/// Get pet by id
+///
+/// Get pet from database by pet id
+#[utoipa::path(
+    get,
+    path = "/pets/{id}",
+    responses(
+        (status = 200, description = "Pet found successfully", body = Pet),
+        (status = NOT_FOUND, description = "Pet was not found")
+    ),
+    params(
+        ("id" = u64, Path, description = "Pet database id to get Pet for"),
+    )
+)]
+async fn get_pet_by_id(pet_id: u64) -> Result<Pet, NotFound> {
+    Ok(Pet {
+        id: pet_id,
+        age: None,
+        name: "lightning".to_string(),
+    })
+}
+
+#[derive(OpenApi)]
+#[openapi(paths(get_pet_by_id))]
+struct ApiDoc;
+
+println!("{}", ApiDoc::openapi().to_pretty_json().unwrap());
+```
+
+# Modify OpenAPI at runtime
+
+You can modify generated OpenAPI at runtime either via generated types directly or using
+[`Modify`] trait.
+
+_**Modify generated OpenAPI via types directly.**_
+```rust
+# use utoipa::OpenApi;
+#[derive(OpenApi)]
+#[openapi(
+    info(description = "My Api description"),
+)]
+struct ApiDoc;
+
+let mut doc = ApiDoc::openapi();
+doc.info.title = String::from("My Api");
+```
+
+_**You can even convert the generated [`OpenApi`] to [`openapi::OpenApiBuilder`].**_
+```rust
+# use utoipa::openapi::OpenApiBuilder;
+# use utoipa::OpenApi;
+#[derive(OpenApi)]
+#[openapi(
+    info(description = "My Api description"),
+)]
+struct ApiDoc;
+
+let builder: OpenApiBuilder = ApiDoc::openapi().into();
+```
+
+See [`Modify`] trait for examples on how to modify generated OpenAPI via it.
+
+# Go beyond the surface
+
+* See how to serve OpenAPI doc via Swagger UI check [`utoipa-swagger-ui`][utoipa_swagger] crate for more details.
+* Browse to [examples](https://github.com/juhaku/utoipa/tree/master/examples) for more comprehensive examples.
+* Check [`derive@IntoResponses`] and [`derive@ToResponse`] for examples on deriving responses.
+* More about OpenAPI security in [security documentation][security].
+* Dump generated API doc to file at build time. See [issue 214 comment](https://github.com/juhaku/utoipa/issues/214#issuecomment-1179589373).
+
+[path]: attr.path.html
+[rocket_path]: attr.path.html#rocket_extras-feature-support-for-rocket
+[actix_path]: attr.path.html#actix_extras-feature-support-for-actix-web
+[axum_path]: attr.path.html#axum_extras-feature-support-for-axum
+[serde]: derive.ToSchema.html#partial-serde-attributes-support
+[utoipa_swagger]: https://docs.rs/utoipa-swagger-ui/
+[utoipa_config]: https://docs.rs/utoipa-config/
+
+[security]: openapi/security/index.html
+[to_schema_derive]: derive.ToSchema.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Default value which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+OpenAPI [Info][info] object represents metadata of the API.
+
+You can use [`Info::new`] to construct a new [`Info`] object or alternatively use [`InfoBuilder::new`]
+to construct a new [`Info`] with chainable configuration methods.
+
+[info]: <https://spec.openapis.org/oas/latest.html#info-object>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add url for terms of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Implements [OpenAPI Components Object][components] which holds supported
+reusable objects.
+
+Components can hold either reusable types themselves or references to other reusable
+types.
+
+[components]: https://spec.openapis.org/oas/latest.html#components-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Long description for the [`Example`]. Value supports markdown syntax for rich text
+representation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Constructs a new [`PathsBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Add or change list of [`Server`]s of the [`Operation`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/header.rs
+Implements [OpenAPI Header Object][header] types.
+
+[header]: https://spec.openapis.org/oas/latest.html#header-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Implements [OpenAPI Parameter Object][parameter] for [`Operation`].
+
+[parameter]: https://spec.openapis.org/oas/latest.html#parameter-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Constructs a new [`ServerVariable`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Constructs a new [`ResponsesBuilder`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Specify inclusive maximum amount of properties an [`Object`] can hold.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Changes the [`AllOf`] title.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Builder for [`Parameter`] with chainable configuration methods to create a new [`Parameter`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Email of the contact person or the organization of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+The _`content_media_type`_ keyword specifies the MIME type of the contents of a string,
+as described in [RFC 2046](https://tools.ietf.org/html/rfc2046).
+
+See more details at <https://json-schema.org/understanding-json-schema/reference/non_json_data#contentmediatype>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/example.rs
+Add or change an URI that points to a literal example value. [`Example::external_value`]
+provides the capability to references an example that cannot be easily included
+in JSON or YAML. [`Example::value`] and [`Example::external_value`] are mutually exclusive.
+
+Setting this to an empty String will make the field not to render in the generated OpenAPI
+document.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/info.rs
+Add url pointing to the contact information of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Implements [OpenAPI Server Object][server] types to configure target servers.
+
+OpenAPI will implicitly add [`Server`] with `url = "/"` to [`OpenApi`][openapi] when no servers
+are defined.
+
+[`Server`] can be used to alter connection url for _**path operations**_. It can be a
+relative path e.g `/api/v1` or valid http url e.g. `http://alternative.api.com/api/v1`.
+
+Relative path will append to the **sever address** so the connection url for _**path operations**_
+will become `server address + relative path`.
+
+Optionally it also supports parameter substitution with `{variable}` syntax.
+
+See [`Modify`][modify] trait for details how add servers to [`OpenApi`][openapi].
+
+# Examples
+
+Create new server with relative path.
+```rust
+# use utoipa::openapi::server::Server;
+Server::new("/api/v1");
+```
+
+Create server with custom url using a builder.
+```rust
+# use utoipa::openapi::server::ServerBuilder;
+ServerBuilder::new().url("https://alternative.api.url.test/api").build();
+```
+
+Create server with builder and variable substitution.
+```rust
+# use utoipa::openapi::server::{ServerBuilder, ServerVariableBuilder};
+ServerBuilder::new().url("/api/{version}/{username}")
+    .parameter("version", ServerVariableBuilder::new()
+        .enum_values(Some(["v1", "v2"]))
+        .default_value("v1"))
+    .parameter("username", ServerVariableBuilder::new()
+        .default_value("the_user")).build();
+```
+
+[server]: https://spec.openapis.org/oas/latest.html#server-object
+[openapi]: ../struct.OpenApi.html
+[modify]: ../../trait.Modify.html
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Description of the [`OneOf`]. Markdown syntax is supported.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Additional [`Schema`] to describe property names of an object such as a map. See more
+details <https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-01#name-propertynames>
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Example shown in UI of the value for richer documentation.
+
+**Deprecated since 3.0.x. Prefer [`AllOf::examples`] instead**
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change examples shown in UI of the value for richer documentation.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Set of change [`Object::content_media_type`]. Value must be valid MIME type e.g.
+`application/json`.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Optional hint to client how the bearer token is formatted. Valid only with [`HttpAuthScheme::Bearer`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/response.rs
+Add responses from a type that implements [`IntoResponses`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Map of fields with their [`Schema`] types.
+
+With **preserve_order** feature flag [`indexmap::IndexMap`] will be used as
+properties map backing implementation to retain property order of [`ToSchema`][to_schema].
+By default [`BTreeMap`] will be used.
+
+[to_schema]: crate::ToSchema
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/xml.rs
+Used to replace the name of attribute or type used in schema property.
+When used with [`Xml::wrapped`] attribute the name will be used as a wrapper name
+for wrapped array instead of the item or type name.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add default value for substitution.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Allows to add multiple names to security requirement.
+
+Accepts name for the security requirement which must match to the name of available [`SecurityScheme`].
+Second parameter is [`IntoIterator`] of [`Into<String>`] scopes needed by the [`SecurityRequirement`].
+Scopes must match to the ones defined in [`SecurityScheme`].
+
+# Examples
+
+Make both API keys required:
+```rust
+# use utoipa::openapi::security::{SecurityRequirement, HttpAuthScheme, HttpBuilder, SecurityScheme};
+# use utoipa::{openapi, Modify, OpenApi};
+# use serde::Serialize;
+#[derive(Debug, Serialize)]
+struct Foo;
+
+impl Modify for Foo {
+    fn modify(&self, openapi: &mut openapi::OpenApi) {
+        if let Some(schema) = openapi.components.as_mut() {
+            schema.add_security_scheme(
+                "api_key1",
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .bearer_format("JWT")
+                        .build(),
+                ),
+            );
+            schema.add_security_scheme(
+                "api_key2",
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .bearer_format("JWT")
+                        .build(),
+                ),
+            );
+        }
+    }
+}
+
+#[derive(Default, OpenApi)]
+#[openapi(
+    modifiers(&Foo),
+    security(
+        ("api_key1" = ["edit:items", "read:items"], "api_key2" = ["edit:items", "read:items"]),
+    )
+)]
+struct ApiDoc;
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/path.rs
+Delete [`Operation`] for the [`PathItem`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Represents data type fragment of [`Schema`].
+
+[`Type`] is used to create a [`SchemaType`] that defines the type of the [`Schema`].
+[`SchemaType`] can be created from a single [`Type`] or multiple [`Type`]s according to the
+OpenAPI 3.1 spec. Since the OpenAPI 3.1 is fully compatible with JSON schema the definition of
+the _**type**_ property comes from [JSON Schema type](https://json-schema.org/understanding-json-schema/reference/type).
+
+# Examples
+_**Create nullable string [`SchemaType`]**_
+```rust
+# use std::iter::FromIterator;
+# use utoipa::openapi::schema::{Type, SchemaType};
+let _: SchemaType = [Type::String, Type::Null].into_iter().collect();
+```
+_**Create string [`SchemaType`]**_
+```rust
+# use utoipa::openapi::schema::{Type, SchemaType};
+let _ = SchemaType::new(Type::String);
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change default value for the object which is provided when user has not provided the input in Swagger UI.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/lib.rs
+Trait that allows OpenApi modification at runtime.
+
+Implement this trait if you wish to modify the OpenApi at runtime before it is being consumed
+*(Before `utoipa::OpenApi::openapi()` function returns)*.
+This is trait can be used to add or change already generated OpenApi spec to alter the generated
+specification by user defined condition. For example you can add definitions that should be loaded
+from some configuration at runtime what may not be available during compile time.
+
+See more about [`OpenApi`][derive] derive at [derive documentation][derive].
+
+[derive]: derive.OpenApi.html
+[security_scheme]: openapi/security/enum.SecurityScheme.html
+
+# Examples
+
+Add custom JWT [`SecurityScheme`][security_scheme] to [`OpenApi`][`openapi::OpenApi`].
+```rust
+# use utoipa::{OpenApi, Modify};
+# use utoipa::openapi::security::{SecurityScheme, HttpBuilder, HttpAuthScheme};
+#[derive(OpenApi)]
+#[openapi(modifiers(&SecurityAddon))]
+struct ApiDoc;
+
+struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+         openapi.components = Some(
+             utoipa::openapi::ComponentsBuilder::new()
+                 .security_scheme(
+                     "api_jwt_token",
+                     SecurityScheme::Http(
+                         HttpBuilder::new()
+                             .scheme(HttpAuthScheme::Bearer)
+                             .bearer_format("JWT")
+                             .build(),
+                     ),
+                 )
+                 .build(),
+         )
+     }
+}
+```
+
+Add [OpenAPI Server Object][server] to alter the target server url. This can be used to give context
+path for api operations.
+```rust
+# use utoipa::{OpenApi, Modify};
+# use utoipa::openapi::Server;
+#[derive(OpenApi)]
+#[openapi(modifiers(&ServerAddon))]
+struct ApiDoc;
+
+struct ServerAddon;
+
+impl Modify for ServerAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        openapi.servers = Some(vec![Server::new("/api")])
+    }
+}
+```
+
+[server]: https://spec.openapis.org/oas/latest.html#server-object
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Constructs a new [`Tag`] taking all fields values from this object.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct new [`Scopes`] with holding one scope.
+
+* `scope` Is be the permission required.
+* `description` Short description about the permission.
+
+# Examples
+
+Create map of scopes with one scope item.
+```rust
+# use utoipa::openapi::security::Scopes;
+let scopes = Scopes::one("edit:item", "edit items");
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Min length of the array.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/security.rs
+Construct new [`Scopes`] with empty map of scopes. This is useful if oauth flow does not need
+any permission scopes.
+
+# Examples
+
+Create empty map of scopes.
+```rust
+# use utoipa::openapi::security::Scopes;
+let scopes = Scopes::new();
+```
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Builder for [`OneOf`] with chainable configuration methods to create a new [`OneOf`].
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/tag.rs
+Construct a new [`Tag`] with given name.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add [`struct@Response`] to [`Components`].
+
+Method accepts tow arguments; `name` of the reusable response and `response` which is the
+reusable response itself.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/server.rs
+Add openapi extensions (x-something) of the API.
+
+---
+
+## https://docs.rs/crate/utoipa/5.4.0/source/src/openapi/schema.rs
+Add or change write only flag for [`Object`].
+
+---
+

@@ -1,0 +1,488 @@
+# fake Full API Documentation
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/std/collections/vec.rs
+Creates a vec with fake values.
+
+Requires `T: Dummy<Faker>` implementation for given type.
+
+# Examples
+
+```
+let a = fake::vec![u8; 4]; // random u8 of length 4
+let b = fake::vec![u8; 4..8]; // random u8 of length 4 to 8
+// let c = fake::vec![u8; 4..]; // this won't work
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/std/path.rs
+Custom fake path generator given an array of root directories, segments and
+extension, and max_level to generate a fake path.
+
+It generates by `root_dirs / max_level * segments . extensions`.
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+Derive macro generating an impl of the trait [`Dummy`]. This works for both structs and enums.
+
+# Attributes
+
+For any fields in the type there are a number of keys that can be used to control the code generation.
+All of these go within the dummy attribute.
+
+1. `faker` key can be used to provide a specific faker for a field provided it implements [`Fake`].
+2. `expr` key can be used to provide a rust expression as a fixed value.
+3. `default` key sets the value to the types [`Default`] implementation.
+
+# Examples
+
+A simple example for deriving [`Dummy`] on a struct:
+
+```
+use fake::{Dummy, Fake, Faker};
+use fake::faker::name::en::Name;
+
+#[derive(Dummy)]
+pub struct Foo {
+    #[dummy(faker = "1000..2000")]
+    order_id: usize,
+    #[dummy(faker = "Name()")]
+    customer: String,
+    paid: bool,
+    #[dummy(expr = "\"Fixed\".into()")]
+    fixed_value: String,
+    #[dummy(default)]
+    other: String,
+}
+
+let f: Foo = Faker.fake();
+```
+
+This would generate code roughly equivalent to:
+
+```
+use fake::{Dummy, Fake, Faker, Rng};
+use fake::faker::name::en::Name;
+
+pub struct Foo {
+    order_id: usize,
+    customer: String,
+    paid: bool,
+    fixed_value: String,
+    other: String,
+}
+
+impl Dummy<Faker> for Foo {
+    fn dummy_with_rng<R: Rng + ?Sized>(_: &Faker, rng: &mut R) -> Self {
+        let order_id = Fake::fake_with_rng::<usize, _>(&(1000..2000), rng);
+        let customer = Fake::fake_with_rng::<String, _>(&(Name()), rng);
+        let paid = Fake::fake_with_rng::<bool, _>(&Faker, rng);
+        let fixed_value = "Fixed".into();
+        let other = Default::default();
+        Self {
+            order_id,
+            customer,
+            paid,
+            fixed_value,
+            other,
+        }
+    }
+}
+
+let f: Foo = Faker.fake();
+```
+
+A simple example for deriving [`Dummy`] on an enum. For enum tuple variants the faker attribute
+is applied directly to the types in the tuple, for struct variants it is applied on each struct
+field.
+
+```
+use fake::{Dummy, Fake, Faker};
+use fake::faker::name::en::Name;
+
+#[derive(Dummy)]
+pub enum Bar {
+    Simple,
+    Tuple(#[dummy(faker="0..5")] i32),
+    Structure {
+        #[dummy(faker = "1000..2000")]
+        i: usize,
+        j: String,
+    }
+}
+
+let b: Bar = Faker.fake();
+```
+
+This will generate code roughly equivalent to:
+
+```
+use fake::{Dummy, Fake, Faker, Rng};
+use fake::faker::name::en::Name;
+
+pub enum Bar {
+    Simple,
+    Tuple(i32),
+    Structure {
+        i: usize,
+        j: String,
+    }
+}
+
+impl Dummy<Faker> for Bar {
+    fn dummy_with_rng<R: Rng + ?Sized>(_: &Faker, rng: &mut R) -> Self {
+        match rng.random_range(0..3usize) {
+            0 => Self::Simple,
+            1 => Self::Tuple(Fake::fake_with_rng::<i32, _>(&(0..5), rng)),
+            2 => {
+                let i = Fake::fake_with_rng::<usize, _>(&(1000..2000), rng);
+                let j = Fake::fake_with_rng::<String, _>(&Faker, rng);
+                Self::Structure { i, j }
+            },
+            _ => unreachable!(),
+        }
+    }
+}
+
+let b: Bar = Faker.fake();
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/bson_oid/mod.rs
+Fake _bson OID_ generation.
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/faker/mod.rs
+Fake value generation for specific formats.
+
+It is structured in a way such that the modules here describes the custom
+group for structs implementing [`Dummy`] to generate custom fake formats.
+
+Within the module, there is multiple modules. With `raw` module providing
+a generic faker requiring a locale ([`faker::lorem::raw::Paragraph<L>`])
+and the rest of the modules providing a localized faker
+([`faker::lorem::en::Paragraph`]) as convenient functions.
+
+# Examples
+
+```
+use fake::Fake;
+use fake::faker::lorem::en::*;
+
+let words: Vec<String> = Words(3..5).fake();
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+As per [new_v4](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.new_v4)
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+As per [new_v6](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.new_v6)
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/std/result.rs
+Custom fake [`Result`] generator.
+
+# Examples
+
+```
+use fake::{Fake, ResultFaker};
+use fake::faker::name::en::Name;
+
+// generate name on success but some error code on failure
+let f = ResultFaker::ok(Name());
+for _ in 0..2 {
+    let a = f.fake::<Result<String, u8>>();
+}
+let f = ResultFaker::with(3.., 1..10);
+for _ in 0..5 {
+    let a = f.fake::<Result<u32, usize>>();
+}
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/utils.rs
+Implemented using StepRng's `true` range.
+See https://github.com/rust-random/rand/pull/1304
+Other "always true" rngs can be created so that they are
+more random, but that is not desirable for tests.
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/ulid/mod.rs
+Fake _ulid_ generation.
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+Provide data structure a way to generate fake values.
+The opposite of [`Fake`].
+
+[`Faker`] can be used as a generic `T` for `Dummy<T>` to generate a
+default fake value.
+
+[`Dummy`] is similar to [`From`] trait, while [`Fake`] is similar to
+[`Into`] trait. Except in this case [`Fake`] cannot be implemented.
+
+# Examples
+
+```
+use fake::rand::prelude::IndexedRandom;
+use fake::{Dummy, Fake, Faker, Rng};
+
+struct Name; // does not handle locale, see locales module for more
+
+impl Dummy<Name> for &'static str {
+    fn dummy_with_rng<R: Rng + ?Sized>(_: &Name, rng: &mut R) -> &'static str {
+        const NAMES: &[&str] = &["John Doe", "Jane Doe"];
+        NAMES.choose(rng).unwrap()
+    }
+}
+
+let name: &str = Name.fake();
+assert!(name == "John Doe" || name == "Jane Doe");
+```
+
+# Derivable
+
+The trait can be used with `#[derive]` if all the type's fields
+implement [`Fake`]. See [`Dummy`][macro@Dummy] for more.
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+As per [new_v1](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.new_v1)
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+As per [new_v3](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.new_v3)
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+Generate fake values given a type that implements [`Dummy`].
+The opposite of [`Dummy`].
+
+Generate default fake values with [`Faker`].
+Generate specific fake values with helpers in [`faker`].
+
+This trait is implemented for any type that implements [`Dummy`]:
+[`Dummy`] should be implemented instead, and you get the [`Fake`]
+implementation for free.
+
+[`Dummy`] is similar to [`From`] trait, while [`Fake`] is similar to
+[`Into`] trait. Except in this case [`Fake`] cannot be implemented.
+
+# Examples
+
+```
+use fake::Fake;
+
+assert_eq!(10.fake::<String>().len(), 10);
+let a: [[u8; 2]; 3] = (1..10).fake();
+let b: Option<Option<usize>> = (1..10).fake();
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/locales/mod.rs
+Localized data for [`faker`]. May be incomplete.
+
+Locales used for custom [`Dummy`] implementations within [`faker`] module.
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+Fake _UUIDs_ generation.
+
+This module provides implementations for generating fake UUIDs (Universally Unique Identifiers)
+using the [`uuid`] crate.
+
+Please note that:
+* All [`Dummy`] implementations for [`String`] use [to_hyphenated](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.to_hyphenated).
+* [`Dummy<Faker>`] implementation uses [from_u128](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.from_u128).
+
+# Examples
+
+```rust
+use fake::{Fake, Faker};
+use fake::uuid::{UUIDv4, UUIDv7};
+# use uuid::Uuid;
+
+// Use the `Dummy<Faker>` implementation
+let uuid: Uuid = Faker.fake();
+
+// Use the `Dummy<UUIDv4>` implementation to generate a UUID instance
+let uuid: Uuid = UUIDv4.fake();
+
+// Use the `Dummy<UUIDv7>` implementation to generate a UUID string
+let uuid: String = UUIDv7.fake();
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+As per [new_v7](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.new_v7)
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+As per [new_v5](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.new_v5)
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+Generate default fake value for given type using [`Fake`].
+
+# Examples
+
+```
+use fake::{Fake, Faker};
+
+let a: Option<usize> = Faker.fake();
+// or use turbofish syntax
+let b = Faker.fake::<Result<u32, u8>>();
+let c: (u8, u32, f32) = Faker.fake();
+// can also be combined with other values that implements Fake
+let d: (u8, u32, f32) = (1..10, Faker, 2.5..5.5).fake();
+let e: [u8; 3] = Faker.fake();
+let f: String = Faker.fake();
+// it also works for smart pointers and wrappers
+let g: std::pin::Pin<String> = Faker.fake();
+let h: Box<std::rc::Rc<u8>> = Faker.fake();
+let i: std::path::PathBuf = Faker.fake();
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/uuid/mod.rs
+As per [new_v8](https://docs.rs/uuid/latest/uuid/struct.Uuid.html#method.new_v8)
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/ferroid/mod.rs
+Fake _ferroid_ generation.
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/lib.rs
+A library for generating fake data.
+
+# Feature flags
+
+- `derive`: Enable `#[derive(Dummy)]` macro
+- `bigdecimal`: [bigdecimal](https://docs.rs/bigdecimal) integration
+- `bson_oid`: [bson](https://docs.rs/bson) integration
+- `chrono`: [chrono](https://docs.rs/chrono) integration
+- `chrono-tz`: [chrono-tz](https://docs.rs/chrono-tz) integration
+- `geo`: [geo-types](https://docs.rs/geo-types) integration
+- `glam`: [glam](https://docs.rs/glam) integration
+- `http`: [http](https://docs.rs/http) integration
+- `rust-decimal`: [rust_decimal](https://docs.rs/rust_decimal) integration
+- `time`: [time](https://docs.rs/time) integration
+- `ulid`: [ulid](https://docs.rs/ulid) integration
+- `ferroid`: [ferroid](https://docs.rs/ferroid) integration
+- `uuid`: [uuid](https://docs.rs/uuid) integration
+
+# Usage
+
+```
+use fake::{Dummy, Fake, Faker};
+use fake::rand::rngs::StdRng;
+use fake::rand::SeedableRng;
+
+#[derive(Debug, Dummy)]
+pub struct Foo {
+    #[dummy(faker = "1000..2000")]
+    order_id: usize,
+    customer: String,
+    paid: bool,
+}
+
+// type derived Dummy
+let f: Foo = Faker.fake();
+println!("{:?}", f);
+
+// using `Faker` to generate default fake value of given type
+let tuple = Faker.fake::<(u8, u32, f32)>();
+println!("tuple {:?}", tuple);
+println!("String {:?}", Faker.fake::<String>());
+
+// types U can `be used to generate fake value T, if `T: Dummy<U>`
+println!("String {:?}", (8..20).fake::<String>());
+println!("u32 {:?}", (8..20).fake::<u32>());
+
+// using `faker` module with locales
+use fake::faker::name::raw::*;
+use fake::locales::*;
+
+let name: String = Name(EN).fake();
+println!("name {:?}", name);
+
+let name: String = Name(ZH_TW).fake();
+println!("name {:?}", name);
+
+// using convenient function without providing locale
+use fake::faker::lorem::en::*;
+let words: Vec<String> = Words(3..5).fake();
+println!("words {:?}", words);
+
+// Using a tuple config list to generate a vector with a length range and a specific faker for the element
+let name_vec: Vec<String> = (Name(EN), 3..5).fake();
+
+// Using a macro as an alternative method for the tuple config list
+let name_vec = fake::vec![String as Name(EN); 3..5];
+
+// using macro to generate nested collection
+let name_vec = fake::vec![String as Name(EN); 4, 3..5, 2];
+println!("random nested vec {:?}", name_vec);
+
+// fixed seed rng
+let seed = [
+    1, 0, 0, 0, 23, 0, 0, 0, 200, 1, 0, 0, 210, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0,
+];
+let ref mut r = StdRng::from_seed(seed);
+for _ in 0..5 {
+    let v: usize = Faker.fake_with_rng(r);
+    println!("value from fixed seed {}", v);
+}
+
+# #[cfg(feature = "always-true-rng")] {
+// Use an always true RNG so that optional types are always `Some` values. (Requires
+// always-true-rng feature).
+use fake::utils::AlwaysTrueRng;
+let mut rng = AlwaysTrueRng::default();
+let result: Option<i64> = Faker.fake_with_rng(&mut rng);
+println!("Always Some: {}", result.unwrap());
+# }
+```
+
+---
+
+## https://docs.rs/crate/fake/4.4.0/source/src/impls/std/string.rs
+Custom fake [`String`] generator.
+
+# Examples
+
+```
+use fake::{Fake, StringFaker};
+use fake::faker::name::en::Name;
+
+// weak password generator
+const ASCII: &str = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&\'()*+,-./:;<=>?@";
+let f = StringFaker::with(Vec::from(ASCII), 8..12);
+let a: String = f.fake();
+```
+
+---
+

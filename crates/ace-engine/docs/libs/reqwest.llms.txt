@@ -1,0 +1,1348 @@
+# reqwest Documentation (LLMS)
+
+## API Overview
+
+### reqwest
+Link: https://docs.rs/reqwest/0.13.1
+
+### http09_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### timeout_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### Response
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### http1_title_case_headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### RequestBuilder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### identity
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### body
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### blocking
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/mod.rs
+
+### http1_ignore_invalid_headers_in_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### retry
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### custom
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### http3_send_grease
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### extensions_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### scoped
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### follow
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### resolve_to_addrs
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tcp_user_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### from_env
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### use_preconfigured_tls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http2_max_frame_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### unix_socket
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### head
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### tls_danger_accept_invalid_certs
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### remote_addr
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### json
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### hickory_dns
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### Request
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### tls_backend_native
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### custom_http_auth
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### body_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### percent_encode_path_segment
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### zstd
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### tcp_user_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### Body
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+
+### Identity
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### interface
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### basic_auth
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### header
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### status
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### from_pem
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### no_zstd
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http2_adaptive_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### method
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### content_length
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### retry
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### use_native_tls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### text
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### resolve
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### Certificate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### use_rustls_tls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### Client
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### retry
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### https_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### head
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### is_redirect
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### json
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### use_rustls_tls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### tls_danger_accept_invalid_hostnames
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### classify_fn
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### tls_version_max
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### bytes_stream
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### http1_allow_obsolete_multiline_headers_in_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### wrap
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+
+### identity
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### min_tls_version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### stream
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### status
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### headers_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### peer_certificate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### resolve
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### tls_certs_merge
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### Part
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### mime_str
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### file_name
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### ClientBuilder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### http1_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### bytes
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### Addrs
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+
+### reqwest
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/lib.rs
+
+### status
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### Form
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### Conn
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/connect.rs
+
+### max_tls_version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http1_title_case_headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### bytes
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### tcp_nodelay
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http3_stream_receive_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http09_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http1_allow_obsolete_multiline_headers_in_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tls_backend_preconfigured
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### tcp_keepalive_retries
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### headers_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### body_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### Policy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### method
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### proxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### headers_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### reader_with_length
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### http3_congestion_bbr
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tcp_keepalive_retries
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### redirect
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### max_tls_version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http3_max_field_section_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### max_extra_load
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### Error
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### build
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### interface
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http1_allow_spaces_after_header_name_in_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### put
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### NoProxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### max_retries_per_request
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### classify
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### is_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### path
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### is_upgrade
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### domain
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### http_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### url_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### body
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### multipart
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### query
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### multipart
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### from_string
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### method_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### connect_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### Upgraded
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/upgrade.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### dns
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/dns/mod.rs
+
+### http3_send_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### never
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### basic_auth
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### tls_certs_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### form
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### tls_certs_merge
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http3_prior_knowledge
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### percent_encode_attr_chars
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### user_agent
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### as_str
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+
+### danger_accept_invalid_hostnames
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### into_stream
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### form
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### body
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### delete
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http2_keep_alive_interval
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### send
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### extensions
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### text
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### Proxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### dns_resolver
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### connector_layer
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### name
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### into_reader
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### error_for_status_ref
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### Cookie
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### max_age
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### reader
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### http3_conn_receive_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### as_bytes
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+
+### tls_info
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http3_stream_receive_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### file
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### no_deflate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### from_parts
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### as_bytes
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+
+### cookie_provider
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### pool_max_idle_per_host
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### error
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### file_name
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### Action
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### https
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### text
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### RequestBuilder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### same_site_strict
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### multipart
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### TLS_1_2
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### Resolve
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+
+### tcp_keepalive
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### copy_to
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### try_clone
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### connection_verbose
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### delete
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### is_status
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### from_parts
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### http1_allow_spaces_after_header_name_in_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### patch
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### add_root_certificate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### pool_idle_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### redirect
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http3_prior_knowledge
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### no_budget
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### min_tls_version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### content_length
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### Builder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### text
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### percent_encode_path_segment
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### no_zstd
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### get
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/mod.rs
+
+### execute
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+
+### http3_max_idle_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tls_early_data
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### json
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### default_headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### same_site_lax
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### request
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### no_proxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### from_pem
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### tls_version_min
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### post
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### add_crls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tcp_keepalive_interval
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### multipart
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### cookies
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### error_for_status
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### http3_max_idle_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### UnixSocketProvider
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/connect.rs
+
+### url_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### tcp_nodelay
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### headers_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### tls_sni
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### proxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tls_danger_accept_invalid_certs
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### add_crl
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### no_hickory_dns
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### file
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### tls_info
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### https_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### build
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### text
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### Version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### pool_max_idle_per_host
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### chunk
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### extensions_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### TLS_1_3
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### try_clone
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### no_hickory_dns
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### danger_accept_invalid_certs
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### default_headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### redirect
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### no_proxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### is_connect
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### get
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### expires
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### post
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### gzip
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### from_pkcs8_pem
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### percent_encode_noop
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### tcp_keepalive
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### ClientBuilder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### connector_layer
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### no_brotli
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### Body
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+
+### builder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### url_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### referer
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### part
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### no_gzip
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### ResponseBuilderExt
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/response.rs
+
+### build
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### buffer
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+
+### builder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### add_root_certificate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### with_url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### tls_crls_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### IntoResolve
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+
+### file
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### CertificateRevocationList
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### try_clone
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### build
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### redirect
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### hickory_dns
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tls_backend_rustls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### dns_resolver
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### get
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### file
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### version_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### tls_version_max
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### cookie_provider
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### danger_accept_invalid_hostnames
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### deflate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### remote_addr
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### timeout_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### request
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tls_danger_accept_invalid_hostnames
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### build_split
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### cookie_store
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### Name
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+
+### for_host
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/retry.rs
+
+### new
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### send
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### brotli
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### stop
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### Client
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### connection_verbose
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http3_send_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### local_address
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### custom
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### http3_send_grease
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### bytes
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### upgrade
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/upgrade.rs
+
+### try_clone
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### Result
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### is_decode
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### tls_version_min
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### brotli
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### http2_max_header_list_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### danger_accept_invalid_certs
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### boundary
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### all
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### tls_backend_preconfigured
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### is_body
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### header
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### tls_crls_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### Request
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### wrap_stream
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/body.rs
+
+### text
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### bearer_auth
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### basic_auth
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### http1_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### without_url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### http2_prior_knowledge
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http3_congestion_bbr
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### is_request
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### TlsInfo
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### stream_with_length
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### referer
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### cookie_store
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### Jar
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### error_for_status_ref
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### from_pem
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### use_native_tls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### execute
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### bytes
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### http1_ignore_invalid_headers_in_responses
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### local_address
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### no_proxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### percent_encode_noop
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### Attempt
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### http2_keep_alive_while_idle
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http2_initial_connection_window_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### url
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### http2_initial_stream_window_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### tls_backend_rustls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### deflate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### from_pkcs12_der
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### Form
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### resolve_to_addrs
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### body
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### TLS_1_0
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### gzip
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http2_adaptive_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### cookies
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### pool_idle_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### error_for_status
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### no_deflate
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### secure
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### zstd
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### get
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/lib.rs
+
+### from_pem_bundle
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### tls_backend_native
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### IntoUrl
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/into_url.rs
+
+### cookie
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### sized
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/body.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### build_split
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### headers
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### http2_keep_alive_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### status
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### use_preconfigured_tls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### TLS_1_1
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### patch
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http2_initial_stream_window_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### tcp_keepalive_interval
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### Resolving
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/dns/resolve.rs
+
+### add_crls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### CookieStore
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### text_with_charset
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### version
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### version_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/request.rs
+
+### Part
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+
+### json
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### http2_max_header_list_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### connect_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### add_crl
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### add_cookie_str
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### IntoProxy
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### http2_max_frame_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### http3_conn_receive_window
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### read_timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### from_pem_bundle
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### timeout
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### method_mut
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### put
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### text_with_charset
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### unix_socket
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### Response
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/response.rs
+
+### is_builder
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/error.rs
+
+### tls_certs_only
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### part
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### http3_max_field_section_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### mime_str
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### http
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/proxy.rs
+
+### http2_prior_knowledge
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### limited
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### no_gzip
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### extensions
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/response.rs
+
+### from_der
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### query
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### value
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/cookie.rs
+
+### previous
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### none
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/redirect.rs
+
+### user_agent
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### boundary
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/multipart.rs
+
+### tls
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/tls.rs
+
+### tls_sni
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### bearer_auth
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/request.rs
+
+### http2_initial_connection_window_size
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/client.rs
+
+### no_brotli
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/blocking/client.rs
+
+### percent_encode_attr_chars
+Link: https://docs.rs/crate/reqwest/0.13.1/source/src/async_impl/multipart.rs
+

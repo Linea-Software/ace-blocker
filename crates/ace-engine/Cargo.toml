@@ -1,0 +1,174 @@
+[package]
+name = "ace-engine"
+version = "0.1.0"
+edition = "2024"
+default-run = "ace-engine"
+
+[features]
+default = []
+# Developer-only tool binaries (not shipped): build/lint them with
+# `--features dev-tools`. `ace-redirect` and `install-cert` are product
+# binaries and are always built (the installer packages them).
+dev-tools = []
+# Experimental kernel anti-tampering integration. Keep disabled in normal
+# release builds until Ace Guard is ready to ship.
+experimental-ace-guard = []
+
+[[bin]]
+name = "ace-redirect"
+path = "src/bin/ace_redirect.rs"
+
+[[bin]]
+name = "clear-cache"
+path = "src/bin/clear_cache.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "doc-gen"
+path = "src/bin/doc_gen.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "gen-site-packs"
+path = "src/bin/gen_site_packs.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "export-site-pack-bundle"
+path = "src/bin/export_site_pack_bundle.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "install-cert"
+path = "src/bin/install_cert.rs"
+
+[[bin]]
+name = "gen-api-client"
+path = "src/bin/gen_api_client.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "gen-openapi-spec"
+path = "src/bin/gen_openapi_spec.rs"
+required-features = ["dev-tools"]
+
+[[bin]]
+name = "stress-netblocks"
+path = "src/bin/stress_netblocks.rs"
+required-features = ["dev-tools"]
+
+[dependencies]
+ace-watchdog-protocol = { path = "../ace-watchdog-protocol" }
+ace-domain-blocklist = { path = "../ace-domain-blocklist" }
+app_dirs2 = "~2.5"
+async-compression = { version = "~0.4", features = [
+    "tokio",
+    "gzip",
+    "brotli",
+    "deflate",
+    "zstd",
+] }
+async-stream = "~0.3"
+axum = { version = "~0.8", features = ["tokio", "http1", "macros"] }
+axum-server = { version = "~0.8", features = ["tls-rustls"] }
+base64 = "~0.23"
+bytes = "~1.12"
+chrono = { version = "~0.4", features = ["serde"] }
+crates_llms_txt = { git = "https://github.com/kingsword09/crates_llms_txt" }
+diesel = { version = "~2.3", features = [
+    "sqlite",
+    "returning_clauses_for_sqlite_3_35",
+    "r2d2",
+    "numeric",
+] }
+
+diesel_migrations = { version = "~2.3", features = ["sqlite"] }
+dom_query = "~0.28"
+futures = "~0.3"
+
+futures-util = "~0.3"
+hostsfile = "~2.0"
+http = "~1.5"
+http-body-util = "~0.1"
+hyper = { version = "~1.12", features = ["full"] }
+json = "~0.12"
+libsqlite3-sys = { version = "~0.38", features = ["bundled"] }
+openapi-to-rust = "~0.22"
+openport = { version = "~0.4", features = ["rand"] }
+rand = "~0.10"
+rcgen = "~0.14"
+hex = "~0.4"
+flate2 = "~1.1"
+reqwest = { version = "~0.13", features = ["json", "stream"] }
+sha2 = "~0.11"
+single-instance = "~0.3"
+regex = "~1.13"
+reqwest-middleware = { version = "~0.5", features = ["query"] }
+reqwest-tracing = "~0.7"
+schemars = { version = "~1.2", features = ["uuid1", "chrono04"] }
+serde = { version = "~1.0", features = ["derive"] }
+serde_json = "~1.0"
+strum = { version = "~0.28", features = ["derive"] }
+strum_macros = "~0.28"
+url = "~2.5"
+mitm-proxy = { path = "../mitm-proxy" }
+ace-tun = { path = "../ace-tun" }
+sysuri = "~0.4"
+thiserror = "~2.0"
+tokio = { version = "~1.53", features = ["full"] }
+tower-http = { version = "~0.7", features = ["cors"] }
+tracing = "~0.1"
+tracing-appender = "~0.2"
+tracing-subscriber = { version = "~0.3", features = [
+    "env-filter",
+    "fmt",
+    "registry",
+] }
+utoipa = { version = "6.0.0", features = ["axum_extras", "uuid", "chrono"], git = "https://github.com/juhaku/utoipa" }
+utoipa-swagger-ui = { version = "10.0.0", features = ["axum"], git = "https://github.com/juhaku/utoipa" }
+uuid = { version = "~1.28", features = ["v7", "v5", "v4", "serde"] }
+zip = { version = "~9.0", features = ["zstd"] }
+eyre = "~0.6"
+color-eyre = "~0.6"
+webbrowser = "~1.2"
+nutype = { version = "~0.8", features = ["serde", "schemars08", "derive_unchecked"] }
+certkit = "~0.2"
+async-trait = "~0.1"
+moka = { version = "~0.12", features = ["sync"]}
+
+[dependencies.xxhash-rust]
+version = "~0.8"
+features = ["xxh3"]
+
+# Windows-specific dependencies
+[target.'cfg(windows)'.dependencies]
+windows-service = "~0.8"
+windows = { version = "~0.62", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Authorization",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Pipes",
+    "Win32_System_Threading",
+] }
+
+[dev-dependencies]
+axum-test = { version = "~21.1", features = ["ws"] }
+fake = { version = "~5.1", features = ["derive", "chrono", "uuid", "url"] }
+tempfile = "~3.27"
+# TLS stack for the CONNECT interception regression tests (see
+# src/service/proxy/mod.rs). Feature sets mirror the embedded mitm-proxy so
+# feature unification adds nothing new to the build.
+hyper-util = { version = "~0.1", features = ["full"] }
+rustls = { version = "~0.23", default-features = false, features = ["ring", "logging", "std", "tls12"] }
+tokio-rustls = { version = "~0.26", default-features = false, features = ["ring", "logging", "tls12"] }
+rustls-pemfile = "~2.2"
+
+[build-dependencies]
+openapi-to-rust = "~0.22"
+# openapiv3 = "2.2"
+prettyplease = "~0.3"
+syn = { version = "~3.0", features = ["full"] }
+reqwest = { version = "~0.13", features = ["blocking", "json"] }
+serde_json = "~1.0"
+winres = "~0.1"

@@ -1,0 +1,11 @@
+# windows Full API Documentation
+
+## https://docs.rs/crate/windows/0.62.2/source/src/lib.rs
+This is a stub. The latest API documentation is here: <https://microsoft.github.io/windows-docs-rs/>
+
+Learn more about Rust for Windows here: <https://github.com/microsoft/windows-rs>
+
+[Feature search](https://microsoft.github.io/windows-rs/features)
+
+---
+

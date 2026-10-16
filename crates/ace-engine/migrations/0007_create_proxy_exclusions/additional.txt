@@ -1,0 +1,5 @@
+# Retired.
+#
+# Broad per-site MITM exclusions were a workaround for intercepting every HTTPS
+# connection. The engine now keeps TLS opaque by default and selects interception
+# from active blocking/rewriting/injection policy instead.

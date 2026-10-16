@@ -1,0 +1,15 @@
+# For documentation on how to configure this file,
+# see https://diesel.rs/guides/configuring-diesel-cli
+# diesel migration run --config-file=diesel_main_db.toml --database-url=./target/dev_main.db
+
+[print_schema]
+file = "src/schema_main_db.rs"
+custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
+sqlite_integer_primary_key_is_bigint = true
+
+# Site pack content databases use their own config file (diesel_site_packs.toml)
+# and their own generated schema (src/schema_site_packs.rs).
+
+
+[migrations_directory]
+dir = "migrations"

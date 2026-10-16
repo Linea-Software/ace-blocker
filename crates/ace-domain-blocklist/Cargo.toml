@@ -1,0 +1,9 @@
+[package]
+name = "ace-domain-blocklist"
+version = "0.1.0"
+edition = "2024"
+description = "Helps to parse many dns list formats"
+
+[dependencies]
+nutype = "~0.8"
+thiserror = "~2.0"

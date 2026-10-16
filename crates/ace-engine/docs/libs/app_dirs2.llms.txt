@@ -1,0 +1,49 @@
+# app_dirs2 Documentation (LLMS)
+
+## API Overview
+
+### app_dirs2
+Link: https://docs.rs/app_dirs2/2.5.5
+
+### author
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+
+### get_app_dir
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+
+### is_shared
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+
+### app_root
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+
+### AppDirsError
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+
+### app_dirs2
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/lib.rs
+
+### data_root
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+
+### name
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+
+### AppInfo
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+
+### app_dir
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+
+### sanitized
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/utils.rs
+
+### get_data_root
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+
+### AppDataType
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+
+### get_app_root
+Link: https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+

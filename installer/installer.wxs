@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Ace Blocker — WiX Toolset v4 Installer
+  =======================================
+  Packages: ace-app.exe, ace-engine.exe, ace-redirect.exe,
+            install-cert.exe, wintun.dll
+
+  The obsolete ace-sentinel kernel driver (ace_sentinel.sys +
+  install-sentinel.cmd) has been removed from the project entirely: engine
+  integration was removed in ace-engine commit 5fc3767 (2026-08-25) and the
+  engine no longer references the driver anywhere.
+
+  Build:
+    1. cargo build (release)      (in ace-engine/)
+    2. bun run tauri build        (in ace-app/)
+    3. wix build installer.wxs -o dist\AceBlocker.msi
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!-- ============================================================ -->
+  <!--  Package                                                      -->
+  <!-- ============================================================ -->
+  <Package
+    Name="Ace Blocker"
+    Language="1033"
+    Version="0.1.0"
+    Manufacturer="Linea Software"
+    InstallerVersion="500"
+    Compressed="yes"
+    UpgradeCode="{D3A9F1B2-8C4E-4A2D-B1F5-6E7A8D9C0B2E}">
+
+    <!-- Allow major upgrades (old version is removed first) -->
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of Ace Blocker is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- ============================================================ -->
+    <!--  Directory structure                                          -->
+    <!-- ============================================================ -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Ace Blocker">
+        <!-- Offline site-pack bundle (generated payload; see bundled-packs/).
+             The engine imports these files at startup when no valid
+             downloaded copy exists yet (offline first run). Installed under
+             INSTALLFOLDER so uninstall/upgrade ownership stays with the MSI:
+             user-downloaded pack data lives in ProgramData and is never
+             touched by the installer. -->
+        <Directory Id="BundledPacksDir" Name="bundled-packs" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="AceProgramDataVendorDir" Name="LineaSoftware">
+        <Directory Id="AceProgramDataDir" Name="AceBlocker" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Ace Blocker" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- ============================================================ -->
+    <!--  Feature                                                      -->
+    <!-- ============================================================ -->
+    <Feature Id="Complete" Title="Ace Blocker" Level="1"
+      Description="The complete Ace Blocker package.">
+      <ComponentGroupRef Id="MainComponents" />
+      <!-- Generated from bundled-packs/manifest.json by build.ps1 into
+           bundled-packs.wxs — never hand-maintain the pack list. -->
+      <ComponentGroupRef Id="BundledPacksComponents" />
+    </Feature>
+
+    <!-- ============================================================ -->
+    <!--  Components                                                   -->
+    <!-- ============================================================ -->
+    <ComponentGroup Id="MainComponents" Directory="INSTALLFOLDER">
+
+      <!-- ace-engine.exe — background engine (Windows service). The service
+           name MUST match the engine's hardcoded SERVICE_NAME ("AceEngine"):
+           the engine calls StartServiceCtrlDispatcher with that name. The
+           userspace watchdog monitors this SCM service by name. -->
+      <Component Id="C_AceEngine" Guid="{F1A2B3C4-D5E6-4789-A0B1-C2D3E4F5A6B7}">
+        <File Id="F_AceEngine" Name="ace-engine.exe" Source="artifacts\ace-engine.exe" KeyPath="yes">
+          <PermissionEx Sddl="D:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;FRFX;;;BU)" />
+        </File>
+
+        <!-- Register ace-engine as a Windows service (runs as SYSTEM, auto-start) -->
+        <ServiceInstall
+          Id="SI_AceEngine"
+          Type="ownProcess"
+          Name="AceEngine"
+          DisplayName="Ace Blocker Engine"
+          Description="Core blocking engine for Ace Blocker — manages network filters, resistance mode, and content updates."
+          Start="auto"
+          ErrorControl="normal"
+          Account="NT AUTHORITY\SYSTEM"
+          Interactive="no"
+          Vital="yes">
+          <PermissionEx Sddl="D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;CCLCSWLO;;;BU)" />
+          <ServiceConfig
+            OnInstall="yes"
+            OnReinstall="yes"
+            FailureActionsWhen="failedToStopOrReturnedError"
+            ServiceSid="unrestricted" />
+          <util:ServiceConfig
+            FirstFailureActionType="restart"
+            SecondFailureActionType="restart"
+            ThirdFailureActionType="restart"
+            ResetPeriodInDays="1"
+            RestartServiceDelayInSeconds="2" />
+        </ServiceInstall>
+
+        <!-- Start service on install, stop on uninstall -->
+        <ServiceControl
+          Id="SC_AceEngine"
+          Name="AceEngine"
+          Start="install"
+          Stop="both"
+          Remove="uninstall"
+          Wait="yes" />
+      </Component>
+
+      <!-- ace-app.exe — desktop UI -->
+      <!-- Dedicated production userspace watchdog. It is a separate LocalSystem
+           SCM service; the legacy guardian mode is not used for this role. -->
+      <Component Id="C_AceWatchdog" Guid="{A7D15D9C-86E9-4C56-9A42-C2B6E4F15391}">
+        <File Id="F_AceWatchdog" Name="ace-watchdog.exe" Source="artifacts\ace-watchdog.exe" KeyPath="yes">
+          <PermissionEx Sddl="D:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;FRFX;;;BU)" />
+        </File>
+        <ServiceInstall
+          Id="SI_AceWatchdog"
+          Type="ownProcess"
+          Name="AceEngineWatchdog"
+          DisplayName="Ace Blocker Watchdog"
+          Description="Userspace recovery and health watchdog for the Ace Blocker Engine service."
+          Start="auto"
+          ErrorControl="normal"
+          Account="NT AUTHORITY\SYSTEM"
+          Interactive="no"
+          Vital="yes">
+          <PermissionEx Sddl="D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;CCLCSWLO;;;BU)" />
+          <ServiceConfig
+            OnInstall="yes"
+            OnReinstall="yes"
+            FailureActionsWhen="failedToStopOrReturnedError"
+            ServiceSid="unrestricted" />
+          <util:ServiceConfig
+            FirstFailureActionType="restart"
+            SecondFailureActionType="restart"
+            ThirdFailureActionType="restart"
+            ResetPeriodInDays="1"
+            RestartServiceDelayInSeconds="2" />
+        </ServiceInstall>
+        <ServiceControl
+          Id="SC_AceWatchdog"
+          Name="AceEngineWatchdog"
+          Start="install"
+          Stop="both"
+          Remove="uninstall"
+          Wait="yes" />
+      </Component>
+
+      <Component Id="C_AceApp" Guid="{B2C3D4E5-F6A7-4890-B1C2-D3E4F5A6B7C8}">
+        <File Id="F_AceApp" Name="ace-app.exe" Source="artifacts\ace-app.exe" KeyPath="yes" />
+      </Component>
+
+      <!-- ace-redirect.exe — URL scheme handler -->
+      <Component Id="C_AceRedirect" Guid="{C3D4E5F6-A7B8-4901-C2D3-E4F5A6B7C8D9}">
+        <File Id="F_AceRedirect" Name="ace-redirect.exe" Source="artifacts\ace-redirect.exe" KeyPath="yes" />
+      </Component>
+
+      <!-- install-cert.exe — MITM root CA certificate installer -->
+      <Component Id="C_InstallCert" Guid="{E5F6A7B8-C9D0-4123-E4F5-A6B7C8D9E0F1}">
+        <File Id="F_InstallCert" Name="install-cert.exe" Source="artifacts\install-cert.exe" KeyPath="yes" />
+      </Component>
+
+      <!-- wintun.dll — WireGuard's signed TUN driver library, vendored at
+           ace-tun/thirdparty/wintun/. ace-engine loads it at runtime from its
+           own directory, so it must sit beside ace-engine.exe.
+
+           Unlike WinDivert there is NO separate .sys to register: wintun.dll
+           carries its own kernel component and installs it on demand the first
+           time an adapter is created. That is why the driver custom actions
+           this installer used to run are gone. -->
+      <Component Id="C_Wintun" Guid="{B2C3D4E5-F6A7-4890-B1C2-D3E4F5A6B7C9}">
+        <File Id="F_Wintun" Name="wintun.dll"
+              Source="artifacts\wintun.dll" KeyPath="yes">
+          <PermissionEx Sddl="D:PAI(A;;FA;;;SY)(A;;FA;;;BA)(A;;FRFX;;;BU)" />
+        </File>
+      </Component>
+
+      <!-- Wintun is dual-licensed GPLv2 / MIT. We redistribute under the MIT
+           option, which requires this notice to accompany the binary. -->
+      <Component Id="C_WintunLicense" Guid="{C3D4E5F6-A7B8-4901-C2D3-E4F5A6B7C8D0}">
+        <File Id="F_WintunLicense" Name="WINTUN-LICENSE.txt"
+              Source="artifacts\WINTUN-LICENSE.txt" KeyPath="yes" />
+      </Component>
+
+      <!-- shutdown-engine.ps1 - best-effort engine shutdown helper invoked by
+           CA_ShutdownEngine during uninstall (LIF-01): the engine refuses SCM
+           STOP by design, so the installer asks it to shut down via its own
+           API (POST /system/shutdown) before the lock gate. Installed with
+           the product so it is still on disk when the deferred uninstall
+           action runs (it is sequenced before any file removal). -->
+      <!-- Preserve user data across uninstall, but prevent ordinary users from
+           modifying engine/watchdog coordination or security-sensitive state. -->
+      <Component Id="C_AceProgramDataAcl" Guid="{6E39ED27-28F2-4F9F-BE72-7923A0E74BC8}" Directory="AceProgramDataDir" Permanent="yes">
+        <CreateFolder>
+          <PermissionEx Sddl="D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)" />
+        </CreateFolder>
+      </Component>
+
+      <Component Id="C_ShutdownScript" Guid="{3F7A9C4E-8B2D-4E6F-A1C5-9D0E2F4A6B8C}">
+        <File Id="F_ShutdownScript" Name="shutdown-engine.ps1"
+              Source="artifacts\shutdown-engine.ps1" KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- ============================================================ -->
+    <!--  Start Menu shortcuts                                         -->
+    <!-- ============================================================ -->
+    <ComponentGroup Id="ShortcutComponents" Directory="ApplicationProgramsFolder">
+
+      <Component Id="C_StartMenuShortcut" Guid="{F6A7B8C9-D0E1-4234-F5A6-B7C8D9E0F1A2}">
+        <Shortcut
+          Id="SC_StartMenu"
+          Name="Ace Blocker"
+          Description="Launch Ace Blocker"
+          Target="[INSTALLFOLDER]ace-app.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue
+          Root="HKCU"
+          Key="Software\AceBlocker"
+          Name="installed"
+          Value="1"
+          Type="integer"
+          KeyPath="yes" />
+        <RemoveFolder Id="RF_StartMenu" On="uninstall" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- ============================================================ -->
+    <!--  Desktop shortcut                                             -->
+    <!-- ============================================================ -->
+    <ComponentGroup Id="DesktopShortcutComponents" Directory="DesktopFolder">
+
+      <Component Id="C_DesktopShortcut" Guid="{A1B2C3D4-5E6F-4789-9A8B-7C6D5E4F3A2C}">
+        <Shortcut
+          Id="SC_Desktop"
+          Name="Ace Blocker"
+          Description="Launch Ace Blocker"
+          Target="[INSTALLFOLDER]ace-app.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue
+          Root="HKCU"
+          Key="Software\AceBlocker"
+          Name="desktop-shortcut"
+          Value="1"
+          Type="integer"
+          KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+
+    <Feature Id="Shortcuts" Title="Shortcuts" Level="1">
+      <ComponentGroupRef Id="ShortcutComponents" />
+      <ComponentGroupRef Id="DesktopShortcutComponents" />
+    </Feature>
+
+    <!-- ============================================================ -->
+    <!--  Installation confirmation UI                                 -->
+    <!-- ============================================================ -->
+    <!-- Full-UI installs ask for explicit confirmation before the MSI begins
+         making changes. Quiet/basic msiexec deployments skip the UI sequence,
+         so scripted installs remain available. -->
+    <UI>
+      <Dialog Id="InstallConfirmDlg" Width="370" Height="180" Title="[ProductName] Setup" NoMinimize="yes">
+        <Control
+          Id="Heading"
+          Type="Text"
+          X="20"
+          Y="20"
+          Width="330"
+          Height="20"
+          Transparent="yes"
+          NoPrefix="yes"
+          Text="Ready to install [ProductName]?" />
+        <Control
+          Id="Description"
+          Type="Text"
+          X="20"
+          Y="52"
+          Width="330"
+          Height="45"
+          Text="Ace Blocker will install its desktop app and protected background services on this computer. Click Install to continue." />
+        <Control
+          Id="Install"
+          Type="PushButton"
+          X="238"
+          Y="145"
+          Width="56"
+          Height="17"
+          Default="yes"
+          Text="Install">
+          <Publish Event="EndDialog" Value="Return" />
+        </Control>
+        <Control
+          Id="Cancel"
+          Type="PushButton"
+          X="304"
+          Y="145"
+          Width="56"
+          Height="17"
+          Cancel="yes"
+          Text="Cancel">
+          <Publish Event="EndDialog" Value="Exit" />
+        </Control>
+      </Dialog>
+      <InstallUISequence>
+        <Show Dialog="InstallConfirmDlg" After="CostFinalize" Condition="NOT Installed" />
+      </InstallUISequence>
+    </UI>
+    <!-- ============================================================ -->
+    <!--  Custom Actions                                               -->
+    <!-- ============================================================ -->
+
+    <!-- Install root CA certificate (elevated, deferred) -->
+    <CustomAction
+      Id="CA_InstallCert"
+      Directory="INSTALLFOLDER"
+      ExeCommand="&quot;[INSTALLFOLDER]install-cert.exe&quot;"
+      Execute="deferred"
+      Impersonate="no"
+      Return="check" />
+
+    <!-- Graceful engine shutdown BEFORE the lock gate (LIF-01): the engine
+         refuses SCM STOP by design (sc stop / Task Manager fail) and shuts
+         down only via its own API, POST /system/shutdown with the
+         X-Ace-Capability header (token read from capability.token next to
+         port.lock in the engine's ProgramData app-data dir). Without this, a
+         no-lock uninstall leaves the engine process running until reboot.
+
+         Best-effort by contract: if the engine is already stopped/unreachable
+         there is nothing to shut down, and a failure must never fail the
+         uninstall - so Return="ignore". If a lock IS active the engine itself
+         answers HTTP 423 (refuses shutdown) and CA_CheckLocks aborts the
+         uninstall right after, so no state changes. The script logs every
+         outcome to %TEMP%\AceBlocker-uninstall-shutdown.log. Runs as SYSTEM
+         (deferred, impersonate=no) so it can read the SYSTEM-owned ProgramData
+         files; powershell.exe resolves from the system PATH like certutil. -->
+    <CustomAction
+      Id="CA_ShutdownEngine"
+      Directory="System64Folder"
+      ExeCommand="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]shutdown-engine.ps1&quot;"
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
+
+    <!-- Strict uninstall/upgrade shutdown action. The script exits non-zero on
+         HTTP 423, missing capability/port state, watchdog-maintenance failure,
+         or any other inability to confirm a graceful shutdown. -->
+    <CustomAction
+      Id="CA_PrepareEngineMaintenance"
+      Directory="System64Folder"
+      ExeCommand="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]shutdown-engine.ps1&quot;"
+      Execute="deferred"
+      Impersonate="no"
+      Return="check" />
+
+    <!-- Uninstall gate: refuse uninstall while a lock is active (v1 spec:
+         "the uninstaller must not work while a lock is active"). The engine
+         queries its own database READ-ONLY (no HTTP, no service interaction):
+         ace-engine.exe with the "check-locks" flag exits 0 (no locks),
+         1 (lock(s) active, exact expirations printed), 2 (cannot verify —
+         fail safe). Return="check" aborts the transaction before any
+         destructive step, so a refused uninstall never leaves a
+         partially-removed installation. The expirations are listed in the
+         MSI log; the app UI also surfaces them. -->
+    <CustomAction
+      Id="CA_CheckLocks"
+      Directory="INSTALLFOLDER"
+      ExeCommand="&quot;[INSTALLFOLDER]ace-engine.exe&quot; --check-locks"
+      Execute="deferred"
+      Impersonate="no"
+      Return="check" />
+
+    <!-- Stop the watchdog only after the engine has acknowledged maintenance
+         and completed graceful teardown. Missing/already-stopped is benign. -->
+    <CustomAction
+      Id="CA_StopWatchdog"
+      Directory="System64Folder"
+      ExeCommand="sc.exe stop AceEngineWatchdog"
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
+
+    <!-- Best-effort removal of the engine certificates from the machine root
+         store at uninstall (the API cert "Ace Engine Root CA" and the MITM
+         cert "mitm-proxy Root CA"). Ignored failures: the stores may not
+         contain them (e.g. cert install failed at first run). -->
+    <CustomAction
+      Id="CA_RemoveApiCert"
+      Directory="System64Folder"
+      ExeCommand="certutil.exe -delstore -f Root &quot;Ace Engine Root CA&quot;"
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
+    <CustomAction
+      Id="CA_RemoveMitmCert"
+      Directory="System64Folder"
+      ExeCommand="certutil.exe -delstore -f Root &quot;mitm-proxy Root CA&quot;"
+      Execute="deferred"
+      Impersonate="no"
+      Return="ignore" />
+
+    <!-- No driver-installation custom actions: wintun.dll registers and
+         removes its own kernel component as adapters come and go. The
+         `sc create WinDivert64` / `sc delete WinDivert64` pair that used to
+         live here is intentionally absent, as is the obsolete ace-sentinel
+         driver registration (engine integration removed 2026-08-25). -->
+
+    <!-- ============================================================ -->
+    <!--  Install Sequence                                             -->
+    <!-- ============================================================ -->
+    <InstallExecuteSequence>
+      <!-- Install the CA certificate once files are in place -->
+      <Custom Action="CA_InstallCert" After="InstallFiles" Condition="NOT Installed" />
+      <!-- Shut the engine down gracefully BEFORE the lock gate (LIF-01): see
+           CA_ShutdownEngine. Sequencing is shutdown -> check locks -> remove
+           certs, exactly as the plan prescribes. If a lock is active the
+           engine refuses shutdown (423) and the gate aborts the uninstall. -->
+      <Custom Action="CA_PrepareEngineMaintenance" After="CA_CheckLocks" Condition="REMOVE" />
+      <!-- Uninstall gate: refuse while a lock is active, BEFORE any
+           destructive step (stop/delete services, remove files). Runs on
+           uninstall and on the uninstall half of a major upgrade; never on
+           repair. -->
+      <Custom Action="CA_CheckLocks" After="InstallInitialize" Condition="REMOVE" />
+      <!-- Remove the engine certificates from the machine root store on
+           uninstall, after the lock gate has passed. -->
+      <Custom Action="CA_StopWatchdog" After="CA_PrepareEngineMaintenance" Condition="REMOVE" />
+      <Custom Action="CA_RemoveApiCert" After="CA_StopWatchdog" Condition="REMOVE" />
+      <Custom Action="CA_RemoveMitmCert" After="CA_RemoveApiCert" Condition="REMOVE" />
+    </InstallExecuteSequence>
+
+  </Package>
+
+</Wix>
+
+
+
+
+

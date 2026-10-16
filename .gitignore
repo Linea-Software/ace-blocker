@@ -1,0 +1,30 @@
+# Cargo workspace output
+/target/
+**/target/
+
+# Bun/Tauri/Svelte build output
+**/node_modules/
+**/.svelte-kit/
+**/.temp/
+**/build/
+**/dist/
+**/test-results/
+**/playwright-report/
+**/coverage/
+**/.vite/
+
+# Environment and local tooling
+**/.env
+**/.env.*
+**/.ai-bridge/
+**/.agents/
+**/.codexpro-worktrees/
+**/.git/
+**/*.pfx
+**/*.p12
+*.log
+
+# WiX intermediate and staged files
+/installer/artifacts/
+/installer/installer.generated.wxs
+/installer/bundled-packs.wxs

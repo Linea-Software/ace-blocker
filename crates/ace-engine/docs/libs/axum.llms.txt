@@ -1,0 +1,1132 @@
+# axum Documentation (LLMS)
+
+## API Overview
+
+### axum
+Link: https://docs.rs/axum/0.8.8
+
+### ConnectInfo
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/connect_info.rs
+
+### keep_alive
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### on_upgrade
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### connect
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### MethodNotConnect
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### JsonRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### handler
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/mod.rs
+
+### fallback
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### connect_info
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/connect_info.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### rejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### ConnectionNotUpgradable
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### AWAY
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### map_request_with_state
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_request.rs
+
+### RawPathParamsIter
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### body
+Link: https://docs.rs/crate/axum/0.8.8/source/src/body/mod.rs
+
+### delete
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### next_field
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### file_name
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### get
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### method_routing
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### accept_unmasked_frames
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### POLICY
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### path
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### options
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### with_state
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### DEFAULT_KEEP_ALIVE
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### into_make_service_with_connect_info
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/service.rs
+
+### CONNECT
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### to_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### write_buffer_size
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### any
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### Route
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/route.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### put
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### ExtensionRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### name
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### TRACE
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### content_type
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### WebSocket
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### RawFormRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### InfallibleRouteFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/route.rs
+
+### InvalidWebSocketVersionHeader
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### selected_protocol
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### WebSocketUpgradeRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### interval
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### connect_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### KeepAliveStream
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### IntoMakeServiceWithConnectInfo
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/connect_info.rs
+
+### Handler
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/mod.rs
+
+### HandleError
+Link: https://docs.rs/crate/axum/0.8.8/source/src/error_handling/mod.rs
+
+### MockConnectInfo
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/connect_info.rs
+
+### from_bytes
+Link: https://docs.rs/crate/axum/0.8.8/source/src/json.rs
+
+### put
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### FailedToDeserializeQueryString
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### fallback
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### iter
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### Serve
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### as_str
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/nested_path.rs
+
+### RawPathParams
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### HandleErrorFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/error_handling/mod.rs
+
+### route_layer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### NestedPathRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### POST
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### serve
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### FromExtractor
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_extractor.rs
+
+### id
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### put_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### State
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/state.rs
+
+### QueryRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### new
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### MapRequest
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_request.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### location
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/redirect.rs
+
+### WebSocketUpgrade
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### Utf8Bytes
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### or
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### Extension
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extension.rs
+
+### RawForm
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/raw_form.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### handle_error
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### trace
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### routing
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### route_layer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### SIZE
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### HandleErrorLayer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/error_handling/mod.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### as_str
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/matched_path.rs
+
+### local_addr
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### Event
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### EventDataWriter
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### Field
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### to_bytes
+Link: https://docs.rs/crate/axum/0.8.8/source/src/body/mod.rs
+
+### patch
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### PUT
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### has_routes
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### as_str
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### FromFn
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_fn.rs
+
+### ResponseAxumBody
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/response_axum_body.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### retry
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### comment
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### Html
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/mod.rs
+
+### future
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/mod.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### IntoMakeService
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/into_make_service.rs
+
+### reason
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### into_event
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### middleware
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/mod.rs
+
+### post
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### ErrorKind
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### AGAIN
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### get_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### ResponseFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_extractor.rs
+
+### max_write_buffer_size
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### new
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### IntoMapRequestResult
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_request.rs
+
+### ResponseAxumBodyLayer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/response_axum_body.rs
+
+### axum
+Link: https://docs.rs/crate/axum/0.8.8/source/src/lib.rs
+
+### Query
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/query.rs
+
+### NoContent
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/mod.rs
+
+### ResponseFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_fn.rs
+
+### nest_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### MatchedPathRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### status_code
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/redirect.rs
+
+### Json
+Link: https://docs.rs/crate/axum/0.8.8/source/src/json.rs
+
+### max_message_size
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### RouterIntoService
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### IntoServiceFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/future.rs
+
+### options
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### UNSUPPORTED
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### binary
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### new
+Link: https://docs.rs/crate/axum/0.8.8/source/src/error_handling/mod.rs
+
+### MapRequestLayer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_request.rs
+
+### into_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### into_make_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/service.rs
+
+### into_make_service_with_connect_info
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### InvalidFormContentType
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### get
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### nest
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### FailedToDeserializePathParams
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### into_make_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### fallback_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### state
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/service.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### extract
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/mod.rs
+
+### MultipartError
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### InvalidBoundary
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### MethodNotGet
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### FormRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### io
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### PATCH
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### HandlerWithoutStateExt
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/mod.rs
+
+### protocols
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### route
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### serve
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### PROTOCOL
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### STATUS
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### JsonSyntaxError
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### ws
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### Redirect
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/redirect.rs
+
+### Connected
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/connect_info.rs
+
+### get_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### layer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### into_data
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### post_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### ServiceExt
+Link: https://docs.rs/crate/axum/0.8.8/source/src/service_ext.rs
+
+### new
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### chunk
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### MapResponse
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_response.rs
+
+### post
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### on_failed_upgrade
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### NestedPath
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/nested_path.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### patch
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### options_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### AddExtension
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extension.rs
+
+### GET
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### MapResponseLayer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_response.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### from_fn
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_fn.rs
+
+### temporary
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/redirect.rs
+
+### HEAD
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### FromExtractorLayer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_extractor.rs
+
+### NoMatchingMethodFilter
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### read_buffer_size
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### with_state
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### EXTENSION
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### ERROR
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### future
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/future.rs
+
+### recv
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### head_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### Message
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### TapIo
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/listener.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### put_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### headers
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### with_graceful_shutdown
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### on_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### new
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### INVALID
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### trace
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### InvalidUtf8InPathParam
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### ResponseFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_request.rs
+
+### code
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### options_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### InvalidProtocolPseudoheader
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### any_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### FromFnLayer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_fn.rs
+
+### into_make_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### multipart
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### LayeredFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/future.rs
+
+### RouterAsService
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### FailedToDeserializeForm
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### future
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/future.rs
+
+### on_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### rejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### local_addr
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### try_from_uri
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/query.rs
+
+### error_handling
+Link: https://docs.rs/crate/axum/0.8.8/source/src/error_handling/mod.rs
+
+### HandlerService
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/service.rs
+
+### IncomingStream
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### OnFailedUpgrade
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### RESTART
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### ResponseFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_response.rs
+
+### Form
+Link: https://docs.rs/crate/axum/0.8.8/source/src/form.rs
+
+### from_extractor_with_state
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_extractor.rs
+
+### from_extractor
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_extractor.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### remote_addr
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### without_v07_checks
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### layer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### Path
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### on
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### head
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### connect
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### new
+Link: https://docs.rs/crate/axum/0.8.8/source/src/error_handling/mod.rs
+
+### NORMAL
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### on
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### Listener
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/listener.rs
+
+### send
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### delete_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### head_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### merge
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### close_code
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### to
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/redirect.rs
+
+### MissingExtension
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### map_response_with_state
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_response.rs
+
+### OPTIONS
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### Router
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### MissingPathParams
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### ResponseFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/connect_info.rs
+
+### sse
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### DefaultOnFailedUpgrade
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### map_request
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_request.rs
+
+### ListenerExt
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/listener.rs
+
+### FailedToDeserializeFormBody
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### OriginalUri
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/original_uri.rs
+
+### Sse
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### from_static
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### into_kind
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### MatchedPathMissing
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### merge
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### ResponseAxumBodyFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/response_axum_body.rs
+
+### post_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### InvalidUpgradeHeader
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### from_fn_with_state
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_fn.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### RawQuery
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/raw_query.rs
+
+### delete_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### MethodFilter
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### head
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### CloseFrame
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### MultipartRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### run
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_fn.rs
+
+### Multipart
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### Layered
+Link: https://docs.rs/crate/axum/0.8.8/source/src/handler/mod.rs
+
+### WebSocketKeyHeaderMissing
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### RawPathParamsRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### connect_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### future
+Link: https://docs.rs/crate/axum/0.8.8/source/src/error_handling/mod.rs
+
+### delete
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### route_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### KeepAlive
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### fallback_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### JsonDataError
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### ABNORMAL
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### patch_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### WithGracefulShutdown
+Link: https://docs.rs/crate/axum/0.8.8/source/src/serve/mod.rs
+
+### trace_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### event
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### IntoMakeServiceFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/into_make_service.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### protocol
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### permanent
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/redirect.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### MissingJsonContentType
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### InvalidConnectionHeader
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### response
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/mod.rs
+
+### max_frame_size
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### body_text
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### json_data
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### Next
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/from_fn.rs
+
+### into_make_service_with_connect_info
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### DELETE
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_filter.rs
+
+### method_not_allowed_fallback
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### reset_fallback
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### into_data_writer
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### into_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### as_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/mod.rs
+
+### PathRejection
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### RouteFuture
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/route.rs
+
+### patch_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### data
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### kind
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### MatchedPath
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/matched_path.rs
+
+### MethodRouter
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### CloseCode
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/ws.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+
+### bytes
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/multipart.rs
+
+### event
+Link: https://docs.rs/crate/axum/0.8.8/source/src/response/sse.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/path/mod.rs
+
+### trace_service
+Link: https://docs.rs/crate/axum/0.8.8/source/src/routing/method_routing.rs
+
+### map_response
+Link: https://docs.rs/crate/axum/0.8.8/source/src/middleware/map_response.rs
+
+### status
+Link: https://docs.rs/crate/axum/0.8.8/source/src/extract/rejection.rs
+

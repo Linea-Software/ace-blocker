@@ -1,0 +1,175 @@
+# app_dirs2 Full API Documentation
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+Author of your app (e.g. "Blizzard").
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+Returns (but **does not create**) path to **app-specific** data
+**subdirectory** for provided data type and subdirectory path.
+
+The `path` parameter should be a valid relative path separated by
+**forward slashes** (`/`).
+
+A result of `Ok` means that we determined where the data SHOULD go, but
+it DOES NOT guarantee that the directory actually exists. (See
+[`app_dir`](fn.app_dir.html).)
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+Returns `true` for non-user-specific data types.
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+Creates (if necessary) and returns path to **app-specific** data
+directory for provided data type.
+
+If the directory structure does not exist, this function will recursively
+create the full hierarchy. Therefore, a result of `Ok` guarantees that the
+returned path exists.
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+Error type for any `app_dirs` operation.
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/lib.rs
+*Put your app's data in the right place on every platform*
+
+# Usage
+
+```rust
+use app_dirs2::*; // or app_dirs::* if you've used package alias in Cargo.toml
+
+const APP_INFO: AppInfo = AppInfo{name: "CoolApp", author: "SuperDev"};
+
+fn main () {
+    // Where should I store my app's per-user configuration data?
+    println!("{:?}", get_app_root(AppDataType::UserConfig, &APP_INFO));
+    // Windows: "%APPDATA%\SuperDev\CoolApp"
+    //   (e.g.: "C:\Users\Rusty\AppData\Roaming\SuperDev\CoolApp")
+    //   macOS: "$HOME/Library/Application Support/CoolApp"
+    //   (e.g.: "/Users/Rusty/Library/Application Support/CoolApp")
+    //    *nix: "$HOME/.config/CoolApp" (or "$XDG_CONFIG_HOME/CoolApp", if defined)
+    //   (e.g.: "/home/rusty/.config/CoolApp")
+    // Android: "/data/user/<userid>/<app.package.name>/CoolApp"
+    //   (e.g.: "/data/user/0/org.super_dev.cool_app/CoolApp")
+
+    // How about nested cache data?
+    println!("{:?}", get_app_dir(AppDataType::UserCache, &APP_INFO, "cache/images"));
+    // Windows: "%LOCALAPPDATA%\SuperDev\CoolApp\cache\images"
+    //   (e.g.: "C:\Users\Rusty\AppData\Local\SuperDev\CoolApp\cache\images")
+    //   macOS: "$HOME/Library/Caches/CoolApp/cache/images"
+    //   (e.g.: "/Users/Rusty/Library/Caches/CoolApp/cache/images")
+    //    *nix: "$HOME/.cache/CoolApp/cache/images"
+    //          (or "$XDG_CACHE_HOME/CoolApp/cache/images", if defined)
+    //   (e.g.: "/home/rusty/.cache/CoolApp/cache/images")
+    // Android: "/data/user/<userid>/<app.package.name>/cache/CoolApp"
+    //   (e.g.: "/data/user/0/org.super_dev.cool_app/cache/CoolApp")
+
+    // Remove "get_" prefix to recursively create nonexistent directories:
+    // app_root(AppDataType::UserConfig, &APP_INFO)
+    // app_dir(AppDataType::UserCache, &APP_INFO, "cache/images")
+}
+```
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+Creates (if necessary) and returns path to **top-level** data directory
+for provided data type.
+
+If the directory structure does not exist, this function will recursively
+create the full hierarchy. Therefore, a result of `Ok` guarantees that the
+returned path exists.
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+Name of your app (e.g. "Hearthstone").
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+Struct that holds information about your app.
+
+It's recommended to create a single `const` instance of `AppInfo`:
+
+```
+use app_dirs2::AppInfo;
+const APP_INFO: AppInfo = AppInfo{name: "Awesome App", author: "Dedicated Dev"};
+```
+
+# Caveats
+Functions in this library sanitize any characters that could be
+non-filename-safe from `name` and `author`. The resulting paths will be
+more human-readable if you stick to **letters, numbers, spaces, hyphens,
+underscores, and periods** for both properties.
+
+The `author` property is currently only used by Windows, as macOS and *nix
+specifications don't require it. Make sure your `name` string is unique!
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+Creates (if necessary) and returns path to **app-specific** data
+**subdirectory** for provided data type and subdirectory path.
+
+The `path` parameter should be a valid relative path separated by
+**forward slashes** (`/`).
+
+If the directory structure does not exist, this function will recursively
+create the full hierarchy. Therefore, a result of `Ok` guarantees that the
+returned path exists.
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/utils.rs
+Returns a cross-platform-filename-safe version of any string.
+
+This is used internally to generate app data directories based on app
+name/author. App developers can use it for consistency when dealing with
+file system operations.
+
+Do not apply this function to full paths, as it will sanitize '/' and '\';
+it should only be used on directory or file names (i.e. path segments).
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+Returns (but **does not create**) path to **top-level** data directory for
+provided data type.
+
+A result of `Ok` means that we determined where the data SHOULD go, but
+it DOES NOT guarantee that the directory actually exists. (See
+[`data_root`](fn.data_root.html).)
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/common.rs
+Enum specifying the type of app data you want to store.
+
+**Different platforms are NOT guaranteed to distinguish between each data
+type.** Keep this in mind when choosing data file paths.
+
+Example: Windows does not supported shared application data and does not
+distinguish between config and data. Therefore, on Windows, all variants
+except `UserCache` return the same path.
+
+---
+
+## https://docs.rs/crate/app_dirs2/2.5.5/source/src/imp/mod.rs
+Returns (but **does not create**) path to **app-specific** data directory
+for provided data type.
+
+A result of `Ok` means that we determined where the data SHOULD go, but
+it DOES NOT guarantee that the directory actually exists. (See
+[`app_root`](fn.app_root.html).)
+
+---
+

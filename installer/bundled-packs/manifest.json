@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "build_date": "2026-09-02",
+  "generated_at": "2026-09-02T15:56:25.903535800+00:00",
+  "pack_db_format_version": "1.0",
+  "packs": [
+    {
+      "id": "pack-adult-free",
+      "name": "Adult Websites — Free",
+      "description": "Blocks known adult content websites.",
+      "requires_pro": false,
+      "content_version": "2026.09.02",
+      "sha256": "3b08eaffa5629e43fe72a24c966b8cb8114d4c3710329be423f9a8dd6944eb43",
+      "size_bytes": 2834432,
+      "entry_count": 182105,
+      "built_at": "2026-09-02T00:00:00Z",
+      "file": "pack-adult-free/pack.db"
+    },
+    {
+      "id": "pack-gaming-free",
+      "name": "Gaming Websites — Free",
+      "description": "Blocks online gaming sites and services.",
+      "requires_pro": false,
+      "content_version": "2026.09.02",
+      "sha256": "adcfa7fae10fe4c623cd836cdf64c997627a40c42af6e2234133c9aca0d9e69f",
+      "size_bytes": 958464,
+      "entry_count": 60849,
+      "built_at": "2026-09-02T00:00:00Z",
+      "file": "pack-gaming-free/pack.db"
+    },
+    {
+      "id": "pack-social-free",
+      "name": "Social Media Websites — Free",
+      "description": "Blocks social media sites.",
+      "requires_pro": false,
+      "content_version": "2026.09.02",
+      "sha256": "e4d77ef5d7d9bf5487ee54843491ef8e9d6484da7c0eef593c9d1c32aad7a3f8",
+      "size_bytes": 1314816,
+      "entry_count": 83271,
+      "built_at": "2026-09-02T00:00:00Z",
+      "file": "pack-social-free/pack.db"
+    }
+  ]
+}

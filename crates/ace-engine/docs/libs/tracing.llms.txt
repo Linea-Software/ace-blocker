@@ -1,0 +1,217 @@
+# tracing Documentation (LLMS)
+
+## API Overview
+
+### tracing
+Link: https://docs.rs/tracing/0.1.44
+
+### span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### info
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### inner
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### trace_span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### new_disabled
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### or_current
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### error_span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### inner_pin_mut
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### inner_pin_mut
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### Span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### none
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### level_filters
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/level_filters.rs
+
+### enter
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### span_mut
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### entered
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### follows_from
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### inner_pin_ref
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### child_of
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### has_field
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### into_inner
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### tracing
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/lib.rs
+
+### span_enabled
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### set_default
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/subscriber.rs
+
+### error
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### debug
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### dispatcher
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/dispatcher.rs
+
+### metadata
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### warn
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### new_root
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### trace
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### is_none
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### inner
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### inner_pin_ref
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### field
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/field.rs
+
+### info_span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### Entered
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### in_scope
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### with_subscriber
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### new
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### event_enabled
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### subscriber
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/subscriber.rs
+
+### dispatcher
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### id
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### EnteredSpan
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### current
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### is_disabled
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### AsId
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### set_global_default
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/subscriber.rs
+
+### with_default
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/subscriber.rs
+
+### STATIC_MAX_LEVEL
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/level_filters.rs
+
+### WithDispatch
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### enabled
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### record_all
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### warn_span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### record
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### exit
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### event
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### inner_mut
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### Instrumented
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### inner_mut
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### WithSubscriber
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### into_inner
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### Instrument
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### AsField
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/field.rs
+
+### id
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### instrument
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/instrument.rs
+
+### debug_span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/macros.rs
+
+### span
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+
+### field
+Link: https://docs.rs/crate/tracing/0.1.44/source/src/span.rs
+

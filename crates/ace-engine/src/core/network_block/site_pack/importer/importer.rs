@@ -1,0 +1,749 @@
+//! Site pack importer.
+//!
+//! Imports domain blocklists (hosts, wildcard, adblock) into a [`SitePackDB`]:
+//! every domain is hashed with XXH3-64 and inserted into `entries.host_hash`
+//! in batches of [`INSERT_BATCH_SIZE`].
+
+use super::stream::{SitePackCreationStatus, SitePackImportPhase, SitePackImportStream};
+use super::{SitePackFormat, SitePackId, SitePackImportError, SitePackSource, SitePackSourceType};
+use crate::core::common::percentage::Percentage;
+use crate::core::network_block::site_pack::site_pack_db::{
+    NewPackMetaModel, SitePackDB, hash_host,
+};
+use crate::core::network_block::uri_hash::UriHash;
+
+use ace_domain_blocklist::{DomainLineParsingResult, DomainListFormatKind, detect_format};
+use async_stream::stream;
+use chrono::Utc;
+use futures::{Stream, StreamExt};
+use std::path::{Path, PathBuf};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tracing::{info, warn};
+
+use crate::core::utils::file_download;
+
+/// Number of host hashes written to the database in a single insert.
+const INSERT_BATCH_SIZE: usize = 50_000;
+
+/// Cap on a single downloaded list source. Real host lists reach ~100 MB
+/// compressed; 2 GiB bounds a hostile or broken server without breaking
+/// legitimate sources.
+const MAX_SOURCE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+
+pub struct Importer;
+
+impl Importer {
+    /// Imports the given sources into `db`, reporting progress through the
+    /// returned stream.
+    ///
+    /// The database is rebuilt from scratch: previous entries and metadata
+    /// are dropped before the sources are imported. On success a fresh
+    /// `pack_meta` row is written with the final entry count.
+    pub fn import_sources<'a>(
+        db: &'a SitePackDB,
+        sources: Vec<SitePackSource>,
+        temp_dir: PathBuf,
+        site_pack_id: SitePackId,
+    ) -> SitePackImportStream<'a> {
+        Box::pin(Self::import_sources_internal(
+            db,
+            sources,
+            temp_dir,
+            site_pack_id,
+        ))
+    }
+
+    fn import_sources_internal<'a>(
+        db: &'a SitePackDB,
+        sources: Vec<SitePackSource>,
+        temp_dir: PathBuf,
+        site_pack_id: SitePackId,
+    ) -> impl Stream<Item = SitePackCreationStatus> + 'a {
+        stream! {
+            yield SitePackCreationStatus::Started {
+                site_pack_id: site_pack_id.clone(),
+                progress: Percentage::new(0.0),
+                phase: SitePackImportPhase::Initializing,
+            };
+
+            if let Err(error) = db.clear() {
+                yield Self::failed(error, SitePackImportPhase::Initializing);
+                return;
+            }
+
+            let sources_count = sources.len().max(1) as f64;
+            let mut hash_batch: Vec<UriHash> = Vec::with_capacity(INSERT_BATCH_SIZE);
+
+            for (source_index, source) in sources.iter().enumerate() {
+                let source = source.clone();
+                let source_base = (source_index as f64) / sources_count * 100.0;
+
+                // ── 1. Obtain the list file ───────────────────────────
+                let (file_path, is_temp_file) = match source.source_type {
+                    SitePackSourceType::Url => {
+                        let file_path = temp_dir.join(format!("{}.txt", source.id));
+
+                        // Timeout policy + size cap from file_download so a
+                        // hung or hostile server cannot stall the importer
+                        // or fill the disk.
+                        let response = match file_download::http_client()
+                            .get(&source.source)
+                            .send()
+                            .await
+                        {
+                            Ok(response) => response,
+                            Err(error) => {
+                                yield Self::failed(
+                                    SitePackImportError::DownloadFailure {
+                                        message: error.to_string(),
+                                    },
+                                    SitePackImportPhase::Downloading,
+                                );
+                                return;
+                            }
+                        };
+                        let response = match response.error_for_status() {
+                            Ok(response) => response,
+                            Err(error) => {
+                                yield Self::failed(
+                                    SitePackImportError::DownloadFailure {
+                                        message: error.to_string(),
+                                    },
+                                    SitePackImportPhase::Downloading,
+                                );
+                                return;
+                            }
+                        };
+
+                        if let Some(total) = response.content_length()
+                            && total > MAX_SOURCE_BYTES
+                        {
+                            yield Self::failed(
+                                SitePackImportError::DownloadFailure {
+                                    message: format!(
+                                        "source {} refused: content length {total} exceeds the {MAX_SOURCE_BYTES}-byte limit",
+                                        source.source
+                                    ),
+                                },
+                                SitePackImportPhase::Downloading,
+                            );
+                            return;
+                        }
+
+                        let total_bytes = response.content_length();
+
+                        let mut file = match tokio::fs::File::create(&file_path).await {
+                            Ok(file) => file,
+                            Err(error) => {
+                                yield Self::failed(
+                                    io_error(error),
+                                    SitePackImportPhase::Downloading,
+                                );
+                                return;
+                            }
+                        };
+
+                        let mut byte_stream = response.bytes_stream();
+                        let mut downloaded_bytes: u64 = 0;
+                        let mut last_percent: u32 = 0;
+                        while let Some(chunk) = byte_stream.next().await {
+                            let chunk = match chunk {
+                                Ok(chunk) => chunk,
+                                Err(error) => {
+                                    yield Self::failed(
+                                        SitePackImportError::DownloadFailure {
+                                            message: error.to_string(),
+                                        },
+                                        SitePackImportPhase::Downloading,
+                                    );
+                                    return;
+                                }
+                            };
+                            downloaded_bytes += chunk.len() as u64;
+                            if downloaded_bytes > MAX_SOURCE_BYTES {
+                                yield Self::failed(
+                                    SitePackImportError::DownloadFailure {
+                                        message: format!(
+                                            "source {} refused: body exceeds the {MAX_SOURCE_BYTES}-byte limit",
+                                            source.source
+                                        ),
+                                    },
+                                    SitePackImportPhase::Downloading,
+                                );
+                                return;
+                            }
+                            if let Err(error) = file.write_all(&chunk).await {
+                                yield Self::failed(io_error(error), SitePackImportPhase::Downloading);
+                                return;
+                            }
+                            if let Some(total) = total_bytes {
+                                let percent = progress_percent(downloaded_bytes, total);
+                                if percent != last_percent {
+                                    last_percent = percent;
+                                    yield Self::in_progress(
+                                        &site_pack_id,
+                                        Percentage::new(source_base + percent as f64 / sources_count),
+                                        SitePackImportPhase::Downloading,
+                                    );
+                                }
+                            }
+                        }
+
+                        (file_path, true)
+                    }
+                    SitePackSourceType::File => (PathBuf::from(&source.source), false),
+                };
+
+                // ── 2. Resolve the list format ────────────────────────
+                let kind = match source.format {
+                    SitePackFormat::Standard => DomainListFormatKind::Hosts,
+                    SitePackFormat::WildCardDomains => DomainListFormatKind::Wildcard,
+                    SitePackFormat::Auto => {
+                        let sample = match read_sample(&file_path).await {
+                            Ok(sample) => sample,
+                            Err(error) => {
+                                yield Self::failed(error, SitePackImportPhase::Importing);
+                                return;
+                            }
+                        };
+                        detect_format(&sample)
+                    }
+                };
+
+                // ── 3. Stream the list into the database ──────────────
+                let file = match tokio::fs::File::open(&file_path).await {
+                    Ok(file) => file,
+                    Err(error) => {
+                        yield Self::failed(io_error(error), SitePackImportPhase::Importing);
+                        return;
+                    }
+                };
+                let total_bytes = match file.metadata().await {
+                    Ok(metadata) => metadata.len(),
+                    Err(error) => {
+                        yield Self::failed(io_error(error), SitePackImportPhase::Importing);
+                        return;
+                    }
+                };
+
+                let mut reader = BufReader::new(file);
+                let mut line_buffer: Vec<u8> = Vec::new();
+                let mut consumed_bytes: u64 = 0;
+                let mut last_percent: u32 = 0;
+
+                loop {
+                    line_buffer.clear();
+                    let bytes_read = match reader.read_until(b'\n', &mut line_buffer).await {
+                        Ok(bytes_read) => bytes_read,
+                        Err(error) => {
+                            yield Self::failed(io_error(error), SitePackImportPhase::Importing);
+                            return;
+                        }
+                    };
+                    if bytes_read == 0 {
+                        break;
+                    }
+                    consumed_bytes += bytes_read as u64;
+
+                    let line = match std::str::from_utf8(&line_buffer) {
+                        Ok(line) => line,
+                        Err(_) => {
+                            // Real-world lists contain the occasional
+                            // non-UTF-8 line: skip it instead of aborting.
+                            warn!("skipping non-UTF-8 line in {}", source.source);
+                            continue;
+                        }
+                    };
+
+                    match kind.parse_line(line) {
+                        Ok(DomainLineParsingResult::Skip) => {}
+                        Ok(DomainLineParsingResult::Domains(domains)) => {
+                            for domain in domains {
+                                hash_batch.push(hash_host(&domain.into_inner()));
+                                if hash_batch.len() >= INSERT_BATCH_SIZE {
+                                    if let Err(error) = db.insert_entries(&hash_batch) {
+                                        yield Self::failed(error, SitePackImportPhase::Importing);
+                                        return;
+                                    }
+                                    hash_batch.clear();
+                                }
+                            }
+                        }
+                        Err(error) => {
+                            // Real-world lists contain the occasional
+                            // malformed line (bare IPs, odd characters):
+                            // skip it instead of aborting the whole import.
+                            warn!("skipping malformed line in {}: {error}", source.source);
+                        }
+                    }
+
+                    let percent = progress_percent(consumed_bytes, total_bytes);
+                    if percent != last_percent {
+                        last_percent = percent;
+                        yield Self::in_progress(
+                            &site_pack_id,
+                            Percentage::new(source_base + percent as f64 / sources_count),
+                            SitePackImportPhase::Importing,
+                        );
+                    }
+                }
+
+                // Flush the remaining hashes of this source.
+                if !hash_batch.is_empty() {
+                    if let Err(error) = db.insert_entries(&hash_batch) {
+                        yield Self::failed(error, SitePackImportPhase::Importing);
+                        return;
+                    }
+                    hash_batch.clear();
+                }
+
+                if is_temp_file {
+                    let _ = tokio::fs::remove_file(&file_path).await;
+                }
+            }
+
+            // ── 4. Finalize: write the pack metadata ──────────────────
+            let entry_count = match db.count_entries() {
+                Ok(entry_count) => entry_count,
+                Err(error) => {
+                    yield Self::failed(error, SitePackImportPhase::Finalizing);
+                    return;
+                }
+            };
+            let pack_meta = NewPackMetaModel {
+                id: site_pack_id.to_string(),
+                format_version: "1.0".to_string(),
+                name: None,
+                entry_count: entry_count as i32,
+                built_at: Utc::now().to_rfc3339(),
+            };
+            if let Err(error) = db.insert_pack_meta(pack_meta) {
+                yield Self::failed(error, SitePackImportPhase::Finalizing);
+                return;
+            }
+
+            info!("site pack {site_pack_id} imported: {entry_count} entries");
+            yield SitePackCreationStatus::Completed {
+                site_pack_id,
+                progress: Percentage::new(100.0),
+                phase: SitePackImportPhase::Completed,
+            };
+        }
+    }
+
+    fn in_progress(
+        site_pack_id: &SitePackId,
+        progress: Percentage,
+        phase: SitePackImportPhase,
+    ) -> SitePackCreationStatus {
+        SitePackCreationStatus::InProgress {
+            site_pack_id: site_pack_id.clone(),
+            progress,
+            phase,
+        }
+    }
+
+    fn failed(
+        error: impl Into<SitePackImportError>,
+        phase: SitePackImportPhase,
+    ) -> SitePackCreationStatus {
+        SitePackCreationStatus::Failed {
+            error: error.into().to_string(),
+            phase: Some(phase),
+        }
+    }
+}
+
+fn io_error(error: std::io::Error) -> SitePackImportError {
+    SitePackImportError::IoFailure {
+        message: error.to_string(),
+    }
+}
+
+/// Progress as a whole percentage of `consumed` out of `total` bytes.
+fn progress_percent(consumed: u64, total: u64) -> u32 {
+    if total == 0 {
+        return 100;
+    }
+    (consumed.min(total) as f64 / total as f64 * 100.0) as u32
+}
+
+/// Reads up to `DETECTION_SAMPLE_LINES` leading lines of the file.
+async fn read_sample(path: &Path) -> Result<String, SitePackImportError> {
+    let file = tokio::fs::File::open(path).await.map_err(io_error)?;
+    let mut reader = BufReader::new(file);
+    let mut sample = String::new();
+    for _ in 0..ace_domain_blocklist::DETECTION_SAMPLE_LINES {
+        let mut line_buffer: Vec<u8> = Vec::new();
+        let bytes_read = reader
+            .read_until(b'\n', &mut line_buffer)
+            .await
+            .map_err(io_error)?;
+        if bytes_read == 0 {
+            break;
+        }
+        sample.push_str(&String::from_utf8_lossy(&line_buffer));
+    }
+    Ok(sample)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::network_block::site_pack::importer::{
+        SitePackFormat, SitePackId, SitePackSource, SitePackSourceId, SitePackSourceType,
+    };
+    use axum::routing::get;
+    use std::path::Path;
+    use tempfile::tempdir;
+    use uuid::Uuid;
+
+    fn test_db(db_path: &Path) -> SitePackDB {
+        SitePackDB::from(db_path).expect("failed to create test site pack db")
+    }
+
+    fn file_source(path: &str, format: SitePackFormat) -> SitePackSource {
+        SitePackSource {
+            id: SitePackSourceId::new(Uuid::now_v7()),
+            site_pack_id: SitePackId::new("test-pack".to_string()),
+            source: path.to_string(),
+            source_type: SitePackSourceType::File,
+            format,
+        }
+    }
+
+    fn url_source(url: String, format: SitePackFormat) -> SitePackSource {
+        SitePackSource {
+            id: SitePackSourceId::new(Uuid::now_v7()),
+            site_pack_id: SitePackId::new("test-pack".to_string()),
+            source: url,
+            source_type: SitePackSourceType::Url,
+            format,
+        }
+    }
+
+    async fn run_import(
+        db: &SitePackDB,
+        sources: Vec<SitePackSource>,
+    ) -> Vec<SitePackCreationStatus> {
+        let temp = tempdir().unwrap();
+        Importer::import_sources(
+            db,
+            sources,
+            temp.path().to_path_buf(),
+            SitePackId::new("test-pack".to_string()),
+        )
+        .collect()
+        .await
+    }
+
+    #[tokio::test]
+    async fn imports_wildcard_file_with_hashes() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("list.txt");
+        std::fs::write(&list_path, "# comment\nexample.com\nads.example.com\n").unwrap();
+
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
+
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 2);
+        assert_eq!(db.get_entry_count().unwrap(), 2);
+        assert!(
+            db.blocking_result(&hash_host("example.com"))
+                .unwrap()
+                .is_blocked()
+        );
+        assert!(
+            db.blocking_result(&hash_host("ads.example.com"))
+                .unwrap()
+                .is_blocked()
+        );
+        assert!(
+            !db.blocking_result(&hash_host("not-in-list.com"))
+                .unwrap()
+                .is_blocked()
+        );
+    }
+
+    #[tokio::test]
+    async fn auto_detects_hosts_format() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("list.txt");
+        std::fs::write(
+            &list_path,
+            "# comment\n0.0.0.0 example.com\n127.0.0.1 www.example.com\n",
+        )
+        .unwrap();
+
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::Auto,
+            )],
+        )
+        .await;
+
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 2);
+        assert!(
+            db.blocking_result(&hash_host("www.example.com"))
+                .unwrap()
+                .is_blocked()
+        );
+    }
+
+    #[tokio::test]
+    async fn auto_detects_adblock_format_and_ignores_exceptions() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("list.txt");
+        std::fs::write(
+            &list_path,
+            "[Adblock Plus]\n! Title: Light\n||example.com^\n@@||allowed.com^\n||ads.example.com^\n",
+        )
+        .unwrap();
+
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::Auto,
+            )],
+        )
+        .await;
+
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 2);
+        assert!(
+            db.blocking_result(&hash_host("example.com"))
+                .unwrap()
+                .is_blocked()
+        );
+        assert!(
+            !db.blocking_result(&hash_host("allowed.com"))
+                .unwrap()
+                .is_blocked()
+        );
+    }
+
+    #[tokio::test]
+    async fn inserts_in_batches_of_5000() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("list.txt");
+        let mut content = String::new();
+        for index in 0..12_000 {
+            content.push_str(&format!("domain{index}.com\n"));
+        }
+        std::fs::write(&list_path, content).unwrap();
+
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
+
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 12_000);
+        assert!(
+            db.blocking_result(&hash_host("domain11999.com"))
+                .unwrap()
+                .is_blocked()
+        );
+    }
+
+    #[tokio::test]
+    async fn duplicate_domains_are_ignored() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("list.txt");
+        std::fs::write(&list_path, "example.com\nexample.com\nexample.com\n").unwrap();
+
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
+
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn malformed_lines_are_skipped() {
+        // Real-world lists contain bare IPs, underscore domains and odd
+        // lines: valid entries must be imported and the rest skipped.
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("list.txt");
+        std::fs::write(
+            &list_path,
+            "example.com\n1.0.0.4\n_domainkey.youtube.com\nbad..com\n0.0.0.0 hosts-line.com\n",
+        )
+        .unwrap();
+
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
+
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        // example.com, 1.0.0.4 (accepted as an entry) and the underscore
+        // domain are imported; "bad..com" and the hosts-format line are
+        // skipped.
+        assert_eq!(db.count_entries().unwrap(), 3);
+        assert!(
+            db.blocking_result(&hash_host("example.com"))
+                .unwrap()
+                .is_blocked()
+        );
+        assert!(
+            db.blocking_result(&hash_host("1.0.0.4"))
+                .unwrap()
+                .is_blocked()
+        );
+        assert!(
+            db.blocking_result(&hash_host("_domainkey.youtube.com"))
+                .unwrap()
+                .is_blocked()
+        );
+        assert!(
+            !db.blocking_result(&hash_host("hosts-line.com"))
+                .unwrap()
+                .is_blocked()
+        );
+    }
+
+    #[tokio::test]
+    async fn missing_file_fails_the_import() {
+        let temp = tempdir().unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                temp.path().join("does-not-exist.txt").to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
+
+        assert!(statuses.iter().any(|status| matches!(
+            status,
+            SitePackCreationStatus::Failed {
+                phase: Some(SitePackImportPhase::Importing),
+                ..
+            }
+        )));
+    }
+
+    #[tokio::test]
+    async fn reports_progress_and_completion() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("list.txt");
+        let mut content = String::new();
+        for index in 0..200 {
+            content.push_str(&format!("domain{index}.com\n"));
+        }
+        std::fs::write(&list_path, content).unwrap();
+
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
+
+        assert!(matches!(
+            statuses.first(),
+            Some(SitePackCreationStatus::Started { .. })
+        ));
+        assert!(statuses.iter().any(|status| matches!(
+            status,
+            SitePackCreationStatus::InProgress {
+                phase: SitePackImportPhase::Importing,
+                ..
+            }
+        )));
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+    }
+
+    #[tokio::test]
+    async fn imports_from_url() {
+        let router =
+            axum::Router::new().route("/list.txt", get(|| async { "example.com\nother.com\n" }));
+        let server = axum_test::TestServer::builder()
+            .transport(axum_test::Transport::HttpRandomPort)
+            .build(router);
+        let url = server.server_url("/list.txt").unwrap();
+
+        let temp = tempdir().unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![url_source(url.to_string(), SitePackFormat::WildCardDomains)],
+        )
+        .await;
+
+        assert!(statuses.iter().any(|status| matches!(
+            status,
+            SitePackCreationStatus::InProgress {
+                phase: SitePackImportPhase::Downloading,
+                ..
+            }
+        )));
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 2);
+        assert!(
+            db.blocking_result(&hash_host("example.com"))
+                .unwrap()
+                .is_blocked()
+        );
+    }
+}

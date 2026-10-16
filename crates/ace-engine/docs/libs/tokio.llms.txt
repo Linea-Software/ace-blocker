@@ -1,0 +1,4048 @@
+# tokio Documentation (LLMS)
+
+## API Overview
+
+### tokio
+Link: https://docs.rs/tokio/1.49.0
+
+### canonicalize
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/canonicalize.rs
+
+### ChildStderr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### UnixSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socket.rs
+
+### Stderr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/stderr.rs
+
+### name_raw
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### on_task_terminate
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### recv_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### connect
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socket.rs
+
+### set_linger
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### is_unnamed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socketaddr.rs
+
+### notify_last
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/error.rs
+
+### into_split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### try_peek_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### spawn_blocking
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/lines.rs
+
+### BufReader
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### JoinError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/error.rs
+
+### Receiver
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### info
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### poll_tick
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### len
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### task_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### mark_changed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### env_remove
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### Timeout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/timeout.rs
+
+### BarrierWaitResult
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/barrier.rs
+
+### with_max_readers
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### AcquireError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/batch_semaphore.rs
+
+### split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### AioSource
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### poll_write_ready_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### const_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### try_reserve_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### LocalOptions
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/options.rs
+
+### send_if_modified
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### async_io_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### set
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### unbounded_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### gid
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/ucred.rs
+
+### env_clear
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### hard_link
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/hard_link.rs
+
+### set_multicast_ttl_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### unhandled_panic
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### from_std_stream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### spawn_blocking
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### ino
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### try_lock_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### Empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/empty.rs
+
+### enable_alt_timer
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### UCred
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/ucred.rs
+
+### OwnedPermit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### metrics
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### OwnedRwLockReadGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_read_guard.rs
+
+### peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### set_tos_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### spawn_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### TaskMeta
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task_hooks.rs
+
+### try_with
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### write_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### deadline
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/sleep.rs
+
+### spawn_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### capture
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### downgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### start_kill
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### set_ttl
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### sink
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/sink.rs
+
+### max_value
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### subscribe
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### into_owned_handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### copy
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/copy.rs
+
+### poll_write_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### OwnedHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### shutdown_background
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### open_receiver
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### multicast_loop_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### create_with_security_attributes_raw
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### append
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### on_task_spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### current_dir
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### ttl
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/take.rs
+
+### log
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### initialized
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### UnhandledPanic
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### stderr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/stderr.rs
+
+### ttl
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### ToSocketAddrs
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/addr.rs
+
+### is_already_init_err
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### forget
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### access_outbound
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### block_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### tclass_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### worker_local_queue_depth
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### colno
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/read_guard.rs
+
+### SetError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### ReadBuf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/read_buf.rs
+
+### UnboundedReceiver
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### tcp
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/mod.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### AsyncWriteExt
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/async_write_ext.rs
+
+### AsyncSeekExt
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/async_seek_ext.rs
+
+### const_with_max_readers
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### NamedPipeClient
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### PipeEnd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### notify_one
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### now
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### abort
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/abort.rs
+
+### assume_init
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### clear_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### metadata
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### security_qos_flags
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### recv_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### ReadDir
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### poll_read_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### tos_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### acquire_many_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### is_finished
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/join.rs
+
+### Task
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### Coop
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/mod.rs
+
+### interval_at
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### blocking_recv_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### put_slice
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### take
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### peer_cred
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### CtrlBreak
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### worker_thread_id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### metrics_poll_count_histogram_buckets
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### multicast_loop_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### resolve_backtraces
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### symlink_file
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/symlink_file.rs
+
+### stdin
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/stdin.rs
+
+### lineno
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### buffer
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### ReuniteError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### Lines
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/lines.rs
+
+### try_downgrade_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### TryAcquireError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/batch_semaphore.rs
+
+### available_permits
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### worker_poll_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### Root
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/trace/mod.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### receiver_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### get_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### creation_flags
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### on_after_task_poll
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### lookup_host
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/lookup_host.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### UnboundedSender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### SendTimeoutError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/error.rs
+
+### pause
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/clock.rs
+
+### worker_park_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### borrow
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### try_id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/id.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### poll_proceed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/mod.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### reuseaddr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### recv_buf_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### reunite
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### with_capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### is_readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### downgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### poll_time_histogram_bucket_range
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### timeout_at
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/timeout.rs
+
+### poll_read_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### spawn_local_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### is_empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### ReadToString
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/read_to_string.rs
+
+### set_broadcast
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### take_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### Tasks
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### custom_flags
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### upgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### uid
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### AsyncBufRead
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_buf_read.rs
+
+### poll_read_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### MaybeDone
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/future/maybe_done.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### num_workers
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### open_sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### BufStream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_stream.rs
+
+### get_pin_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### stdout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### AsyncReadExt
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/async_read_ext.rs
+
+### consume_budget
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/consume_budget.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### poll_peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### Sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### scope
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### as_std_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### windows
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### advance
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/clock.rs
+
+### UnixStream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### len
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### recv_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### join_next_with_id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### set_nodelay
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### get_or_try_init
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### poll_write_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### io_driver_fd_deregistered_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### send_replace
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### enter
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### UnixListener
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### Write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/write.rs
+
+### access_inbound
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### spawn_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### poll_accept
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### READ_CLOSED
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### with_interest
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### limit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/take.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### poll_next_line
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/lines.rs
+
+### is_empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### worker_noop_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### accept
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### max_io_events_per_tick
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/write.rs
+
+### reunite
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### PermitIterator
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### notified
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### is_pair_of
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/split.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard_mapped.rs
+
+### unix
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/mod.rs
+
+### IntoRawSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### release
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### is_writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### SemaphorePermit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### poll_read_ready_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### time
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/mod.rs
+
+### is_missing_context
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### abort_handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/join.rs
+
+### try_join
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/macros/try_join.rs
+
+### connect
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### poll_recv_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### security_qos_flags
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### unfilled_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### PRIORITY
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### PipeMode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### poll_recv_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### ReadExact
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/read_exact.rs
+
+### Command
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### options
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### bsd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/mod.rs
+
+### MutexGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### sender_strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### try_downgrade_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard.rs
+
+### TryIoError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### poll_recv_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### lock
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### abort
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/join.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### Stdout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/stdout.rs
+
+### handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### spawn_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### Semaphore
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### is_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### Id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/id.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### FillBuf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/fill_buf.rs
+
+### RngSeed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/util/rand.rs
+
+### signal
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/mod.rs
+
+### same_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### enter
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### forget
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### DirBuilder
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/dir_builder.rs
+
+### spawn_blocking
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### poll_accept
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### arg
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### JoinSet
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### max_capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### CtrlClose
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### from_file
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### const_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### max_capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### try_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### unconstrained
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/unconstrained.rs
+
+### split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### create
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### initialized
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_stream.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### Runtime
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### into_mapped
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### poll_send_to
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### bind
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### peek_sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### wait
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/barrier.rs
+
+### thread_name_fn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### into_owned_handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### LogHistogramBuilder
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### poll_join_next_with_id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### new_unsplit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/mem.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### spawn_local_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### pid_t
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/mod.rs
+
+### BacktraceFrame
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### period
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### block_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### uid_t
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/mod.rs
+
+### rwlock
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### custom_flags
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### set_reuseport
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### TryCurrentError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### bind
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### as_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### worker_local_schedule_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### File
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### into_nonblocking_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### windows
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/mod.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### named_pipe
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### InvalidHistogramConfiguration
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### maybe_done
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/future/maybe_done.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### remove_file
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/remove_file.rs
+
+### sender_strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### Dump
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### acquire_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### create_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### Id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/id.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### envs
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### initialized_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### async_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### repeat
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/repeat.rs
+
+### child
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### connect
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### runtime
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/mod.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### linear
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram.rs
+
+### poll_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### nodelay
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### WRITABLE
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### is_panic
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/error.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### worker_mean_poll_time
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### ip
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### cooperative
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/mod.rs
+
+### build_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### from_file_unchecked
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### poll_write_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### leave_multicast_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### into_split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### reset
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### enable_time
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### try_into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### pipe_mode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/error.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### acquire_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### into_nonblocking_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### writer_pin_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### remote_schedule_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### remaining
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### sync_scope
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### OwnedMappedMutexGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### WRITABLE
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### checked_sub
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### poll_read_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### try_acquire_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### into_mapped
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard.rs
+
+### ctrl_break
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### from_bytes
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/util/rand/rt_unstable.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### try_exists
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/try_exists.rs
+
+### spawn_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### spawn_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### get_pin_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/take.rs
+
+### async_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### PipeInfo
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### reader
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### WriteHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### with_capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_stream.rs
+
+### WriteVectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/write_vectored.rs
+
+### pipe_mode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### copy
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/copy.rs
+
+### open
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### symlink_metadata
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/symlink_metadata.rs
+
+### get_or_init
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### create
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### writer
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### RwLockReadGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/read_guard.rs
+
+### terminate
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### at_capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### read_dir
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### forget_permits
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### initialize_unfilled_to
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_reserve_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### file_type
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### MappedMutexGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### blocking_recv_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### tos_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### blocking_send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### spawned_at
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task_hooks.rs
+
+### user_defined2
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### const_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### new_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### Builder
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### Ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### SendError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/error.rs
+
+### try_join_next_with_id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### receiver_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### blocking_lock_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### Elapsed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### max_instances
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### set_tos_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### UdpSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### reserve_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### runtime_flavor
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### is_finished
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/abort.rs
+
+### active_tasks_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### shutdown_timeout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/id.rs
+
+### Unconstrained
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/unconstrained.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### num_alive_tasks
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/chain.rs
+
+### add
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### device
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### is_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### OnceCell
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### async_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard_mapped.rs
+
+### blocking_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### try_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### new_with
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### wait_with_output
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### as_abstract_name
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socketaddr.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### shutdown
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### spawn_blocking_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### is_empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### filename
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### futures
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/mod.rs
+
+### open
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_join_next
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### get_pin_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### is_invalid
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### Sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### Sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### duplex
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/mem.rs
+
+### borrow_and_update
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### blocking_queue_depth
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### Seek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/seek.rs
+
+### missed_tick_behavior
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### close
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### blocking_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### from_file_unchecked
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### enable_io_uring
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### send_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### ReadLine
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/read_line.rs
+
+### LocalSet
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### rwlock
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard_mapped.rs
+
+### take_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### elapsed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### name_demangled
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### sender_weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### attributes
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### set_quickack
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### RuntimeFlavor
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### ERROR
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### mutex
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### poll_peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### notified_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### SignalKind
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### try_reserve
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### retain_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### OwnedReadHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### BacktraceSymbol
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### keepalive
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### set_ttl
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### broadcast
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### read_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### OwnedMutexGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### from_raw_handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### spawn_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### join_all
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### TcpListener
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/listener.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/chain.rs
+
+### num_permits
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### ctrl_c
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### uid
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/ucred.rs
+
+### Child
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### reserve
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### has_changed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### SendError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### WriteAllBuf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/write_all_buf.rs
+
+### with_capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task_hooks.rs
+
+### blocking_lock
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### ReuniteError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### add_permits
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### remove
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/timeout.rs
+
+### LocalRuntime
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### simplex
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/mem.rs
+
+### filled
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### timeout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/timeout.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard.rs
+
+### spawned_tasks_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### checked_duration_since
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### HistogramConfiguration
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram.rs
+
+### Receiver
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### block_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### new_for_lio
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### poll_read_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### poll_send_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### CtrlLogoff
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/barrier.rs
+
+### JoinHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/join.rs
+
+### resume
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/clock.rs
+
+### build
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### OwnedRwLockMappedWriteGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard_mapped.rs
+
+### set_linger
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### ReadHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### join_next
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### poll_time_histogram_num_buckets
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### try_send_to
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### worker_threads
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### subscribe
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### join_multicast_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### poll_write_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### ctrl_logoff
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### SocketAddr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socketaddr.rs
+
+### send_to
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### forget
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/split.rs
+
+### AsRawHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### sync
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mod.rs
+
+### get_pin_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/chain.rs
+
+### try_read_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### Signal
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### take_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### select
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/macros/select.rs
+
+### mark_unchanged
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### metrics_poll_count_histogram_scale
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### is_pair_of
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/split.rs
+
+### mode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/dir_builder.rs
+
+### as_pathname
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socketaddr.rs
+
+### same_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### merge
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/join.rs
+
+### next_segment
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/split.rs
+
+### split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### enable_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### len
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### recv_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### rng_seed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### invalid
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### set_max_buf_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### try_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/take.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### name
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/read_guard.rs
+
+### listen
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socket.rs
+
+### enable_all
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### BufWriter
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/empty.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### in_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### poll_send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### reject_remote_clients
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### poll_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### WriteHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/split.rs
+
+### Interest
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### max_buf_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/take.rs
+
+### changed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### unhandled_panic
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### iter
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### set_len
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### ClientOptions
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### try_recv_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### set_tclass_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### copy_bidirectional_with_sizes
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/copy_bidirectional.rs
+
+### OwnedNotified
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### clear_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### recv_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### connect
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### try_with_interest
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/chain.rs
+
+### watch
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### disconnect
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### Chain
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/chain.rs
+
+### get
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### poll_join_next
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### close
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### set_filled
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard_mapped.rs
+
+### set_permissions
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### stdin
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### env
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### copy_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/copy_buf.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### get_pin_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_stream.rs
+
+### sync_all
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### dump
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### borrow
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### max_buckets
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### into_owned_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### into_blocking_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### trace
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/dir_builder.rs
+
+### spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/spawn.rs
+
+### spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/lines.rs
+
+### is_leader
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/barrier.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### AsHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### set_send_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### PRIORITY
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### with
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### get_inner_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_into_panic
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/error.rs
+
+### new_with
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### poll_peek_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### signal
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### RecvError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/abort.rs
+
+### same_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### bind_device
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### OwnedWriteHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### kill
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### is_empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### same_channel_as_sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### try_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### create_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### ReadUntil
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/read_until.rs
+
+### current
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### advance
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### path
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### process
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### len
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### try_clone
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard.rs
+
+### Receiver
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### inner_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/error.rs
+
+### new_multi_thread
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### async_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### arg0
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### process_group
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### writer_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### quickack
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### CtrlC
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### spawn_blocking_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### detach_all
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### poll_read_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### DuplexStream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/mem.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### same_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### LogHistogram
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### unchecked
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### NamedPipeServer
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### FromRawSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### SimplexStream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/mem.rs
+
+### metrics
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### accept
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### pid
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/ucred.rs
+
+### is_shutdown
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### ReadHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/split.rs
+
+### as_raw_value
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### same_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### ServerOptions
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### bind
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### status
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### AsyncFd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### EMPTY
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### worker_park_unpark_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### pipe
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### tclass_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### set_multicast_loop_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### AbortHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/abort.rs
+
+### try_wait
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### out_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### into_panic
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/error.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### new_for_aio
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### reuseport
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### Aio
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### sync_data
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### MAX_PERMITS
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### reunite
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### close
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### on_thread_start
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### kill_on_drop
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### into_parts
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### shutdown
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### worker_total_busy_duration
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### is_priority
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### take
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### spawn_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### initialize_unfilled
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### READABLE
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard_mapped.rs
+
+### spawn_blocking_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### spawn_local_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### try_peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### ctrl_close
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### wait
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### enable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### poll_peek_sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### Barrier
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/barrier.rs
+
+### writable_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### access_system_security
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### get
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### into_owned_handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### share_mode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### connect
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### const_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### set_limit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/take.rs
+
+### thread_name
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### enable_metrics_poll_time_histogram
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### from_file
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### Handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### MissedTickBehavior
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### TrySendError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/error.rs
+
+### FromRawHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### retain_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### sender_weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### into_owned_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### same_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### TaskLocalFuture
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### Join
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### SetOnceError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### bind_device
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### has_budget_remaining
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/mod.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### AsyncFdReadyGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_stream.rs
+
+### saturating_duration_since
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### run_until
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### frames
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### BorrowedHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### is_read_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### try_lock
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### block_in_place
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/blocking.rs
+
+### TryLockError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### set_nodelay
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### initialized
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### OwnedReadHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### create
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/dir_builder.rs
+
+### AsyncRead
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_read.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### SetOnce
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### new_current_thread
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### poll_next_entry
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### NotDefinedHere
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/mod.rs
+
+### clear_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### enable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### Notify
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### open
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### remove_dir
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/remove_dir.rs
+
+### global_queue_interval
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### poll_time_histogram_bucket_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### task
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/mod.rs
+
+### acquire
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### shutdown_background
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### user_defined1
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### enter
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### in_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### upgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### AsyncFdReadyMutGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### next_line
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/lines.rs
+
+### peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### Permit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### yield_now
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/yield_now.rs
+
+### get_kill_on_drop
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### gid
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### global_queue_depth
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### try_peek_sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### OwnedRwLockWriteGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### enter
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### Sleep
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/sleep.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### Builder
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### ReadBuf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### Sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### semaphore
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### Take
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/take.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### RwLockWriteGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard.rs
+
+### blocking_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### take_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### is_elapsed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/sleep.rs
+
+### precision_exact
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### const_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### doc
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/mod.rs
+
+### io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/mod.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### set_ttl
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### end
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### downgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard.rs
+
+### uninit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### clear
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### io_driver_fd_registered_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### ERROR
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### budget_forced_yield_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### RwLockMappedWriteGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard_mapped.rs
+
+### max_blocking_threads
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### Error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### shutdown_timeout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### poll_recv_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### build
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### from_raw_handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### read_link
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_link.rs
+
+### Receiver
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### rename
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/rename.rs
+
+### create
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/file.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### RwLock
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### fs
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/mod.rs
+
+### ctrl_c
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/ctrl_c.rs
+
+### spawn_blocking
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### spawn_with
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### is_cancelled
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/error.rs
+
+### Split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/split.rs
+
+### reunite
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### sender_weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### from_owned_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### try_acquire_many
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### EnterGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### new_stream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socket.rs
+
+### output
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### net
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/mod.rs
+
+### is_terminated
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### tick
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### connect
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_get
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### bind
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read.rs
+
+### poll_write_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### async_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### const_new_with
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### metrics_poll_count_histogram_resolution
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### RuntimeMetrics
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### sleep_until
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/sleep.rs
+
+### oneshot
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### AsSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### poll_peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### root
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### event_interval
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_writer.rs
+
+### nodelay
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### upgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### linger
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### window_change
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### build_task
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### is_empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_stream.rs
+
+### max_value
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### poll_next_segment
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/split.rs
+
+### blocking_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### TryRecvError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### bind
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socket.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### Stdin
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/stdin.rs
+
+### symlink_dir
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/symlink_dir.rs
+
+### join_set
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### SendError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### ALL
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### broadcast
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### Receiver
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### AsRawSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### listen
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### has_changed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### set_permissions
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/set_permissions.rs
+
+### join
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### try_current
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### ctrl_shutdown
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### dump
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### reset_at
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### set_keepalive
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### stdout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### min_value
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### read_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### const_new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### linger
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### unsplit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/split.rs
+
+### async_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### on_thread_unpark
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### close
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### from_owned_fd_unchecked
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### is_initializing_err
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### is_readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### OwnedSemaphorePermit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### AsyncSeek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_seek.rs
+
+### set_reuseaddr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### Notified
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### weak_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### TryRecvError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### datagram
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socket.rs
+
+### WeakUnboundedSender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### try_read_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### peer_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### WRITE_CLOSED
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### multicast_ttl_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### new_datagram
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/socket.rs
+
+### AsyncWrite
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_write.rs
+
+### num_idle_blocking_threads
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### raw_arg
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### spawn
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### OpenOptions
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### stderr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### try_send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### info
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### RestoreOnPending
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/mod.rs
+
+### LocalKey
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### poll_peek
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### metadata
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### into_owned_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### into_blocking_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### CtrlShutdown
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### RecvError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/timeout.rs
+
+### join_multicast_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### is_at_capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### is_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### AccessError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### max_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### worker_overflow_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### reader_pin_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### is_thread_local_destroyed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### reset_after
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### send_modify
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### spawn_blocking
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/runtime.rs
+
+### try_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### symlink
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/symlink.rs
+
+### take_error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### try_acquire_many_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### block_on
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### send
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### recursive
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/dir_builder.rs
+
+### interval
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### hangup
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### file_name
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### ReadHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split.rs
+
+### alarm
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### const_new_with
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### spawn_blocking
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/blocking.rs
+
+### read_to_string
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_to_string.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### try_read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### is_writable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### metadata
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/metadata.rs
+
+### first_pipe_instance
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### RawSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### Read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/read.rs
+
+### RawHandle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### forget
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### clear_ready_matching
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### Sender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### raw_handle
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### on_thread_park
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### reader_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/join.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### try_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### reset
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/sleep.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### out_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### reserve_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### split
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### name
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### metrics_poll_time_histogram_configuration
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### stdout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/stdout.rs
+
+### error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### WriteBuf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/write_buf.rs
+
+### AsyncFdTryNewError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### Backtrace
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### quit
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### from_raw
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### abort_all
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/join_set.rs
+
+### Flush
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/flush.rs
+
+### local_addr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### spawn_blocking
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### new
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### access_mode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### num_blocking_threads
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### write_dac
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### wait
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### resubscribe
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### take_value
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/task_local.rs
+
+### downgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### spawn_local
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/builder.rs
+
+### on_thread_stop
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/handle.rs
+
+### tokio
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/lib.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/timeout.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### len
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### worker_steal_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### thread_stack_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### is_empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### is_write_closed
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### truncate
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### downgrade_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/write_guard.rs
+
+### made_progress
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/mod.rs
+
+### create_dir_all
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/create_dir_all.rs
+
+### TcpStream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/stream.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### Sink
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/sink.rs
+
+### mutex
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### try_write_vectored
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### LIO
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### from_owned_fd_unchecked
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### pin
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/macros/pin.rs
+
+### WeakSender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### windows
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/windows.rs
+
+### poll_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### metrics
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/local_runtime/runtime.rs
+
+### new_v4
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### buffer
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/error.rs
+
+### checked_add
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### interrupt
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### poll_write_ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### READABLE
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### duration_since
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### rwlock
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_read_guard.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_read_guard.rs
+
+### merge
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### reset_immediately
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### unix
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/mod.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### TcpSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### get_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_reader.rs
+
+### max_instances
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### open_with_security_attributes_raw
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### on_before_task_poll
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### builder
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram/h2_histogram.rs
+
+### AioEvent
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/bsd/poll_aio.rs
+
+### set_recv_buffer_size
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### Builder
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### ready
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### WriteHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split.rs
+
+### AsyncBufReadExt
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/async_buf_read_ext.rs
+
+### stream
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/lib.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/set_once.rs
+
+### tasks
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### WeakSender
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### same_channel
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### is_priority
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/ready.rs
+
+### Interval
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### try_read_buf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### try_acquire
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### sleep
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/sleep.rs
+
+### capacity
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### set_tclass_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### leave_multicast_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### AIO
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/interest.rs
+
+### set_missed_tick_behavior
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/interval.rs
+
+### filled_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/read_buf.rs
+
+### next_entry
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### blocking_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### ttl
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### from_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### BorrowedSocket
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### try_write_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### error
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### ChildStdout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### peek_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/buf_stream.rs
+
+### get_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### write_owner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### worker_steal_operations
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### symbols
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### downgrade
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### futures
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mod.rs
+
+### downgrade_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_write_guard.rs
+
+### from_owned_fd
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### io_driver_ready_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### Shutdown
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/shutdown.rs
+
+### send_timeout
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### pipe
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### disable_lifo_slot
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### HistogramScale
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/histogram.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### clear_ready_matching
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### blocking_recv
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/oneshot.rs
+
+### try_io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### symbol_address
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### pipe
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### poll_time_histogram_enabled
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/metrics/runtime.rs
+
+### try_recv_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### pre_exec
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### DirEntry
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/read_dir.rs
+
+### map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### mode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### io
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### device
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/socket.rs
+
+### get_ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/lines.rs
+
+### TryRecvError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/error.rs
+
+### coop
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/coop/mod.rs
+
+### Repeat
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/repeat.rs
+
+### try_map
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock/owned_read_guard.rs
+
+### sender_strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/bounded.rs
+
+### id
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/task/error.rs
+
+### get
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### lock_owned
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### pair
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/stream.rs
+
+### join
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/macros/join.rs
+
+### notify_waiters
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/notify.rs
+
+### try_recv_buf_from
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### copy_bidirectional
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/util/copy_bidirectional.rs
+
+### gid_t
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/mod.rs
+
+### set
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/once_cell.rs
+
+### ready_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### Mutex
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mutex.rs
+
+### Trace
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/dump.rs
+
+### create_dir
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/create_dir.rs
+
+### try_write
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/split_owned.rs
+
+### ChildStdin
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### mpsc
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/mod.rs
+
+### readable_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### sender_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### start_paused
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### is_empty
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### set_multicast_loop_v6
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/udp.rs
+
+### strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/broadcast.rs
+
+### LocalEnterGuard
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/task/local.rs
+
+### into_inner
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/rwlock.rs
+
+### thread_keep_alive
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/runtime/builder.rs
+
+### os
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/doc/os.rs
+
+### mode
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/open_options.rs
+
+### Instant
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/time/instant.rs
+
+### args
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### into_std
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/listener.rs
+
+### try_io_mut
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/io/async_fd.rs
+
+### unix
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/signal/unix.rs
+
+### OpenOptions
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/unix/pipe.rs
+
+### Ref
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### strong_count
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/mpsc/unbounded.rs
+
+### readable
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### OwnedWriteHalf
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/tcp/split_owned.rs
+
+### num_permits
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/semaphore.rs
+
+### remove_dir_all
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/fs/remove_dir_all.rs
+
+### stderr
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### stdin
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/process/mod.rs
+
+### read
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/net/windows/named_pipe.rs
+
+### RecvError
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+
+### wait_for
+Link: https://docs.rs/crate/tokio/1.49.0/source/src/sync/watch.rs
+

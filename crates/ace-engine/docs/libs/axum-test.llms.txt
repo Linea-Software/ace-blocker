@@ -1,0 +1,463 @@
+# axum-test Documentation (LLMS)
+
+## API Overview
+
+### axum-test
+Link: https://docs.rs/axum-test/18.7.0
+
+### iter_headers_by_name
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### file_name
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+
+### typed_delete
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### content_type
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### assert_text_contains
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### iter_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### do_not_save_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_status_unprocessable_entity
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### clear_headers
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### new_random_port
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_port.rs
+
+### expect_failure
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### assert_status_service_unavailable
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### request_url
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### TestRequest
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### TestResponse
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### add_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### bytes
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+
+### expect_success
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### text
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+
+### TestServer
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### mime_type
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+
+### server_address
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### add_query_params
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### add_raw_query_param
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### iter_headers
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### build
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### expect_success
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_status
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### text_from_file
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### assert_yaml
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### add_part
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/multipart_form.rs
+
+### add_query_param
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### add_header
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+
+### get_websocket
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### request_method
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### add_query_params
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### typed_method
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### new_random_socket_addr
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_socket_addr.rs
+
+### put
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_json_from_file
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### into_config
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+
+### authorization
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### assert_contains_header
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### yaml_from_file
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### new_random_tokio_tcp_listener
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tokio_tcp_listener.rs
+
+### assert_status_not_found
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### msgpack
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### msgpack
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### cookie
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### Transport
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/transport.rs
+
+### ServeHandle
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/serve_handle.rs
+
+### add_cookie
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### new_random_tokio_tcp_listener_with_socket_addr
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tokio_tcp_listener.rs
+
+### text
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### typed_put
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### build
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+
+### assert_status_in_range
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### save_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### TestServerConfig
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### assert_yaml_from_file
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### add_header
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### headers
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### typed_post
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### method
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### bytes
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### assert_status_bad_request
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### new
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+
+### scheme
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### delete
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### clear_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### clear_headers
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### new_random_tcp_listener_with_socket_addr
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tcp_listener.rs
+
+### json_from_file
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### add_text
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/multipart_form.rs
+
+### add_query_param
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### add_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### assert_status_unauthorized
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### expect_success_by_default
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### assert_form
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_status_not_ok
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### scheme
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### multipart
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### is_running
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_status_forbidden
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### IntoTransportLayer
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/transport_layer/into_transport_layer.rs
+
+### status_code
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_status_failure
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_status_see_other
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### into_websocket
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### maybe_header
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_msgpack
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_status_internal_server_error
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_text_from_file
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### Part
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/part.rs
+
+### json
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### new
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### text
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### clear_query_params
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### add_header
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### new_with_config
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### add_cookie
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### expect_core
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/expect_json.rs
+
+### assert_status_success
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### form
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### server_url
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_status_conflict
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### do_not_save_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### save_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### assert_json_contains
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### yaml
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### typed_get
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_status_not_in_range
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_status_payload_too_large
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### builder
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### yaml
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### assert_status_switching_protocols
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### as_bytes
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### clear_query_params
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### reqwest_method
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_text
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_not_status
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### axum_test
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/lib.rs
+
+### restrict_requests_with_http_schema
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### typed_patch
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### transport
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### clear_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### new_random_tcp_listener
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/new_random_tcp_listener.rs
+
+### assert_status_ok
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### assert_status_no_content
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### authorization_bearer
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### form
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### multipart
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/mod.rs
+
+### new
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### content_type
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/multipart/multipart_form.rs
+
+### default_scheme
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### into_bytes
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### json
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### spawn_serve
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/util/spawn_serve.rs
+
+### header
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### TestServerBuilder
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_builder.rs
+
+### post
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### add_raw_query_param
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### expect_failure
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### save_cookies
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### default_content_type
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server_config.rs
+
+### assert_status_too_many_requests
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### get
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### bytes_from_file
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_request.rs
+
+### maybe_cookie
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+
+### patch
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_server.rs
+
+### assert_json
+Link: https://docs.rs/crate/axum-test/18.7.0/source/src/test_response.rs
+

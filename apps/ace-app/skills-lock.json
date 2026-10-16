@@ -1,0 +1,107 @@
+{
+    "version": 1,
+    "skills": {
+        "bun-development": {
+            "source": "sickn33/antigravity-awesome-skills",
+            "sourceType": "github",
+            "skillPath": "skills/bun-development/SKILL.md",
+            "computedHash": "e187cef4c592cfb10caecc95cf70f1b8fbfb9571f4c475d099a2eb83dd68378a"
+        },
+        "git-commit": {
+            "source": "github/awesome-copilot",
+            "sourceType": "github",
+            "skillPath": "skills/git-commit/SKILL.md",
+            "computedHash": "2607fc60629b82b257136dd2a7a373f0a4466c0b49df7746d845d59313c99b21"
+        },
+        "i18n-localization": {
+            "source": "sickn33/antigravity-awesome-skills",
+            "sourceType": "github",
+            "skillPath": "skills/i18n-localization/SKILL.md",
+            "computedHash": "ae8e1840d716a6e700eac1d6bc3d05d2f7270f7dc7fb9b47eca98c840e818e5d"
+        },
+        "shadcn": {
+            "source": "shadcn/ui",
+            "sourceType": "github",
+            "skillPath": "skills/shadcn/SKILL.md",
+            "computedHash": "f0fdd03f4755cbb3b57e20fe6fd4a97c00d34e6780187b6559316986e8d848db"
+        },
+        "shadcn-svelte": {
+            "source": "vercel-labs/json-render",
+            "sourceType": "github",
+            "skillPath": "skills/shadcn-svelte/SKILL.md",
+            "computedHash": "fcb9b65f29baf8a2e03960d37bceff6a71203aeb962105cf6f78c697c71efc3c"
+        },
+        "suggest-lucide-icons": {
+            "source": "nweii/agent-stuff",
+            "sourceType": "github",
+            "skillPath": "skills/suggest-lucide-icons/SKILL.md",
+            "computedHash": "e26d3a6140f50214bcbe42e93825a41fffb50912d80b079f36427a90923e4040"
+        },
+        "svelte-code-writer": {
+            "source": "sveltejs/ai-tools",
+            "sourceType": "github",
+            "skillPath": "plugins/claude/svelte/skills/svelte-code-writer/SKILL.md",
+            "computedHash": "c0e2cce9855f8e312cbb0a05aef164b4659c672d7723e4e598ffa6bc94890542"
+        },
+        "svelte-components": {
+            "source": "spences10/svelte-skills-kit",
+            "sourceType": "github",
+            "skillPath": "plugins/svelte-skills/skills/svelte-components/SKILL.md",
+            "computedHash": "37255a6f0c280048f6eff0c9154c7ccbed96fd8be645c8c451b93bd613cd694b"
+        },
+        "svelte-core-bestpractices": {
+            "source": "sveltejs/ai-tools",
+            "sourceType": "github",
+            "skillPath": "plugins/claude/svelte/skills/svelte-core-bestpractices/SKILL.md",
+            "computedHash": "bec11e369679027edf9d4acbe6d9788f8da33dc14b48b874f231d3ba13705324"
+        },
+        "svelte-runes": {
+            "source": "spences10/svelte-skills-kit",
+            "sourceType": "github",
+            "skillPath": "plugins/svelte-skills/skills/svelte-runes/SKILL.md",
+            "computedHash": "5263051069c3193ea307f6c7b931d1b086a1e2ff09aa70c974c0f1d9c0c69a4d"
+        },
+        "svelte5-best-practices": {
+            "source": "ejirocodes/agent-skills",
+            "sourceType": "github",
+            "skillPath": "svelte/skills/svelte5-best-practices/SKILL.md",
+            "computedHash": "ce40e28405a4c17006580d6766edf2deddfad8893c7887b73c68cb71644ceadb"
+        },
+        "sveltekit-data-flow": {
+            "source": "spences10/svelte-skills-kit",
+            "sourceType": "github",
+            "skillPath": "plugins/svelte-skills/skills/sveltekit-data-flow/SKILL.md",
+            "computedHash": "03bbb59bc50ddaf40a054c725e9a8eb74be13d04434f9b0e4e905731ce0f4f23"
+        },
+        "sveltekit-structure": {
+            "source": "spences10/svelte-skills-kit",
+            "sourceType": "github",
+            "skillPath": "plugins/svelte-skills/skills/sveltekit-structure/SKILL.md",
+            "computedHash": "9d39127b632fc26b5d8e6cd64131d6f131dbf26b0574dc6482b10d8a3276ee07"
+        },
+        "tailwind-v4-shadcn": {
+            "source": "secondsky/claude-skills",
+            "sourceType": "github",
+            "skillPath": "plugins/tailwind-v4-shadcn/skills/tailwind-v4-shadcn/SKILL.md",
+            "computedHash": "4eb905e229fce4220feecbc03b93c957a0b027a7200777c73f3925137d6c1c59"
+        },
+        "tauri-v2": {
+            "source": "nodnarbnitram/claude-code-extensions",
+            "sourceType": "github",
+            "skillPath": ".claude/skills/tauri-v2/SKILL.md",
+            "computedHash": "7108944eec3bef17686df9ebae9c9bdbee7809744930c8734c979e3c4573eaab"
+        },
+        "typescript-advanced-types": {
+            "source": "wshobson/agents",
+            "sourceType": "github",
+            "skillPath": "plugins/javascript-typescript/skills/typescript-advanced-types/SKILL.md",
+            "computedHash": "ee8377c523a911be41c31037b477805773ca5ab5ade181e44ca7dd3cd8df6692"
+        },
+        "zod": {
+            "source": "pproenca/dot-skills",
+            "sourceType": "github",
+            "skillPath": "skills/.curated/zod/SKILL.md",
+            "computedHash": "e15dbf6f7f4f81616843cf855cbc984ad301455c7e298d7820c02fb3280e16f3"
+        }
+    }
+}

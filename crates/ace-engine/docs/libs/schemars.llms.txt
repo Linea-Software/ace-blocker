@@ -1,0 +1,235 @@
+# schemars Documentation (LLMS)
+
+## API Overview
+
+### schemars
+Link: https://docs.rs/schemars/1.2.1
+
+### draft07
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### as_object_mut
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### pointer
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### infer_from_meta_schema
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### root_schema_for
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### is_deserialize
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### RestrictFormats
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### SetSingleExample
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### untagged_enum_variant_titles
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### definitions
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### schema_for
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/macros.rs
+
+### as_bool
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### meta_schemas
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+
+### AddNullable
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### ReplacePrefixItems
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### remove_null_type
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### as_object
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### openapi3
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### ReplaceUnevaluatedProperties
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### into_root_schema_for
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### is_serialize
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### ReplaceBoolSchemas
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### get
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### Transform
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### SchemaSettings
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### JsonSchema
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/lib.rs
+
+### transforms_mut
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### take_definitions
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### get_mut
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### transform_subschemas
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### definitions_path
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### transforms
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### draft2020_12
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### add_const_null
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### Contract
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### allowed_formats
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### DRAFT2020_12
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+
+### DRAFT07
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+
+### subschema_for
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### schemars
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/lib.rs
+
+### transform
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### schema_for_value
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/macros.rs
+
+### remove
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### definitions_mut
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### into_generator
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### GenTransform
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### meta_schema
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### json_schema
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/macros.rs
+
+### RecursiveTransform
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### to_value
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### for_deserialize
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### insert
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### ensure_object
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### Schema
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### new
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### draft2019_09
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### generate
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### settings
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### with_transform
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### for_serialize
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### DRAFT2019_09
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+
+### root_schema_for_value
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### contract
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### SchemaGenerator
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### OPENAPI3
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+
+### contract
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### RemoveRefSiblings
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### consts
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/consts.rs
+
+### inline_subschemas
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### ReplaceConstValue
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### with
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+
+### as_value
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### skip_additional_properties
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/transform.rs
+
+### new_ref
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### pointer_mut
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/schema.rs
+
+### into_root_schema_for_value
+Link: https://docs.rs/crate/schemars/1.2.1/source/src/generate.rs
+

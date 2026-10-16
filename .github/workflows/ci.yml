@@ -1,0 +1,35 @@
+name: Desktop CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - name: Install app dependencies
+        working-directory: apps/ace-app
+        run: bun install --frozen-lockfile
+      - name: Verify Rust service executables
+        run: cargo check --locked -p ace-engine --bin ace-engine -p ace-watchdog --bin ace-watchdog
+      - name: Test shared watchdog protocol
+        run: cargo test --locked -p ace-watchdog-protocol
+      - name: Check app UI
+        working-directory: apps/ace-app
+        run: |
+          bun run gen:api
+          bun run check

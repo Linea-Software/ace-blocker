@@ -1,0 +1,277 @@
+You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
+
+## Self-Maintenance (IMPORTANT)
+
+- **Maintain Context**: You MUST automatically edit this `AGENTS.md` file whenever significant changes occur in the project (e.g., new tools added, new core documentation links found, project structure changes, or new patterns established). Keep this document up-to-date as the "Source of Truth" for your behavior in this project.
+
+## Project Description
+
+**Ace Blocker** is a blocker application designed to help users overcome internet addictions. It blocks addictive network sites (porn, social media, betting, etc.) and provides a suite of scripts to make these sites less appealing and more boring.
+
+## Project Structure
+
+This is a **Tauri + SvelteKit** application. The project serves as a UI wrapper for the Ace Engine backend.
+
+### Primary Directories
+
+- `src/` — **Frontend (SvelteKit)**
+    - `lib/` — Shared logic, components, and utilities. USE $lib TO ACCESS IT, NO RELATIVE IMPORTS FOR THIS ONE.
+        - `engine-client/` — API client and generated SDK/types for Ace Engine. USE $engine-client/ TO ACCESS IT. This folder is **committed to git**; regenerate it with `bun run gen:api` (reads the committed `ace-engine/docs/openapi.json`, `--live` for a running engine).
+        - `components/` — Application-specific components.
+            - `ui/` — Legacy Shadcn Svelte base components. During the approved UI rebuild, do not expand this folder by default just to obtain generic styling; prefer Ace-owned components over headless primitives.
+        - `stores/` — Svelte stores for state management.
+        - `paraglide/` — Generated i18n logic.
+        - `server/` — Server-side logic.
+        - `deltas/` — Delta sync logic for pushing changes to the engine (lock, schedule, site-packs connections, user-defined rules deltas). Files: `common.ts`, `lock-delta.svelte.ts`, `schedule-delta.svelte.ts`, `site-packs-connection-delta.svelte.ts`, `user-defined-rules-delta.svelte.ts`.
+        - `data/` — Static data files (e.g., `site-packs.json` with pack metadata; ids are the canonical catalog ids such as `pack-adult-free`). Ace-hosts-managed catalog sources use the whole, unsplit `<category>.txt` assets from the latest ace-hosts release.
+        - `hooks/` — Reusable Svelte hooks (e.g., `is-mobile.svelte.ts`).
+        - `utils/` — Utility functions (e.g., `pack-icons.ts`).
+        - `onboarding/` — First-run experience data: `default-blocks.ts` (IDs and helpers for the network blocks seeded by engine migration `0021_seed_default_network_blocks`) and `tour-steps.ts` (guided tour step definitions).
+    - `routes/` — Page routes and SvelteKit endpoints.
+        - `network-blocks/` — Network block management pages.
+        - `resistance-mode/` — Resistance mode configuration pages.
+        - `settings/` — Application settings pages.
+        - `site-packs/` — Site packs management pages.
+        - `getting-started/` — Getting started guide (concepts, setup checklist, FAQ).
+        - `help/` — Help and documentation pages.
+        - `<route name>/+page.svelte` — Page content.
+        - `<route name>/+page.server.ts` — Page server logic.
+        - `<route name>/+page.ts` — Page client logic.
+        - `<route name>/+page.css` — Page styles.
+        - `<route name>/+page.md` — Page documentation.
+        - `<route name>/_<component name>.svelte` — Page-specific components
+    - `app.css` — Global styles.
+- `src-tauri/` — **Backend Wrapper (Rust)**
+    - `src/` — Rust source code (e.g., `main.rs`, custom commands).
+- `messages/` — Translation files (e.g., `en.json`).
+- `docs/` — Reference documentation for LLM context.
+- `scripts/` — Utility scripts for building and testing.
+
+### Technology Stack
+
+- **Framework**: SvelteKit 2 + Svelte 5 (Runes)
+- **UI**: Tailwind CSS 4 + Bits UI/headless primitives for the approved Ace-owned rebuild. Existing Shadcn Svelte components are legacy implementation and may remain while screens are migrated.
+- **Runtime**: Bun
+- **Backend Wrapper**: Tauri 2 (Rust)
+- **i18n**: Paraglide JS
+- **API Client**: Fetch-based client generated via `@hey-api`
+
+## UI Identity / Rebuild Direction
+
+**Before any task that creates, redesigns, or materially alters visible UI, read `docs/ui-identity.md`.** It is the local source of truth for the approved Ace App redesign.
+
+The target is not “custom-styled shadcn.” Ace should feel like a **disciplined personal enforcement instrument** rather than a generic web dashboard inside Tauri.
+
+Key rules:
+
+- preserve the engine API as the stable frontend boundary unless the task explicitly authorizes an API change;
+- use **Bits UI/headless behavior + Ace-owned styling** for new rebuild components;
+- do not add new shadcn components merely because they are convenient;
+- Tailwind is an implementation tool, not the visual language;
+- Signal amber (`#FFB000`) means intervention/commitment/enforcement, not “every primary action”;
+- target warm Ink/Paper neutrals, IBM Plex typography, modest radii, borders/rails/inset surfaces, restrained motion, and structural state;
+- do not default to rounded card grids, gradient washes, glow, glass, hover-lift cards, icon tiles, tiny uppercase eyebrows, or cyber/hacker motifs;
+- Network Blocks, Resistance, Locks, Schedules, Site Packs, and engine state are the signature visual concepts and should not all share one generic page template;
+- verify meaningful visual changes with actual screenshots in representative light/dark and active/inactive/locked/error states.
+
+### Responsive layout convention
+
+- The Tauri window defaults to 800×600, so viewport breakpoints do not represent the usable page width after the navigation rail and workspace gutters.
+- `PageLayout` establishes the named CSS container `page`; page-owned components should prefer `@container page (...)` for responsive composition.
+- The shell workspace establishes `ace-workspace`, and `Inspector` establishes `inspector`; use those named containers when responsiveness depends on those surfaces rather than on the browser viewport.
+- Keep primary facts visible at the default desktop window size; only collapse secondary columns when the actual page container becomes narrow.
+
+### Mandatory UI skills
+
+For material UI work:
+
+1. Use `frontend-design`.
+2. Use `ui-ux-pro-max`.
+3. Use `svelte-code-writer`, `svelte-core-bestpractices`, and `svelte-components` for implementation; add `svelte-runes` when reactive state is involved.
+4. Use `web-design-guidelines` as a final review where applicable.
+5. `design-taste-frontend` may be used as an anti-template critique pass, but it explicitly is not the authority for dashboard/multi-step product UI.
+
+### Core Rule: Development Context
+
+Most tasks occur within `./src` (Frontend). The Rust backend (`src-tauri`) is primarily a wrapper, though you may occasionally need to interface with its commands (e.g., `is_debug_mode`).
+
+## Package Manager & Workflow
+
+- **ALWAYS** use `bun` for all package management and script execution tasks.
+- Use `bun install` instead of `npm install`
+- Use `bun run` instead of `npm run`
+- Use `bun` instead of `node`
+- Do **NOT** use `npm`, `pnpm`, or `yarn` under any circumstances.
+- When running scripts, use `bun run <script>`.
+- When installing packages, use `bun add <package>` or `bun add -d <package>`.
+- **Running Locally**: Both the desktop app and the website are ALWAYS running during development.
+    - **App UI**: Accessible via browser at `http://localhost:1420`. You can connect through your browser to this address to access the app UI.
+    - **App (Tauri)**: Access directly via the **Tauri MCP** tools.
+- **Committing Changes**: You **MUST** perform git commits yourself. Once you have finished a task and verified it, run `git add .` and `git commit -m "..."` with a descriptive message. Do NOT ask the user to commit for you.
+
+## Ace Engine Access
+
+The frontend interacts with the Ace Engine backend via a local REST API. The listening port for this API is dynamic in production but defaults to `10567` in development.
+
+- **Accessing the Port**: Use the `getEnginePort()` utility from `$lib/engine` to retrieve the correct port. This utility calls the Tauri `get_engine_port` command.
+- **API Documentation**: As long as the engine is running, you can find the REST API documentation at `https://127.0.0.1:<port>/api-docs/openapi.json` or the Swagger UI at `https://127.0.0.1:<port>/swagger-ui/`.
+- **SDK Configuration**: Always initialize the `@hey-api` client with the dynamic base URL: `client.setConfig({ baseUrl: "https://127.0.0.1:" + port })`.
+- **Error Handling**: The methods generated in `$engine-client` **DO NOT** throw errors on failed requests. Instead, they return a response object containing an `error` property OR a `data` property.
+    - **Standard Pattern**: `const { data, error } = await someEngineMethod();`. Check `if (error)` immediately to handle failures.
+    - **SSE Streams Pattern**: Methods like `resyncSitesList` return a `stream`. Check `if (!stream)` for initial failures. Inside the stream loop, check for `FAILED` status and handle it: `if ('FAILED' in status) throw new Error(status.FAILED.error);`.
+    - **Delta Patterns**: Methods in `$lib/deltas` (e.g., `pushChangesToServer`) have been refactored to check internal API responses and **THROW** if any partial operation fails. Always wrap calls to delta push methods in `try/catch` and notify user via toast.
+    - **User Feedback**: ALWAYS use `toast.error(m.snake_case())` from `svelte-sonner` to inform the user of API failures. Never swallow errors silently.
+
+## Localization (Paraglide JS)
+
+- **CRITICAL**: All user-facing text **MUST** be localized using Paraglide. Hardcoded strings are **FORBIDDEN** in UI components.
+- **Workflow**:
+    1. Add the string key to `messages/en.json` (format: `"snake_case_key": "Text content"`).
+    2. Run `bun run check` (or let the dev server auto-generate fields) to ensure types are updated.
+    3. Import `* as m` from `$lib/paraglide/messages.js`.
+    4. Use `m.snake_case_key()` in your Svelte components or TS files.
+- **Rules**:
+    - **Only** edit `en.json` by default. Do **NOT** edit other language files (`de.json`, `fr.json`, etc.) unless the user explicitly instructs you to do so.
+    - Variable arguments: Use `{paramName}` in JSON (e.g., `"hello_user": "Hello {name}"`) and pass object used in code: `m.hello_user({ name: 'User' })`.
+
+### Engine Docs Reference
+
+- **Always read** `docs/engine-docs.md` and `docs/engine-rest-api.md` before performing tasks involving the engine.
+- The **boredom-engine** (at `../boredom-engine/`) provides the resistance scripts that ace-engine injects into blocked sites.
+
+## Scripts
+
+Use `bun run <script>` for these tasks:
+
+- `dev`: Generates the API client and starts the Vite development server.
+- `gen:api`: Manually triggers API client generation from the OpenAPI spec.
+- `clear-cache`: Runs a utility script to clear application/build cache.
+- `tauri`: Accesses the Tauri CLI (e.g., `bun run tauri dev`).
+- `check`: Runs Svelte-check for type safety and linting.
+
+**Note**: ALWAYS use **TypeScript** for any new utility or maintenance scripts created in the `/scripts/` directory.
+
+## Nomenclature & Design Patterns
+
+- **Svelte Components**: All `.svelte` files MUST use `UpperCamelCase` naming convention (e.g., `Button.svelte`, `UserCard.svelte`).
+- **Page-specific components**: These MUST reside in a `./_components` folder within the route directory OR be prefixed with an underscore (e.g., `_Component.svelte`) to differentiate them from routes.
+- **Reactive Collections**: Use `SvelteMap` or `SvelteSet` from `svelte/reactivity` for reactive maps and sets. Avoid generic objects for states that require frequent updates or additions.
+- `/messages/`: Localization message files for Paraglide. During development, always prioritize English (`en`). Only translate when explicitly requested.
+
+### Safe i18n Patterns
+
+- **CRITICAL**: Avoid indexing the `m` object from Paraglide directly (e.g., `m[someVariable]`). This causes runtime `TypeErrors` and bypasses TypeScript safety.
+- **Pattern**: Use explicit helper functions with `switch` or `if/else` to map variables to `m.key()` functions.
+- **Example**:
+    ```typescript
+    const getLabel = (type: string) => {
+        if (type === "static") return m.static_mode();
+        return "";
+    };
+    ```
+
+### First-Run Experience
+
+The onboarding flow runs in three parts, all rendered from `src/routes/+layout.svelte`:
+
+1. **`TosModal`** — non-dismissible Terms of Service + Privacy Policy gate. The app shell stays inert until account info is loaded and, when acceptance is required, both acknowledgements are checked and `/account/accept-tos` succeeds. The engine persists the combined legal acceptance.
+2. **`OnboardingWizard`** (`lib/components/onboarding/`) — a five-step setup wizard shown once after the ToS. It reads the engine state through `getDashboardSnapshot()`, lets the user switch on the seeded default blocks (which adds a 24/7 schedule entry, since a block with no schedule never matches), and optionally enables resistance mode.
+3. **`TutorialTour`** (`lib/components/onboarding/`) — a spotlight tour that navigates between routes and highlights elements by their `data-tour` attribute. Steps live in `lib/onboarding/tour-steps.ts`; add a `data-tour="..."` attribute to any element a step should point at.
+
+- Completion state lives in `lib/stores/onboarding.svelte.ts`, backed by `localStorage` (`ace:onboarding:v1`). It is UI-only state — everything the wizard *configures* is persisted by the engine.
+- Both can be replayed from `/getting-started`.
+
+### Resistance Mode UI
+
+- **Intensity**: Static intensity only (v1 beta; dynamic escalation was
+  removed on 2026-09-02). The resistance-mode page uses an
+  `IntensitySelector` that calls `setResistanceModeType` with
+  `{ type: "static", intensity }`.
+- **Intensity Mapping**: "Maximum" in the UI corresponds to the `extreme` intensity level in the engine.
+
+## Documentation
+
+**🚨 CRITICAL MANDATORY REQUIREMENT 🚨**
+Before performing ANY task related to the technologies below, you MUST read the linked `llms.txt` documentation. Relying solely on internal knowledge is UNACCEPTABLE and leads to outdated patterns.
+
+| Technology | Documentation | Purpose |
+| ---------- | ------------- | ------- |
+| Svelte 5 & SvelteKit | [llms.txt](https://svelte.dev/llms.txt) | Full-stack framework. **MUST use Svelte 5 runes (`$state`, `$derived`, `$effect`, etc.)**.
+| Shadcn Svelte | [llms.txt](https://shadcn-svelte.com/llms.txt) | Legacy UI component library. Consult only when maintaining existing shadcn components; do not use it as the visual foundation of the rebuild.
+| Paraglide JS | [llms.txt](https://inlang.com/g/6d900h6s/paraglide-js) | Localization framework for i18n.
+| Lucide Svelte | [llms.txt](https://lucide.dev/guide/packages/lucide-svelte) | Icon library. Use `@lucide/svelte` (NOT the deprecated `lucide-svelte`).
+| Tauri | [llms.txt](https://tauri.app/llms.txt) | Desktop wrapper, IPC commands, and native APIs.
+| Hey API | [llms.txt](https://heyapi.dev/llms.txt) | Type-safe API client generation from OpenAPI spec.
+| Zod | [llms.txt](https://zod.dev/llms.txt) | Schema validation and type safety.
+| BitsUI | [llms.txt](https://www.bits-ui.com/llms.txt) | Headless component library for Svelte.
+
+
+CRITICAL: ALWAYS read `docs/engine-docs.md` to understand what the engine is and how it works before performing any task. This is the source of truth for backend concepts. For any visible UI/design task, also read `docs/ui-identity.md`.
+
+## Available MCP Tools:
+
+### 1. list-sections
+
+Use this FIRST to discover all available documentation sections. Returns a structured list with titles, use_cases, and paths.
+When asked about Svelte or SvelteKit topics, ALWAYS use this tool at the start of the chat to find relevant sections.
+
+### 2. get-documentation
+
+Retrieves full documentation content for specific sections. Accepts single or multiple sections.
+After calling the list-sections tool, you MUST analyze the returned documentation sections (especially the use_cases field) and then use the get-documentation tool to fetch ALL documentation sections that are relevant for the user's task.
+
+### 3. svelte-autofixer
+
+Analyzes Svelte code and returns issues and suggestions.
+You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
+
+### 4. playground-link
+
+Generates a Svelte Playground link with the provided code.
+After completing the code, ask the user if they want a playground link. Only call this tool after user confirmation and NEVER if code was written to files in their project.
+
+### 5. tauri-mcp-server
+
+You should have a Tauri MCP server at your disposal. Use it to test if your code works and to see if the UI is correct.
+
+## Installed npx Skills
+
+The following skills are installed via `npx skills` and are available to enhance AI agent knowledge for this project. They are located in `.agents/skills/` and are shared across Antigravity, Claude Code, Gemini CLI, and Qwen Code agents.
+
+### Svelte / SvelteKit
+
+- **svelte-code-writer** (`sveltejs/ai-tools`) — Official Svelte AI tool for writing Svelte components.
+- **svelte5-best-practices** (`ejirocodes/agent-skills`) — Best practices for Svelte 5 (Runes, snippets, etc.).
+- **svelte-core-bestpractices** (`sveltejs/ai-tools`) — Core Svelte best practices and conventions.
+- **sveltekit-structure** (`spences10/svelte-skills-kit`) — SvelteKit project structure conventions.
+- **svelte-runes** (`spences10/svelte-skills-kit`) — Svelte 5 Runes ($state, $derived, $effect, etc.) patterns.
+- **sveltekit-data-flow** (`spences10/svelte-skills-kit`) — SvelteKit data loading, forms, and actions.
+- **svelte-components** (`spences10/svelte-skills-kit`) — Svelte component patterns and composition.
+
+### UI & Styling
+
+- **frontend-design** — Mandatory for creating or materially reshaping visible UI; establishes intentional, non-template visual direction.
+- **ui-ux-pro-max** — Mandatory for product-wide UI/UX, accessibility, typography, layout, and interaction reasoning.
+- **svelte-components** — Use for Bits UI/headless component patterns and composition.
+- **design-taste-frontend** — Anti-template critique only for Ace App; it is not the authority for dashboard/multi-step product UI.
+- **web-design-guidelines** — Final UI/accessibility review where applicable.
+
+- **shadcn** (`shadcn/ui`) — Legacy-maintenance reference only; default shadcn styling is not Ace identity.
+- **shadcn-svelte** (`vercel-labs/json-render`) — Legacy-maintenance reference only during the rebuild.
+- **tailwind-v4-shadcn** (`secondsky/claude-skills`) — Legacy integration reference; do not treat its visual defaults as the target system.
+- **suggest-lucide-icons** (`nweii/agent-stuff`) — Use for ordinary utility icons; core Ace concepts may receive bespoke glyphs.
+
+### Tauri
+
+- **tauri-v2** (`nodnarbnitram/claude-code-extensions`) — Tauri v2 development patterns and commands.
+
+### Runtime & Language
+
+- **bun-development** (`sickn33/antigravity-awesome-skills`) — Bun runtime development best practices.
+- **typescript-advanced-types** (`wshobson/agents`) — Advanced TypeScript types and patterns.
+- **zod** (`pproenca/dot-skills`) — Zod schema validation patterns.
+
+### Utilities
+
+- **i18n-localization** (`sickn33/antigravity-awesome-skills`) — Internationalization and localization best practices.
+- **git-commit** (`github/awesome-copilot`) — Git commit message conventions and best practices.
