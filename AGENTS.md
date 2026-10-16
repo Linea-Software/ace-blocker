@@ -49,6 +49,14 @@ by this root layout.
 Always run Bun from `apps/ace-app/`. Frontend API code generation reads
 `crates/ace-engine/docs/openapi.json`.
 
+## Refactoring and technical debt
+
+For AI-led audits, cleanup, and refactors, follow
+[`docs/ai/REFACTORING_PLAYBOOK.md`](docs/ai/REFACTORING_PLAYBOOK.md).
+Record findings and verification in
+[`docs/ai/TECH_DEBT_BACKLOG.md`](docs/ai/TECH_DEBT_BACKLOG.md).
+Do not interpret a broad cleanup request as permission for a wholesale rewrite.
+
 ## Changes
 
 Keep edits scoped to this repository. Before editing, review Git status.

@@ -51,6 +51,12 @@ The WiX installer intentionally remains responsible for service ACLs,
 recovery, lock-aware uninstall, certificates, and offline site packs.
 Do not replace its service configuration with Tauri's basic bundler.
 
+## Refactoring and code cleanup
+
+AI agents should follow the [Refactoring Playbook](docs/ai/REFACTORING_PLAYBOOK.md)
+for read-only audits, bounded implementation, independent review, and verification.
+Track actionable findings in the [Technical Debt Backlog](docs/ai/TECH_DEBT_BACKLOG.md).
+
 ## Repository boundaries
 
 This new repository has its own Git history and no configured remote.
