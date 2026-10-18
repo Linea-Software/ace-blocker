@@ -16,7 +16,6 @@ async fn main() -> Result<()> {
         "serde",
         "reqwest",
         "mitm-proxy",
-        "utoipa",
         "chrono",
         "tracing",
         "axum-test",

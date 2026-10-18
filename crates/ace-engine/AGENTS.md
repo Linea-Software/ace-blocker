@@ -4,7 +4,7 @@ This file provides the necessary context for AI models to understand the project
 
 ## 🚀 Project Overview
 
-Ace Engine is a high-performance network and program blocker. It is built as a **service engine** that does not manage a UI directly but exposes a robust **REST API** (Axum-based, located in `src/service/api/`) for client applications.
+Ace Engine is a high-performance network and program blocker. It is built as a **service engine** that does not manage a UI directly but exposes **typed remoc RPC** via Named Pipes / Unix sockets to local clients.
 
 The core logic resides in the `src/core/` module, while the `src/` directory contains the service layer, database management, and the **system-wide MITM proxy** (`src/service/proxy/mod.rs`) which coordinates URL evaluation and script injection.
 
@@ -40,7 +40,7 @@ The engine uses a strictly typed ID system built on **UUID v7** for performance 
 
 - **Types:** Custom wrapper types (`NetworkBlockId`, `SitePackId`, `ScheduleEntryId`, `ScriptId`) encapsulate `uuid::Uuid`.
 - **Generation:** All new IDs are generated using `Uuid::now_v7()` to ensure time-based ordering and uniqueness.
-- **Serialization:** IDs are automatically serialized/deserialized as standard UUID strings in the REST API.
+- **Serialization:** IDs are automatically serialized/deserialized as standard UUID strings in typed RPC data.
 - **Database Mapping:** Stored as `TEXT` in SQLite, but converted to/from `uuid::Uuid` at the repository layer.
 
 ### 3. Site Packs
@@ -117,7 +117,7 @@ Custom JavaScript injected into specific websites to reduce their addictive qual
 ### Generated Ace Server API Client
 
 - **Never hand-edit `src/ace_server_api/`**: it is generated code. Manual edits there are useless because the next client regeneration overwrites them.
-- If the generated client needs to change, fix the OpenAPI source, the generator, or the generation/post-generation pipeline, then regenerate the client.
+- The OpenAPI generator only concerns the external Ace Server client. Local control methods must be added to the remoc trait and Tauri facade directly.
 - Do **not** resolve Clippy or formatting findings by patching files under `src/ace_server_api/`; address the generation source/tooling instead.
 
 ---
@@ -191,42 +191,16 @@ release builds ignore both.
 
 ## 🧪 Testing & Documentation
 
-- **REST API Docs:** Available via Swagger UI at `/swagger-ui` (OpenAPI generated).
-- **OpenAPI Spec Snapshot:** `docs/openapi.json` — a committed snapshot of the full API surface. Regenerate with `cargo run --features dev-tools --bin gen-openapi-spec` (requires admin on Windows). This file is the primary API reference for LLMs.
-- **OpenAPI Client**: A type-safe Rust client for the **Ace Server** (remote backend) API is generated from the site's OpenAPI spec using `openapi-to-rust`.
-  - **Generation**: Run `cargo run --features dev-tools --bin gen-api-client` with the ace-blocker-site dev server running on `localhost:5173`. The tool **fails loudly** when the server is unreachable.
-  - **Location**: Generated code resides in `src/ace_server_api/` (committed). **Never edit these generated files by hand**: such changes are non-persistent and will be overwritten on regeneration. Change the spec/generator/generation pipeline instead.
-- **Integration Tests:** Located in `/tests`, focusing on API and proxy correctness.
-- **Unit Tests:** Found within the respective source files.
-
-### LLM-Driven API Testing
-
-When an LLM needs to test a new feature through the REST API:
-
-1. **Start the engine** in a separate terminal: `cargo run`
-2. **Discover the port** — debug builds use `10567`; release builds write to `port.lock` in the engine's app-data directory.
-3. **Read `docs/openapi.json`** for endpoint schemas, parameters, and response shapes.
-4. **Test with curl** (quick one-offs):
-   ```bash
-   PORT=10567
-   curl -sk https://127.0.0.1:$PORT/ping
-   curl -sk https://127.0.0.1:$PORT/network-blocks | jq .
-   curl -sk -X POST https://127.0.0.1:$PORT/network-blocks \
-     -H "Content-Type: application/json" \
-     -d '{"blockName":"test"}'
-   ```
-5. **Use the Bun harness** (structured test scenarios):
-   ```bash
-   cd tests/api-harness
-   bun install
-   bun run harness.ts
-   ```
-   The harness handles port discovery, TLS cert acceptance, and provides typed wrappers. Extend `harness.ts` with new `test*()` functions for feature-specific scenarios.
-6. **Dev routes** (`/dev/*`, debug-only) can seed test data:
-   - `POST /dev/usage` — inject fake usage data
-   - `POST /dev/pro-policy/{policy}` — toggle Pro status for testing
-   - `POST /dev/resistance-level/{level}` — set resistance intensity
-7. **Update the spec** after API changes: `cargo run --bin gen-openapi-spec` (requires admin on Windows).
+- **Local control RPC:** typed remoc methods, Windows Named Pipes, and
+  Linux Unix sockets. Refer to the unified root docs/IPC_ARCHITECTURE.md.
+- **External Ace Server API:** generated via openapi-to-rust under
+  src/ace_server_api. This is not the local control API.
+- **Tests:** cargo test -p ace-engine --lib (including remoc_tests) and
+  cargo test -p ace-watchdog-protocol. Browser-mocked HTTP tests are obsolete
+  as production IPC coverage.
+- **Developer RPC methods:** remain denied in release builds.
+- **Adding operations:** extend the EngineControl remoc trait and Tauri facade;
+  do not add local HTTP listeners, OpenAPI or port discovery.
 
 ---
 
@@ -235,7 +209,7 @@ When an LLM needs to test a new feature through the REST API:
 The Ace Blocker website hands the desktop-app API key to the engine without
 forcing re-login. The key is delivered via:
 
-- `POST /account/api-key` with a **JSON body** `{ "apiKey": "..." }` (preferred),
+- `typed set_api_key RPC` with a **JSON body** `{ "apiKey": "..." }` (preferred),
   or the legacy `?apiKey=` query parameter (still accepted for older clients).
 - The `aceblocker://account/api-key#apiKey=...` deep link: the OS invokes the
   protocol handler (`ace-engine.exe` in debug, `ace-redirect.exe` in release),
@@ -252,7 +226,7 @@ only the key length.
 
 ## 📖 Further Documentation
 
-- `docs/rest-api.md`: Detailed REST API endpoint documentation.
+- Root docs/IPC_ARCHITECTURE.md: Typed remoc control service.
 - `docs/error-policies.md`: Error handling conventions.
 - `docs/update-policy.md`: Comprehensive update strategy for site lists, scripts, engine binary, and ace-app.
 - `docs/ROADMAP.md`: Project future goals.
@@ -294,3 +268,6 @@ To ensure accuracy and avoid using deprecated or non-existent APIs, **ALWAYS ref
 
 > [!IMPORTANT]
 > If a library is not listed here, or the documentation seems outdated, use search tools to find the latest documentation and update these files.
+
+## Remoc local IPC
+Read the root docs/IPC_ARCHITECTURE.md. Local REST control and port discovery have been removed. Extend the existing typed remoc RPC trait instead of adding HTTP endpoints.

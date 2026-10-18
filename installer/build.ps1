@@ -58,7 +58,10 @@ try {
 Write-Host "`n[2/2] Building ace-app..." -ForegroundColor Cyan
 Push-Location $AppDir
 try {
-    bun run tauri build
+    # The product MSI is assembled below by our WiX packager. Avoid
+    # redundant Tauri-generated installers and normalize CI for Tauri CLI.
+    if ($env:CI -eq '1') { $env:CI = 'true' }
+    bun run tauri build --no-bundle
     if ($LASTEXITCODE -ne 0) {
         throw "ace-app build failed."
     }

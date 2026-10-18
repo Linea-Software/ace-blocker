@@ -58,7 +58,7 @@ jobs:
 
       - name: Build desktop app
         working-directory: apps/ace-app
-        run: bun run tauri build
+        run: bun run tauri build --no-bundle
 
       - name: Install WiX 4
         shell: pwsh

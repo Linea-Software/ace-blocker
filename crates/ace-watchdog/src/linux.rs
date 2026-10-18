@@ -5,12 +5,12 @@ use crate::watchdog_protocol::{
     recovery_delay,
 };
 use eyre::{Context, Result, bail, eyre};
+use remoc::rch::base::{Receiver, Sender};
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
-use tokio::io::{AsyncBufReadExt, AsyncWrite, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
 use tokio::process::Command;
 use tokio::signal::unix::{SignalKind, signal};
@@ -387,86 +387,80 @@ async fn serve_engine_connection(
     shared_health: &Arc<Mutex<HeartbeatSnapshot>>,
     stop_requested: Arc<AtomicBool>,
 ) -> Result<()> {
-    let (read_half, mut write_half) = tokio::io::split(stream);
-    let mut lines = BufReader::new(read_half).lines();
-
-    let hello_line = time::timeout(SOCKET_HELLO_TIMEOUT, lines.next_line())
+    let (read_half, write_half) = tokio::io::split(stream);
+    let (connection, mut writer, mut reader): (
+        _,
+        Sender<WatchdogToEngine>,
+        Receiver<EngineToWatchdog>,
+    ) = remoc::Connect::io(remoc::Cfg::default(), read_half, write_half)
         .await
-        .wrap_err("timed out waiting for engine watchdog hello")?
-        .wrap_err("failed reading engine watchdog hello")?
-        .ok_or_else(|| eyre!("engine closed watchdog socket before hello"))?;
-    let hello: EngineToWatchdog =
-        serde_json::from_str(&hello_line).wrap_err("invalid engine watchdog hello message")?;
-    let engine_instance_id = match hello {
-        EngineToWatchdog::Hello { engine_instance_id } => engine_instance_id,
-        _ => return Err(eyre!("first watchdog socket message was not hello")),
-    };
+        .wrap_err("failed to establish watchdog remoc session")?;
+    let connection_task = tokio::spawn(connection);
 
-    if current_engine_process_id().await? != Some(client_process_id) {
-        return Err(eyre!(
-            "ace-engine.service MainPID changed during watchdog handshake"
-        ));
-    }
-    set_connected_engine(shared_health, client_process_id, &engine_instance_id);
-    log_event(&format!(
-        "engine heartbeat connected: systemd MainPID {client_process_id}, instance {engine_instance_id}"
-    ));
+    let outcome = async {
+        let hello = time::timeout(SOCKET_HELLO_TIMEOUT, reader.recv())
+            .await
+            .wrap_err("timed out waiting for engine watchdog hello")?
+            .wrap_err("failed reading engine watchdog hello")?
+            .ok_or_else(|| eyre!("engine closed watchdog socket before hello"))?;
+        let engine_instance_id = match hello {
+            EngineToWatchdog::Hello { engine_instance_id } => engine_instance_id,
+            _ => return Err(eyre!("first watchdog socket message was not hello")),
+        };
 
-    let mut sequence = 0_u64;
-    let mut pending_ping: Option<(u64, WatchdogNonce, Instant)> = None;
-    let mut interval = time::interval(HEARTBEAT_INTERVAL);
-    interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
-    interval.tick().await;
-
-    loop {
-        tokio::select! {
-            _ = interval.tick() => {
-                if let Some((_, _, sent_at)) = &pending_ping
-                    && sent_at.elapsed() >= HEARTBEAT_TIMEOUT
-                {
-                    note_heartbeat_failure(shared_health);
-                }
-
-                sequence = sequence.wrapping_add(1);
-                let nonce = WatchdogNonce::from(Uuid::new_v4());
-                write_watchdog_message(
-                    &mut write_half,
-                    &WatchdogToEngine::Ping { sequence, nonce },
-                ).await?;
-                pending_ping = Some((sequence, nonce, Instant::now()));
-            }
-            line = lines.next_line() => {
-                let Some(line) = line.wrap_err("failed reading engine heartbeat socket")? else {
-                    return Err(eyre!("engine closed heartbeat socket"));
-                };
-                let message: EngineToWatchdog = match serde_json::from_str(&line) {
-                    Ok(message) => message,
-                    Err(error) => {
-                        log_event(&format!("ignored malformed engine heartbeat message: {error}"));
-                        continue;
-                    }
-                };
-                handle_engine_message(
-                    message,
-                    client_process_id,
-                    &engine_instance_id,
-                    &mut pending_ping,
-                    shared_health,
-                    &mut write_half,
-                ).await?;
-            }
-            _ = wait_for_stop(Arc::clone(&stop_requested)) => return Ok(()),
+        if current_engine_process_id().await? != Some(client_process_id) {
+            return Err(eyre!("ace-engine.service MainPID changed during watchdog handshake"));
         }
-    }
+        set_connected_engine(shared_health, client_process_id, &engine_instance_id);
+        log_event(&format!(
+            "engine heartbeat connected: systemd MainPID {client_process_id}, instance {engine_instance_id}"
+        ));
+
+        let mut sequence = 0_u64;
+        let mut pending_ping: Option<(u64, WatchdogNonce, Instant)> = None;
+        let mut interval = time::interval(HEARTBEAT_INTERVAL);
+        interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
+        interval.tick().await;
+
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    if let Some((_, _, sent_at)) = &pending_ping
+                        && sent_at.elapsed() >= HEARTBEAT_TIMEOUT
+                    {
+                        note_heartbeat_failure(shared_health);
+                    }
+                    sequence = sequence.wrapping_add(1);
+                    let nonce = WatchdogNonce::from(Uuid::new_v4());
+                    writer.send(WatchdogToEngine::Ping {
+                        sequence, nonce,
+                    }).await.wrap_err("failed to send watchdog ping")?;
+                    pending_ping = Some((sequence, nonce, Instant::now()));
+                }
+                received = reader.recv() => {
+                    let message = received
+                        .wrap_err("failed receiving engine heartbeat")?
+                        .ok_or_else(|| eyre!("engine closed heartbeat socket"))?;
+                    handle_engine_message(
+                        message, client_process_id, &engine_instance_id,
+                        &mut pending_ping, shared_health, &mut writer,
+                    ).await?;
+                }
+                _ = wait_for_stop(Arc::clone(&stop_requested)) => return Ok(()),
+            }
+        }
+    }.await;
+    connection_task.abort();
+    outcome
 }
 
-async fn handle_engine_message<W: AsyncWrite + Unpin>(
+async fn handle_engine_message(
     message: EngineToWatchdog,
     client_process_id: u32,
     expected_instance_id: &EngineInstanceId,
     pending_ping: &mut Option<(u64, WatchdogNonce, Instant)>,
     shared_health: &Arc<Mutex<HeartbeatSnapshot>>,
-    writer: &mut W,
+    writer: &mut Sender<WatchdogToEngine>,
 ) -> Result<()> {
     match message {
         EngineToWatchdog::Hello { engine_instance_id } => {
@@ -502,19 +496,16 @@ async fn handle_engine_message<W: AsyncWrite + Unpin>(
             if engine_instance_id != *expected_instance_id
                 || current_engine_process_id().await? != Some(client_process_id)
             {
-                write_watchdog_message(
-                    writer,
-                    &WatchdogToEngine::MaintenanceRejected {
+                writer
+                    .send(WatchdogToEngine::MaintenanceRejected {
                         reason: "engine identity no longer matches systemd service instance"
                             .to_string(),
-                    },
-                )
-                .await?;
+                    })
+                    .await
+                    .wrap_err("failed to reject watchdog maintenance")?;
                 return Ok(());
             }
-
-            let requested = Duration::from_millis(ttl_ms);
-            let ttl = clamp_maintenance_ttl(requested);
+            let ttl = clamp_maintenance_ttl(Duration::from_millis(ttl_ms));
             let until = Instant::now() + ttl;
             {
                 let mut health = lock_health(shared_health);
@@ -524,13 +515,12 @@ async fn handle_engine_message<W: AsyncWrite + Unpin>(
                 "maintenance window opened for {} seconds ({reason:?})",
                 ttl.as_secs()
             ));
-            write_watchdog_message(
-                writer,
-                &WatchdogToEngine::MaintenanceAccepted {
+            writer
+                .send(WatchdogToEngine::MaintenanceAccepted {
                     ttl_ms: u64::try_from(ttl.as_millis()).unwrap_or(u64::MAX),
-                },
-            )
-            .await?;
+                })
+                .await
+                .wrap_err("failed to acknowledge watchdog maintenance")?;
         }
     }
     Ok(())
@@ -743,24 +733,6 @@ fn lock_health(shared_health: &Arc<Mutex<HeartbeatSnapshot>>) -> MutexGuard<'_, 
         Ok(guard) => guard,
         Err(poisoned) => poisoned.into_inner(),
     }
-}
-
-async fn write_watchdog_message<W: AsyncWrite + Unpin>(
-    writer: &mut W,
-    message: &WatchdogToEngine,
-) -> Result<()> {
-    let mut encoded =
-        serde_json::to_vec(message).wrap_err("failed to encode watchdog protocol message")?;
-    encoded.push(b'\n');
-    writer
-        .write_all(&encoded)
-        .await
-        .wrap_err("failed writing watchdog socket")?;
-    writer
-        .flush()
-        .await
-        .wrap_err("failed flushing watchdog socket")?;
-    Ok(())
 }
 
 async fn wait_for_stop(stop_requested: Arc<AtomicBool>) {

@@ -13,11 +13,10 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use thiserror::Error;
-use utoipa::ToSchema;
 use uuid::Uuid;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Display, EnumString, ToSchema, JsonSchema,
+    Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Display, EnumString, JsonSchema,
 )]
 #[serde(rename_all = "lowercase")]
 pub enum SitePackFormat {
@@ -32,7 +31,7 @@ pub enum SitePackFormat {
 }
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Display, EnumString, ToSchema, JsonSchema,
+    Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Display, EnumString, JsonSchema,
 )]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
@@ -41,13 +40,21 @@ pub enum SitePackSourceType {
     File,
 }
 
-#[nutype(
-    derive(
-        Debug, Clone, PartialEq, Eq, Hash, From, Into, Display, Deref, AsRef, Serialize,
-        Deserialize, JsonSchema,
-    ),
-    derive_unchecked(ToSchema)
-)]
+#[nutype(derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    From,
+    Into,
+    Display,
+    Deref,
+    AsRef,
+    Serialize,
+    Deserialize,
+    JsonSchema,
+))]
 pub struct SitePackId(String);
 
 #[nutype(derive(Debug, Clone, PartialEq, Eq, From, Into, Display, Deref, AsRef))]

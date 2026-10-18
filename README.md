@@ -16,9 +16,9 @@ initial snapshot, not a Git-history merge.
 
 **Runtime isolation is unchanged.** The engine and watchdog stay separate
 LocalSystem Windows services; the Tauri app runs in the user session.
-The app continues talking to the engine through the local HTTPS API.
-No blocking, authentication, lock, or watchdog behavior should change
-merely because the repositories were consolidated.
+The app now uses typed remoc RPC over Windows Named Pipes through the
+Tauri backend (Unix sockets on Linux). See docs/IPC_ARCHITECTURE.md for
+security boundaries and release verification.
 
 The public website (`ace-blocker-site`), Android client, host-list production
 pipeline (`ace-hosts`), and resistance-script source (`boredom-engine`) are
@@ -28,14 +28,14 @@ intentionally **not** merged into this desktop runtime repository.
 
 ```powershell
 # From the repository root
-cargo check --workspace
+cargo check --workspace --all-targets
+cargo test -p ace-engine --lib remoc_tests
 cargo test -p ace-watchdog-protocol
 cargo build --release -p ace-engine -p ace-watchdog --bins
 
 # Run frontend commands from apps/ace-app
 cd apps/ace-app
 bun install --frozen-lockfile
-bun run gen:api
 bun run check
 bun run tauri dev
 

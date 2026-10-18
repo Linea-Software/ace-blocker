@@ -1,9 +1,8 @@
-//! Engine-side link to the production userspace watchdog service.
+//! Engine-side authenticated connection to the separate watchdog service.
 //!
-//! The production watchdog is owned by the platform service manager (SCM on
-//! Windows, systemd on Linux). This module never spawns a privileged watchdog
-//! process directly; it connects to the watchdog IPC endpoint and asks the
-//! service manager to restore the watchdog service when that endpoint disappears.
+//! The watchdog remains SCM/systemd-managed and verifies the engine process at
+//! the OS transport boundary. Remoc replaces the bespoke newline-JSON framing;
+//! the heartbeat challenge and the guarded maintenance lease are unchanged.
 
 use crate::watchdog_protocol::MaintenanceReason;
 use eyre::Result;
@@ -13,20 +12,20 @@ use std::time::Duration;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod imp {
     use super::*;
-    #[cfg(target_os = "windows")]
-    use crate::watchdog_protocol::WATCHDOG_PIPE_NAME;
-    use crate::watchdog_protocol::{EngineInstanceId, EngineToWatchdog, WatchdogToEngine};
     #[cfg(all(target_os = "linux", debug_assertions))]
     use crate::watchdog_protocol::LINUX_WATCHDOG_PAUSE_PATH;
     #[cfg(target_os = "linux")]
     use crate::watchdog_protocol::LINUX_WATCHDOG_SOCKET_PATH;
+    #[cfg(target_os = "windows")]
+    use crate::watchdog_protocol::WATCHDOG_PIPE_NAME;
+    use crate::watchdog_protocol::{EngineInstanceId, EngineToWatchdog, WatchdogToEngine};
     use eyre::{Context, eyre};
+    #[cfg(target_os = "windows")]
+    use interprocess::os::windows::named_pipe::{pipe_mode, tokio::DuplexPipeStream};
+    use remoc::rch::base::{Receiver, Sender};
     use std::sync::OnceLock;
-    use tokio::io::{AsyncBufReadExt, AsyncWrite, AsyncWriteExt, BufReader};
     #[cfg(target_os = "linux")]
     use tokio::net::UnixStream;
-    #[cfg(target_os = "windows")]
-    use tokio::net::windows::named_pipe::{ClientOptions, NamedPipeClient};
     use tokio::sync::{mpsc, oneshot};
     use tokio::time::{self, Duration};
     use tracing::{info, warn};
@@ -35,7 +34,7 @@ mod imp {
     #[cfg(target_os = "linux")]
     type WatchdogStream = UnixStream;
     #[cfg(target_os = "windows")]
-    type WatchdogStream = NamedPipeClient;
+    type WatchdogStream = DuplexPipeStream<pipe_mode::Bytes>;
 
     static MAINTENANCE_CHANNEL: OnceLock<mpsc::Sender<MaintenanceCommand>> = OnceLock::new();
 
@@ -84,7 +83,6 @@ mod imp {
         mut command_rx: mpsc::Receiver<MaintenanceCommand>,
     ) {
         let mut reconnect_failures = 0_u32;
-
         loop {
             if let Err(error) = ensure_watchdog_service().await {
                 warn!("Failed to ensure watchdog service is running: {error:#}");
@@ -123,8 +121,8 @@ mod imp {
 
     #[cfg(target_os = "windows")]
     async fn connect_watchdog() -> Result<WatchdogStream> {
-        ClientOptions::new()
-            .open(WATCHDOG_PIPE_NAME)
+        WatchdogStream::connect_by_path(WATCHDOG_PIPE_NAME)
+            .await
             .wrap_err("failed to open watchdog named pipe")
     }
 
@@ -133,10 +131,7 @@ mod imp {
         UnixStream::connect(LINUX_WATCHDOG_SOCKET_PATH)
             .await
             .wrap_err_with(|| {
-                format!(
-                    "failed to connect to watchdog socket {}",
-                    LINUX_WATCHDOG_SOCKET_PATH
-                )
+                format!("failed to connect to watchdog socket {LINUX_WATCHDOG_SOCKET_PATH}")
             })
     }
 
@@ -158,69 +153,74 @@ mod imp {
         engine_instance_id: &EngineInstanceId,
         command_rx: &mut mpsc::Receiver<MaintenanceCommand>,
     ) -> Result<()> {
-        let (read_half, mut write_half) = tokio::io::split(client);
-        let mut lines = BufReader::new(read_half).lines();
+        let (read_half, write_half) = tokio::io::split(client);
+        // Both sides use the shared, typed protocol enums. Remoc supplies
+        // serialization, multiplexing and framing; there is no private codec.
+        let (connection, mut tx, mut rx): (
+            _,
+            Sender<EngineToWatchdog>,
+            Receiver<WatchdogToEngine>,
+        ) = remoc::Connect::io(remoc::Cfg::default(), read_half, write_half)
+            .await
+            .wrap_err("failed to establish watchdog remoc session")?;
+        let connection_task = tokio::spawn(connection);
+
+        tx.send(EngineToWatchdog::Hello {
+            engine_instance_id: *engine_instance_id,
+        })
+        .await
+        .wrap_err("failed to send watchdog hello")?;
+
         let mut pending_maintenance: Option<oneshot::Sender<Result<()>>> = None;
-
-        write_message(
-            &mut write_half,
-            &EngineToWatchdog::Hello {
-                engine_instance_id: *engine_instance_id,
-            },
-        )
-        .await?;
-
-        loop {
+        let result = loop {
             tokio::select! {
-                line = lines.next_line() => {
-                    let Some(line) = line.wrap_err("failed reading watchdog IPC")? else {
-                        if let Some(response) = pending_maintenance.take() {
-                            let _ = response.send(Err(eyre!("watchdog disconnected during maintenance request")));
+                received = rx.recv() => {
+                    match received {
+                        Ok(Some(message)) => {
+                            if let Err(error) = handle_watchdog_message(
+                                message, engine_instance_id, &mut tx, &mut pending_maintenance
+                            ).await {
+                                break Err(error);
+                            }
                         }
-                        return Err(eyre!("watchdog closed the IPC channel"));
-                    };
-
-                    let message: WatchdogToEngine = match serde_json::from_str(&line) {
-                        Ok(message) => message,
-                        Err(error) => {
-                            warn!("Ignoring malformed watchdog protocol message: {error}");
-                            continue;
-                        }
-                    };
-                    handle_watchdog_message(
-                        message,
-                        engine_instance_id,
-                        &mut write_half,
-                        &mut pending_maintenance,
-                    ).await?;
+                        Ok(None) => break Err(eyre!("watchdog closed the IPC channel")),
+                        Err(error) => break Err(eyre!("watchdog channel receive failed: {error}")),
+                    }
                 }
                 command = command_rx.recv() => {
                     let Some(command) = command else {
-                        return Err(eyre!("engine watchdog command channel closed"));
+                        break Err(eyre!("engine watchdog command channel closed"));
                     };
                     if pending_maintenance.is_some() {
                         let _ = command.response.send(Err(eyre!("a watchdog maintenance request is already pending")));
                         continue;
                     }
                     let ttl_ms = u64::try_from(command.ttl.as_millis()).unwrap_or(u64::MAX);
-                    write_message(
-                        &mut write_half,
-                        &EngineToWatchdog::BeginMaintenance {
-                            engine_instance_id: *engine_instance_id,
-                            ttl_ms,
-                            reason: command.reason,
-                        },
-                    ).await?;
+                    if let Err(error) = tx.send(EngineToWatchdog::BeginMaintenance {
+                        engine_instance_id: *engine_instance_id,
+                        ttl_ms,
+                        reason: command.reason,
+                    }).await {
+                        let _ = command.response.send(Err(eyre!("watchdog maintenance send failed: {error}")));
+                        break Err(eyre!("watchdog send failed: {error}"));
+                    }
                     pending_maintenance = Some(command.response);
                 }
             }
+        };
+        if let Some(response) = pending_maintenance.take() {
+            let _ = response.send(Err(eyre!(
+                "watchdog disconnected during maintenance request"
+            )));
         }
+        connection_task.abort();
+        result
     }
 
-    async fn handle_watchdog_message<W: AsyncWrite + Unpin>(
+    async fn handle_watchdog_message(
         message: WatchdogToEngine,
         engine_instance_id: &EngineInstanceId,
-        writer: &mut W,
+        writer: &mut Sender<EngineToWatchdog>,
         pending_maintenance: &mut Option<oneshot::Sender<Result<()>>>,
     ) -> Result<()> {
         match message {
@@ -228,15 +228,14 @@ mod imp {
                 if dev_heartbeat_failure_enabled() {
                     return Ok(());
                 }
-                write_message(
-                    writer,
-                    &EngineToWatchdog::Pong {
+                writer
+                    .send(EngineToWatchdog::Pong {
                         sequence,
                         nonce,
                         engine_instance_id: *engine_instance_id,
-                    },
-                )
-                .await?;
+                    })
+                    .await
+                    .wrap_err("failed to send watchdog pong")?;
             }
             WatchdogToEngine::MaintenanceAccepted { ttl_ms } => {
                 info!("Watchdog maintenance window accepted for {ttl_ms} ms.");
@@ -251,24 +250,6 @@ mod imp {
                 }
             }
         }
-        Ok(())
-    }
-
-    async fn write_message<W: AsyncWrite + Unpin>(
-        writer: &mut W,
-        message: &EngineToWatchdog,
-    ) -> Result<()> {
-        let mut encoded =
-            serde_json::to_vec(message).wrap_err("failed to encode watchdog message")?;
-        encoded.push(b'\n');
-        writer
-            .write_all(&encoded)
-            .await
-            .wrap_err("failed writing watchdog IPC")?;
-        writer
-            .flush()
-            .await
-            .wrap_err("failed flushing watchdog IPC")?;
         Ok(())
     }
 

@@ -24,12 +24,16 @@ jobs:
       - name: Install app dependencies
         working-directory: apps/ace-app
         run: bun install --frozen-lockfile
-      - name: Verify Rust service executables
-        run: cargo check --locked -p ace-engine --bin ace-engine -p ace-watchdog --bin ace-watchdog
-      - name: Test shared watchdog protocol
-        run: cargo test --locked -p ace-watchdog-protocol
+      - name: Verify the unified Rust workspace and Tauri application
+        run: cargo check --locked --workspace --all-targets
+      - name: Check release-only service contracts
+        run: cargo check --release --locked -p ace-engine -p ace-watchdog
+      - name: Test watchdog contracts and engine RPC
+        run: |
+          cargo test --locked -p ace-watchdog-protocol
+          cargo test --locked -p ace-engine --lib remoc_tests
       - name: Check app UI
         working-directory: apps/ace-app
         run: |
-          bun run gen:api
           bun run check
+          bun run build

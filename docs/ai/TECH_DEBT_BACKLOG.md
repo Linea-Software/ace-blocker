@@ -8,9 +8,20 @@ This file tracks **verified, actionable maintainability work**, not a wishlist o
 
 | ID | Priority | Status | Area | Problem / evidence | Intended outcome |
 | --- | --- | --- | --- | --- | --- |
-| — | — | — | — | *No audit has been recorded yet.* | — |
+| [TD-001](#td-001--native-ipc-integration-coverage) | P1 | verified | Native IPC testing | Removed browser E2E suites mocked the retired REST port; unit tests alone do not exercise installed Windows services | Add Windows Tauri/remoc/installer E2E coverage |
 
 For each non-placeholder item, add a detailed section below using the template. Link the queue's ID to its section. Order by expected maintenance benefit and risk, not cosmetic code metrics.
+
+### TD-001 — Native IPC integration coverage
+
+- **Status:** verified; **priority:** P1.
+- **Area:** `apps/ace-app/e2e/`, `apps/ace-app/src/lib/engine-client/tauri-rpc.test.ts`, `crates/ace-engine/src/service/api/rpc.rs`, `installer/`.
+- **Evidence:** Nine removed Playwright suites intercepted the obsolete engine HTTP endpoint at `127.0.0.1:10567`; they could not exercise production remoc calls. The replacement Tauri adapter unit tests mock `invoke`, and Rust remoc tests use an in-process duplex connection.
+- **Cost:** Regressions in installed Windows Named Pipe ACLs, SCM service startup, watchdog recovery, WebView-to-Tauri IPC, and uninstall gating could escape current automated checks.
+- **Smallest improvement:** Add native Windows integration tests covering those boundaries and run them on a disposable VM, separately from the static browser smoke tests.
+- **Security invariants:** Never bypass installation capability checks, lock rules, Windows service separation or uninstall refusal.
+- **Verified checks during cleanup:** `cargo check --workspace --all-targets`; `cargo check --release -p ace-engine -p ace-watchdog -p ace-app`; `cargo test -p ace-engine --lib -p ace-watchdog-protocol` (206 + 3 passed); `bun run check`; `bun run test:unit` (39 passed).
+- **Dependency:** Native Windows test harness and a disposable VM. No release-installation validation performed in this cleanup.
 
 ## Item template
 

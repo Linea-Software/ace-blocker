@@ -20,6 +20,7 @@ tauri-build = { version = "2", features = [] }
 # tonic-prost-build = "0.14.2"
 
 [dependencies]
+ace-engine = { path = "../../../crates/ace-engine" }
 app_dirs2 = "2.5.5"
 tauri = { version = "2.11.6", features = [] }
 tauri-plugin-opener = "2"

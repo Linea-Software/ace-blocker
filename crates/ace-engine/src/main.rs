@@ -17,6 +17,27 @@ async fn main() {
         std::process::exit(ace_engine::lock_check::check_locks_main());
     }
 
+    // Installer maintenance uses the same typed RPC shutdown operation.
+    // The service itself still refuses shutdown with any active lock and
+    // requires an authenticated watchdog maintenance lease.
+    if _args.len() >= 2 && _args[1] == "--request-shutdown" {
+        let token =
+            std::fs::read_to_string(ace_engine::settings::Settings::get_capability_token_path())
+                .ok()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty());
+        if token.is_none() {
+            std::process::exit(24);
+        }
+        let result =
+            ace_engine::service::api::bridge::call("shutdown", serde_json::json!({}), token).await;
+        std::process::exit(match result {
+            Ok(_) => 0,
+            Err(error) if error.status == 423 => 23,
+            Err(_) => 24,
+        });
+    }
+
     // Guardian mode: a lightweight copy spawned by the engine that watches the
     // engine's PID and restarts it if it dies. Must be handled before anything
     // else so it never boots the full engine. Release only.
@@ -96,22 +117,6 @@ async fn run() -> eyre::Result<()> {
         instance
     };
 
-    // In release mode, pick a random free port on startup
-    #[cfg(not(debug_assertions))]
-    {
-        use ace_engine::settings::Settings;
-        Settings::generate_random_port();
-    }
-
-    match setup_local_hostname() {
-        Ok(_) => {
-            println!("Successfully replaced hostname");
-        }
-        Err(error) => {
-            eprintln!("Failed to register local hostname: {}", error);
-        }
-    }
-
     // Register URL scheme on startup (Server Mode)
     if let Err(error) = setup_url_scheme() {
         eprintln!("Failed to register URL scheme: {}", error);
@@ -126,13 +131,6 @@ async fn run() -> eyre::Result<()> {
     ace_engine::platform::report_service_stopped();
 
     Ok(())
-}
-
-fn setup_local_hostname() -> Result<bool, std::io::Error> {
-    let mut hosts_builder = hostsfile::HostsBuilder::new("ace-engine-local");
-    hosts_builder.add_hostname("127.0.0.1".parse().unwrap(), "ace-engine.local");
-
-    hosts_builder.write()
 }
 
 fn setup_url_scheme() -> eyre::Result<()> {
@@ -158,8 +156,6 @@ fn setup_url_scheme() -> eyre::Result<()> {
 /// Debug-only protocol handler (release uses `ace-redirect.exe`).
 #[cfg(debug_assertions)]
 async fn handle_uri_scheme(uri: &str) {
-    let port = ace_engine::settings::Settings::get_api_port();
-
     // SECURITY: same allowlist as ace-redirect (see src/protocol.rs). Debug
     // builds do not enforce the capability token, so the allowlist is even
     // more important here: only `/account/api-key` may be forwarded.
@@ -176,39 +172,32 @@ async fn handle_uri_scheme(uri: &str) {
         }
     };
 
-    // Convert aceblocker://path to https://127.0.0.1:{port}/path. The legacy
-    // ?apiKey= query string is forwarded when present; the fragment is not —
-    // the key travels as a JSON body instead so it never appears in the
-    // forwarded request line or in logs.
-    let mut proxy_url = format!("https://127.0.0.1:{}{}", port, forward.path);
-    if let Some(query) = &forward.query {
-        proxy_url.push('?');
-        proxy_url.push_str(query);
+    if forward.path != "/account/api-key" {
+        eprintln!("Unsupported deep-link operation");
+        std::process::exit(1);
     }
-
-    println!("Redirecting {} to {}", forward.path, proxy_url);
-
-    let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_secs(5))
-        .timeout(Duration::from_secs(30))
-        .build()
-        .unwrap();
     let fragment = uri.split_once('#').map(|(_, fragment)| fragment);
-    let mut request = client.post(&proxy_url);
-    if let Some(api_key) = ace_engine::protocol::api_key_from_fragment(fragment) {
-        request = request.json(&serde_json::json!({ "apiKey": api_key }));
-    }
-
-    match request.send().await {
-        Ok(res) => {
-            println!("Request successful: Status {}", res.status());
-            std::thread::sleep(Duration::from_secs(5));
-        }
+    let api_key = ace_engine::protocol::api_key_from_fragment(fragment).or_else(|| {
+        forward.query.as_deref().and_then(|raw| {
+            url::form_urlencoded::parse(raw.as_bytes())
+                .find(|(name, _)| name == "apiKey")
+                .map(|(_, key)| key.into_owned())
+        })
+    });
+    let Some(api_key) = api_key else {
+        eprintln!("Missing account API key in deep link");
+        std::process::exit(1);
+    };
+    match ace_engine::service::api::bridge::call(
+        "setApiKey",
+        serde_json::json!({ "payload": { "apiKey": api_key } }),
+        Some(ace_engine::settings::Settings::load_or_create_capability_token()),
+    )
+    .await
+    {
+        Ok(_) => println!("Account key accepted"),
         Err(error) => {
-            eprintln!("Failed to forward request to Ace Engine service: {}", error);
-            eprintln!("Ensure the Ace Engine service is running.");
-            std::thread::sleep(Duration::from_secs(5));
-
+            eprintln!("Engine rejected callback: {}", error.error);
             std::process::exit(1);
         }
     }

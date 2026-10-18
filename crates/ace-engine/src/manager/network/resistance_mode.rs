@@ -14,15 +14,7 @@ use super::NetworkManager;
 /// conditions fail: `disabled` > `not_pro` > `scripts_missing` >
 /// `scripts_invalid` > `no_scripts_enabled` > `intensity_none`.
 #[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    Eq,
-    serde::Serialize,
-    serde::Deserialize,
-    schemars::JsonSchema,
-    utoipa::ToSchema,
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
 #[serde(rename_all = "snake_case")]
 pub enum EnforcementStatus {

@@ -4,7 +4,7 @@ pub mod utils;
 
 pub use common::constants;
 pub use common::domain_types::{
-    ApiKey, ApiPort, BundleSchemaVersion, PackDbFormatVersion, RemoteSitePackId, Sha256Digest,
+    ApiKey, BundleSchemaVersion, PackDbFormatVersion, RemoteSitePackId, Sha256Digest,
     SitePackVersion,
 };
 pub use common::lock::{Lock, LockState};

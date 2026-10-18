@@ -139,8 +139,7 @@
                     format: s.format,
                 })),
             },
-            sseMaxRetryAttempts: 1,
-            onSseError: (err: any) => {
+            onStreamError: (err: any) => {
                 throw err;
             },
         });

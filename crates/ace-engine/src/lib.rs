@@ -91,7 +91,7 @@ pub async fn run() -> Result<()> {
     // first intercepted TLS handshake.
     crate::service::proxy::prepare_certificates()?;
 
-    // Shutdown channel: POST /system/shutdown sends on this; run() awaits it.
+    // Shutdown channel: authorized remoc RPC requests send on this; run() awaits it.
     let (shutdown_tx, mut shutdown_rx) = tokio::sync::watch::channel(false);
 
     // Spawn the background content-update loop only in release builds. Debug
@@ -347,65 +347,19 @@ async fn spawn_api_service(
     update_check_interval: crate::service::content_updater::SharedUpdateInterval,
     shutdown_tx: tokio::sync::watch::Sender<bool>,
 ) -> tokio::task::JoinHandle<()> {
-    let app_state = service::api::AppState {
-        network_manager: network_manager.clone(),
+    let state = service::api::AppState {
+        network_manager,
         account_manager,
         content_update_service,
         update_check_interval,
         shutdown_tx,
         unlock_challenges: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
-        // Per-install capability token for state-changing requests. Release
-        // builds enforce it; debug builds keep accepting token-less requests
-        // so browser-based development keeps working (see
-        // docs/local-api-protection-design.md).
         capability_token: Some(Settings::load_or_create_capability_token()),
         enforce_capability: cfg!(not(debug_assertions)),
     };
-
-    // CORS + capability-token layers are installed inside `create_router`
-    // (see `service::api::security`).
-    let app = service::api::create_router(app_state);
-    let port = Settings::get_api_port();
-    Settings::set_api_port(port); // Ensure it's registered
-    let api_address = format!("127.0.0.1:{}", port);
-
     tokio::spawn(async move {
-        let cert_dir = Settings::get_cert_dir();
-        let cert_path = cert_dir.join("ace_ca.pem");
-        let key_path = cert_dir.join("ace_ca.key");
-
-        // Certificate generation/trust is completed synchronously in `run()`
-        // before either the API listener or the traffic-interception tunnel starts.
-        tracing::info!("Starting HTTPS API service on {}...", api_address);
-        tracing::info!("Swagger UI available at https://{}/swagger-ui", api_address);
-        tracing::info!(
-            "OpenAPI spec available at https://{}/api-docs/openapi.json",
-            api_address
-        );
-
-        let config =
-            match axum_server::tls_rustls::RustlsConfig::from_pem_file(&cert_path, &key_path).await
-            {
-                Ok(c) => c,
-                Err(errorr) => {
-                    tracing::error!(
-                        "Failed to load TLS config: {}. Is the proxy initialized?",
-                        errorr
-                    );
-                    return;
-                }
-            };
-
-        let addr: std::net::SocketAddr = api_address.parse().expect("Invalid API address");
-
-        tracing::info!("HTTPS API listening on https://{}", addr);
-
-        if let Err(error) = axum_server::bind_rustls(addr, config)
-            .serve(app.into_make_service())
-            .await
-        {
-            tracing::error!("HTTPS API service failed: {:?}", error);
+        if let Err(error) = service::api::transport::serve(state).await {
+            tracing::error!("Engine IPC server failed: {error:#}");
         }
-        tracing::info!("HTTPS API service stopped.");
     })
 }

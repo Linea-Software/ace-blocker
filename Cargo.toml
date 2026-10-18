@@ -20,7 +20,7 @@ default-members = [
 
 [profile.release]
 opt-level = "z"
-lto = true
+lto = "thin"
 strip = true
 
 [profile.dev]

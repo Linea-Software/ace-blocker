@@ -18,7 +18,7 @@ pub mod user_defined;
 use crate::core::SafeSearchEnforcement;
 use crate::core::common::injectable_scripts::InjectableScriptTree;
 use crate::manager::resistance::{PunishmentIntensity, PunishmentMode, ResistanceModeManager};
-use axum::http;
+use http;
 use std::{
     collections::{HashMap, HashSet},
     sync::{Arc, Mutex, RwLock},
@@ -38,16 +38,14 @@ use crate::{
 use error::NetworkManagerOpErr;
 use tracing::warn;
 
-#[cfg(debug_assertions)]
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum DebugProPolicy {
     Pro,
     Free,
     Default,
 }
 
-#[cfg(debug_assertions)]
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum DebugResistanceLevel {
     None,
     Low,
@@ -830,7 +828,7 @@ mod tests {
         let lock_end_time = Local::now() + chrono::Duration::hours(1);
         let lock = Lock::from(LockState::ActiveUntilLockEnd { end: lock_end_time });
         ctx.manager.set_lock(&list_id, lock).unwrap();
-        let uri = "http://example.com".parse::<axum::http::Uri>().unwrap();
+        let uri = "http://example.com".parse::<http::Uri>().unwrap();
         assert!(!matches!(
             ctx.manager.is_uri_blocked(&uri),
             crate::core::BlockingResult::NotBlocked
@@ -844,7 +842,7 @@ mod tests {
             "a pure domain block must be enforceable before TLS"
         );
 
-        let uri_safe = "http://google.com".parse::<axum::http::Uri>().unwrap();
+        let uri_safe = "http://google.com".parse::<http::Uri>().unwrap();
         assert!(matches!(
             ctx.manager.is_uri_blocked(&uri_safe),
             crate::core::BlockingResult::NotBlocked
@@ -898,7 +896,7 @@ mod tests {
         let lock_block = Lock::from(LockState::ActiveUntilLockEnd { end: lock_end_time });
         ctx.manager.set_lock(&list_id, lock_block).unwrap();
 
-        let uri = "http://example.com".parse::<axum::http::Uri>().unwrap();
+        let uri = "http://example.com".parse::<http::Uri>().unwrap();
         // Should NOT be blocked because it's in the whitelist/exceptions
         assert!(matches!(
             ctx.manager.is_uri_blocked(&uri),
@@ -909,7 +907,7 @@ mod tests {
         // the block is genuinely active and the exception is what allows
         // example.com through.
         let other = "http://other-blocked.com"
-            .parse::<axum::http::Uri>()
+            .parse::<http::Uri>()
             .unwrap();
         assert!(!matches!(
             ctx.manager.is_uri_blocked(&other),

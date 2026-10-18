@@ -139,25 +139,6 @@ pub struct PackDbFormatVersion(String);
 )]
 pub struct BundleSchemaVersion(u32);
 
-#[nutype(
-    validate(greater_or_equal = 1),
-    derive(
-        Debug,
-        Clone,
-        Copy,
-        PartialEq,
-        Eq,
-        Hash,
-        PartialOrd,
-        Ord,
-        TryFrom,
-        Display,
-        Serialize,
-        Deserialize
-    )
-)]
-pub struct ApiPort(u16);
-
 /// API keys intentionally do not implement `Debug` or `Display`, which makes
 /// accidental secret exposure through routine logging/formatting harder.
 #[nutype(
@@ -175,12 +156,6 @@ mod tests {
         let digest = Sha256Digest::try_new("A".repeat(64)).unwrap();
         assert_eq!(digest.as_ref(), "a".repeat(64));
         assert!(Sha256Digest::try_new("xyz").is_err());
-    }
-
-    #[test]
-    fn api_port_rejects_zero() {
-        assert!(ApiPort::try_new(0).is_err());
-        assert_eq!(ApiPort::try_new(10567).unwrap().into_inner(), 10567);
     }
 
     #[test]

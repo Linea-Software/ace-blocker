@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 
 use strum_macros::{AsRefStr, Display, EnumString};
 use thiserror::Error;
-use utoipa::ToSchema;
 
 use crate::core::Schedule;
 
@@ -24,7 +23,6 @@ use crate::core::Schedule;
     PartialOrd,
     EnumString,
     Display,
-    ToSchema,
     JsonSchema,
     AsRefStr,
     Serialize,

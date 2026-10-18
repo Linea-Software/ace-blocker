@@ -2,11 +2,11 @@
 # for Ace Blocker uninstall/upgrade.
 #
 # This action runs only AFTER ace-engine.exe --check-locks has succeeded. The
-# engine remains the authority for lock semantics: POST /system/shutdown checks
+# engine remains the authority for lock semantics: the typed shutdown RPC checks
 # the network-block and Resistance Mode locks again, then requests a bounded
 # AceEngineWatchdog maintenance window before it begins graceful teardown.
 #
-# Contract: FAIL SAFE. Exit 0 only after an authenticated HTTP 200 response and
+# Contract: FAIL SAFE. Exit 0 only after an authenticated RPC acknowledgement and
 # after the AceEngine SCM service reaches Stopped. Any inability to verify that
 # sequence exits non-zero so MSI does not stop the watchdog or remove files.
 #
@@ -33,64 +33,29 @@ function Fail-Shutdown([int]$exitCode, [string]$message) {
 try {
     Write-Log "=== Ace Blocker engine shutdown + watchdog maintenance ==="
 
-    $portFile  = Join-Path $AppDataDir "port.lock"
     $tokenFile = Join-Path $AppDataDir "capability.token"
+    $engineExe = Join-Path $PSScriptRoot "ace-engine.exe"
 
-    if (-not (Test-Path -LiteralPath $portFile)) {
-        Fail-Shutdown 20 "port.lock is missing; engine state cannot be verified safely."
-    }
     if (-not (Test-Path -LiteralPath $tokenFile)) {
-        Fail-Shutdown 20 "capability.token is missing; shutdown cannot be authenticated."
+        Fail-Shutdown 20 "Capability token missing; cannot authenticate maintenance request."
+    }
+    if (-not (Test-Path -LiteralPath $engineExe)) {
+        Fail-Shutdown 20 "Engine maintenance client executable missing."
     }
 
-    $port = ((Get-Content -LiteralPath $portFile -Raw) -replace '\s', '')
-    if ($port -notmatch '^\d+$') {
-        Fail-Shutdown 20 "port.lock is unparseable; engine state cannot be verified safely."
+    # The token never enters PowerShell variables/command lines: the Rust
+    # binary reads it privately. LocalSystem service checks locks again and
+    # obtains its authenticated watchdog maintenance lease before returning 0.
+    Write-Log "Requesting typed Remoc shutdown via engine named pipe."
+    $process = Start-Process -FilePath $engineExe -ArgumentList "--request-shutdown" -Wait -PassThru
+    $resultCode = $process.ExitCode
+    if ($resultCode -eq 23) {
+        Fail-Shutdown 23 "Engine refused shutdown: an enforcement lock is active."
     }
-
-    # SECURITY: never write this value to the log or command line.
-    $token = (Get-Content -LiteralPath $tokenFile -Raw).Trim()
-    if (-not $token) {
-        Fail-Shutdown 20 "capability.token is empty; shutdown cannot be authenticated."
+    if ($resultCode -ne 0) {
+        Fail-Shutdown 24 "Authenticated engine shutdown request failed (exit $resultCode)."
     }
-
-    $uri = "https://127.0.0.1:$port/system/shutdown"
-    Write-Log "Requesting authenticated graceful shutdown on the local engine API."
-
-    # Windows PowerShell 5.1 has no -SkipCertificateCheck. A compiled
-    # ICertificatePolicy avoids the runspace-thread problem of a scriptblock
-    # ServerCertificateValidationCallback for this loopback-only connection.
-    Add-Type -TypeDefinition @"
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-public sealed class AceTrustAllCertificatePolicy : ICertificatePolicy {
-    public bool CheckValidationResult(ServicePoint sp, X509Certificate cert, WebRequest req, int problem) { return true; }
-}
-"@
-    [System.Net.ServicePointManager]::CertificatePolicy = [AceTrustAllCertificatePolicy]::new()
-    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-
-    try {
-        $null = Invoke-RestMethod -Method Post -Uri $uri `
-            -Headers @{ "X-Ace-Capability" = $token } -TimeoutSec 10
-        Write-Log "Shutdown accepted (HTTP 200); watchdog maintenance was acknowledged by the engine."
-    } catch {
-        $statusCode = $null
-        if ($_.Exception.Response) {
-            $statusCode = [int]$_.Exception.Response.StatusCode
-        }
-
-        if ($statusCode -eq 423) {
-            Fail-Shutdown 23 "Engine refused shutdown (HTTP 423): a protection lock is active."
-        }
-        if ($statusCode -eq 401) {
-            Fail-Shutdown 24 "Engine rejected the capability token (HTTP 401)."
-        }
-        if ($statusCode) {
-            Fail-Shutdown 24 "Engine shutdown request failed with HTTP $statusCode."
-        }
-        Fail-Shutdown 24 "Engine shutdown request could not be completed; engine state is not safely verified."
-    }
+    Write-Log "Engine accepted shutdown and watchdog maintenance."
 
     # Do not stop the watchdog until the engine has completed teardown and has
     # reported SERVICE_STOPPED. This avoids racing Wintun/database teardown or

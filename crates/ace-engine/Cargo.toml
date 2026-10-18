@@ -48,11 +48,6 @@ path = "src/bin/gen_api_client.rs"
 required-features = ["dev-tools"]
 
 [[bin]]
-name = "gen-openapi-spec"
-path = "src/bin/gen_openapi_spec.rs"
-required-features = ["dev-tools"]
-
-[[bin]]
 name = "stress-netblocks"
 path = "src/bin/stress_netblocks.rs"
 required-features = ["dev-tools"]
@@ -69,8 +64,6 @@ async-compression = { version = "~0.4", features = [
     "zstd",
 ] }
 async-stream = "~0.3"
-axum = { version = "~0.8", features = ["tokio", "http1", "macros"] }
-axum-server = { version = "~0.8", features = ["tls-rustls"] }
 base64 = "~0.23"
 bytes = "~1.12"
 chrono = { version = "~0.4", features = ["serde"] }
@@ -87,11 +80,8 @@ dom_query = "~0.28"
 futures = "~0.3"
 
 futures-util = "~0.3"
-hostsfile = "~2.0"
 http = "~1.5"
-http-body-util = "~0.1"
 hyper = { version = "~1.12", features = ["full"] }
-json = "~0.12"
 libsqlite3-sys = { version = "~0.38", features = ["bundled"] }
 openapi-to-rust = "~0.22"
 openport = { version = "~0.4", features = ["rand"] }
@@ -100,6 +90,7 @@ rcgen = "~0.14"
 hex = "~0.4"
 flate2 = "~1.1"
 reqwest = { version = "~0.13", features = ["json", "stream"] }
+remoc = { version = "0.20.4", default-features = false, features = ["rch", "rtc"] }
 sha2 = "~0.11"
 single-instance = "~0.3"
 regex = "~1.13"
@@ -116,7 +107,6 @@ ace-tun = { path = "../ace-tun" }
 sysuri = "~0.4"
 thiserror = "~2.0"
 tokio = { version = "~1.53", features = ["full"] }
-tower-http = { version = "~0.7", features = ["cors"] }
 tracing = "~0.1"
 tracing-appender = "~0.2"
 tracing-subscriber = { version = "~0.3", features = [
@@ -124,8 +114,6 @@ tracing-subscriber = { version = "~0.3", features = [
     "fmt",
     "registry",
 ] }
-utoipa = { version = "6.0.0", features = ["axum_extras", "uuid", "chrono"], git = "https://github.com/juhaku/utoipa" }
-utoipa-swagger-ui = { version = "10.0.0", features = ["axum"], git = "https://github.com/juhaku/utoipa" }
 uuid = { version = "~1.28", features = ["v7", "v5", "v4", "serde"] }
 zip = { version = "~9.0", features = ["zstd"] }
 eyre = "~0.6"
@@ -142,6 +130,8 @@ features = ["xxh3"]
 
 # Windows-specific dependencies
 [target.'cfg(windows)'.dependencies]
+interprocess = { version = "2.4.5", features = ["tokio"] }
+widestring = "1.2"
 windows-service = "~0.8"
 windows = { version = "~0.62", features = [
     "Win32_Foundation",
@@ -153,6 +143,9 @@ windows = { version = "~0.62", features = [
 ] }
 
 [dev-dependencies]
+# Local HTTP fixtures still verify legitimate content downloads and proxy behavior.
+axum = { version = "~0.8", features = ["tokio", "http1", "macros"] }
+http-body-util = "~0.1"
 axum-test = { version = "~21.1", features = ["ws"] }
 fake = { version = "~5.1", features = ["derive", "chrono", "uuid", "url"] }
 tempfile = "~3.27"

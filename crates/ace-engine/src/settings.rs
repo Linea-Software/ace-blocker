@@ -1,4 +1,3 @@
-use crate::core::ApiPort;
 use app_dirs2::*;
 use rand::prelude::*;
 use std::path::PathBuf;
@@ -157,12 +156,6 @@ impl Settings {
         }
     }
 
-    pub fn get_port_file_path() -> PathBuf {
-        let mut path = Self::get_app_data_dir();
-        path.push("port.lock");
-        path
-    }
-
     /// Path of the per-install capability token file.
     ///
     /// The token authorizes state-changing requests against the local API
@@ -199,38 +192,4 @@ impl Settings {
         token
     }
 
-    pub fn get_api_port() -> ApiPort {
-        #[cfg(debug_assertions)]
-        return ApiPort::try_new(10567).expect("debug API port is non-zero");
-
-        #[cfg(not(debug_assertions))]
-        {
-            let path = Self::get_port_file_path();
-            if let Ok(port_str) = std::fs::read_to_string(&path)
-                && let Ok(port) = port_str.trim().parse::<u16>()
-                && let Ok(port) = ApiPort::try_new(port)
-            {
-                return port;
-            }
-            Self::generate_random_port()
-        }
-    }
-
-    pub fn set_api_port(port: ApiPort) {
-        // Persist the port for the desktop app (and any other client) to
-        // discover. Debug builds use the fixed 10567 but still write the file
-        // so a stale port.lock from a previous run never points clients at a
-        // dead port.
-        let path = Self::get_port_file_path();
-        let _ = std::fs::write(&path, port.to_string());
-    }
-
-    pub fn generate_random_port() -> ApiPort {
-        use openport::pick_random_unused_port;
-        let raw_port = pick_random_unused_port().unwrap_or(10567);
-        let port = ApiPort::try_new(raw_port)
-            .unwrap_or_else(|_| ApiPort::try_new(10567).expect("fallback API port is non-zero"));
-        Self::set_api_port(port);
-        port
-    }
 }

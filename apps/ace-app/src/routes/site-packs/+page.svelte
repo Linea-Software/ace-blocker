@@ -157,8 +157,7 @@
 
         const { stream } = await resyncSitePack({
             path: { site_pack_id: pack.id },
-            sseMaxRetryAttempts: 1,
-            onSseError: (error: unknown) => {
+            onStreamError: (error: unknown) => {
                 throw error;
             },
         });

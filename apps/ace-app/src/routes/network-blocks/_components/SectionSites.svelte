@@ -72,8 +72,7 @@
         try {
             const result = await resyncSitePack({
                 path: { site_pack_id: listToDownload.id },
-                sseMaxRetryAttempts: 1,
-                onSseError: (err: unknown) => {
+                    onStreamError: (err: unknown) => {
                     throw err;
                 },
             });

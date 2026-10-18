@@ -145,7 +145,7 @@ export class SyncingStore {
      *
      * A stream that ends *without* a terminal COMPLETED/FAILED event is
      * treated as a failure — never as a silent success. This covers the
-     * bounded-retry case (transport gave up after `sseMaxRetryAttempts`) and
+     * IPC transport failure and
      * a dropped connection mid-stream: both leave the operation in a state
      * where the engine's terminal event never arrived, and auto-completing
      * would hide a failed download as if it had succeeded.

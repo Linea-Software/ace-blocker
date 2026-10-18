@@ -869,7 +869,6 @@ fn spawn_tun_retry(tun: Arc<TunRedirect>) -> tokio::task::JoinHandle<()> {
 /// Ensure both Ace TLS certificates exist and are trusted before networking starts.
 pub fn prepare_certificates() -> Result<()> {
     install_certificate().wrap_err("preparing MITM root certificate")?;
-    install_api_certificate().wrap_err("preparing API TLS certificate")?;
     Ok(())
 }
 
@@ -1158,70 +1157,6 @@ fn install_cert_to_system_trust_store(cert_path: &Path) {
             Err(error) => warn!("failed to run security: {error}"),
         }
     }
-}
-
-/// Generate (once) and install the API's own TLS certificate (`ace_ca.pem`),
-/// the self-signed root the HTTPS API presents to desktop clients. Unlike the
-/// MITM CA it carries SANs for the addresses clients actually connect to
-/// (`127.0.0.1`, `localhost`, `ace-engine.local`) — without a matching SAN,
-/// Windows' TLS stack rejects the certificate outright.
-///
-/// Existing certificates are reused, but trust-store installation is rechecked
-/// on every startup so a previously unavailable platform trust mechanism can recover.
-pub fn install_api_certificate() -> Result<()> {
-    let cert_dir = Settings::get_cert_dir();
-    if !cert_dir.exists() {
-        std::fs::create_dir_all(&cert_dir)?;
-    }
-
-    let cert_path = cert_dir.join("ace_ca.pem");
-    let key_path = cert_dir.join("ace_ca.key");
-    if cert_path.exists() {
-        // Trust installation may have failed on an earlier run (for example
-        // when the distro-specific trust utility was missing). Re-ensure trust
-        // instead of permanently skipping it just because the PEM survived.
-        install_cert_to_system_trust_store(&cert_path);
-        return Ok(());
-    }
-
-    info!("Generating API TLS certificate...");
-
-    let mut params = rcgen::CertificateParams::default();
-    params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
-    params.key_usages = vec![
-        rcgen::KeyUsagePurpose::KeyCertSign,
-        rcgen::KeyUsagePurpose::CrlSign,
-        rcgen::KeyUsagePurpose::DigitalSignature,
-    ];
-
-    let now = chrono::Utc::now();
-    params.not_before = rcgen::date_time_ymd(now.year(), now.month() as u8, now.day() as u8);
-    params.not_after = rcgen::date_time_ymd(now.year() + 100, now.month() as u8, now.day() as u8);
-
-    let mut dn = rcgen::DistinguishedName::new();
-    dn.push(rcgen::DnType::CommonName, "Ace Engine Root CA");
-    dn.push(rcgen::DnType::OrganizationName, "Ace Engine");
-    params.distinguished_name = dn;
-
-    params.subject_alt_names = vec![
-        rcgen::SanType::DnsName("ace-engine.local".try_into()?),
-        rcgen::SanType::DnsName("localhost".try_into()?),
-        rcgen::SanType::IpAddress(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1))),
-    ];
-
-    let key_pair = rcgen::KeyPair::generate()?;
-    let cert = params.self_signed(&key_pair)?;
-
-    std::fs::write(&cert_path, cert.pem())?;
-    std::fs::write(&key_path, key_pair.serialize_pem())?;
-    info!("API TLS certificate generated at {:?}", cert_path);
-
-    // Install to the machine trust store so desktop clients accept the API's
-    // certificate. Windows uses the machine Root store via certutil (requires
-    // Administrator); Linux and macOS use their native trust-store tools.
-    install_cert_to_system_trust_store(&cert_path);
-
-    Ok(())
 }
 
 #[cfg(test)]

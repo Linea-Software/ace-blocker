@@ -31,8 +31,9 @@ by this root layout.
   watchdog heartbeat/maintenance, security ACLs, API auth, certificate
   handling, and installer uninstall gate. Do not introduce a UI-driven
   engine shutdown.
-- Maintain the existing local HTTPS REST boundary for the app until an
-  explicit architecture change is approved.
+- Local control uses typed remoc RPC over Windows Named Pipes (Unix socket on
+  Linux). The Tauri backend owns the IPC connection and capability credential.
+  Never reintroduce a local REST listener, API port or HTTP fallback.
 - The installer remains the production owner of service lifecycle and
   service security settings. Do not substitute ordinary Tauri bundling.
 - Only browser traffic may be decrypted by the proxy.
@@ -43,11 +44,12 @@ by this root layout.
 - `cargo test -p ace-watchdog-protocol`
 - `cargo check -p ace-engine --bin ace-engine`
 - `cargo check -p ace-watchdog --bin ace-watchdog`
-- `cd apps/ace-app; bun run gen:api; bun run check`
+- `cd apps/ace-app; bun run check; bun run test:unit; bun run build`
 - `./installer/build.ps1` on Windows after installing Bun, Rust, and WiX 4
 
-Always run Bun from `apps/ace-app/`. Frontend API code generation reads
-`crates/ace-engine/docs/openapi.json`.
+Always run Bun from `apps/ace-app/`. The local engine API is maintained in
+`apps/ace-app/src/lib/engine-client/`; the generated external Ace Server
+client is independent of this remoc control interface.
 
 ## Refactoring and technical debt
 

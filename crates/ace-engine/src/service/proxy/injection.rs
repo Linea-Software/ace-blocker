@@ -5,7 +5,6 @@ use dom_query::Document;
 use tracing::info;
 
 use crate::service::proxy::csp::modify_csp_with_nonce;
-use crate::settings::Settings;
 
 // Remove injected script tags after execution so their payload is not left
 // in the DOM. The microtask runs after the current script body finishes.
@@ -87,12 +86,9 @@ pub fn inject_scripts_with_nonce(
         "setup",
         &format!(
             r#"
-            window.__BOREDOM_SERVER_HOSTNAME__ = 'ace-engine.local';
-            window.__BOREDOM_SERVER_PORT__ = {};
             window.__BOREDOM_INTENSITY__ = '{}';
             console.log('Boredom engine setup successfully')
         "#,
-            Settings::get_api_port(),
             intensity
         ),
     );
@@ -128,14 +124,9 @@ mod tests {
 
         assert!(result.contains(r#"nonce="abc123""#));
         assert!(result.contains("console.log('test');"));
-        assert!(result.contains("window.__BOREDOM_SERVER_HOSTNAME__"));
         assert!(result.contains("window.__BOREDOM_INTENSITY__ = 'high'"));
         assert_eq!(result.matches("data-ace-resistance=").count(), 2);
         assert_eq!(result.matches(SCRIPT_NODE_CLEANUP_PRELUDE).count(), 2);
-        assert!(
-            result.find(SCRIPT_NODE_CLEANUP_PRELUDE).unwrap()
-                < result.find("window.__BOREDOM_SERVER_HOSTNAME__").unwrap()
-        );
         assert!(
             result.rfind(SCRIPT_NODE_CLEANUP_PRELUDE).unwrap()
                 < result.find("console.log('test');").unwrap()

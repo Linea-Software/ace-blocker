@@ -1,9 +1,12 @@
-#![cfg_attr(all(target_os = "windows", not(debug_assertions)), windows_subsystem = "windows")]
+#![cfg_attr(
+    all(target_os = "windows", not(debug_assertions)),
+    windows_subsystem = "windows"
+)]
 
 #[cfg(any(target_os = "windows", target_os = "linux"))]
-#[allow(dead_code)] // this binary reuses a protocol module that also exposes engine-only constants
+#[allow(dead_code)]
+// this binary reuses a protocol module that also exposes engine-only constants
 use ace_watchdog_protocol as watchdog_protocol;
-
 
 #[cfg(not(any(target_os = "windows", target_os = "linux")))]
 fn main() {
@@ -34,30 +37,28 @@ async fn main() {
 #[cfg(target_os = "windows")]
 mod windows_impl {
     use crate::watchdog_protocol::{
-        clamp_maintenance_ttl, recovery_delay, EngineInstanceId, EngineToWatchdog, WatchdogNonce, WatchdogToEngine,
-        ENGINE_SERVICE_NAME, ENGINE_STARTUP_GRACE, HEARTBEAT_FAILURE_THRESHOLD,
-        HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT, WATCHDOG_PIPE_NAME, WATCHDOG_SERVICE_NAME,
+        ENGINE_SERVICE_NAME, ENGINE_STARTUP_GRACE, EngineInstanceId, EngineToWatchdog,
+        HEARTBEAT_FAILURE_THRESHOLD, HEARTBEAT_INTERVAL, HEARTBEAT_TIMEOUT, WATCHDOG_PIPE_NAME,
+        WATCHDOG_SERVICE_NAME, WatchdogNonce, WatchdogToEngine, clamp_maintenance_ttl,
+        recovery_delay,
     };
-    use eyre::{eyre, Context, Result};
+    use eyre::{Context, Result, eyre};
+    use interprocess::os::windows::{
+        named_pipe::{PipeListenerOptions, pipe_mode, tokio::DuplexPipeStream},
+        security_descriptor::SecurityDescriptor,
+    };
+    use remoc::rch::base::{Receiver, Sender};
     use std::ffi::OsString;
     use std::io::Write;
-    use std::os::windows::io::AsRawHandle;
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Mutex, MutexGuard};
     use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-    use tokio::io::{AsyncBufReadExt, AsyncWrite, AsyncWriteExt, BufReader};
-    use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
     use tokio::time;
     use uuid::Uuid;
-    use windows::core::w;
-    use windows::Win32::Foundation::{CloseHandle, HANDLE};
-    use windows::Win32::Security::Authorization::{
-        ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
-    };
-    use windows::Win32::Security::{PSECURITY_DESCRIPTOR, SECURITY_ATTRIBUTES};
-    use windows::Win32::System::Pipes::GetNamedPipeClientProcessId;
-    use windows::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+    use widestring::U16CString;
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::System::Threading::{OpenProcess, PROCESS_TERMINATE, TerminateProcess};
     use windows_service::{
         define_windows_service,
         service::{
@@ -78,12 +79,28 @@ mod windows_impl {
 
     #[derive(Debug)]
     enum WatchdogState {
-        Starting { process_id: Option<u32> },
-        Healthy { process_id: u32, instance_id: EngineInstanceId },
-        Unhealthy { process_id: u32, failures: u32 },
-        Recovering { process_id: Option<u32>, attempt: u32 },
-        Maintenance { until: Instant },
-        Backoff { until: Instant, failures: u32 },
+        Starting {
+            process_id: Option<u32>,
+        },
+        Healthy {
+            process_id: u32,
+            instance_id: EngineInstanceId,
+        },
+        Unhealthy {
+            process_id: u32,
+            failures: u32,
+        },
+        Recovering {
+            process_id: Option<u32>,
+            attempt: u32,
+        },
+        Maintenance {
+            until: Instant,
+        },
+        Backoff {
+            until: Instant,
+            failures: u32,
+        },
     }
 
     #[derive(Clone, Debug, Default)]
@@ -168,7 +185,9 @@ mod windows_impl {
         if let Err(error) =
             ace_engine::ace_guard::register_self(ace_engine::ace_guard::AceGuardRole::Watchdog)
         {
-            log_event(&format!("Ace Guard watchdog registration unavailable: {error}"));
+            log_event(&format!(
+                "Ace Guard watchdog registration unavailable: {error}"
+            ));
         } else {
             log_event("registered AceEngineWatchdog with Ace Guard");
         }
@@ -177,30 +196,32 @@ mod windows_impl {
         let handler_stop = Arc::clone(&stop_requested);
         let shared_health = Arc::new(Mutex::new(HeartbeatSnapshot::default()));
         let handler_health = Arc::clone(&shared_health);
-        let status_handle = match service_control_handler::register(
-            WATCHDOG_SERVICE_NAME,
-            move |control_event| match control_event {
-                ServiceControl::Stop => {
-                    let maintenance_is_active = lock_health(&handler_health)
-                        .maintenance_until
-                        .is_some_and(|until| Instant::now() < until);
-                    if maintenance_is_active {
-                        handler_stop.store(true, Ordering::Release);
-                        ServiceControlHandlerResult::NoError
-                    } else {
-                        ServiceControlHandlerResult::NotImplemented
+        let status_handle =
+            match service_control_handler::register(WATCHDOG_SERVICE_NAME, move |control_event| {
+                match control_event {
+                    ServiceControl::Stop => {
+                        let maintenance_is_active = lock_health(&handler_health)
+                            .maintenance_until
+                            .is_some_and(|until| Instant::now() < until);
+                        if maintenance_is_active {
+                            handler_stop.store(true, Ordering::Release);
+                            ServiceControlHandlerResult::NoError
+                        } else {
+                            ServiceControlHandlerResult::NotImplemented
+                        }
                     }
+                    ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
+                    _ => ServiceControlHandlerResult::NotImplemented,
                 }
-                ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
-                _ => ServiceControlHandlerResult::NotImplemented,
-            },
-        ) {
-            Ok(handle) => handle,
-            Err(error) => {
-                log_event(&format!("failed to register watchdog control handler: {error}"));
-                return;
-            }
-        };
+            }) {
+                Ok(handle) => handle,
+                Err(error) => {
+                    log_event(&format!(
+                        "failed to register watchdog control handler: {error}"
+                    ));
+                    return;
+                }
+            };
 
         if let Err(error) = status_handle.set_service_status(ServiceStatus {
             service_type: ServiceType::OWN_PROCESS,
@@ -211,7 +232,9 @@ mod windows_impl {
             wait_hint: Duration::ZERO,
             process_id: None,
         }) {
-            log_event(&format!("failed to report watchdog SERVICE_RUNNING: {error}"));
+            log_event(&format!(
+                "failed to report watchdog SERVICE_RUNNING: {error}"
+            ));
             return;
         }
 
@@ -225,10 +248,7 @@ mod windows_impl {
             }
         };
 
-        let outcome = runtime.block_on(run_watchdog(
-            Arc::clone(&stop_requested),
-            shared_health,
-        ));
+        let outcome = runtime.block_on(run_watchdog(Arc::clone(&stop_requested), shared_health));
         match outcome {
             Ok(()) => {
                 log_event("watchdog stopped");
@@ -330,12 +350,7 @@ mod windows_impl {
                         context.transition(WatchdogState::Starting { process_id: None });
                         continue;
                     };
-                    handle_running_engine(
-                        &mut context,
-                        &snapshot,
-                        process_id,
-                        now,
-                    )?;
+                    handle_running_engine(&mut context, &snapshot, process_id, now)?;
                 }
                 ServiceState::Paused => {
                     context.transition(WatchdogState::Unhealthy {
@@ -401,9 +416,10 @@ mod windows_impl {
         let heartbeat_is_fresh = snapshot.client_process_id == Some(process_id)
             && snapshot.engine_instance_id.is_some()
             && snapshot.consecutive_failures < HEARTBEAT_FAILURE_THRESHOLD
-            && snapshot
-                .last_success
-                .is_some_and(|last_success| now.duration_since(last_success) <= HEARTBEAT_INTERVAL + HEARTBEAT_TIMEOUT + Duration::from_secs(1));
+            && snapshot.last_success.is_some_and(|last_success| {
+                now.duration_since(last_success)
+                    <= HEARTBEAT_INTERVAL + HEARTBEAT_TIMEOUT + Duration::from_secs(1)
+            });
 
         if heartbeat_is_fresh {
             let Some(instance_id) = snapshot.engine_instance_id else {
@@ -444,9 +460,12 @@ mod windows_impl {
             "engine declared hung after {failures} heartbeat failures; verifying SCM PID {process_id}"
         ));
         terminate_verified_engine_process(process_id)?;
-        log_event(&format!("verified engine PID {process_id} terminated; SCM recovery will run"));
+        log_event(&format!(
+            "verified engine PID {process_id} terminated; SCM recovery will run"
+        ));
         context.note_recovery_attempt(now);
-        context.next_recovery_at = now + SCM_RECOVERY_GRACE.max(recovery_delay(context.recovery_failures));
+        context.next_recovery_at =
+            now + SCM_RECOVERY_GRACE.max(recovery_delay(context.recovery_failures));
         context.transition(WatchdogState::Recovering {
             process_id: Some(process_id),
             attempt: context.recovery_failures,
@@ -458,46 +477,37 @@ mod windows_impl {
         shared_health: Arc<Mutex<HeartbeatSnapshot>>,
         stop_requested: Arc<AtomicBool>,
     ) -> Result<()> {
-        // ConvertStringSecurityDescriptorToSecurityDescriptor allocates this
-        // descriptor. We retain the one descriptor for the lifetime of the
-        // watchdog process so every recreated pipe instance uses the same
-        // SYSTEM-only ACL; process exit releases it with the process heap.
-        let mut security_attributes = pipe_security_attributes()?;
+        // Only LocalSystem can connect. A PID comparison against SCM is also
+        // mandatory; pipe access and remoc are not proof of engine identity.
+        let sddl = U16CString::from_str("D:P(A;;GA;;;SY)")
+            .wrap_err("invalid watchdog pipe security descriptor text")?;
+        let descriptor = SecurityDescriptor::deserialize(&sddl)
+            .wrap_err("failed to build watchdog pipe security descriptor")?;
+        let listener = PipeListenerOptions::new()
+            .path(WATCHDOG_PIPE_NAME)
+            .accept_remote(false)
+            .security_descriptor(Some(descriptor))
+            .create_tokio_duplex::<pipe_mode::Bytes>()
+            .wrap_err("failed to create restricted watchdog named pipe")?;
 
         loop {
             if stop_requested.load(Ordering::Acquire) {
                 return Ok(());
             }
-
-            let server = unsafe {
-                // SAFETY: `security_attributes` is initialized from a valid SDDL
-                // descriptor and outlives this CreateNamedPipe call and every
-                // pipe handle created from it.
-                ServerOptions::new()
-                    .first_pipe_instance(true)
-                    .reject_remote_clients(true)
-                    .create_with_security_attributes_raw(
-                        WATCHDOG_PIPE_NAME,
-                        (&mut security_attributes as *mut SECURITY_ATTRIBUTES).cast(),
-                    )
-            }
-            .wrap_err("failed to create restricted watchdog named pipe")?;
-
-            tokio::select! {
-                connect_result = server.connect() => {
-                    connect_result.wrap_err("failed accepting watchdog pipe client")?;
-                }
+            let server = tokio::select! {
+                connected = listener.accept() =>
+                    connected.wrap_err("failed accepting watchdog pipe client")?,
                 _ = wait_for_stop(Arc::clone(&stop_requested)) => return Ok(()),
-            }
-
-            let client_process_id = named_pipe_client_process_id(&server)?;
+            };
+            let client_process_id = server
+                .client_process_id()
+                .wrap_err("failed to get watchdog pipe client PID")?;
             if current_engine_process_id()? != Some(client_process_id) {
                 log_event(&format!(
                     "rejected watchdog pipe client PID {client_process_id}: not current SCM-owned AceEngine PID"
                 ));
                 continue;
             }
-
             if let Err(error) = serve_engine_connection(
                 server,
                 client_process_id,
@@ -513,95 +523,90 @@ mod windows_impl {
     }
 
     async fn serve_engine_connection(
-        server: NamedPipeServer,
+        server: DuplexPipeStream<pipe_mode::Bytes>,
         client_process_id: u32,
         shared_health: &Arc<Mutex<HeartbeatSnapshot>>,
         stop_requested: Arc<AtomicBool>,
     ) -> Result<()> {
-        let (read_half, mut write_half) = tokio::io::split(server);
-        let mut lines = BufReader::new(read_half).lines();
-
-        let hello_line = time::timeout(PIPE_HELLO_TIMEOUT, lines.next_line())
+        let (read_half, write_half) = tokio::io::split(server);
+        let (connection, mut writer, mut reader): (
+            _,
+            Sender<WatchdogToEngine>,
+            Receiver<EngineToWatchdog>,
+        ) = remoc::Connect::io(remoc::Cfg::default(), read_half, write_half)
             .await
-            .wrap_err("timed out waiting for engine watchdog hello")?
-            .wrap_err("failed reading engine watchdog hello")?
-            .ok_or_else(|| eyre!("engine closed watchdog pipe before hello"))?;
-        let hello: EngineToWatchdog = serde_json::from_str(&hello_line)
-            .wrap_err("invalid engine watchdog hello message")?;
-        let engine_instance_id = match hello {
-            EngineToWatchdog::Hello { engine_instance_id } => engine_instance_id,
-            _ => return Err(eyre!("first watchdog pipe message was not hello")),
-        };
+            .wrap_err("failed to establish watchdog remoc session")?;
+        let connection_task = tokio::spawn(connection);
 
-        if current_engine_process_id()? != Some(client_process_id) {
-            return Err(eyre!("AceEngine SCM PID changed during watchdog handshake"));
-        }
-        set_connected_engine(shared_health, client_process_id, &engine_instance_id);
-        log_event(&format!(
-            "engine heartbeat connected: SCM PID {client_process_id}, instance {engine_instance_id}"
-        ));
-
-        let mut sequence = 0_u64;
-        let mut pending_ping: Option<(u64, WatchdogNonce, Instant)> = None;
-        let mut interval = time::interval(HEARTBEAT_INTERVAL);
-        interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
-        interval.tick().await;
-
-        loop {
-            tokio::select! {
-                _ = interval.tick() => {
-                    if let Some((_, _, sent_at)) = &pending_ping
-                        && sent_at.elapsed() >= HEARTBEAT_TIMEOUT
-                    {
-                        note_heartbeat_failure(shared_health);
-                        pending_ping = None;
-                    }
-
-                    sequence = sequence.wrapping_add(1);
-                    let nonce = WatchdogNonce::from(Uuid::new_v4());
-                    write_watchdog_message(
-                        &mut write_half,
-                        &WatchdogToEngine::Ping { sequence, nonce: nonce.clone() },
-                    ).await?;
-                    pending_ping = Some((sequence, nonce, Instant::now()));
-                }
-                line = lines.next_line() => {
-                    let Some(line) = line.wrap_err("failed reading engine heartbeat pipe")? else {
-                        return Err(eyre!("engine closed heartbeat pipe"));
-                    };
-                    let message: EngineToWatchdog = match serde_json::from_str(&line) {
-                        Ok(message) => message,
-                        Err(error) => {
-                            log_event(&format!("ignored malformed engine heartbeat message: {error}"));
-                            continue;
-                        }
-                    };
-                    handle_engine_message(
-                        message,
-                        client_process_id,
-                        &engine_instance_id,
-                        &mut pending_ping,
-                        shared_health,
-                        &mut write_half,
-                    ).await?;
-                }
-                _ = wait_for_stop(Arc::clone(&stop_requested)) => return Ok(()),
+        let outcome = async {
+            let hello = time::timeout(PIPE_HELLO_TIMEOUT, reader.recv())
+                .await
+                .wrap_err("timed out waiting for engine watchdog hello")?
+                .wrap_err("failed reading engine watchdog hello")?
+                .ok_or_else(|| eyre!("engine closed watchdog pipe before hello"))?;
+            let engine_instance_id = match hello {
+                EngineToWatchdog::Hello { engine_instance_id } => engine_instance_id,
+                _ => return Err(eyre!("first watchdog pipe message was not hello")),
+            };
+            if current_engine_process_id()? != Some(client_process_id) {
+                return Err(eyre!("AceEngine SCM PID changed during watchdog handshake"));
             }
-        }
+            set_connected_engine(shared_health, client_process_id, &engine_instance_id);
+            log_event(&format!(
+                "engine heartbeat connected: SCM PID {client_process_id}, instance {engine_instance_id}"
+            ));
+
+            let mut sequence = 0_u64;
+            let mut pending_ping: Option<(u64, WatchdogNonce, Instant)> = None;
+            let mut interval = time::interval(HEARTBEAT_INTERVAL);
+            interval.set_missed_tick_behavior(time::MissedTickBehavior::Delay);
+            interval.tick().await;
+
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        if let Some((_, _, sent_at)) = &pending_ping
+                            && sent_at.elapsed() >= HEARTBEAT_TIMEOUT {
+                            note_heartbeat_failure(shared_health);
+                        }
+                        sequence = sequence.wrapping_add(1);
+                        let nonce = WatchdogNonce::from(Uuid::new_v4());
+                        writer.send(WatchdogToEngine::Ping {
+                            sequence, nonce
+                        }).await.wrap_err("failed to send watchdog ping")?;
+                        pending_ping = Some((sequence, nonce, Instant::now()));
+                    }
+                    received = reader.recv() => {
+                        let message = received
+                            .wrap_err("failed receiving engine heartbeat")?
+                            .ok_or_else(|| eyre!("engine closed heartbeat pipe"))?;
+                        handle_engine_message(
+                            message, client_process_id, &engine_instance_id,
+                            &mut pending_ping, shared_health, &mut writer,
+                        ).await?;
+                    }
+                    _ = wait_for_stop(Arc::clone(&stop_requested)) => return Ok(()),
+                }
+            }
+        }.await;
+        connection_task.abort();
+        outcome
     }
 
-    async fn handle_engine_message<W: AsyncWrite + Unpin>(
+    async fn handle_engine_message(
         message: EngineToWatchdog,
         client_process_id: u32,
         expected_instance_id: &EngineInstanceId,
         pending_ping: &mut Option<(u64, WatchdogNonce, Instant)>,
         shared_health: &Arc<Mutex<HeartbeatSnapshot>>,
-        writer: &mut W,
+        writer: &mut Sender<WatchdogToEngine>,
     ) -> Result<()> {
         match message {
             EngineToWatchdog::Hello { engine_instance_id } => {
                 if engine_instance_id != *expected_instance_id {
-                    return Err(eyre!("engine instance identity changed on an existing pipe"));
+                    return Err(eyre!(
+                        "engine instance identity changed on an existing pipe"
+                    ));
                 }
             }
             EngineToWatchdog::Pong {
@@ -609,11 +614,12 @@ mod windows_impl {
                 nonce,
                 engine_instance_id,
             } => {
-                let matches_challenge = pending_ping
-                    .as_ref()
-                    .is_some_and(|(expected_sequence, expected_nonce, _)| {
-                        *expected_sequence == sequence && *expected_nonce == nonce
-                    });
+                let matches_challenge =
+                    pending_ping
+                        .as_ref()
+                        .is_some_and(|(expected_sequence, expected_nonce, _)| {
+                            *expected_sequence == sequence && *expected_nonce == nonce
+                        });
                 if engine_instance_id != *expected_instance_id || !matches_challenge {
                     log_event("ignored heartbeat pong with mismatched instance/challenge");
                     return Ok(());
@@ -629,16 +635,15 @@ mod windows_impl {
                 if engine_instance_id != *expected_instance_id
                     || current_engine_process_id()? != Some(client_process_id)
                 {
-                    write_watchdog_message(
-                        writer,
-                        &WatchdogToEngine::MaintenanceRejected {
-                            reason: "engine identity no longer matches SCM service instance".to_string(),
-                        },
-                    )
-                    .await?;
+                    writer
+                        .send(WatchdogToEngine::MaintenanceRejected {
+                            reason: "engine identity no longer matches SCM service instance"
+                                .to_string(),
+                        })
+                        .await
+                        .wrap_err("failed to reject watchdog maintenance")?;
                     return Ok(());
                 }
-
                 let requested = Duration::from_millis(ttl_ms);
                 let ttl = clamp_maintenance_ttl(requested);
                 let until = Instant::now() + ttl;
@@ -650,49 +655,15 @@ mod windows_impl {
                     "maintenance window opened for {} seconds ({reason:?})",
                     ttl.as_secs()
                 ));
-                write_watchdog_message(
-                    writer,
-                    &WatchdogToEngine::MaintenanceAccepted {
+                writer
+                    .send(WatchdogToEngine::MaintenanceAccepted {
                         ttl_ms: u64::try_from(ttl.as_millis()).unwrap_or(u64::MAX),
-                    },
-                )
-                .await?;
+                    })
+                    .await
+                    .wrap_err("failed to acknowledge watchdog maintenance")?;
             }
         }
         Ok(())
-    }
-
-    fn pipe_security_attributes() -> Result<SECURITY_ATTRIBUTES> {
-        let mut descriptor = PSECURITY_DESCRIPTOR::default();
-        unsafe {
-            // SAFETY: the SDDL literal is valid and `descriptor` is a valid
-            // out-parameter. SYSTEM-only access is sufficient because both
-            // services run as LocalSystem; the pipe also verifies the SCM PID.
-            ConvertStringSecurityDescriptorToSecurityDescriptorW(
-                w!("D:P(A;;GA;;;SY)"),
-                SDDL_REVISION_1,
-                &mut descriptor,
-                None,
-            )
-            .wrap_err("failed to build watchdog pipe security descriptor")?;
-        }
-        Ok(SECURITY_ATTRIBUTES {
-            nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
-            lpSecurityDescriptor: descriptor.0,
-            bInheritHandle: false.into(),
-        })
-    }
-
-    fn named_pipe_client_process_id(server: &NamedPipeServer) -> Result<u32> {
-        let mut process_id = 0_u32;
-        let handle = HANDLE(server.as_raw_handle());
-        unsafe {
-            // SAFETY: the named pipe server owns a live Windows HANDLE for the
-            // duration of this call and `process_id` is a valid out-parameter.
-            GetNamedPipeClientProcessId(handle, &mut process_id)
-                .wrap_err("GetNamedPipeClientProcessId failed")?;
-        }
-        Ok(process_id)
     }
 
     fn query_engine_service() -> Result<Option<EngineServiceStatus>> {
@@ -719,9 +690,12 @@ mod windows_impl {
 
     fn current_engine_process_id() -> Result<Option<u32>> {
         Ok(query_engine_service()?.and_then(|status| {
-            matches!(status.state, ServiceState::Running | ServiceState::StartPending)
-                .then_some(status.process_id)
-                .flatten()
+            matches!(
+                status.state,
+                ServiceState::Running | ServiceState::StartPending
+            )
+            .then_some(status.process_id)
+            .flatten()
         }))
     }
 
@@ -740,7 +714,10 @@ mod windows_impl {
                 let status = service
                     .query_status()
                     .wrap_err("engine start failed and status re-check failed")?;
-                if matches!(status.current_state, ServiceState::Running | ServiceState::StartPending) {
+                if matches!(
+                    status.current_state,
+                    ServiceState::Running | ServiceState::StartPending
+                ) {
                     Ok(())
                 } else {
                     Err(error).wrap_err("StartService(AceEngine) failed")
@@ -826,10 +803,7 @@ mod windows_impl {
         health.consecutive_failures = 0;
     }
 
-    fn expire_maintenance_if_needed(
-        shared_health: &Arc<Mutex<HeartbeatSnapshot>>,
-        now: Instant,
-    ) {
+    fn expire_maintenance_if_needed(shared_health: &Arc<Mutex<HeartbeatSnapshot>>, now: Instant) {
         let mut health = lock_health(shared_health);
         if health.maintenance_until.is_some_and(|until| now >= until) {
             health.maintenance_until = None;
@@ -844,20 +818,6 @@ mod windows_impl {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         }
-    }
-
-    async fn write_watchdog_message<W: AsyncWrite + Unpin>(
-        writer: &mut W,
-        message: &WatchdogToEngine,
-    ) -> Result<()> {
-        let mut encoded = serde_json::to_vec(message).wrap_err("failed to encode watchdog protocol message")?;
-        encoded.push(b'\n');
-        writer
-            .write_all(&encoded)
-            .await
-            .wrap_err("failed writing watchdog pipe")?;
-        writer.flush().await.wrap_err("failed flushing watchdog pipe")?;
-        Ok(())
     }
 
     async fn wait_for_stop(stop_requested: Arc<AtomicBool>) {

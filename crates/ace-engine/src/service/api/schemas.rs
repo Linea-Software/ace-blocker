@@ -3,11 +3,10 @@ pub use crate::core::{UserDefinedRule, UserDefinedRuleType};
 pub use crate::manager::resistance::{PunishmentIntensity, PunishmentMode};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use utoipa::{IntoParams, ToSchema};
 
 // --- network_list.rs ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkBlockSchema {
     pub id: uuid::Uuid,
@@ -20,32 +19,32 @@ pub struct NetworkBlockSchema {
     pub icon: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetAllNetworkBlocksResponse {
     pub network_blocks: Vec<NetworkBlockSchema>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateNetworkBlockRequest {
     pub block_name: String,
     pub icon: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetIconRequest {
     pub icon: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateNetworkBlockResponse {
     pub network_block: NetworkBlockSchema,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct RenameNetworkBlockRequest {
     pub new_name: String,
@@ -53,7 +52,7 @@ pub struct RenameNetworkBlockRequest {
 
 // --- sites_list.rs ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SitePackSchema {
     pub id: String,
@@ -79,13 +78,13 @@ pub struct SitePackSchema {
     pub is_locked: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetAllSitePacksResponse {
     pub site_packs: Vec<SitePackSchema>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BaseSitePackSourceSchema {
     pub source: String,
@@ -93,7 +92,7 @@ pub struct BaseSitePackSourceSchema {
     pub format: SitePackFormat,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateSitePackRequest {
     pub name: String,
@@ -103,7 +102,7 @@ pub struct CreateSitePackRequest {
     pub sources: Vec<BaseSitePackSourceSchema>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SitePackSourceSchema {
     pub id: String,
@@ -113,13 +112,13 @@ pub struct SitePackSourceSchema {
     pub format: SitePackFormat,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetSitePackSourcesResponse {
     pub sources: Vec<SitePackSourceSchema>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddSitePackSourceRequest {
     pub source: String,
@@ -127,7 +126,7 @@ pub struct AddSitePackSourceRequest {
     pub format: SitePackFormat,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddSitePackSourceResponse {
     pub source: SitePackSourceSchema,
@@ -135,7 +134,7 @@ pub struct AddSitePackSourceResponse {
 
 // --- user_rules.rs ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UserDefinedRuleSchema {
     pub id: uuid::Uuid,
@@ -144,25 +143,25 @@ pub struct UserDefinedRuleSchema {
     pub rule_type: UserDefinedRuleType,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetUserDefinedRulesResponse {
     pub user_defined_rules: Vec<UserDefinedRuleSchema>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddUserDefinedRulesRequest {
     pub rules: Vec<UserDefinedRule>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddUserDefinedRulesResponse {
     pub user_defined_rules: Vec<UserDefinedRuleSchema>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteUserRuleRequest {
     pub rule_id: uuid::Uuid,
@@ -170,7 +169,7 @@ pub struct DeleteUserRuleRequest {
 
 // --- exceptions.rs ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Exception {
     pub id: uuid::Uuid,
@@ -178,25 +177,25 @@ pub struct Exception {
     pub network_block_id: uuid::Uuid,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetExceptionsResponse {
     pub exceptions: Vec<Exception>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddExceptionsRequest {
     pub exceptions: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddExceptionsResponse {
     pub exceptions: Vec<Exception>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DeleteExceptionRequest {
     pub exception_id: uuid::Uuid,
@@ -205,7 +204,7 @@ pub struct DeleteExceptionRequest {
 // --- schedule.rs ---
 
 /// Represents the data of a ScheduleEntry without the ID
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BaseScheduleEntrySchema {
     pub start_time: chrono::NaiveTime,
@@ -219,7 +218,7 @@ pub struct BaseScheduleEntrySchema {
     pub sunday: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ScheduleEntrySchema {
     pub id: uuid::Uuid,
@@ -235,13 +234,13 @@ pub struct ScheduleEntrySchema {
     pub sunday: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetScheduleEntriesResponse {
     pub schedule_entries: Vec<ScheduleEntrySchema>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddScheduleEntriesRequest {
     pub schedule_entries: Vec<BaseScheduleEntrySchema>,
@@ -249,7 +248,7 @@ pub struct AddScheduleEntriesRequest {
 
 // --- lock.rs ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkListLockSchema {
     pub network_block_id: uuid::Uuid,
@@ -258,20 +257,20 @@ pub struct NetworkListLockSchema {
     pub lock_end: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetNetworkLockResponse {
     pub lock: NetworkListLockSchema,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetNetworkLockRequest {
     pub lock_state: String,
     pub lock_end: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetNetworkLockResponse {
     pub lock: NetworkListLockSchema,
@@ -279,26 +278,26 @@ pub struct SetNetworkLockResponse {
 
 // --- connection.rs ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkBlockToSitePackConnection {
     pub network_block_id: uuid::Uuid,
     pub site_pack_id: String,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetNetListToSitePacksResponse {
     pub connections: Vec<NetworkBlockToSitePackConnection>,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddNetListToSitePackRequest {
     pub sites_list_id: String,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AddNetListToSitePackResponse {
     pub connection: NetworkBlockToSitePackConnection,
@@ -315,7 +314,7 @@ pub struct AddNetListToSitePackResponse {
 /// `scripts_invalid` > `no_scripts_enabled` > `intensity_none`.
 pub use crate::manager::network::resistance_mode::EnforcementStatus;
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct ResistanceModeSettings {
     pub enabled: bool,
@@ -342,7 +341,7 @@ pub struct ResistanceModeSettings {
     pub enforcement_status: EnforcementStatus,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ScriptInfo {
     pub id: String,
@@ -352,13 +351,13 @@ pub struct ScriptInfo {
     pub is_enabled: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetEnabledRequest {
     pub enabled: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct GetAllScriptsResponse {
     pub scripts: Vec<ScriptInfo>,
@@ -366,27 +365,27 @@ pub struct GetAllScriptsResponse {
 
 // --- resistance mode type ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ResistanceModeTypeResponse {
     pub mode: PunishmentMode,
     pub current_intensity: PunishmentIntensity,
 }
 
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiDocError {
     pub error: String,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema)]
+#[derive(Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AccountInfoResponse {
     pub is_pro: bool,
     pub tos_accepted: bool,
 }
 
-#[derive(Deserialize, IntoParams, ToSchema)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SetApiKeyRequest {
     pub api_key: String,
@@ -398,7 +397,7 @@ pub use crate::manager::network::backup::{
 };
 pub type EngineBackupSchema = EngineBackup;
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct LockState {
     pub state: String,
@@ -458,7 +457,10 @@ impl TryFrom<crate::db::models::UserDefinedRuleModel> for UserDefinedRuleSchema 
 
     fn try_from(model: crate::db::models::UserDefinedRuleModel) -> Result<Self, Self::Error> {
         Ok(Self {
-            id: model.id.parse().map_err(|error| format!("invalid user rule id: {error}"))?,
+            id: model
+                .id
+                .parse()
+                .map_err(|error| format!("invalid user rule id: {error}"))?,
             network_block_id: model
                 .network_block_id
                 .parse()
@@ -561,7 +563,7 @@ impl NetworkListLockSchema {
 
 // --- System / Update routes ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BinaryUpdateInfo {
     pub current_version: String,
@@ -569,7 +571,7 @@ pub struct BinaryUpdateInfo {
     pub available: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SitePackUpdateEntry {
     pub id: String,
@@ -578,14 +580,14 @@ pub struct SitePackUpdateEntry {
     pub latest_version: String,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ContentUpdateInfo {
     pub site_packs_needing_update: Vec<SitePackUpdateEntry>,
     pub resistance_scripts_need_update: bool,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateCheckResponse {
     pub engine: BinaryUpdateInfo,
@@ -594,7 +596,7 @@ pub struct UpdateCheckResponse {
 
 // --- route_system.rs (version) ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct VersionInfo {
     /// Semantic version of the engine (from Cargo.toml)
@@ -605,7 +607,7 @@ pub struct VersionInfo {
 
 // --- route_unlock.rs ---
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UnlockChallengeInitiateResponse {
     pub challenge_id: uuid::Uuid,
@@ -615,13 +617,13 @@ pub struct UnlockChallengeInitiateResponse {
     pub initiated_at: String,
 }
 
-#[derive(Deserialize, Serialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UnlockChallengeConfirmRequest {
     pub challenge_id: uuid::Uuid,
 }
 
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct UnlockChallengeConfirmResponse {
     pub network_block: NetworkBlockSchema,
@@ -630,7 +632,7 @@ pub struct UnlockChallengeConfirmResponse {
 // --- route_dashboard.rs ---
 
 /// A flattened snapshot of a single network block with all nested data included.
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkBlockSnapshot {
     pub block: NetworkBlockSchema,
@@ -641,7 +643,7 @@ pub struct NetworkBlockSnapshot {
 }
 
 /// Single-call response that returns all data the dashboard needs.
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DashboardSnapshotResponse {
     pub blocks: Vec<NetworkBlockSnapshot>,
@@ -651,7 +653,7 @@ pub struct DashboardSnapshotResponse {
 }
 
 /// Body for the 425 Too Early response — includes how many seconds to wait.
-#[derive(Serialize, Deserialize, JsonSchema, ToSchema, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TooEarlyResponse {
     pub error: String,

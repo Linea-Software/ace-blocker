@@ -1,6 +1,5 @@
 use nutype::nutype;
 use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
-use utoipa::ToSchema;
 
 #[nutype(
     sanitize(with = |val| val.clamp(0.0, 100.0)),
@@ -14,8 +13,7 @@ use utoipa::ToSchema;
         Serialize,
         Deserialize,
         JsonSchema,
-    ),
-    derive_unchecked(ToSchema)
+    )
 )]
 pub struct Percentage(f64);
 

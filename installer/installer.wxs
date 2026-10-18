@@ -339,21 +339,9 @@
       Impersonate="no"
       Return="check" />
 
-    <!-- Graceful engine shutdown BEFORE the lock gate (LIF-01): the engine
-         refuses SCM STOP by design (sc stop / Task Manager fail) and shuts
-         down only via its own API, POST /system/shutdown with the
-         X-Ace-Capability header (token read from capability.token next to
-         port.lock in the engine's ProgramData app-data dir). Without this, a
-         no-lock uninstall leaves the engine process running until reboot.
-
-         Best-effort by contract: if the engine is already stopped/unreachable
-         there is nothing to shut down, and a failure must never fail the
-         uninstall - so Return="ignore". If a lock IS active the engine itself
-         answers HTTP 423 (refuses shutdown) and CA_CheckLocks aborts the
-         uninstall right after, so no state changes. The script logs every
-         outcome to %TEMP%\AceBlocker-uninstall-shutdown.log. Runs as SYSTEM
-         (deferred, impersonate=no) so it can read the SYSTEM-owned ProgramData
-         files; powershell.exe resolves from the system PATH like certutil. -->
+    <!-- Best-effort upgrade shutdown: the SYSTEM-owned Rust binary invokes
+         authenticated remoc shutdown via Windows Named Pipes. Active locks
+         still block it; watchdog maintenance must be acknowledged. -->
     <CustomAction
       Id="CA_ShutdownEngine"
       Directory="System64Folder"
@@ -363,7 +351,7 @@
       Return="ignore" />
 
     <!-- Strict uninstall/upgrade shutdown action. The script exits non-zero on
-         HTTP 423, missing capability/port state, watchdog-maintenance failure,
+         locked RPC refusal, missing capability, watchdog-maintenance failure,
          or any other inability to confirm a graceful shutdown. -->
     <CustomAction
       Id="CA_PrepareEngineMaintenance"

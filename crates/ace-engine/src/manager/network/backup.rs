@@ -1,9 +1,8 @@
 use super::{NetworkManager, error::NetworkManagerOpErr};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
-#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, ToSchema, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BackupSitePackSource {
     pub source: String,
@@ -11,7 +10,7 @@ pub struct BackupSitePackSource {
     pub format: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, ToSchema, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BackupSitePack {
     /// The pack's local row id. For built-in/default and updater-registered
@@ -30,7 +29,7 @@ pub struct BackupSitePack {
     pub sources: Vec<BackupSitePackSource>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, ToSchema, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BackupScheduleEntry {
     pub start_time: String,
@@ -48,7 +47,7 @@ fn default_enabled() -> bool {
     true
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, ToSchema, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BackupNetworkBlock {
     pub id: uuid::Uuid,
@@ -62,7 +61,7 @@ pub struct BackupNetworkBlock {
     pub connected_site_packs: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, ToSchema, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct EngineBackup {
     pub version: String,

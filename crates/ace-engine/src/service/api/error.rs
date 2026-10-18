@@ -1,18 +1,10 @@
 use crate::manager::NetworkManagerOpErr;
-use axum::{
-    Json,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-};
-use serde_json::json;
 use thiserror::Error;
 
 /// Error envelope contract.
 ///
-/// Every error response has the shape `{"error": "<human message>", "code": "<stable code>"}`.
-/// `code` is machine-readable and stable across versions; the app must switch on
-/// `code`, never on the message text. Codes are documented in
-/// `docs/error-policies.md` and `docs/openapi.json`.
+/// Failed remoc RPC operations return `RpcError` containing numeric `status`,
+/// stable `code` and human-readable `error`. Callers must branch on the code.
 #[derive(Error, Debug)]
 pub enum ApiError {
     #[error("Not found: {0}")]
@@ -79,27 +71,27 @@ impl ApiError {
         }
     }
 
-    fn status(&self) -> StatusCode {
+    pub(crate) fn status(&self) -> u16 {
         match self {
-            ApiError::NotFound(_) => StatusCode::NOT_FOUND,
-            ApiError::Forbidden(_) => StatusCode::FORBIDDEN,
-            ApiError::Conflict(_) => StatusCode::CONFLICT,
-            ApiError::BadRequest(_) => StatusCode::BAD_REQUEST,
-            ApiError::ProPlanRequired => StatusCode::FORBIDDEN,
-            ApiError::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            ApiError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
-            ApiError::Locked(_) => StatusCode::LOCKED,
-            ApiError::ResistanceLocked(_) => StatusCode::FORBIDDEN,
-            ApiError::UnsupportedLockState(_) => StatusCode::BAD_REQUEST,
-            ApiError::ProStatusCheckFailed(_) => StatusCode::FORBIDDEN,
-            ApiError::ScriptsUnavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
-            ApiError::ScriptDownloadFailed(_) => StatusCode::BAD_GATEWAY,
-            ApiError::InvalidRequestBody(_) => StatusCode::BAD_REQUEST,
-            ApiError::CapabilityRequired(_) => StatusCode::UNAUTHORIZED,
+            ApiError::NotFound(_) => 404,
+            ApiError::Forbidden(_) => 403,
+            ApiError::Conflict(_) => 409,
+            ApiError::BadRequest(_) => 400,
+            ApiError::ProPlanRequired => 403,
+            ApiError::Internal(_) => 500,
+            ApiError::Unauthorized(_) => 401,
+            ApiError::Locked(_) => 423,
+            ApiError::ResistanceLocked(_) => 403,
+            ApiError::UnsupportedLockState(_) => 400,
+            ApiError::ProStatusCheckFailed(_) => 403,
+            ApiError::ScriptsUnavailable(_) => 503,
+            ApiError::ScriptDownloadFailed(_) => 502,
+            ApiError::InvalidRequestBody(_) => 400,
+            ApiError::CapabilityRequired(_) => 401,
         }
     }
 
-    fn message(&self) -> String {
+    pub(crate) fn message(&self) -> String {
         match self {
             ApiError::NotFound(msg) => msg.clone(),
             ApiError::Forbidden(msg) => msg.clone(),
@@ -116,56 +108,6 @@ impl ApiError {
             ApiError::ScriptDownloadFailed(msg) => msg.clone(),
             ApiError::InvalidRequestBody(msg) => msg.clone(),
             ApiError::CapabilityRequired(msg) => msg.clone(),
-        }
-    }
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let status = self.status();
-        let code = self.code();
-        let message = self.message();
-
-        let body = Json(json!({
-            "error": message,
-            "code": code
-        }));
-
-        (status, body).into_response()
-    }
-}
-
-/// Converts JSON body extraction rejections (malformed JSON, wrong types,
-/// missing fields) into the standard error envelope with code
-/// `invalid_request_body`. Used via the [`ValidatedJson`] extractor on
-/// handlers that take JSON bodies.
-impl From<axum::extract::rejection::JsonRejection> for ApiError {
-    fn from(rejection: axum::extract::rejection::JsonRejection) -> Self {
-        ApiError::InvalidRequestBody(rejection.body_text())
-    }
-}
-
-/// JSON body extractor that maps parse failures to the standard
-/// machine-readable error envelope (`code: invalid_request_body`) instead of
-/// axum's plain-text 400.
-pub struct ValidatedJson<T>(pub T);
-
-impl<S, T> axum::extract::FromRequest<S> for ValidatedJson<T>
-where
-    S: Send + Sync,
-    T: serde::de::DeserializeOwned,
-    axum::Json<T>:
-        axum::extract::FromRequest<S, Rejection = axum::extract::rejection::JsonRejection>,
-{
-    type Rejection = ApiError;
-
-    async fn from_request(
-        request: axum::extract::Request,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        match axum::Json::<T>::from_request(request, state).await {
-            Ok(value) => Ok(ValidatedJson(value.0)),
-            Err(rejection) => Err(ApiError::InvalidRequestBody(rejection.body_text())),
         }
     }
 }

@@ -1,7 +1,6 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
-use utoipa::ToSchema;
 
 /// Represents the resistance intensity levels.
 #[derive(
@@ -9,7 +8,6 @@ use utoipa::ToSchema;
     Serialize,
     Deserialize,
     JsonSchema,
-    ToSchema,
     Clone,
     Copy,
     PartialEq,
@@ -34,7 +32,7 @@ pub enum PunishmentIntensity {
 /// The intensity scale is a static, user-configured level. There is no
 /// automatic escalation/de-escalation ladder: the dynamic mode (and the whole
 /// tracking pipeline that fed it) has been removed (MGR-24).
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, ToSchema, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, JsonSchema, PartialEq)]
 #[serde(rename_all = "lowercase", tag = "type")]
 pub enum PunishmentMode {
     Static {

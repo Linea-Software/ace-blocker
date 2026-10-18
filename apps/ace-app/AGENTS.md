@@ -16,7 +16,7 @@ This is a **Tauri + SvelteKit** application. The project serves as a UI wrapper 
 
 - `src/` — **Frontend (SvelteKit)**
     - `lib/` — Shared logic, components, and utilities. USE $lib TO ACCESS IT, NO RELATIVE IMPORTS FOR THIS ONE.
-        - `engine-client/` — API client and generated SDK/types for Ace Engine. USE $engine-client/ TO ACCESS IT. This folder is **committed to git**; regenerate it with `bun run gen:api` (reads the committed `ace-engine/docs/openapi.json`, `--live` for a running engine).
+        - `engine-client/` — stable TypeScript facade for the typed remoc RPC methods; the Tauri Rust backend owns the transport. Do not regenerate an OpenAPI/HTTP client.
         - `components/` — Application-specific components.
             - `ui/` — Legacy Shadcn Svelte base components. During the approved UI rebuild, do not expand this folder by default just to obtain generic styling; prefer Ace-owned components over headless primitives.
         - `stores/` — Svelte stores for state management.
@@ -54,7 +54,7 @@ This is a **Tauri + SvelteKit** application. The project serves as a UI wrapper 
 - **Runtime**: Bun
 - **Backend Wrapper**: Tauri 2 (Rust)
 - **i18n**: Paraglide JS
-- **API Client**: Fetch-based client generated via `@hey-api`
+- **Engine client**: Typed remoc RPC through the Tauri backend; no local REST/HTTP client.
 
 ## UI Identity / Rebuild Direction
 
@@ -111,16 +111,12 @@ Most tasks occur within `./src` (Frontend). The Rust backend (`src-tauri`) is pr
 
 ## Ace Engine Access
 
-The frontend interacts with the Ace Engine backend via a local REST API. The listening port for this API is dynamic in production but defaults to `10567` in development.
-
-- **Accessing the Port**: Use the `getEnginePort()` utility from `$lib/engine` to retrieve the correct port. This utility calls the Tauri `get_engine_port` command.
-- **API Documentation**: As long as the engine is running, you can find the REST API documentation at `https://127.0.0.1:<port>/api-docs/openapi.json` or the Swagger UI at `https://127.0.0.1:<port>/swagger-ui/`.
-- **SDK Configuration**: Always initialize the `@hey-api` client with the dynamic base URL: `client.setConfig({ baseUrl: "https://127.0.0.1:" + port })`.
-- **Error Handling**: The methods generated in `$engine-client` **DO NOT** throw errors on failed requests. Instead, they return a response object containing an `error` property OR a `data` property.
-    - **Standard Pattern**: `const { data, error } = await someEngineMethod();`. Check `if (error)` immediately to handle failures.
-    - **SSE Streams Pattern**: Methods like `resyncSitesList` return a `stream`. Check `if (!stream)` for initial failures. Inside the stream loop, check for `FAILED` status and handle it: `if ('FAILED' in status) throw new Error(status.FAILED.error);`.
-    - **Delta Patterns**: Methods in `$lib/deltas` (e.g., `pushChangesToServer`) have been refactored to check internal API responses and **THROW** if any partial operation fails. Always wrap calls to delta push methods in `try/catch` and notify user via toast.
-    - **User Feedback**: ALWAYS use `toast.error(m.snake_case())` from `svelte-sonner` to inform the user of API failures. Never swallow errors silently.
+The frontend uses src/lib/engine-client as its stable interface. Its Tauri
+backend calls typed remoc RPC over a local named pipe. There is no local
+REST server, Swagger/OpenAPI generator, API port or HTTP fallback.
+Read the root docs/IPC_ARCHITECTURE.md before changing IPC or authorization.
+Preserve lock policy checks, handle error/data responses and streaming statuses,
+and localize user-visible errors.
 
 ## Localization (Paraglide JS)
 
@@ -136,15 +132,14 @@ The frontend interacts with the Ace Engine backend via a local REST API. The lis
 
 ### Engine Docs Reference
 
-- **Always read** `docs/engine-docs.md` and `docs/engine-rest-api.md` before performing tasks involving the engine.
+- **Always read** `docs/engine-docs.md` and `docs/IPC_ARCHITECTURE.md` before performing tasks involving the engine.
 - The **boredom-engine** (at `../boredom-engine/`) provides the resistance scripts that ace-engine injects into blocked sites.
 
 ## Scripts
 
 Use `bun run <script>` for these tasks:
 
-- `dev`: Generates the API client and starts the Vite development server.
-- `gen:api`: Manually triggers API client generation from the OpenAPI spec.
+- dev: Starts Vite; actual engine RPC requires Tauri.
 - `clear-cache`: Runs a utility script to clear application/build cache.
 - `tauri`: Accesses the Tauri CLI (e.g., `bun run tauri dev`).
 - `check`: Runs Svelte-check for type safety and linting.
@@ -201,7 +196,7 @@ Before performing ANY task related to the technologies below, you MUST read the 
 | Paraglide JS | [llms.txt](https://inlang.com/g/6d900h6s/paraglide-js) | Localization framework for i18n.
 | Lucide Svelte | [llms.txt](https://lucide.dev/guide/packages/lucide-svelte) | Icon library. Use `@lucide/svelte` (NOT the deprecated `lucide-svelte`).
 | Tauri | [llms.txt](https://tauri.app/llms.txt) | Desktop wrapper, IPC commands, and native APIs.
-| Hey API | [llms.txt](https://heyapi.dev/llms.txt) | Type-safe API client generation from OpenAPI spec.
+| Engine IPC | [architecture](../../docs/IPC_ARCHITECTURE.md) | Typed remoc trait, Tauri bridge and frontend RPC facade. |
 | Zod | [llms.txt](https://zod.dev/llms.txt) | Schema validation and type safety.
 | BitsUI | [llms.txt](https://www.bits-ui.com/llms.txt) | Headless component library for Svelte.
 

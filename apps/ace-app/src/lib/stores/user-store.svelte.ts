@@ -3,7 +3,6 @@ import {
     refreshAccount,
     type AccountInfoResponse,
 } from "$engine-client";
-import { engineStore } from "$lib/stores/engine.svelte";
 
 const USER_FETCH_INTERVAL_MS = 30_000;
 /**
@@ -87,7 +86,6 @@ class UserStore {
         await this.withCoalescing(async () => {
             try {
                 const { data, error } = await refreshAccount({
-                    baseUrl: this.engineBaseUrl(),
                 });
                 if (error) {
                     // Keep the last known-good entitlement; the periodic
@@ -127,7 +125,6 @@ class UserStore {
         await this.withCoalescing(async () => {
             try {
                 const { data, error } = await getAccountInfo({
-                    baseUrl: this.engineBaseUrl(),
                 });
                 if (error) {
                     // Engine reachable but reported an error: keep the last
@@ -151,10 +148,6 @@ class UserStore {
                 console.error("Failed to fetch userStore info:", error);
             }
         });
-    }
-
-    private engineBaseUrl(): string {
-        return `https://127.0.0.1:${engineStore.port}`;
     }
 
     private transientRetryTimer: ReturnType<typeof setTimeout> | null = null;

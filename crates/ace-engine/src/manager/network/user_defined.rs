@@ -220,7 +220,7 @@ mod tests {
         assert!(saved.iter().any(|error| error.rule == "example.com"));
         assert!(saved.iter().any(|error| error.rule == "test.org"));
 
-        let uri = "http://example.com".parse::<axum::http::Uri>().unwrap();
+        let uri = "http://example.com".parse::<http::Uri>().unwrap();
 
         let schedule_entries = vec![
             ScheduleEntry::from(
