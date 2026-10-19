@@ -28,10 +28,14 @@ services; the Tauri frontend runs as an unprivileged user-session process.
 ### Authorization
 
 Windows pipe DACL: LocalSystem full access and authenticated local users
-read/write only; no remote clients and no ordinary-user create-instance
-permission. **Pipe access is not authorization**: every modifying RPC verifies
-the installation capability before entering the existing handler. A successful
-handshake must never be treated as proof the client is the genuine Ace App.
+read/write only; no remote clients. Only the pipe owner receives the additional
+create-instance permission needed by `interprocess` to accept subsequent
+connections. In production, the LocalSystem service owns the pipe; a manual
+user-mode launch can likewise accept connections without granting this right
+to other authenticated users. **Pipe access is not authorization**: every
+modifying RPC verifies the installation capability before entering the existing
+handler. A successful handshake must never be treated as proof the client is
+the genuine Ace App.
 The current install-level token defends against arbitrary WebView requests,
 but it does **not** cryptographically attest executable identity: another
 user-session process that obtains that token could impersonate the application.

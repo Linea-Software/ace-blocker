@@ -1,6 +1,6 @@
 //! Shared local control transport. Remoc performs RPC/framing over OS streams.
-//! Named pipe DACL denies remote clients and prevents unprivileged users from
-//! creating additional pipe instances; per-method capabilities authorize writes.
+//! Named pipe DACL denies remote clients and reserves new pipe instances for
+//! the pipe owner (LocalSystem in production); RPC capabilities authorize writes.
 use super::AppState;
 use super::rpc::{EngineControlClient, EngineControlServerShared, EngineRpc};
 use eyre::{Context, Result};
@@ -14,20 +14,25 @@ pub const ENGINE_PIPE_PATH: &str = r"\\.\pipe\AceBlockerEngineControlV1";
 pub const ENGINE_SOCKET_PATH: &str = "/run/ace-blocker/engine-control.sock";
 
 #[cfg(windows)]
+fn engine_pipe_security()
+-> Result<interprocess::os::windows::security_descriptor::SecurityDescriptor> {
+    use interprocess::os::windows::security_descriptor::SecurityDescriptor;
+
+    // interprocess creates a new server instance on every accept(). Grant
+    // FILE_CREATE_PIPE_INSTANCE (0x4) to the pipe owner, so manual user-mode
+    // launches work without giving that permission to every client. The
+    // production service runs as LocalSystem, which owns the pipe.
+    let sddl = widestring::U16CString::from_str("D:P(A;;GA;;;SY)(A;;0x12019B;;;AU)(A;;0x4;;;OW)")?;
+    SecurityDescriptor::deserialize(&sddl).wrap_err("invalid engine named pipe security")
+}
+
+#[cfg(windows)]
 pub async fn serve(state: AppState) -> Result<()> {
-    use interprocess::os::windows::{
-        named_pipe::{PipeListenerOptions, pipe_mode},
-        security_descriptor::SecurityDescriptor,
-    };
-    // FILE_GENERIC_READ | FILE_GENERIC_WRITE with FILE_CREATE_PIPE_INSTANCE (0x4)
-    // removed. Authentication is still checked for every state-changing RPC.
-    let sddl = widestring::U16CString::from_str("D:P(A;;GA;;;SY)(A;;0x12019B;;;AU)")?;
-    let security =
-        SecurityDescriptor::deserialize(&sddl).wrap_err("invalid engine named pipe security")?;
+    use interprocess::os::windows::named_pipe::{PipeListenerOptions, pipe_mode};
     let listener = PipeListenerOptions::new()
         .path(ENGINE_PIPE_PATH)
         .accept_remote(false)
-        .security_descriptor(Some(security))
+        .security_descriptor(Some(engine_pipe_security()?))
         .create_tokio_duplex::<pipe_mode::Bytes>()
         .wrap_err("engine named pipe listener failed")?;
     tracing::info!("Engine control RPC listening on local named pipe");
@@ -128,4 +133,29 @@ pub async fn connect() -> Result<EngineControlClient> {
 #[cfg(not(any(windows, target_os = "linux")))]
 pub async fn connect() -> Result<EngineControlClient> {
     eyre::bail!("control transport only available on Windows/Linux")
+}
+
+#[cfg(all(windows, test))]
+mod windows_tests {
+    use super::engine_pipe_security;
+    use interprocess::os::windows::named_pipe::{
+        PipeListenerOptions, pipe_mode, tokio::DuplexPipeStream,
+    };
+    use std::time::Duration;
+
+    #[tokio::test]
+    async fn pipe_owner_can_accept_and_create_next_instance() -> eyre::Result<()> {
+        let path = format!(r"\\.\pipe\AceEngineAclTest-{}", uuid::Uuid::new_v4());
+        let listener = PipeListenerOptions::new()
+            .path(path.as_str())
+            .accept_remote(false)
+            .security_descriptor(Some(engine_pipe_security()?))
+            .create_tokio_duplex::<pipe_mode::Bytes>()?;
+
+        let client = DuplexPipeStream::<pipe_mode::Bytes>::connect_by_path(path.as_str()).await?;
+        // accept() creates the next instance before returning the connection.
+        let server = tokio::time::timeout(Duration::from_secs(5), listener.accept()).await??;
+        drop((client, server));
+        Ok(())
+    }
 }
