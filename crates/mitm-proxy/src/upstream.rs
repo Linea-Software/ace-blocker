@@ -34,6 +34,10 @@ type BoxError = Box<dyn Error + Send + Sync>;
 type UpstreamBody = UnsyncBoxBody<Bytes, BoxError>;
 type H2Sender = hyper::client::conn::http2::SendRequest<UpstreamBody>;
 
+// Hold protocol hints and reusable h2 senders for a bounded number of origins.
+// Evicting a slot never aborts already active requests holding sender clones.
+const MAX_CACHED_ORIGINS: usize = 1024;
+
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 struct OriginKey {
     host: String,
@@ -132,10 +136,16 @@ impl Upstream {
             Err(_) => return false,
         };
 
-        self.client_auth_required
+        let mut cache = self
+            .client_auth_required
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .insert(key, required);
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if !cache.contains_key(&key) && cache.len() >= MAX_CACHED_ORIGINS {
+            if let Some(oldest) = cache.keys().next().cloned() {
+                cache.remove(&oldest);
+            }
+        }
+        cache.insert(key, required);
         required
     }
 
@@ -289,6 +299,11 @@ impl Upstream {
             .origins
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if !origins.contains_key(&key) && origins.len() >= MAX_CACHED_ORIGINS {
+            if let Some(oldest) = origins.keys().next().cloned() {
+                origins.remove(&oldest);
+            }
+        }
         origins
             .entry(key)
             .or_insert_with(|| Arc::new(OriginSlot::new()))
@@ -327,13 +342,14 @@ impl Upstream {
         let server_name = ServerName::try_from(host.to_string())
             .map_err(|error| eyre!("invalid upstream server name {host:?}: {error}"))?;
         debug!(authority = %authority, server_name = %host, "starting upstream TLS handshake");
-        let tls = connector
-            .connect(server_name, tcp)
-            .await
-            .map_err(|error| ProxyError::Upstream {
-                authority: authority.to_string(),
-                source: eyre!("tls handshake: {error}"),
-            })?;
+        let tls =
+            connector
+                .connect(server_name, tcp)
+                .await
+                .map_err(|error| ProxyError::Upstream {
+                    authority: authority.to_string(),
+                    source: eyre!("tls handshake: {error}"),
+                })?;
 
         let is_h2 = tls.get_ref().1.alpn_protocol() == Some(b"h2");
         debug!(
@@ -354,12 +370,13 @@ impl Upstream {
         I: hyper::rt::Read + hyper::rt::Write + Send + Unpin + 'static,
     {
         prepare_http1_request(&mut req)?;
-        let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
-            .await
-            .map_err(|error| ProxyError::Upstream {
-                authority: authority.to_string(),
-                source: eyre!("http/1 handshake: {error}"),
-            })?;
+        let (mut sender, conn) =
+            hyper::client::conn::http1::handshake(io)
+                .await
+                .map_err(|error| ProxyError::Upstream {
+                    authority: authority.to_string(),
+                    source: eyre!("http/1 handshake: {error}"),
+                })?;
 
         // `with_upgrades` is required for WebSocket and other HTTP/1.1 protocol
         // switches. Without it, `hyper::upgrade::on(response)` never resolves.
@@ -528,7 +545,8 @@ mod tests {
                         .unwrap();
                     String::from_utf8(wire).unwrap()
                 });
-                let upstream = Upstream::new(crate::tls::client_config(true, crate::tls::TCP_ALPN).unwrap());
+                let upstream =
+                    Upstream::new(crate::tls::client_config(true, crate::tls::TCP_ALPN).unwrap());
                 let request = Request::builder()
                     .uri(format!("https://{authority}/path?query=value"))
                     .version(version)

@@ -6,7 +6,7 @@
 //! signed by the proxy CA. The same resolver instance is shared by the TCP
 //! (HTTP/1.x + h2) and QUIC (HTTP/3) listeners.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 
 use rustls::crypto::ring::sign::any_supported_type;
@@ -20,7 +20,31 @@ use crate::ca::CertAuthority;
 #[derive(Debug)]
 pub struct DynamicCertResolver {
     ca: Arc<CertAuthority>,
-    cache: Mutex<HashMap<String, Arc<CertifiedKey>>>,
+    cache: Mutex<CertificateCache>,
+}
+
+const MAX_CACHED_LEAF_CERTIFICATES: usize = 512;
+
+#[derive(Debug, Default)]
+struct CertificateCache {
+    entries: HashMap<String, Arc<CertifiedKey>>,
+    insertion_order: VecDeque<String>,
+}
+
+impl CertificateCache {
+    fn insert(&mut self, host: String, key: Arc<CertifiedKey>) {
+        if self.entries.contains_key(&host) {
+            self.entries.insert(host, key);
+            return;
+        }
+        if self.entries.len() >= MAX_CACHED_LEAF_CERTIFICATES {
+            if let Some(oldest) = self.insertion_order.pop_front() {
+                self.entries.remove(&oldest);
+            }
+        }
+        self.insertion_order.push_back(host.clone());
+        self.entries.insert(host, key);
+    }
 }
 
 // `CertAuthority` holds an rcgen `Issuer`, which is not `Debug`; provide a
@@ -35,13 +59,13 @@ impl DynamicCertResolver {
     pub fn new(ca: Arc<CertAuthority>) -> Self {
         Self {
             ca,
-            cache: Mutex::new(HashMap::new()),
+            cache: Mutex::new(CertificateCache::default()),
         }
     }
 
     /// Get a cached certified key for `host`, or mint and cache a new one.
     pub(crate) fn certified_key(&self, host: &str) -> Option<Arc<CertifiedKey>> {
-        if let Some(existing) = self.cache.lock().unwrap().get(host) {
+        if let Some(existing) = self.cache.lock().unwrap().entries.get(host) {
             return Some(existing.clone());
         }
 
@@ -73,14 +97,14 @@ impl DynamicCertResolver {
     /// Expose the cache size for testing.
     #[cfg(test)]
     pub(crate) fn cache_len(&self) -> usize {
-        self.cache.lock().unwrap().len()
+        self.cache.lock().unwrap().entries.len()
     }
 
     /// Whether a leaf certificate is cached for `host`. Test-only: used to
     /// assert that tunneled (non-intercepted) hosts never get a cert minted.
     #[cfg(test)]
     pub(crate) fn has_cached_key(&self, host: &str) -> bool {
-        self.cache.lock().unwrap().contains_key(host)
+        self.cache.lock().unwrap().entries.contains_key(host)
     }
 }
 
@@ -171,5 +195,17 @@ mod tests {
             2,
             "different hosts = separate entries"
         );
+    }
+    #[test]
+    fn leaf_certificate_cache_evicts_oldest_entries() {
+        let resolver = DynamicCertResolver::new(make_ca());
+        let key = resolver.certified_key("first.example").unwrap();
+        let mut cache = resolver.cache.lock().unwrap();
+        for n in 0..MAX_CACHED_LEAF_CERTIFICATES {
+            cache.insert(format!("host-{n}.example"), key.clone());
+        }
+        assert_eq!(cache.entries.len(), MAX_CACHED_LEAF_CERTIFICATES);
+        assert!(!cache.entries.contains_key("first.example"));
+        assert!(cache.entries.contains_key("host-0.example"));
     }
 }
