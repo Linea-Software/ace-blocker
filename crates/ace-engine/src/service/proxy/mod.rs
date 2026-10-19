@@ -160,13 +160,8 @@ impl RequestInspector for ProxyAdapter {
             return RequestAction::Continue;
         }
 
-        let (blocking_result, requires_interception) = {
-            let manager = self.network_manager.read().await;
-            (
-                manager.is_host_blocked_at_connect(host),
-                manager.requires_tls_interception(host),
-            )
-        };
+        let (blocking_result, requires_interception) =
+            self.network_manager.read().await.connect_host_policy(host);
         self.set_interception_required(host, requires_interception);
 
         if !matches!(blocking_result, crate::core::BlockingResult::NotBlocked) {
@@ -189,14 +184,9 @@ impl RequestInspector for ProxyAdapter {
             return false;
         }
 
-        let manager = self.network_manager.read().await;
-        let host_is_blocked = !matches!(
-            manager.is_host_blocked_at_connect(host),
-            crate::core::BlockingResult::NotBlocked
-        );
-        let requires_interception = manager.requires_tls_interception(host);
-
-        host_is_blocked || requires_interception != is_intercepted
+        let (blocking_result, requires_interception) =
+            self.network_manager.read().await.connect_host_policy(host);
+        blocking_result.is_blocked() || requires_interception != is_intercepted
     }
 
     async fn should_terminate_upgraded(&self, meta: &ConnMeta, uri: &http::Uri) -> bool {

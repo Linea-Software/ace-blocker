@@ -237,64 +237,59 @@ impl NetworkManager {
         crate::core::BlockingResult::NotBlocked
     }
 
-    /// Evaluate only rules that are safe to decide from an HTTPS CONNECT host.
-    /// This deliberately excludes regex/path rules and any hostname block that
-    /// has URL exceptions, because CONNECT does not reveal the request path.
-    pub fn is_host_blocked_at_connect(&self, host: &str) -> crate::core::BlockingResult {
+    /// Evaluate one CONNECT against the active policy with a single schedule
+    /// timestamp and one pass over the block map. Used by both new tunnels and
+    /// established-tunnel policy checks.
+    pub fn connect_host_policy(&self, host: &str) -> (crate::core::BlockingResult, bool) {
         let now = chrono::Local::now();
         let host = host.trim_end_matches('.').to_ascii_lowercase();
-
-        for block in self.network_blocks.values() {
-            if block.is_active(&now) && block.blocks_connect_host(&host) {
-                return crate::core::BlockingResult::Blocked;
-            }
-        }
-
-        crate::core::BlockingResult::NotBlocked
-    }
-
-    /// Whether HTTPS for this host must be decrypted for a feature that cannot
-    /// be implemented from CONNECT metadata alone.
-    pub fn requires_tls_interception(&self, host: &str) -> bool {
-        let now = chrono::Local::now();
-        let host = host.trim_end_matches('.').to_ascii_lowercase();
-
-        // DNS snooping cannot observe encrypted DNS or a browser's cached
-        // resolution. An IP CONNECT therefore says nothing about the site's
-        // policy; recover its hostname from decrypted HTTP instead.
-        if host
+        let is_ip = host
             .trim_matches(['[', ']'])
             .parse::<std::net::IpAddr>()
-            .is_ok()
-        {
-            return true;
+            .is_ok();
+        let mut blocked = false;
+        let mut inspect_request = is_ip;
+        let mut safe_search_active = false;
+
+        for block in self.network_blocks.values() {
+            if !block.is_active(&now) {
+                continue;
+            }
+            blocked |= block.blocks_connect_host(&host);
+            if !inspect_request {
+                inspect_request = block.requires_request_inspection_for_host(&host);
+            }
+            safe_search_active |= block.is_safe_search_enabled();
         }
 
-        if self
-            .network_blocks
-            .values()
-            .any(|block| block.is_active(&now) && block.requires_request_inspection_for_host(&host))
-        {
-            return true;
-        }
-
-        let safe_search_active = self
-            .network_blocks
-            .values()
-            .any(|block| block.is_active(&now) && block.is_safe_search_enabled());
-        if safe_search_active && self.safe_search_enforcements.contains_key(&host) {
-            return true;
-        }
-
-        // Avoid rebuilding the full script catalog (and touching the settings
-        // database) on every 500 ms tunnel-policy tick. Having an enabled
-        // script for this host already proves the catalog is non-empty and
-        // contains an enabled entry.
-        self.resistance_mode.enabled
+        let needs_safe_search =
+            safe_search_active && self.safe_search_enforcements.contains_key(&host);
+        let needs_scripts = !inspect_request
+            && !needs_safe_search
+            && self.resistance_mode.enabled
             && self.resistance_mode.get_intensity()
                 != crate::manager::resistance::PunishmentIntensity::None
             && self.has_scripts_of(&host)
-            && self.is_pro_user_cached()
+            && self.is_pro_user_cached();
+
+        (
+            if blocked {
+                crate::core::BlockingResult::Blocked
+            } else {
+                crate::core::BlockingResult::NotBlocked
+            },
+            inspect_request || needs_safe_search || needs_scripts,
+        )
+    }
+
+    /// Host-level policy excludes URL exceptions and path/regex rules.
+    pub fn is_host_blocked_at_connect(&self, host: &str) -> crate::core::BlockingResult {
+        self.connect_host_policy(host).0
+    }
+
+    /// Whether decrypted HTTP is needed for a policy feature.
+    pub fn requires_tls_interception(&self, host: &str) -> bool {
+        self.connect_host_policy(host).1
     }
 
     pub fn get_safe_search_enforcement(
