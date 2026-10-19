@@ -20,7 +20,6 @@ use std::sync::{Arc, RwLock as StdRwLock};
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use chrono::Datelike;
 use eyre::{Context, Result};
 use http::StatusCode;
 use mitm_proxy::{
@@ -222,7 +221,7 @@ impl RequestInspector for ProxyAdapter {
         let method = req.method().clone();
         let host = uri.host().map(|h| h.to_string());
 
-        info!(
+        debug!(
             proto = %meta.protocol,
             client = %meta.client_addr,
             tls = meta.is_tls,
@@ -642,7 +641,7 @@ impl AceProxy {
             .proxy_config(ace_tun::ProxyConfig::http("127.0.0.1", listen_port))
             .on_log(|msg| tracing::info!("[ace-tun] {}", msg))
             .on_connection(|info: &ConnectionInfo| {
-                tracing::info!(
+                tracing::debug!(
                     process = %info.process_name,
                     pid = info.pid,
                     dest_ip = %info.dest_ip,

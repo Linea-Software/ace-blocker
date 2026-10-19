@@ -12,7 +12,7 @@ use moka::sync::Cache;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use thiserror::Error;
-use tracing::{info, warn};
+use tracing::{debug, warn};
 use uri_hash::UriHash;
 
 use crate::core::common::constants::RESULTS_CACHE_MAX_SIZE;
@@ -350,7 +350,7 @@ impl NetworkBlock {
                 let pack = pack.read().unwrap();
 
                 if pack.blocking_result(host) == BlockingResult::Blocked {
-                    info!("Site pack matched: {}", host);
+                    debug!("Site pack matched: {}", host);
                     return BlockingResult::Blocked;
                 }
             }
