@@ -286,9 +286,15 @@ impl NetworkManager {
             return true;
         }
 
-        self.resistance_enforcement_status()
-            == crate::manager::network::resistance_mode::EnforcementStatus::Operational
+        // Avoid rebuilding the full script catalog (and touching the settings
+        // database) on every 500 ms tunnel-policy tick. Having an enabled
+        // script for this host already proves the catalog is non-empty and
+        // contains an enabled entry.
+        self.resistance_mode.enabled
+            && self.resistance_mode.get_intensity()
+                != crate::manager::resistance::PunishmentIntensity::None
             && self.has_scripts_of(&host)
+            && self.is_pro_user_cached()
     }
 
     pub fn get_safe_search_enforcement(
@@ -906,9 +912,7 @@ mod tests {
         // A non-excepted host on the same active block IS blocked — proves
         // the block is genuinely active and the exception is what allows
         // example.com through.
-        let other = "http://other-blocked.com"
-            .parse::<http::Uri>()
-            .unwrap();
+        let other = "http://other-blocked.com".parse::<http::Uri>().unwrap();
         assert!(!matches!(
             ctx.manager.is_uri_blocked(&other),
             crate::core::BlockingResult::NotBlocked
