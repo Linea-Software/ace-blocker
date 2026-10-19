@@ -1465,7 +1465,8 @@ mod tests {
             )
             .await
             .unwrap();
-        db.update_pro_status(true)
+        account_manager
+            .update_is_pro_status(true)
             .expect("failed to set pro status");
 
         let mut manager = NetworkManager::new_empty(db.clone(), account_manager.clone());

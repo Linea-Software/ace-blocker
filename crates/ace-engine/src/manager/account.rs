@@ -3,7 +3,10 @@ use crate::{
     db::{EngineDB, models::AccountModel},
 };
 use chrono::{DateTime, Local};
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, Ordering},
+};
 use tokio::sync::RwLock;
 use tracing::{error, info, warn};
 
@@ -22,6 +25,9 @@ const PRO_VERIFY_RETRY_AFTER_HOURS: i64 = 1;
 pub struct AccountManager {
     account: Arc<RwLock<AccountModel>>,
     db: Arc<EngineDB>,
+    /// Shared with every clone; the database is authoritative on writes, but
+    /// traffic decisions read only this atomic snapshot.
+    cached_pro: Arc<AtomicBool>,
     /// Serializes remote Pro-status verifications so concurrent callers (proxy
     /// hot path, content updater, API routes, periodic loop) never fire
     /// overlapping requests against the Ace server.
@@ -31,9 +37,14 @@ pub struct AccountManager {
 impl AccountManager {
     pub fn from(db: Arc<EngineDB>) -> Result<AccountManager, String> {
         let account = db.get_account().map_err(|error| error.to_string())?;
+        let cached_pro = db
+            .get_settings()
+            .map(|settings| settings.is_pro)
+            .unwrap_or(false);
         Ok(AccountManager {
             account: Arc::new(RwLock::new(account)),
             db,
+            cached_pro: Arc::new(AtomicBool::new(cached_pro)),
             verify_lock: Arc::new(tokio::sync::Mutex::new(())),
         })
     }
@@ -150,7 +161,7 @@ impl AccountManager {
     }
 
     pub fn get_cached_pro_status(&self) -> bool {
-        self.db.get_settings().map(|s| s.is_pro).unwrap_or(false)
+        self.cached_pro.load(Ordering::Acquire)
     }
 
     async fn verify_pro_status_remote(&self, api_key: &ApiKey) -> Result<bool, String> {
@@ -201,12 +212,12 @@ impl AccountManager {
         }
     }
 
-    fn update_is_pro_status(&self, is_pro: bool) -> Result<(), String> {
-        // I'll need to implement this in settings_repo.rs or similar
-        // For now let's assume it exists or I'll add it
+    pub(crate) fn update_is_pro_status(&self, is_pro: bool) -> Result<(), String> {
         self.db
             .update_pro_status(is_pro)
-            .map_err(|error| error.to_string())
+            .map_err(|error| error.to_string())?;
+        self.cached_pro.store(is_pro, Ordering::Release);
+        Ok(())
     }
 
     pub async fn update_account(
@@ -249,6 +260,31 @@ impl AccountManager {
         let updated = self.db.reset_tos().map_err(|error| error.to_string())?;
         *self.account.write().await = updated;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod cached_pro_tests {
+    use super::*;
+
+    #[test]
+    fn cached_entitlement_is_shared_between_clones_and_reloaded_on_restart() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&dir.path().join("account.sqlite")).unwrap());
+        let manager = AccountManager::from(db.clone()).unwrap();
+        let clone = manager.clone();
+        assert!(!clone.get_cached_pro_status());
+
+        manager.update_is_pro_status(true).unwrap();
+        assert!(clone.get_cached_pro_status());
+        assert!(
+            AccountManager::from(db.clone())
+                .unwrap()
+                .get_cached_pro_status()
+        );
+
+        manager.update_is_pro_status(false).unwrap();
+        assert!(!clone.get_cached_pro_status());
     }
 }
 
