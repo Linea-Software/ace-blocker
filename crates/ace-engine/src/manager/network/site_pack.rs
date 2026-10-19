@@ -108,6 +108,114 @@ async fn sync_remote_pack_version(
     Ok(())
 }
 
+/// Delete unfinished staging output on import failure, cancellation or disconnect.
+struct StagedPackCleanup(PathBuf);
+
+impl Drop for StagedPackCleanup {
+    fn drop(&mut self) {
+        if let Err(error) = fs::remove_dir_all(&self.0)
+            && error.kind() != std::io::ErrorKind::NotFound
+        {
+            warn!(
+                "failed to clean staged site pack {}: {error}",
+                self.0.display()
+            );
+        }
+    }
+}
+
+/// The sole local-import coordinator. Keep the live pack in service while its
+/// replacement is parsed, then emit COMPLETED only after the database swap.
+fn run_local_import(
+    site_pack: Arc<RwLock<SitePack>>,
+    sources: Vec<SitePackSource>,
+    site_pack_id: SitePackId,
+    main_db: Arc<crate::db::EngineDB>,
+    sync_guard: SitePackSyncGuard,
+) -> SitePackImportStream<'static> {
+    Box::pin(stream! {
+        let _sync_guard = sync_guard;
+        let live_dir = site_pack.read().unwrap().get_db_path().clone();
+        let stage_dir = live_dir.with_file_name(format!(
+            ".{}.staging-{}", site_pack_id, Uuid::new_v4()
+        ));
+        let _stage_cleanup = StagedPackCleanup(stage_dir.clone());
+
+        let staged_db = match SitePackDB::from(&stage_dir.join("pack.db")) {
+            Ok(db) => db,
+            Err(error) => {
+                yield SitePackCreationStatus::Failed {
+                    error: error.to_string(),
+                    phase: Some(SitePackImportPhase::Initializing),
+                };
+                return;
+            }
+        };
+
+        let mut completed = false;
+        for await status in crate::core::network_block::site_pack::Importer::import_sources(
+            &staged_db,
+            sources,
+            stage_dir.clone(),
+            site_pack_id.clone(),
+        ) {
+            match status {
+                SitePackCreationStatus::Completed { .. } => completed = true,
+                SitePackCreationStatus::Failed { .. } => {
+                    yield status;
+                    return;
+                }
+                other => yield other,
+            }
+        }
+
+        if !completed {
+            yield SitePackCreationStatus::Failed {
+                error: "Import ended without a terminal event".to_string(),
+                phase: Some(SitePackImportPhase::Finalizing),
+            };
+            return;
+        }
+
+        // The importer writes pack_meta last. Validate it and close every
+        // staging connection before renaming the file on Windows.
+        let validation = staged_db.get_entry_count();
+        drop(staged_db);
+        if let Err(error) = validation {
+            yield SitePackCreationStatus::Failed {
+                error: error.to_string(),
+                phase: Some(SitePackImportPhase::Finalizing),
+            };
+            return;
+        }
+
+        let activation = match site_pack.write() {
+            Ok(mut pack) => pack.install_staged_db(&stage_dir).map(|()| {
+                let now = Local::now();
+                pack.set_last_updated_at(now);
+                if let Err(error) = main_db.update_site_pack_last_updated(&site_pack_id, &now) {
+                    warn!("failed to persist site pack update timestamp: {error}");
+                }
+            }),
+            Err(_) => Err(SitePackImportError::DatabaseFailure {
+                message: "failed to lock the site pack during activation".to_string(),
+            }),
+        };
+
+        match activation {
+            Ok(()) => yield SitePackCreationStatus::Completed {
+                site_pack_id,
+                progress: Percentage::new(100.0),
+                phase: SitePackImportPhase::Completed,
+            },
+            Err(error) => yield SitePackCreationStatus::Failed {
+                error: format!("Could not activate imported site list: {error}"),
+                phase: Some(SitePackImportPhase::Finalizing),
+            },
+        }
+    })
+}
+
 impl NetworkManager {
     /// Marks a site pack as syncing. Returns the RAII guard that releases the
     /// slot on drop, or [`NetworkManagerOpErr::SitePackBusy`] when a sync for
@@ -304,80 +412,16 @@ impl NetworkManager {
                 });
         }
 
-        let (db_path, id_val) = {
-            let mut list = site_pack_arc.write().unwrap();
-            let id_val = list.get_id().clone();
-            let db_path = list.get_db_path().clone();
-            list.close_db();
-            (db_path, id_val)
-        };
-
-        // The import stream runs outside the manager write lock, so mark the
-        // pack in-flight now and release it when the stream is dropped
-        // (completion, failure, or client disconnect). Prevents duplicate
-        // imports and delete-while-importing races.
+        // The long-running import owns its sync slot, but never closes the live DB
+        // until a validated replacement is ready.
         let guard = self.begin_site_pack_sync(&site_pack_id)?;
-
-        let site_pack_arc_clone = site_pack_arc.clone();
-        let sources_clone = sources.clone();
-        let db_clone = self.db.clone();
-
-        Ok(Box::pin(stream! {
-            let _guard = guard;
-
-            // Terminal events are held back until the reload that follows the
-            // import has succeeded: the client must never see a COMPLETED
-            // event for a pack whose in-memory database failed to reopen.
-            let mut pending_terminal: Option<SitePackCreationStatus> = None;
-            let inner = SitePack::execute_resync(db_path, sources_clone, id_val.clone());
-            for await status in inner {
-                match &status {
-                    SitePackCreationStatus::Completed { .. }
-                    | SitePackCreationStatus::Failed { .. } => {
-                        pending_terminal = Some(status);
-                    }
-                    _ => yield status,
-                }
-            }
-
-            match pending_terminal {
-                Some(terminal @ SitePackCreationStatus::Completed { .. }) => {
-                    let reload_result = {
-                        if let Ok(mut site_pack) = site_pack_arc_clone.write() {
-                            let result = site_pack.reload_db();
-                            if result.is_ok() {
-                                let now = Local::now();
-                                site_pack.set_last_updated_at(now);
-                                let _ = db_clone.update_site_pack_last_updated(&id_val, &now);
-                            }
-                            result
-                        } else {
-                            Err("failed to lock the site pack after import".to_string())
-                        }
-                    };
-                    match reload_result {
-                        Ok(()) => yield terminal,
-                        Err(error) => {
-                            error!("Failed to reload site list DB after import: {}", error);
-                            yield SitePackCreationStatus::Failed {
-                                error: format!(
-                                    "Import finished but the site list could not be reloaded: {}",
-                                    error
-                                ),
-                                phase: Some(SitePackImportPhase::Finalizing),
-                            };
-                        }
-                    }
-                }
-                Some(other_terminal) => yield other_terminal,
-                None => {
-                    yield SitePackCreationStatus::Failed {
-                        error: "Import stream ended without a terminal event".to_string(),
-                        phase: None,
-                    };
-                }
-            }
-        }))
+        Ok(run_local_import(
+            site_pack_arc,
+            sources,
+            site_pack_id,
+            self.db.clone(),
+            guard,
+        ))
     }
 
     pub fn delete_site_pack(
@@ -594,73 +638,14 @@ impl NetworkManager {
             return Ok(import_stream);
         }
 
-        let (db_path, sources, id_val) = {
-            let mut list = site_pack_arc.write().unwrap();
-            let sources = list.get_sources().clone();
-            let id_val = list.get_id().clone();
-            let db_path = list.get_db_path().clone();
-            list.close_db();
-            (db_path, sources, id_val)
-        };
-
-        let site_pack_arc_clone = site_pack_arc.clone();
-        let db_clone = self.db.clone();
-
-        Ok(Box::pin(stream! {
-            let _guard = guard;
-
-            // Terminal events are held back until the reload that follows the
-            // resync has succeeded (mirrors import_site_pack).
-            let mut pending_terminal: Option<SitePackCreationStatus> = None;
-            let inner = SitePack::execute_resync(db_path, sources, id_val.clone());
-            for await status in inner {
-                match &status {
-                    SitePackCreationStatus::Completed { .. }
-                    | SitePackCreationStatus::Failed { .. } => {
-                        pending_terminal = Some(status);
-                    }
-                    _ => yield status,
-                }
-            }
-
-            match pending_terminal {
-                Some(terminal @ SitePackCreationStatus::Completed { .. }) => {
-                    let reload_result = {
-                        if let Ok(mut site_pack) = site_pack_arc_clone.write() {
-                            let result = site_pack.reload_db();
-                            if result.is_ok() {
-                                let now = Local::now();
-                                site_pack.set_last_updated_at(now);
-                                let _ = db_clone.update_site_pack_last_updated(&id_val, &now);
-                            }
-                            result
-                        } else {
-                            Err("failed to lock the site pack after resync".to_string())
-                        }
-                    };
-                    match reload_result {
-                        Ok(()) => yield terminal,
-                        Err(error) => {
-                            error!("Failed to reload site list db: {}", error);
-                            yield SitePackCreationStatus::Failed {
-                                error: format!(
-                                    "Resync finished but the site list could not be reloaded: {}",
-                                    error
-                                ),
-                                phase: Some(SitePackImportPhase::Finalizing),
-                            };
-                        }
-                    }
-                }
-                Some(other_terminal) => yield other_terminal,
-                None => {
-                    yield SitePackCreationStatus::Failed {
-                        error: "Resync stream ended without a terminal event".to_string(),
-                        phase: None,
-                    };
-                }
-            }
-        }))
+        let sources = site_pack_arc.read().unwrap().get_sources().clone();
+        Ok(run_local_import(
+            site_pack_arc,
+            sources,
+            site_pack_id,
+            self.db.clone(),
+            guard,
+        ))
     }
 
     // --- Site List Sources ---
@@ -1342,6 +1327,160 @@ mod tests {
             manager,
             _temp_dir: temp_dir,
         }
+    }
+
+    fn local_source(id: &SitePackId, path: &std::path::Path) -> SitePackSource {
+        SitePackSource {
+            id: SitePackSourceId::from(Uuid::now_v7()),
+            site_pack_id: id.clone(),
+            source: path.to_string_lossy().into_owned(),
+            source_type: SitePackSourceType::File,
+            format: SitePackFormat::WildCardDomains,
+        }
+    }
+
+    fn seed_pack(pack: &Arc<RwLock<SitePack>>, hostname: &str) {
+        use crate::core::network_block::site_pack::site_pack_db::{NewPackMetaModel, hash_host};
+        let path = pack.read().unwrap().get_db_path().join("pack.db");
+        let db = SitePackDB::from(&path).unwrap();
+        db.insert_entries(&[hash_host(hostname)]).unwrap();
+        db.insert_pack_meta(NewPackMetaModel {
+            id: pack.read().unwrap().get_id().to_string(),
+            format_version: "1.0".into(),
+            name: None,
+            entry_count: 1,
+            built_at: chrono::Utc::now().to_rfc3339(),
+        })
+        .unwrap();
+        drop(db);
+        pack.write().unwrap().reload_db().unwrap();
+    }
+
+    #[tokio::test]
+    async fn local_resync_preserves_live_data_on_failure_then_swaps_on_success() {
+        use futures::StreamExt;
+
+        let mut ctx = setup_test_manager();
+        let pack = ctx
+            .manager
+            .add_local_site_pack("Staged Resync", None, None)
+            .await
+            .unwrap();
+        seed_pack(&pack, "old.example");
+        let id = pack.read().unwrap().get_id().clone();
+
+        let missing = ctx._temp_dir.path().join("missing.txt");
+        let guard = ctx.manager.begin_site_pack_sync(&id).unwrap();
+        let failed: Vec<_> = run_local_import(
+            pack.clone(),
+            vec![local_source(&id, &missing)],
+            id.clone(),
+            ctx.manager.db.clone(),
+            guard,
+        )
+        .collect()
+        .await;
+        assert!(matches!(
+            failed.last(),
+            Some(SitePackCreationStatus::Failed { .. })
+        ));
+        assert!(
+            pack.read()
+                .unwrap()
+                .blocking_result("old.example")
+                .is_blocked()
+        );
+        assert!(!ctx.manager.is_site_pack_syncing(&id));
+
+        let new_source = ctx._temp_dir.path().join("new.txt");
+        std::fs::write(&new_source, "new.example\n").unwrap();
+        let guard = ctx.manager.begin_site_pack_sync(&id).unwrap();
+        let mut stream = run_local_import(
+            pack.clone(),
+            vec![local_source(&id, &new_source)],
+            id.clone(),
+            ctx.manager.db.clone(),
+            guard,
+        );
+        assert!(matches!(
+            stream.next().await,
+            Some(SitePackCreationStatus::Started { .. })
+        ));
+        // Parsing happens only when the stream advances; enforcement stays live.
+        assert!(
+            pack.read()
+                .unwrap()
+                .blocking_result("old.example")
+                .is_blocked()
+        );
+        let statuses: Vec<_> = stream.collect().await;
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert!(
+            pack.read()
+                .unwrap()
+                .blocking_result("new.example")
+                .is_blocked()
+        );
+        assert!(
+            !pack
+                .read()
+                .unwrap()
+                .blocking_result("old.example")
+                .is_blocked()
+        );
+        assert!(!ctx.manager.is_site_pack_syncing(&id));
+    }
+
+    #[tokio::test]
+    async fn cancelling_local_resync_preserves_pack_and_releases_sync_slot() {
+        use futures::StreamExt;
+
+        let mut ctx = setup_test_manager();
+        let pack = ctx
+            .manager
+            .add_local_site_pack("Cancelled Resync", None, None)
+            .await
+            .unwrap();
+        seed_pack(&pack, "old.example");
+        let id = pack.read().unwrap().get_id().clone();
+        let source = ctx._temp_dir.path().join("new.txt");
+        std::fs::write(&source, "new.example\n").unwrap();
+        let guard = ctx.manager.begin_site_pack_sync(&id).unwrap();
+        let mut stream = run_local_import(
+            pack.clone(),
+            vec![local_source(&id, &source)],
+            id.clone(),
+            ctx.manager.db.clone(),
+            guard,
+        );
+        assert!(matches!(
+            stream.next().await,
+            Some(SitePackCreationStatus::Started { .. })
+        ));
+        drop(stream);
+        assert!(
+            pack.read()
+                .unwrap()
+                .blocking_result("old.example")
+                .is_blocked()
+        );
+        assert!(!ctx.manager.is_site_pack_syncing(&id));
+        let live_dir = pack.read().unwrap().get_db_path().clone();
+        let staged_prefix = format!(".{id}.staging-");
+        assert!(
+            !std::fs::read_dir(live_dir.parent().unwrap())
+                .unwrap()
+                .any(|entry| {
+                    entry
+                        .unwrap()
+                        .file_name()
+                        .to_string_lossy()
+                        .starts_with(&staged_prefix)
+                })
+        );
     }
 
     #[tokio::test]

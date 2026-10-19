@@ -4,9 +4,6 @@ pub mod site_pack_db;
 use crate::core::common::domain_types::{RemoteSitePackId, SitePackVersion};
 use crate::core::network_block::site_pack::site_pack_db::SitePackDB;
 use crate::core::network_block::{BlockingResult, UriHash};
-use async_stream::stream;
-use futures::Stream;
-use importer::stream::SitePackImportPhase;
 pub use importer::{
     Importer, SitePackCreationStatus, SitePackFormat, SitePackId, SitePackImportError,
     SitePackImportStream, SitePackSource,
@@ -16,7 +13,7 @@ use std::{
     fs::File,
     path::{Path, PathBuf},
 };
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 use zip::ZipArchive;
 
 /// Name of the SQLite database file inside a site pack's directory.
@@ -220,7 +217,6 @@ impl SitePack {
 
         let unique = uuid::Uuid::new_v4();
         let staging_dir = parent.join(format!(".{}.staging-{}", self.id, unique));
-        let old_dir = parent.join(format!(".{}.old-{}", self.id, unique));
 
         // Stage + validate while the live DB is still open, so a rejected
         // archive never disturbs the running pack. `SitePackDB::from` alone
@@ -256,7 +252,26 @@ impl SitePack {
             }
         }
 
-        // Atomic swap: live dir -> old dir, staging dir -> live dir. On any
+        let result = self.install_staged_db(&staging_dir);
+        if result.is_err() {
+            let _ = std::fs::remove_dir_all(&staging_dir);
+        }
+        result
+    }
+
+    /// Activates a completed database built beside the live pack.
+    /// The caller removes the staging directory on failure or cancellation.
+    pub(crate) fn install_staged_db(
+        &mut self,
+        staging_dir: &Path,
+    ) -> Result<(), SitePackImportError> {
+        let parent = self
+            .db_path
+            .parent()
+            .ok_or_else(|| backup_error("missing pack parent"))?;
+        let old_dir = parent.join(format!(".{}.old-{}", self.id, uuid::Uuid::new_v4()));
+
+        // Rollback-capable swap: live dir -> old dir, staging dir -> live dir. On any
         // failure the old dir is renamed back so the previous pack survives.
         self.close_db();
         let live_exists = self.db_path.exists();
@@ -297,49 +312,6 @@ impl SitePack {
         self.set_last_updated_at(chrono::Local::now());
 
         Ok(())
-    }
-
-    pub fn execute_resync(
-        db_path: PathBuf,
-        sources: Vec<SitePackSource>,
-        site_pack_id: SitePackId,
-    ) -> SitePackImportStream<'static> {
-        Box::pin(Self::execute_resync_internal(
-            db_path,
-            sources,
-            site_pack_id,
-        ))
-    }
-
-    fn execute_resync_internal(
-        db_path: PathBuf,
-        sources: Vec<SitePackSource>,
-        site_pack_id: SitePackId,
-    ) -> impl Stream<Item = SitePackCreationStatus> {
-        stream! {
-            info!("execute_resync started for {}", site_pack_id);
-
-            let db = match SitePackDB::from(&db_path.join(PACK_DB_FILE)) {
-                Ok(db) => db,
-                Err(error) => {
-                    yield SitePackCreationStatus::Failed {
-                        error: error.to_string(),
-                        phase: Some(SitePackImportPhase::Initializing),
-                    };
-                    return;
-                }
-            };
-
-            for await status in Importer::import_sources(
-                &db,
-                sources,
-                get_site_packs_temp_dir(),
-                site_pack_id.clone(),
-            ) {
-                yield status;
-            }
-            info!("execute_resync finished for {}", site_pack_id);
-        }
     }
 
     pub fn add_source(&mut self, source: SitePackSource) {

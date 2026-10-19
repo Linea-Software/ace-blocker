@@ -15,7 +15,7 @@ use crate::core::network_block::uri_hash::UriHash;
 use ace_domain_blocklist::{DomainLineParsingResult, DomainListFormatKind, detect_format};
 use async_stream::stream;
 use chrono::Utc;
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 use std::path::{Path, PathBuf};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{info, warn};
@@ -45,21 +45,7 @@ impl Importer {
         temp_dir: PathBuf,
         site_pack_id: SitePackId,
     ) -> SitePackImportStream<'a> {
-        Box::pin(Self::import_sources_internal(
-            db,
-            sources,
-            temp_dir,
-            site_pack_id,
-        ))
-    }
-
-    fn import_sources_internal<'a>(
-        db: &'a SitePackDB,
-        sources: Vec<SitePackSource>,
-        temp_dir: PathBuf,
-        site_pack_id: SitePackId,
-    ) -> impl Stream<Item = SitePackCreationStatus> + 'a {
-        stream! {
+        Box::pin(stream! {
             yield SitePackCreationStatus::Started {
                 site_pack_id: site_pack_id.clone(),
                 progress: Percentage::new(0.0),
@@ -226,10 +212,12 @@ impl Importer {
                     }
                 };
 
-                let mut reader = BufReader::new(file);
+                let mut reader = BufReader::with_capacity(64 * 1024, file);
                 let mut line_buffer: Vec<u8> = Vec::new();
                 let mut consumed_bytes: u64 = 0;
                 let mut last_percent: u32 = 0;
+                let mut bad_encoding_lines: u64 = 0;
+                let mut malformed_lines: u64 = 0;
 
                 loop {
                     line_buffer.clear();
@@ -250,7 +238,7 @@ impl Importer {
                         Err(_) => {
                             // Real-world lists contain the occasional
                             // non-UTF-8 line: skip it instead of aborting.
-                            warn!("skipping non-UTF-8 line in {}", source.source);
+                            bad_encoding_lines += 1;
                             continue;
                         }
                     };
@@ -269,11 +257,11 @@ impl Importer {
                                 }
                             }
                         }
-                        Err(error) => {
+                        Err(_) => {
                             // Real-world lists contain the occasional
                             // malformed line (bare IPs, odd characters):
                             // skip it instead of aborting the whole import.
-                            warn!("skipping malformed line in {}: {error}", source.source);
+                            malformed_lines += 1;
                         }
                     }
 
@@ -286,6 +274,13 @@ impl Importer {
                             SitePackImportPhase::Importing,
                         );
                     }
+                }
+
+                if bad_encoding_lines > 0 || malformed_lines > 0 {
+                    warn!(
+                        "skipped {bad_encoding_lines} non-UTF-8 and {malformed_lines} malformed lines in {}",
+                        source.source
+                    );
                 }
 
                 // Flush the remaining hashes of this source.
@@ -328,7 +323,7 @@ impl Importer {
                 progress: Percentage::new(100.0),
                 phase: SitePackImportPhase::Completed,
             };
-        }
+        })
     }
 
     fn in_progress(
@@ -371,7 +366,7 @@ fn progress_percent(consumed: u64, total: u64) -> u32 {
 /// Reads up to `DETECTION_SAMPLE_LINES` leading lines of the file.
 async fn read_sample(path: &Path) -> Result<String, SitePackImportError> {
     let file = tokio::fs::File::open(path).await.map_err(io_error)?;
-    let mut reader = BufReader::new(file);
+    let mut reader = BufReader::with_capacity(64 * 1024, file);
     let mut sample = String::new();
     for _ in 0..ace_domain_blocklist::DETECTION_SAMPLE_LINES {
         let mut line_buffer: Vec<u8> = Vec::new();

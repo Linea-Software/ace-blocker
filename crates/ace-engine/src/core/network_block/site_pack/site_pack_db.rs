@@ -135,14 +135,23 @@ impl SitePackDB {
             })
             .collect();
 
+        // SQLite limits bound variables per statement (999 on older builds).
+        // Group multiple 500-row INSERTs in one transaction rather than
+        // autocommitting each SQL statement.
+        const ROWS_PER_STATEMENT: usize = 500;
         let conn = &mut self.get_db_connection()?;
-        diesel::insert_or_ignore_into(entries::table)
-            .values(&rows)
-            .execute(conn)
-            .map_err(|error| DBError::InsertionError {
-                table: "entries".to_string(),
-                message: error.to_string(),
-            })?;
+        conn.transaction::<_, diesel::result::Error, _>(|conn| {
+            for chunk in rows.chunks(ROWS_PER_STATEMENT) {
+                diesel::insert_or_ignore_into(entries::table)
+                    .values(chunk)
+                    .execute(conn)?;
+            }
+            Ok(())
+        })
+        .map_err(|error| DBError::InsertionError {
+            table: "entries".to_string(),
+            message: error.to_string(),
+        })?;
         Ok(())
     }
 

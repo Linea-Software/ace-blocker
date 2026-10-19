@@ -9,6 +9,7 @@ This file tracks **verified, actionable maintainability work**, not a wishlist o
 | ID | Priority | Status | Area | Problem / evidence | Intended outcome |
 | --- | --- | --- | --- | --- | --- |
 | [TD-001](#td-001--native-ipc-integration-coverage) | P1 | verified | Native IPC testing | Removed browser E2E suites mocked the retired REST port; unit tests alone do not exercise installed Windows services | Add Windows Tauri/remoc/installer E2E coverage |
+| [TD-002](#td-002--safe-and-efficient-local-site-pack-imports) | P1 | review | Local site pack importer | Local resync rebuilt the live SQLite DB; multiple wrapper streams repeated terminal handling; huge single INSERTs exceeded SQLite bind-variable limits | Stage and validate before swap, consolidate import streams, and transactionally chunk inserts |
 
 For each non-placeholder item, add a detailed section below using the template. Link the queue's ID to its section. Order by expected maintenance benefit and risk, not cosmetic code metrics.
 
@@ -22,6 +23,16 @@ For each non-placeholder item, add a detailed section below using the template. 
 - **Security invariants:** Never bypass installation capability checks, lock rules, Windows service separation or uninstall refusal.
 - **Verified checks during cleanup:** `cargo check --workspace --all-targets`; `cargo check --release -p ace-engine -p ace-watchdog -p ace-app`; `cargo test -p ace-engine --lib -p ace-watchdog-protocol` (206 + 3 passed); `bun run check`; `bun run test:unit` (39 passed).
 - **Dependency:** Native Windows test harness and a disposable VM. No release-installation validation performed in this cleanup.
+
+### TD-002 — Safe and efficient local site pack imports
+
+- **Status:** review; **priority:** P1.
+- **Area:** `crates/ace-engine/src/core/network_block/site_pack/{importer/importer.rs,site_pack_db.rs,mod.rs}`, `crates/ace-engine/src/manager/network/site_pack.rs`.
+- **Evidence:** The previous local resync closed and cleared the live database before parsing; failed or cancelled imports could leave enforcement unloaded. `execute_resync` and separate manager streams duplicated forwarding and completion handling. The 50,000-row Diesel INSERT conflicted with SQLite's bound-variable limits.
+- **Change:** Build into a unique sibling staging directory and swap via rollback-capable directory renames after successful import and metadata validation; keep old enforcement available until then. Consolidate local import/resync coordination, remove one forwarding stream layer, cap statements at 500 variables with a transaction per 50,000-row batch; buffer input at 64 KiB and aggregate malformed-line warnings. Preserve RPC progress events, sync guards, and remote backup behavior.
+- **Verification (Windows workspace):** `cargo check -p ace-engine --lib` passed; `cargo test -p ace-engine --lib resync` passed (2 tests); `cargo test -p ace-engine --lib core::network_block::site_pack` passed (19 tests). No benchmarks run. Repository-wide `cargo fmt --all --check` reports pre-existing formatting elsewhere; only changed source files were formatted.
+- **Residual review:** Independent diff review and installed Windows service/integration verification remain outstanding; no measured performance claims. Existing unrelated compiler warnings remain.
+- **Owner/branch:** `main`. **Scope:** engine local importer and shared backup activation; no protocol or UI contract changes.
 
 ## Item template
 
