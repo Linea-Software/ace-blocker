@@ -6,7 +6,7 @@ pub(super) async fn get_net_block_to_site_pack_connections(
     state: AppState,
     network_block_id: uuid::Uuid,
 ) -> Result<GetNetListToSitePacksResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let manager = state.network_manager.read().await;
     let list_id = NetworkBlockId::from(network_block_id);
     let connections = manager.get_network_block_to_site_packs(&list_id)?;
 

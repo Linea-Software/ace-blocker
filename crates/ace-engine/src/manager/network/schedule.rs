@@ -7,7 +7,7 @@ use super::{NetworkManager, error::NetworkManagerOpErr};
 
 impl NetworkManager {
     pub fn get_schedule_entries_of(
-        &mut self,
+        &self,
         network_block_id: &NetworkBlockId,
     ) -> Result<&Vec<ScheduleEntry>, NetworkManagerOpErr> {
         Ok(self

@@ -6,7 +6,8 @@ use crate::service::api::{AppState, error::ApiError, schemas::*};
 pub(super) async fn get_dashboard_snapshot(
     state: AppState,
 ) -> Result<DashboardSnapshotResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let manager = state.network_manager.read().await;
+    let db = manager.get_db();
     let now = Local::now();
 
     // ── Gather all network blocks with their nested data ──
@@ -51,12 +52,12 @@ pub(super) async fn get_dashboard_snapshot(
         let block_id_owned = block_id_ref.clone();
         let block_uuid: uuid::Uuid = *block_id_owned.as_ref();
 
-        // Lock info (mutable access — okay, immutable borrow is gone)
+        // Lock info from the same in-memory policy snapshot.
         let lock = manager.get_lock_of(block_id_ref).ok();
         let lock_schema =
             lock.map(|lock_ref| NetworkListLockSchema::from_lock(lock_ref, block_uuid, is_active));
 
-        // Schedule entries (mutable access)
+        // Schedule entries
         let schedule_entries = manager
             .get_schedule_entries_of(block_id_ref)
             .map(|entries| {
@@ -73,10 +74,10 @@ pub(super) async fn get_dashboard_snapshot(
         // claim in the UI (onboarding, block cards).
         let site_pack_connection_count = manager.count_synced_site_packs_of(block_id_ref);
 
-        // User-defined rules count (mutable access)
+        // User-defined rules count (already in memory)
         let user_rules_count = manager
-            .get_user_defined_entries_of(block_id_ref)
-            .map(|rules| rules.len())
+            .get_network_block_from(block_id_ref)
+            .map(|block| block.get_user_defined_rules().rules().len())
             .unwrap_or(0);
 
         snapshots.push(NetworkBlockSnapshot {
@@ -96,9 +97,6 @@ pub(super) async fn get_dashboard_snapshot(
             user_rules_count,
         });
     }
-
-    // ── Today's aggregate blocked-attempts count ──
-    let blocked_attempts = manager.get_blocked_attempts_today();
 
     // ── Resistance mode settings ──
     let resistance_mode_settings = {
@@ -126,6 +124,12 @@ pub(super) async fn get_dashboard_snapshot(
             enforcement_status: manager.resistance_enforcement_status(),
         })
     };
+
+    // Database I/O happens after releasing the policy lock entirely.
+    drop(manager);
+    let blocked_attempts = db
+        .get_blocked_attempts_for_date(chrono::Utc::now().date_naive())
+        .unwrap_or(0);
 
     Ok(DashboardSnapshotResponse {
         blocks: snapshots,

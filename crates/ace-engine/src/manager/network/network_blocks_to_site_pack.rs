@@ -5,7 +5,7 @@ use crate::core::{NetworkBlockId, SitePack, SitePackId};
 
 impl NetworkManager {
     pub fn get_network_block_to_site_packs(
-        &mut self,
+        &self,
         network_block_id: &NetworkBlockId,
     ) -> Result<Vec<Arc<RwLock<SitePack>>>, NetworkManagerOpErr> {
         Ok(self
@@ -24,7 +24,7 @@ impl NetworkManager {
     /// never downloaded, or whose database is missing — enforces nothing, so
     /// reporting it as block coverage would be a "ghost" claim (dashboard,
     /// onboarding).
-    pub fn count_synced_site_packs_of(&mut self, network_block_id: &NetworkBlockId) -> usize {
+    pub fn count_synced_site_packs_of(&self, network_block_id: &NetworkBlockId) -> usize {
         self.get_network_block_to_site_packs(network_block_id)
             .map(|packs| {
                 packs

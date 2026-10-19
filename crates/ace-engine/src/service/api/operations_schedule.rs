@@ -7,7 +7,7 @@ pub(super) async fn get_schedule_entries(
     state: AppState,
     network_block_id: uuid::Uuid,
 ) -> Result<GetScheduleEntriesResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let manager = state.network_manager.read().await;
     let list_id = NetworkBlockId::from(network_block_id);
     let entries_core = manager.get_schedule_entries_of(&list_id)?;
 
