@@ -8,6 +8,7 @@ use std::{
 };
 
 use super::{NetworkManager, error::NetworkManagerOpErr};
+use crate::core::{BlockingResult, network_block::uri_hash::UriHash};
 use crate::core::{
     RemoteSitePackId, SitePack, SitePackId, SitePackImportError, SitePackVersion,
     common::percentage::Percentage,
@@ -21,6 +22,15 @@ use crate::core::{
 };
 use crate::{service::clients::AceServerClient, settings::Settings};
 use chrono::Local;
+use moka::sync::Cache;
+
+type BlockDecisionCache = Cache<UriHash, BlockingResult>;
+
+fn invalidate_caches(caches: &[BlockDecisionCache]) {
+    for cache in caches {
+        cache.invalidate_all();
+    }
+}
 
 use tracing::{error, info, warn};
 use uuid::Uuid;
@@ -132,6 +142,7 @@ fn run_local_import(
     site_pack_id: SitePackId,
     main_db: Arc<crate::db::EngineDB>,
     sync_guard: SitePackSyncGuard,
+    related_caches: Vec<BlockDecisionCache>,
 ) -> SitePackImportStream<'static> {
     Box::pin(stream! {
         let _sync_guard = sync_guard;
@@ -203,11 +214,14 @@ fn run_local_import(
         };
 
         match activation {
-            Ok(()) => yield SitePackCreationStatus::Completed {
+            Ok(()) => {
+                invalidate_caches(&related_caches);
+                yield SitePackCreationStatus::Completed {
                 site_pack_id,
                 progress: Percentage::new(100.0),
                 phase: SitePackImportPhase::Completed,
-            },
+                };
+            }
             Err(error) => yield SitePackCreationStatus::Failed {
                 error: format!("Could not activate imported site list: {error}"),
                 phase: Some(SitePackImportPhase::Finalizing),
@@ -217,6 +231,24 @@ fn run_local_import(
 }
 
 impl NetworkManager {
+    fn caches_for_pack(&self, id: &SitePackId) -> Vec<BlockDecisionCache> {
+        self.network_blocks
+            .values()
+            .filter(|block| block.has_site_pack(id))
+            .map(|block| block.results_cache_handle())
+            .collect()
+    }
+
+    fn invalidate_pack_decisions(&self, id: &SitePackId) {
+        for block in self
+            .network_blocks
+            .values()
+            .filter(|block| block.has_site_pack(id))
+        {
+            block.invalidate_results_cache();
+        }
+    }
+
     /// Marks a site pack as syncing. Returns the RAII guard that releases the
     /// slot on drop, or [`NetworkManagerOpErr::SitePackBusy`] when a sync for
     /// the same pack is already in flight (concurrent requests, SSE reconnects,
@@ -415,12 +447,14 @@ impl NetworkManager {
         // The long-running import owns its sync slot, but never closes the live DB
         // until a validated replacement is ready.
         let guard = self.begin_site_pack_sync(&site_pack_id)?;
+        let related_caches = self.caches_for_pack(&site_pack_id);
         Ok(run_local_import(
             site_pack_arc,
             sources,
             site_pack_id,
             self.db.clone(),
             guard,
+            related_caches,
         ))
     }
 
@@ -531,6 +565,7 @@ impl NetworkManager {
 
             let site_pack_arc_clone = site_pack_arc.clone();
             let db_clone = self.db.clone();
+            let related_caches = self.caches_for_pack(&site_pack_id);
 
             let import_stream = Box::pin(stream! {
                 let _guard = guard;
@@ -599,6 +634,9 @@ impl NetworkManager {
                     }
                 };
 
+                if restore_result.is_ok() {
+                    invalidate_caches(&related_caches);
+                }
                 if let Err(error) = restore_result {
                     yield SitePackCreationStatus::Failed {
                         error: format!("Failed to restore site list from backup: {}", error),
@@ -639,12 +677,14 @@ impl NetworkManager {
         }
 
         let sources = site_pack_arc.read().unwrap().get_sources().clone();
+        let related_caches = self.caches_for_pack(&site_pack_id);
         Ok(run_local_import(
             site_pack_arc,
             sources,
             site_pack_id,
             self.db.clone(),
             guard,
+            related_caches,
         ))
     }
 
@@ -962,6 +1002,7 @@ impl NetworkManager {
             });
         }
         drop(site_pack);
+        self.invalidate_pack_decisions(&site_pack_id);
 
         // 4. Persist version + timestamp on the SAME row, then update memory.
         let now = Local::now();
@@ -1377,6 +1418,7 @@ mod tests {
             id.clone(),
             ctx.manager.db.clone(),
             guard,
+            Vec::new(),
         )
         .collect()
         .await;
@@ -1401,6 +1443,7 @@ mod tests {
             id.clone(),
             ctx.manager.db.clone(),
             guard,
+            Vec::new(),
         );
         assert!(matches!(
             stream.next().await,
@@ -1455,6 +1498,7 @@ mod tests {
             id.clone(),
             ctx.manager.db.clone(),
             guard,
+            Vec::new(),
         );
         assert!(matches!(
             stream.next().await,

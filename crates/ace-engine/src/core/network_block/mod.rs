@@ -207,7 +207,7 @@ impl NetworkBlock {
         self.user_defined_rules
             .add_rules(rules)
             .map_err(NetworkBlockOpErr::UserRulesAdditionError)?;
-
+        self.results_cache.invalidate_all();
         Ok(())
     }
 
@@ -218,6 +218,7 @@ impl NetworkBlock {
         self.user_defined_rules
             .remove_rule(rule)
             .map_err(NetworkBlockOpErr::UserRulesRemovalError)?;
+        self.results_cache.invalidate_all();
         Ok(())
     }
 
@@ -226,6 +227,7 @@ impl NetworkBlock {
         self.exceptions.add_patterns(patterns).map_err(|error| {
             NetworkBlockOpErr::EntriesAdditionError(error, format!("{:?}", patterns_clone))
         })?;
+        self.results_cache.invalidate_all();
         Ok(())
     }
 
@@ -233,6 +235,7 @@ impl NetworkBlock {
         self.exceptions
             .remove_pattern(pattern)
             .map_err(|error| NetworkBlockOpErr::EntriesRemovalError(error, pattern.to_string()))?;
+        self.results_cache.invalidate_all();
         Ok(())
     }
 
@@ -242,6 +245,7 @@ impl NetworkBlock {
         site_pack: Arc<RwLock<SitePack>>,
     ) -> Result<(), NetworkBlockOpErr> {
         self.site_packs.insert(site_pack_id, site_pack);
+        self.results_cache.invalidate_all();
         Ok(())
     }
 
@@ -251,6 +255,17 @@ impl NetworkBlock {
 
     pub fn remove_site_pack(&mut self, site_pack_id: &SitePackId) {
         self.site_packs.remove(site_pack_id);
+        self.results_cache.invalidate_all();
+    }
+
+    /// Existing packs can change their membership independently of this block.
+    /// Call after activating a new pack database.
+    pub(crate) fn invalidate_results_cache(&self) {
+        self.results_cache.invalidate_all();
+    }
+
+    pub(crate) fn results_cache_handle(&self) -> Cache<UriHash, BlockingResult> {
+        self.results_cache.clone()
     }
 
     pub fn set_schedule(&mut self, schedule_entries: Vec<ScheduleEntry>) {
@@ -351,5 +366,55 @@ impl NetworkBlock {
     /// A lock constrains edits; it does not activate an otherwise inactive block.
     pub fn is_active(&self, now: &DateTime<Local>) -> bool {
         self.enabled && self.schedule.is_active_at(now)
+    }
+}
+#[cfg(test)]
+mod decision_cache_tests {
+    use super::*;
+
+    fn block() -> NetworkBlock {
+        NetworkBlock::from(
+            NetworkBlockId::from(Uuid::new_v4()),
+            "test".into(),
+            true,
+            Schedule::default(),
+            Lock::default(),
+            HashMap::new(),
+            UserDefinedRules::default(),
+            RegexRules::default(),
+            false,
+        )
+    }
+
+    #[test]
+    fn cached_allow_changes_after_adding_and_removing_rules() {
+        let mut block = block();
+        let uri: http::Uri = "https://example.com/path".parse().unwrap();
+        let rule = UserDefinedRule::new(
+            "example.com".into(),
+            user_defined_rules::UserDefinedRuleType::Domain,
+        );
+        assert!(!block.is_content_blocked(&uri).is_blocked());
+        block.add_user_defined_entries(vec![rule.clone()]).unwrap();
+        assert!(block.is_content_blocked(&uri).is_blocked());
+        block.remove_user_defined_entry(&rule).unwrap();
+        assert!(!block.is_content_blocked(&uri).is_blocked());
+    }
+
+    #[test]
+    fn cached_block_changes_after_adding_and_removing_exceptions() {
+        let mut block = block();
+        let uri: http::Uri = "https://example.com/path".parse().unwrap();
+        block
+            .add_user_defined_entries(vec![UserDefinedRule::new(
+                "example.com".into(),
+                user_defined_rules::UserDefinedRuleType::Domain,
+            )])
+            .unwrap();
+        assert!(block.is_content_blocked(&uri).is_blocked());
+        block.add_exceptions(vec!["example\\.com".into()]).unwrap();
+        assert!(!block.is_content_blocked(&uri).is_blocked());
+        block.remove_exception("example\\.com").unwrap();
+        assert!(block.is_content_blocked(&uri).is_blocked());
     }
 }
