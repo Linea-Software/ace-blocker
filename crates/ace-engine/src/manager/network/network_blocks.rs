@@ -75,7 +75,7 @@ impl NetworkManager {
     ) -> Result<(), NetworkManagerOpErr> {
         let now = &chrono::Local::now();
 
-        let network_block = self.get_mut_network_block_from(network_block_id).ok_or(
+        let network_block = self.get_network_block_from(network_block_id).ok_or(
             NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
             },
@@ -87,14 +87,15 @@ impl NetworkManager {
             });
         }
 
-        network_block.set_enabled(enabled);
-
         self.db
             .set_network_block_enabled(network_block_id, enabled)
             .map_err(|error| NetworkManagerOpErr::DatabaseError {
                 message: error.to_string(),
             })?;
 
+        self.get_mut_network_block_from(network_block_id)
+            .unwrap()
+            .set_enabled(enabled);
         Ok(())
     }
 
@@ -103,20 +104,20 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         icon: Option<String>,
     ) -> Result<(), NetworkManagerOpErr> {
-        let network_block = self.get_mut_network_block_from(network_block_id).ok_or(
-            NetworkManagerOpErr::NetworkBlockNotFound {
+        if self.get_network_block_from(network_block_id).is_none() {
+            return Err(NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
-            },
-        )?;
-
-        network_block.set_icon(icon.clone());
-
+            });
+        }
         self.db
-            .set_network_block_icon(network_block_id, icon)
+            .set_network_block_icon(network_block_id, icon.clone())
             .map_err(|error| NetworkManagerOpErr::DatabaseError {
                 message: format!("failed to set icon: {}", error),
             })?;
 
+        self.get_mut_network_block_from(network_block_id)
+            .unwrap()
+            .set_icon(icon);
         Ok(())
     }
 
@@ -134,7 +135,6 @@ impl NetworkManager {
                     id: network_block_id.clone(),
                 });
             }
-            self.network_blocks.remove(network_block_id);
         } else {
             return Err(NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
@@ -147,6 +147,7 @@ impl NetworkManager {
                 message: error.to_string(),
             })?;
 
+        self.network_blocks.remove(network_block_id);
         Ok(())
     }
 
@@ -175,13 +176,12 @@ impl NetworkManager {
     ) -> Result<(), NetworkManagerOpErr> {
         let now = &chrono::Local::now();
 
-        if let Some(block) = self.network_blocks.get_mut(network_block_id) {
+        if let Some(block) = self.network_blocks.get(network_block_id) {
             if block.is_locked(now) {
                 return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                     id: network_block_id.clone(),
                 });
             }
-            block.set_safe_search(enabled);
         } else {
             return Err(NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
@@ -194,6 +194,9 @@ impl NetworkManager {
                 message: error.to_string(),
             })?;
 
+        self.get_mut_network_block_from(network_block_id)
+            .unwrap()
+            .set_safe_search(enabled);
         Ok(())
     }
 
@@ -204,13 +207,12 @@ impl NetworkManager {
     ) -> Result<(), NetworkManagerOpErr> {
         let now = &chrono::Local::now();
 
-        if let Some(block) = self.network_blocks.get_mut(network_block_id) {
+        if let Some(block) = self.network_blocks.get(network_block_id) {
             if block.is_locked(now) {
                 return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                     id: network_block_id.clone(),
                 });
             }
-            block.set_name(new_name.clone());
         } else {
             return Err(NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
@@ -218,11 +220,14 @@ impl NetworkManager {
         }
 
         self.db
-            .rename_network_block(network_block_id, new_name)
+            .rename_network_block(network_block_id, new_name.clone())
             .map_err(|error| NetworkManagerOpErr::DatabaseError {
                 message: error.to_string(),
             })?;
 
+        self.get_mut_network_block_from(network_block_id)
+            .unwrap()
+            .set_name(new_name);
         Ok(())
     }
 }
@@ -258,6 +263,57 @@ mod tests {
             manager,
             _temp_dir: temp_dir,
         }
+    }
+
+    #[test]
+    fn failed_sqlite_mutations_do_not_change_live_policy() {
+        use diesel::RunQueryDsl;
+        let mut ctx = setup_test_manager();
+        let id = ctx
+            .manager
+            .create_network_block("Unchanged".into())
+            .unwrap();
+        let mut conn = ctx.manager.db.get_db_connection().unwrap();
+        diesel::sql_query(
+            "CREATE TRIGGER reject_policy_updates BEFORE UPDATE ON network_blocks BEGIN SELECT RAISE(ABORT, 'test rejection'); END"
+        ).execute(&mut conn).unwrap();
+
+        assert!(ctx.manager.set_network_block_enabled(&id, false).is_err());
+        assert!(
+            ctx.manager
+                .get_network_block_from(&id)
+                .unwrap()
+                .is_enabled()
+        );
+        assert!(
+            ctx.manager
+                .set_network_block_safe_search(&id, true)
+                .is_err()
+        );
+        assert!(
+            !ctx.manager
+                .get_network_block_from(&id)
+                .unwrap()
+                .is_safe_search_enabled()
+        );
+        assert!(
+            ctx.manager
+                .rename_network_block(&id, "Renamed".into())
+                .is_err()
+        );
+        assert_eq!(
+            ctx.manager.get_network_block_from(&id).unwrap().get_name(),
+            "Unchanged"
+        );
+
+        diesel::sql_query("DROP TRIGGER reject_policy_updates")
+            .execute(&mut conn)
+            .unwrap();
+        diesel::sql_query(
+            "CREATE TRIGGER reject_policy_deletes BEFORE DELETE ON network_blocks BEGIN SELECT RAISE(ABORT, 'test rejection'); END"
+        ).execute(&mut conn).unwrap();
+        assert!(ctx.manager.delete_network_block(&id).is_err());
+        assert!(ctx.manager.get_network_block_from(&id).is_some());
     }
 
     #[test]
