@@ -211,6 +211,16 @@ impl NetworkBlock {
         Ok(())
     }
 
+    pub(crate) fn replace_user_defined_rules(&mut self, rules: UserDefinedRules) {
+        self.user_defined_rules = rules;
+        self.results_cache.invalidate_all();
+    }
+
+    pub(crate) fn replace_exceptions(&mut self, rules: RegexRules) {
+        self.exceptions = rules;
+        self.results_cache.invalidate_all();
+    }
+
     pub fn remove_user_defined_entry(
         &mut self,
         rule: &UserDefinedRule,

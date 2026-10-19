@@ -23,20 +23,22 @@ impl NetworkManager {
         net_list_id: &NetworkBlockId,
         entries: Vec<UserDefinedRule>,
     ) -> Result<Vec<UserDefinedRuleModel>, NetworkManagerOpErr> {
-        let _ = self.get_mut_network_block_from(net_list_id).ok_or(
+        // Build the complete replacement matcher before writing to SQLite.
+        // A batch may be individually valid while exceeding the combined
+        // compiled-regex limit of the existing policy.
+        let list = self.get_network_block_from(net_list_id).ok_or(
             NetworkManagerOpErr::NetworkBlockNotFound {
                 id: net_list_id.clone(),
             },
         )?;
-
-        // Validate and normalize before persistence so an invalid rule can never
-        // leave SQLite and the in-memory matcher out of sync.
-        let normalized_entries = UserDefinedRules::new(entries)
+        let existing_len = list.get_user_defined_rules().rules().len();
+        let mut prepared = list.get_user_defined_rules().clone();
+        prepared
+            .add_rules(entries)
             .map_err(|error| NetworkManagerOpErr::InternalError {
                 message: format!("invalid user defined rule: {error}"),
-            })?
-            .rules()
-            .to_vec();
+            })?;
+        let normalized_entries = prepared.rules()[existing_len..].to_vec();
 
         let results = self
             .db
@@ -48,20 +50,11 @@ impl NetworkManager {
                 ),
             })?;
 
-        if let Some(list) = self.get_mut_network_block_from(net_list_id) {
-            list.add_user_defined_entries(normalized_entries)
-                .map_err(|error| NetworkManagerOpErr::InternalError {
-                    message: format!(
-                        "failed to add user defined entries to content list {}: {}",
-                        net_list_id, error
-                    ),
-                })?;
-            return Ok(results);
-        }
-
-        Err(NetworkManagerOpErr::NetworkBlockNotFound {
-            id: net_list_id.clone(),
-        })
+        // The matcher is already compiled and cannot fail after persistence.
+        self.get_mut_network_block_from(net_list_id)
+            .expect("block cannot disappear under the manager write lock")
+            .replace_user_defined_rules(prepared);
+        Ok(results)
     }
 
     pub fn delete_user_defined_entry(

@@ -22,17 +22,22 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         entries: Vec<String>,
     ) -> Result<Vec<ExceptionModel>, NetworkManagerOpErr> {
-        if let Some(list) = self.get_mut_network_block_from(network_block_id) {
-            if list.is_locked(&chrono::Local::now()) {
-                return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
-                    id: network_block_id.clone(),
-                });
-            }
-        } else {
-            return Err(NetworkManagerOpErr::NetworkBlockNotFound {
+        let list = self.get_network_block_from(network_block_id).ok_or(
+            NetworkManagerOpErr::NetworkBlockNotFound {
+                id: network_block_id.clone(),
+            },
+        )?;
+        if list.is_locked(&chrono::Local::now()) {
+            return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                 id: network_block_id.clone(),
             });
         }
+        let mut prepared = list.get_exceptions().clone();
+        prepared.add_patterns(entries.clone()).map_err(|error| {
+            NetworkManagerOpErr::InternalError {
+                message: format!("invalid exception rule: {error}"),
+            }
+        })?;
 
         let results = self
             .db
@@ -44,20 +49,10 @@ impl NetworkManager {
                 ),
             })?;
 
-        if let Some(list) = self.get_mut_network_block_from(network_block_id) {
-            list.add_exceptions(entries)
-                .map_err(|error| NetworkManagerOpErr::InternalError {
-                    message: format!(
-                        "failed to add exceptions to content list {}: {}",
-                        network_block_id, error
-                    ),
-                })?;
-            return Ok(results);
-        }
-
-        Err(NetworkManagerOpErr::NetworkBlockNotFound {
-            id: network_block_id.clone(),
-        })
+        self.get_mut_network_block_from(network_block_id)
+            .expect("block cannot disappear under the manager write lock")
+            .replace_exceptions(prepared);
+        Ok(results)
     }
 
     pub fn delete_exception(
@@ -173,6 +168,24 @@ mod tests {
             manager,
             _temp_dir: temp_dir,
         }
+    }
+
+    #[test]
+    fn invalid_exception_does_not_reach_sqlite() {
+        let mut ctx = setup_test_manager();
+        let id = ctx
+            .manager
+            .create_network_block("Invalid Exception".into())
+            .unwrap();
+        assert!(ctx.manager.add_exceptions(&id, vec!["(".into()]).is_err());
+        assert!(ctx.manager.get_exceptions_of(&id).unwrap().is_empty());
+        assert!(
+            ctx.manager
+                .db
+                .get_exceptions_of(id.as_ref())
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
