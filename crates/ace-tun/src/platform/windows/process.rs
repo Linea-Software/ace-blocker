@@ -16,7 +16,7 @@ use std::ffi::c_void;
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::path::PathBuf;
 
-use windows::Win32::Foundation::{CloseHandle, ERROR_INSUFFICIENT_BUFFER, NO_ERROR};
+use windows::Win32::Foundation::{CloseHandle, ERROR_INSUFFICIENT_BUFFER, GetLastError, NO_ERROR};
 use windows::Win32::NetworkManagement::IpHelper::{
     GetExtendedTcpTable, GetExtendedUdpTable, MIB_TCP6TABLE_OWNER_PID, MIB_TCPTABLE_OWNER_PID,
     MIB_UDP6TABLE_OWNER_PID, MIB_UDPTABLE_OWNER_PID, TCP_TABLE_OWNER_PID_ALL, UDP_TABLE_OWNER_PID,
@@ -68,7 +68,7 @@ pub fn resolve_pid(local_ip: IpAddr, local_port: u16, is_udp: bool) -> Option<u3
 ///
 /// `fetch` is called twice: once with a null pointer to size the buffer and
 /// once to fill it. Returns the raw bytes on success.
-fn fetch_table<F>(family: u16, table_class: i32, mut fetch: F) -> Option<Vec<u8>>
+fn fetch_table<F>(family: u16, table_class: i32, mut fetch: F) -> Option<Vec<u64>>
 where
     F: FnMut(Option<*mut c_void>, *mut u32, u32, i32) -> u32,
 {
@@ -77,7 +77,9 @@ where
     if rc != ERROR_INSUFFICIENT_BUFFER.0 {
         return None;
     }
-    let mut buf = vec![0u8; size as usize];
+    // IP-Helper rows contain 32/64-bit fields. A Vec<u8> has alignment 1
+    // and casting its pointer to a MIB table pointer would be unsound.
+    let mut buf = vec![0u64; (size as usize).div_ceil(std::mem::size_of::<u64>())];
     let rc = fetch(
         Some(buf.as_mut_ptr() as *mut c_void),
         &mut size,
@@ -223,21 +225,28 @@ pub fn process_path(pid: u32) -> Option<String> {
     // SAFETY: handle is checked and always closed before returning.
     unsafe {
         let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
-        // Windows supports long executable paths; do not truncate application
-        // identity to the legacy MAX_PATH limit before handing it to WFP.
-        let mut buf = vec![0u16; 32_768];
-        let mut len = buf.len() as u32;
-        let res = QueryFullProcessImageNameW(
-            handle,
-            PROCESS_NAME_WIN32,
-            PWSTR(buf.as_mut_ptr()),
-            &mut len,
-        );
-        let _ = CloseHandle(handle);
-        if res.is_err() || len == 0 {
-            return None;
+        // The usual path fits in 512 UTF-16 units; don't allocate 64 KiB for
+        // every new flow. Retry when Windows reports a longer executable path.
+        let mut path = None;
+        for capacity in [512, 1024, 2048, 4096, 8192, 16384, 32768] {
+            let mut buf = vec![0u16; capacity];
+            let mut len = buf.len() as u32;
+            match QueryFullProcessImageNameW(
+                handle,
+                PROCESS_NAME_WIN32,
+                PWSTR(buf.as_mut_ptr()),
+                &mut len,
+            ) {
+                Ok(()) if len > 0 => {
+                    path = Some(String::from_utf16_lossy(&buf[..len as usize]));
+                    break;
+                }
+                Err(_) if GetLastError() == ERROR_INSUFFICIENT_BUFFER => continue,
+                _ => break,
+            }
         }
-        Some(String::from_utf16_lossy(&buf[..len as usize]))
+        let _ = CloseHandle(handle);
+        path
     }
 }
 
