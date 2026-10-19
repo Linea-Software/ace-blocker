@@ -17,6 +17,8 @@ use std::time::{Duration, Instant};
 /// Default time-to-live for a cached hostname (matches ProxyBridge's
 /// `DNS_CACHE_TTL_MS` of 5 minutes).
 pub const DNS_CACHE_TTL: Duration = Duration::from_secs(300);
+/// Bound observations from long-running browsers and changing CDNs.
+const MAX_DNS_CACHE_IPS: usize = 8192;
 
 /// Thread-safe cache mapping a resolved IP to every live hostname observed for it.
 #[derive(Debug)]
@@ -46,6 +48,20 @@ impl DnsCache {
             return;
         }
         if let Ok(mut map) = self.entries.write() {
+            if !map.contains_key(&ip) && map.len() >= MAX_DNS_CACHE_IPS {
+                let now = Instant::now();
+                map.retain(|_, candidates| {
+                    candidates.retain(|_, expiry| *expiry > now);
+                    !candidates.is_empty()
+                });
+                if map.len() >= MAX_DNS_CACHE_IPS {
+                    // DNS snooping is advisory; a missing host falls back to
+                    // inspecting an IP-literal CONNECT, not bypassing policy.
+                    if let Some(oldest) = map.keys().next().copied() {
+                        map.remove(&oldest);
+                    }
+                }
+            }
             map.entry(ip)
                 .or_default()
                 .insert(domain.to_ascii_lowercase(), Instant::now() + self.ttl);
@@ -244,6 +260,15 @@ fn parse_name(msg: &[u8], offset: &mut usize) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dns_cache_never_grows_beyond_ip_limit() {
+        let cache = DnsCache::default();
+        for value in 0..=(MAX_DNS_CACHE_IPS as u32) {
+            cache.store(IpAddr::V4(Ipv4Addr::from(value)), "example.com");
+        }
+        assert_eq!(cache.len(), MAX_DNS_CACHE_IPS);
+    }
 
     /// Build a minimal DNS response for `host` -> one A record `ip`.
     fn build_response(host: &str, ip: [u8; 4]) -> Vec<u8> {
