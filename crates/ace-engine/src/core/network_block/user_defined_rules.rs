@@ -97,24 +97,58 @@ impl UserDefinedRules {
             return Ok(());
         }
 
-        let mut all_rules = self.rules.clone();
-        all_rules.extend(new_rules);
-        *self = Self::new(all_rules)?;
+        // Domain additions do not change the compiled regex set. Normalize
+        // the complete batch before mutating state so invalid input stays
+        // atomic, then avoid cloning and recompiling every existing rule.
+        let normalized = new_rules
+            .into_iter()
+            .map(Self::normalize_rule)
+            .collect::<Result<Vec<_>, _>>()?;
+        if normalized
+            .iter()
+            .any(|rule| rule.rule_type == UserDefinedRuleType::Regex)
+        {
+            let mut all_rules = self.rules.clone();
+            all_rules.extend(normalized);
+            *self = Self::new(all_rules)?;
+        } else {
+            for rule in normalized {
+                self.domains.insert(rule.rule.clone());
+                self.rules.push(rule);
+            }
+        }
         Ok(())
     }
 
     pub fn remove_rule(&mut self, rule: &UserDefinedRule) -> Result<(), UserDefinedRulesError> {
         let normalized_rule = Self::normalize_rule(rule.clone())?;
-        let mut all_rules = self.rules.clone();
-
-        if let Some(position) = all_rules
-            .iter()
-            .position(|existing| existing == &normalized_rule)
-        {
-            all_rules.swap_remove(position);
-            *self = Self::new(all_rules)?;
+        if normalized_rule.rule_type == UserDefinedRuleType::Domain {
+            if let Some(position) = self
+                .rules
+                .iter()
+                .position(|existing| existing == &normalized_rule)
+            {
+                self.rules.swap_remove(position);
+                // Duplicate domain rules are legal; retain the hash entry if
+                // another copy remains.
+                if !self
+                    .rules
+                    .iter()
+                    .any(|existing| existing == &normalized_rule)
+                {
+                    self.domains.remove(&normalized_rule.rule);
+                }
+            }
+        } else {
+            let mut all_rules = self.rules.clone();
+            if let Some(position) = all_rules
+                .iter()
+                .position(|existing| existing == &normalized_rule)
+            {
+                all_rules.swap_remove(position);
+                *self = Self::new(all_rules)?;
+            }
         }
-
         Ok(())
     }
 
@@ -217,6 +251,36 @@ fn normalize_domain(domain: &str) -> Result<String, UserDefinedRulesError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn domain_updates_preserve_regex_and_duplicate_semantics() {
+        let mut rules =
+            UserDefinedRules::new(vec![regex_rule("blocked-path"), domain_rule("example.com")])
+                .unwrap();
+        rules
+            .add_rules(vec![domain_rule("EXAMPLE.COM"), domain_rule("other.com")])
+            .unwrap();
+        assert!(rules.matches_uri(&"https://example.com/".parse().unwrap()));
+        assert!(rules.matches_uri(&"https://other.com/".parse().unwrap()));
+        assert!(rules.matches_uri(&"https://unrelated.com/blocked-path".parse().unwrap()));
+        rules.remove_rule(&domain_rule("example.com")).unwrap();
+        assert!(rules.matches_uri(&"https://example.com/".parse().unwrap()));
+        rules.remove_rule(&domain_rule("EXAMPLE.COM")).unwrap();
+        assert!(!rules.matches_uri(&"https://example.com/".parse().unwrap()));
+        assert!(rules.matches_uri(&"https://unrelated.com/blocked-path".parse().unwrap()));
+    }
+
+    #[test]
+    fn invalid_domain_batch_does_not_partially_modify_rules() {
+        let mut rules = UserDefinedRules::default();
+        assert!(
+            rules
+                .add_rules(vec![domain_rule("valid.com"), domain_rule("not a domain")])
+                .is_err()
+        );
+        assert!(rules.rules().is_empty());
+        assert!(!rules.matches_uri(&"https://valid.com/".parse().unwrap()));
+    }
 
     fn domain_rule(rule: &str) -> UserDefinedRule {
         UserDefinedRule::new(rule.to_string(), UserDefinedRuleType::Domain)
