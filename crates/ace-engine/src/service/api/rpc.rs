@@ -347,6 +347,7 @@ pub trait EngineControl {
     async fn set_resistance_mode_type(
         &self,
         capability: Option<String>,
+        #[serde(with = "crate::service::api::schemas::punishment_mode_wire")]
         mode: crate::manager::resistance::punishment::PunishmentMode,
     ) -> Result<RpcResult<ResistanceModeTypeResponse>, CallError>;
 }
@@ -1490,6 +1491,77 @@ mod remoc_tests {
             .await
             .expect("consume RTC capability");
         (remote, task)
+    }
+
+    #[tokio::test]
+    async fn dashboard_snapshot_round_trips_over_remoc() {
+        let (_temp, state) = state();
+        let (client, server) = client(state).await;
+        let created = client
+            .create_network_block(
+                Some("test-256-bit-capability".to_owned()),
+                CreateNetworkBlockRequest {
+                    block_name: "Dashboard RPC regression".to_owned(),
+                    icon: None,
+                },
+            )
+            .await
+            .expect("create network block over remoc")
+            .expect("create dashboard fixture");
+        let snapshot = client
+            .get_dashboard_snapshot(None)
+            .await
+            .expect("deserialize dashboard snapshot")
+            .expect("dashboard operation");
+        assert_eq!(snapshot.blocks.len(), 1);
+        assert_eq!(snapshot.blocks[0].block.id, created.network_block.id);
+        assert_eq!(
+            serde_json::to_value(&snapshot).unwrap()["resistanceModeSettings"]["mode"],
+            serde_json::json!({"type": "static", "intensity": "none"})
+        );
+
+        drop(client);
+        tokio::time::timeout(Duration::from_secs(5), server)
+            .await
+            .expect("server shutdown deadline")
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn resistance_mode_type_round_trips_over_remoc() {
+        let (_temp, state) = state();
+        let (client, server) = client(state).await;
+        let current = client
+            .get_resistance_mode_type(None)
+            .await
+            .expect("deserialize resistance mode")
+            .expect("get resistance mode");
+        assert_eq!(
+            serde_json::to_value(current.mode).unwrap(),
+            serde_json::json!({"type": "static", "intensity": "none"})
+        );
+
+        let updated = client
+            .set_resistance_mode_type(
+                Some("test-256-bit-capability".to_owned()),
+                PunishmentMode::Static {
+                    intensity: PunishmentIntensity::High,
+                },
+            )
+            .await
+            .expect("deserialize updated resistance mode")
+            .expect("set resistance mode");
+        assert_eq!(updated.current_intensity, PunishmentIntensity::High);
+        assert_eq!(
+            serde_json::to_value(updated.mode).unwrap(),
+            serde_json::json!({"type": "static", "intensity": "high"})
+        );
+
+        drop(client);
+        tokio::time::timeout(Duration::from_secs(5), server)
+            .await
+            .expect("server shutdown deadline")
+            .unwrap();
     }
 
     #[tokio::test]

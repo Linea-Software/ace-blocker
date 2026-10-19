@@ -305,6 +305,47 @@ pub struct AddNetListToSitePackResponse {
 
 // --- route_resistance_mode.rs ---
 
+/// Keep the UI's internally tagged JSON mode representation, while sending
+/// a regular enum over remoc's binary codec (which cannot deserialize an
+/// internally tagged enum via Serde's `deserialize_any`).
+pub(crate) mod punishment_mode_wire {
+    use super::{PunishmentIntensity, PunishmentMode};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    #[derive(Serialize, Deserialize)]
+    enum BinaryMode {
+        Static { intensity: PunishmentIntensity },
+    }
+
+    pub fn serialize<S: Serializer>(
+        mode: &PunishmentMode,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        if serializer.is_human_readable() {
+            mode.serialize(serializer)
+        } else {
+            match mode {
+                PunishmentMode::Static { intensity } => BinaryMode::Static {
+                    intensity: *intensity,
+                }
+                .serialize(serializer),
+            }
+        }
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<PunishmentMode, D::Error> {
+        if deserializer.is_human_readable() {
+            PunishmentMode::deserialize(deserializer)
+        } else {
+            match BinaryMode::deserialize(deserializer)? {
+                BinaryMode::Static { intensity } => Ok(PunishmentMode::Static { intensity }),
+            }
+        }
+    }
+}
+
 /// Machine-readable enforcement status for Resistance Mode.
 ///
 /// The engine never reports `operational` merely because the master setting
@@ -322,6 +363,8 @@ pub struct ResistanceModeSettings {
     pub lock_state: LockState,
     pub lock_end: Option<String>,
     /// Current mode (static only in v1 beta)
+    #[serde(with = "punishment_mode_wire")]
+    #[schemars(with = "PunishmentMode")]
     pub mode: PunishmentMode,
     /// Currently effective intensity (static intensity)
     pub current_intensity: PunishmentIntensity,
@@ -368,6 +411,8 @@ pub struct GetAllScriptsResponse {
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ResistanceModeTypeResponse {
+    #[serde(with = "punishment_mode_wire")]
+    #[schemars(with = "PunishmentMode")]
     pub mode: PunishmentMode,
     pub current_intensity: PunishmentIntensity,
 }
