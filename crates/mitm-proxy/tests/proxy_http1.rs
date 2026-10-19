@@ -278,6 +278,120 @@ async fn http1_streaming_response_is_not_buffered() {
 }
 
 #[tokio::test]
+async fn busy_streamed_http1_response_does_not_delay_other_requests() {
+    init_tracing();
+    let cert = self_signed_cert();
+    let mut tls_config = rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert.cert_chain.clone(), cert.key_der())
+        .unwrap();
+    tls_config.alpn_protocols = vec![b"http/1.1".to_vec()];
+    let acceptor = TlsAcceptor::from(Arc::new(tls_config));
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let origin_addr = listener.local_addr().unwrap();
+    let (release_tx, release_rx) = oneshot::channel::<()>();
+    let release = Arc::new(tokio::sync::Mutex::new(Some(release_rx)));
+    tokio::spawn(async move {
+        loop {
+            let Ok((stream, _)) = listener.accept().await else {
+                break;
+            };
+            let acceptor = acceptor.clone();
+            let release = release.clone();
+            tokio::spawn(async move {
+                let Ok(mut tls) = acceptor.accept(stream).await else {
+                    return;
+                };
+                let mut request = Vec::new();
+                while !request.ends_with(b"\r\n\r\n") {
+                    let mut byte = [0u8; 1];
+                    if tls.read_exact(&mut byte).await.is_err() {
+                        return;
+                    }
+                    request.push(byte[0]);
+                    if request.len() > 4096 {
+                        return;
+                    }
+                }
+                if request
+                    .windows(b"/events".len())
+                    .any(|part| part == b"/events")
+                {
+                    if tls.write_all(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n5\r\nfirst\r\n").await.is_err() { return }
+                    let Some(rx) = release.lock().await.take() else {
+                        return;
+                    };
+                    let _ = rx.await;
+                    let _ = tls.write_all(b"6\r\nsecond\r\n0\r\n\r\n").await;
+                } else {
+                    let _ = tls
+                        .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok")
+                        .await;
+                }
+                let _ = tls.flush().await;
+            });
+        }
+    });
+    let ca_dir = TempDir::new().unwrap();
+    let proxy_addr = pick_tcp_addr().await;
+    let (ca_pem, _handle) =
+        start_proxy_on(proxy_addr, None, ca_dir.path(), Inspectors::default()).await;
+
+    let tls = connect_tls_through_proxy(
+        proxy_addr,
+        &ca_pem,
+        "localhost",
+        origin_addr.port(),
+        vec![b"http/1.1".to_vec()],
+    )
+    .await;
+    let (mut sender, connection) = hyper::client::conn::http1::handshake(TokioIo::new(tls))
+        .await
+        .unwrap();
+    tokio::spawn(async move {
+        let _ = connection.await;
+    });
+    let req = Request::builder()
+        .method("GET")
+        .uri("/events")
+        .header("host", "localhost")
+        .body(Full::new(Bytes::new()))
+        .unwrap();
+    let mut first = sender.send_request(req).await.unwrap();
+    assert_eq!(first.status(), StatusCode::OK);
+    assert_eq!(
+        first
+            .body_mut()
+            .frame()
+            .await
+            .unwrap()
+            .unwrap()
+            .into_data()
+            .unwrap(),
+        Bytes::from_static(b"first")
+    );
+
+    let second = tokio::time::timeout(
+        std::time::Duration::from_secs(8),
+        proxy_connect_get(
+            proxy_addr,
+            &ca_pem,
+            "localhost",
+            origin_addr.port(),
+            "/ordinary",
+        ),
+    )
+    .await
+    .expect("second request must not wait for a never-ending first response");
+    assert_eq!(second, (StatusCode::OK, "ok".into()));
+    release_tx.send(()).unwrap();
+    assert_eq!(
+        first.into_body().collect().await.unwrap().to_bytes(),
+        Bytes::from_static(b"second")
+    );
+}
+
+#[tokio::test]
 async fn http1_upgrade_relays_bidirectional_bytes_after_101() {
     exercise_http1_upgrade(false).await;
 }
