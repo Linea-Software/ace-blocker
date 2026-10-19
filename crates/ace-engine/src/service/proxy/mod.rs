@@ -65,6 +65,16 @@ impl ProxyAdapter {
         )
     }
 
+    async fn record_blocked_attempt(&self) {
+        // Diesel is synchronous. Do not hold the global policy write lock (or
+        // block a Tokio worker) while persisting a traffic counter.
+        let db = self.network_manager.read().await.get_db();
+        let _ = tokio::task::spawn_blocking(move || {
+            db.increment_blocked_attempts(chrono::Utc::now().date_naive())
+        })
+        .await;
+    }
+
     fn set_interception_required(&self, host: &str, required: bool) {
         let host = normalize_proxy_host(host);
         let mut interception_hosts = self
@@ -161,8 +171,7 @@ impl RequestInspector for ProxyAdapter {
         self.set_interception_required(host, requires_interception);
 
         if !matches!(blocking_result, crate::core::BlockingResult::NotBlocked) {
-            let mut manager = self.network_manager.write().await;
-            let _ = manager.increment_blocked_attempt();
+            self.record_blocked_attempt().await;
             return RequestAction::Respond(Self::blocked_response());
         }
 
@@ -286,11 +295,7 @@ impl RequestInspector for ProxyAdapter {
 
             // ── Block check ─────────────────────────────────────────
             if !matches!(blocking_result, crate::core::BlockingResult::NotBlocked) {
-                {
-                    let mut manager = self.network_manager.write().await;
-                    let _ = manager.increment_blocked_attempt();
-                }
-
+                self.record_blocked_attempt().await;
                 return RequestAction::Respond(Self::blocked_response());
             }
         }
