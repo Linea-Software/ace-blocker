@@ -61,12 +61,13 @@ impl TunAdapter {
     pub(crate) fn create(ipv6: bool, protected_processes: &[String]) -> Result<Self> {
         let wintun = load_wintun()?;
 
-        let adapter = Adapter::create(&wintun, ADAPTER_NAME, TUNNEL_TYPE, None).map_err(|error| {
-            Error::AdapterCreate {
-                name: ADAPTER_NAME.to_string(),
-                reason: error.to_string(),
-            }
-        })?;
+        let adapter =
+            Adapter::create(&wintun, ADAPTER_NAME, TUNNEL_TYPE, None).map_err(|error| {
+                Error::AdapterCreate {
+                    name: ADAPTER_NAME.to_string(),
+                    reason: error.to_string(),
+                }
+            })?;
 
         let luid = to_windows_luid(adapter.get_luid());
 

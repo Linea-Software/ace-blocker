@@ -42,6 +42,9 @@ mod macos;
 #[cfg(target_os = "windows")]
 mod windows;
 
+#[cfg(target_os = "windows")]
+pub(crate) use windows::process::reset_preexisting_browser_tcp;
+
 #[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
 compile_error!("ace-tun currently supports Windows, Linux, and macOS only");
 

@@ -43,6 +43,7 @@ pub mod inspect;
 pub mod intercept;
 
 mod cert_resolver;
+mod client_hello;
 mod http;
 mod http3;
 mod state;

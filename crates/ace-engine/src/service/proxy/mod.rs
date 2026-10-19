@@ -523,6 +523,10 @@ impl ProxyInterceptDecider {
 }
 
 impl InterceptDecider for ProxyInterceptDecider {
+    fn recover_hostname_for_ip_connect(&self) -> bool {
+        true
+    }
+
     fn should_intercept(&self, authority: &http::uri::Authority, sni: Option<&str>) -> bool {
         let host = authority.host();
         let policy_requires_interception = self

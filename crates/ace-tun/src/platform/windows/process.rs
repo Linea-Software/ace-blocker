@@ -290,6 +290,97 @@ pub(crate) fn running_process_paths(protected_names: &HashSet<String>) -> Vec<Pa
     paths
 }
 
+/// Force pre-existing public IPv4 TCP browser connections to reconnect through
+/// ACE's newly installed WinTun routes. WFP ALE connect filters protect new
+/// connections but do not retroactively route an established socket.
+pub(crate) fn reset_preexisting_browser_tcp(protected_processes: &[String]) {
+    use std::collections::HashMap;
+    use windows::Win32::NetworkManagement::IpHelper::{
+        MIB_TCP_STATE_DELETE_TCB, MIB_TCPROW_LH, MIB_TCPROW_LH_0, SetTcpEntry,
+        TCP_TABLE_OWNER_PID_CONNECTIONS,
+    };
+
+    let protected_names: HashSet<String> = protected_processes
+        .iter()
+        .map(|name| name.to_ascii_lowercase())
+        .collect();
+    let Some(buf) = fetch_table(
+        AF_INET.0,
+        TCP_TABLE_OWNER_PID_CONNECTIONS.0,
+        |ptr, size, af, class| unsafe {
+            GetExtendedTcpTable(
+                ptr,
+                size,
+                false,
+                af,
+                std::mem::transmute::<i32, _>(class),
+                0,
+            )
+        },
+    ) else {
+        tracing::warn!("cannot enumerate established IPv4 connections at ACE startup");
+        return;
+    };
+
+    let mut owners = HashMap::<u32, bool>::new();
+    let mut closed = 0usize;
+    let mut failed = 0usize;
+    // SAFETY: fetch_table returned an aligned, successfully populated MIB table.
+    unsafe {
+        let table = &*(buf.as_ptr() as *const MIB_TCPTABLE_OWNER_PID);
+        let rows = std::slice::from_raw_parts(table.table.as_ptr(), table.dwNumEntries as usize);
+        for row in rows {
+            let destination = Ipv4Addr::from(row.dwRemoteAddr.to_le_bytes());
+            if !is_public_tcp_connection(row.dwState, destination) {
+                continue;
+            }
+            let protected = *owners.entry(row.dwOwningPid).or_insert_with(|| {
+                process_name(row.dwOwningPid)
+                    .is_some_and(|name| protected_names.contains(&name.to_ascii_lowercase()))
+            });
+            if !protected {
+                continue;
+            }
+            let connection = MIB_TCPROW_LH {
+                Anonymous: MIB_TCPROW_LH_0 {
+                    dwState: MIB_TCP_STATE_DELETE_TCB.0 as u32,
+                },
+                dwLocalAddr: row.dwLocalAddr,
+                dwLocalPort: row.dwLocalPort,
+                dwRemoteAddr: row.dwRemoteAddr,
+                dwRemotePort: row.dwRemotePort,
+            };
+            if SetTcpEntry(&connection) == NO_ERROR.0 {
+                closed += 1;
+            } else {
+                failed += 1;
+            }
+        }
+    }
+    tracing::info!(
+        closed,
+        failed,
+        "reset pre-existing browser IPv4 TCP connections"
+    );
+    if failed > 0 {
+        tracing::warn!(
+            failed,
+            "some existing browser TCP connections could not be reset"
+        );
+    }
+}
+
+fn is_public_tcp_connection(state: u32, destination: Ipv4Addr) -> bool {
+    use windows::Win32::NetworkManagement::IpHelper::MIB_TCP_STATE_ESTAB;
+    state == MIB_TCP_STATE_ESTAB.0 as u32
+        && !destination.is_private()
+        && !destination.is_loopback()
+        && !destination.is_link_local()
+        && !destination.is_multicast()
+        && !destination.is_broadcast()
+        && !destination.is_unspecified()
+}
+
 /// Resolve the executable *file name* (basename) for a PID, e.g. `chrome.exe`.
 pub fn process_name(pid: u32) -> Option<String> {
     process_path(pid).map(|p| file_name(&p).to_string())
@@ -304,6 +395,26 @@ pub fn file_name(path: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reset_only_targets_established_public_ipv4_tcp() {
+        use windows::Win32::NetworkManagement::IpHelper::MIB_TCP_STATE_ESTAB;
+        let established = MIB_TCP_STATE_ESTAB.0 as u32;
+        assert!(is_public_tcp_connection(
+            established,
+            Ipv4Addr::new(8, 8, 8, 8)
+        ));
+        assert!(!is_public_tcp_connection(established, Ipv4Addr::LOCALHOST));
+        assert!(!is_public_tcp_connection(
+            established,
+            Ipv4Addr::new(192, 168, 1, 2)
+        ));
+        assert!(!is_public_tcp_connection(
+            established,
+            Ipv4Addr::new(169, 254, 1, 1)
+        ));
+        assert!(!is_public_tcp_connection(0, Ipv4Addr::new(8, 8, 8, 8)));
+    }
 
     #[test]
     fn extracts_file_name() {

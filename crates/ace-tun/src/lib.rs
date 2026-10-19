@@ -362,6 +362,22 @@ impl TunRedirect {
         match self.start_inner() {
             Ok(state) => {
                 *self.running.lock().expect("running lock poisoned") = Some(state);
+                #[cfg(target_os = "windows")]
+                {
+                    // Wait until netstack::run has had a chance to begin
+                    // accepting flows before making existing browser sockets
+                    // reconnect through the newly installed WinTun routes.
+                    tokio::task::yield_now().await;
+                    let protected = self.shared.protected_processes.clone();
+                    if let Err(error) = tokio::task::spawn_blocking(move || {
+                        platform::reset_preexisting_browser_tcp(&protected);
+                    })
+                    .await
+                    {
+                        self.shared
+                            .log(format!("could not reset pre-ACE browser sockets: {error}"));
+                    }
+                }
                 Ok(())
             }
             Err(error) => {
@@ -475,7 +491,9 @@ async fn watchdog(
     match netstack_task.await {
         Ok(()) => tracing::debug!("netstack task finished"),
         Err(error) if error.is_panic() => {
-            tracing::error!("netstack PANICKED ({error}); tearing down tunnel to restore connectivity");
+            tracing::error!(
+                "netstack PANICKED ({error}); tearing down tunnel to restore connectivity"
+            );
         }
         Err(error) => tracing::debug!("netstack task cancelled: {error}"),
     }

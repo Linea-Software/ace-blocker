@@ -216,33 +216,105 @@ async fn mitm_tunnel<I>(
 where
     I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
 {
-    let host = authority.host().to_string();
     let port = authority.port_u16().unwrap_or(443);
+    if port == 443
+        && is_ip_literal(authority.host())
+        && state.intercept_decider.recover_hostname_for_ip_connect()
+    {
+        // ace-tun may not have seen the DNS query (browser cache or DoH).
+        // Recover the real TLS target before checking the hostname policy.
+        // A missing/invalid SNI must never turn an unknown host into an
+        // uninspected, allowed IP tunnel.
+        let (io, server_name) = match crate::client_hello::recover_sni(io).await {
+            Ok(result) => result,
+            Err(error) => {
+                warn!(%authority, %error, "rejecting IP CONNECT without usable TLS hostname");
+                return Ok(());
+            }
+        };
+        if is_ip_literal(&server_name) || ServerName::try_from(server_name.clone()).is_err() {
+            warn!(%authority, %server_name, "rejecting IP CONNECT with invalid TLS hostname");
+            return Ok(());
+        }
+        let policy_authority: Authority = format!("{server_name}:{port}")
+            .parse()
+            .map_err(|error| eyre::eyre!("invalid recovered TLS authority: {error}"))?;
+        let meta = ConnMeta {
+            client_addr: peer,
+            protocol: Protocol::Http1,
+            is_tls: false,
+            authority: policy_authority.to_string(),
+        };
+        if let RequestAction::Respond(_) = state
+            .inspectors
+            .request
+            .inspect_connect(&meta, &policy_authority)
+            .await
+        {
+            debug!(%policy_authority, "blocked TLS SNI recovered from IP CONNECT");
+            return Ok(());
+        }
+        return serve_tls_tunnel(io, authority, policy_authority, peer, state).await;
+    }
+    serve_tls_tunnel(io, authority.clone(), authority, peer, state).await
+}
 
-    // Narrow interception: only terminate TLS for hosts the decider approves.
-    // Anything else is relayed opaquely — no TLS setup runs on that branch, so
-    // no leaf certificate is minted and no decryption happens. `sni` is a
-    // placeholder (always `None` for now); see `InterceptDecider`.
-    let should_intercept = state.intercept_decider.should_intercept(&authority, None);
+async fn serve_tls_tunnel<I>(
+    io: I,
+    connect_authority: Authority,
+    policy_authority: Authority,
+    peer: SocketAddr,
+    state: SharedState,
+) -> Result<()>
+where
+    I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
+{
+    let host = policy_authority.host().to_string();
+    let port = policy_authority.port_u16().unwrap_or(443);
+
+    // The effective TLS name, not a DNS-cache-miss IP literal, determines the
+    // interception policy; opaque traffic still connects to the original IP.
+    let should_intercept = state
+        .intercept_decider
+        .should_intercept(&policy_authority, Some(&host));
     debug!(
         client = %peer,
-        authority = %authority,
+        authority = %policy_authority,
         should_intercept,
         "CONNECT interception decision"
     );
     if !should_intercept {
-        return opaque_tunnel(io, &authority, &host, port, state).await;
+        return opaque_tunnel(
+            io,
+            &connect_authority,
+            &policy_authority,
+            connect_authority.host(),
+            port,
+            state,
+        )
+        .await;
     }
 
     if state.config.preserve_client_cert_auth
-        && state.upstream.requires_client_certificate(&host, port).await
+        && state
+            .upstream
+            .requires_client_certificate(&host, port)
+            .await
     {
         info!(
             client = %peer,
-            authority = %authority,
+            authority = %policy_authority,
             "origin requires client certificate; keeping CONNECT opaque"
         );
-        return opaque_tunnel(io, &authority, &host, port, state).await;
+        return opaque_tunnel(
+            io,
+            &connect_authority,
+            &policy_authority,
+            connect_authority.host(),
+            port,
+            state,
+        )
+        .await;
     }
 
     let mut server_tls = (*state.server_tls).clone();
@@ -251,7 +323,7 @@ where
         host.clone(),
     ));
     let acceptor = TlsAcceptor::from(Arc::new(server_tls));
-    debug!(client = %peer, authority = %authority, "starting client TLS handshake");
+    debug!(client = %peer, authority = %policy_authority, "starting client TLS handshake");
     let tls = acceptor
         .accept(io)
         .await
@@ -264,7 +336,7 @@ where
     };
     debug!(
         client = %peer,
-        authority = %authority,
+        authority = %policy_authority,
         protocol = %protocol,
         "client TLS handshake completed"
     );
@@ -299,7 +371,7 @@ where
         result = connection => {
             result.map_err(|error| eyre::eyre!("serving decrypted connection: {error}"))
         }
-        _ = wait_for_tunnel_termination(&authority, true, tunnel_inspector.as_ref()) => Ok(()),
+        _ = wait_for_tunnel_termination(&policy_authority, true, tunnel_inspector.as_ref()) => Ok(()),
     }
 }
 
@@ -311,6 +383,7 @@ where
 async fn opaque_tunnel<I>(
     io: I,
     authority: &Authority,
+    policy_authority: &Authority,
     host: &str,
     port: u16,
     state: SharedState,
@@ -334,7 +407,7 @@ where
             result.map_err(|error| eyre::eyre!("opaque tunnel relay to {authority} failed: {error}"))?;
             Ok(())
         }
-        _ = wait_for_tunnel_termination(authority, false, state.inspectors.request.as_ref()) => Ok(()),
+        _ = wait_for_tunnel_termination(policy_authority, false, state.inspectors.request.as_ref()) => Ok(()),
     }
 }
 
@@ -399,7 +472,12 @@ async fn relay(
     // scheme/authority; plaintext ones already have them).
     let abs_uri = match absolute_uri(req.uri(), &upstream_host, port, secure) {
         Ok(u) => u,
-        Err(error) => return simple(StatusCode::BAD_REQUEST, &format!("bad request URI: {error}")),
+        Err(error) => {
+            return simple(
+                StatusCode::BAD_REQUEST,
+                &format!("bad request URI: {error}"),
+            );
+        }
     };
 
     // Hyper exposes HTTP/2 CONNECT DATA through its upgrade API, not Incoming.
@@ -450,7 +528,11 @@ async fn relay(
             }
             ensure_host_header(&mut ureq, &upstream_host, port, secure);
 
-            let upstream_resp = match state.upstream.send(secure, &upstream_host, port, ureq).await {
+            let upstream_resp = match state
+                .upstream
+                .send(secure, &upstream_host, port, ureq)
+                .await
+            {
                 Ok(resp) => resp,
                 Err(error) => {
                     warn!("upstream {upstream_host}:{port} failed: {error:#}");
@@ -460,10 +542,16 @@ async fn relay(
             (head_snapshot, upstream_resp)
         }
         RequestBodyMode::Buffer => {
-            let body_bytes = match Limited::new(body, MAX_BUFFERED_REQUEST_BODY).collect().await {
+            let body_bytes = match Limited::new(body, MAX_BUFFERED_REQUEST_BODY)
+                .collect()
+                .await
+            {
                 Ok(body) => body.to_bytes(),
                 Err(error) => {
-                    if error.downcast_ref::<http_body_util::LengthLimitError>().is_some() {
+                    if error
+                        .downcast_ref::<http_body_util::LengthLimitError>()
+                        .is_some()
+                    {
                         return simple(StatusCode::PAYLOAD_TOO_LARGE, "request body too large");
                     }
                     return simple(
@@ -493,7 +581,11 @@ async fn relay(
             }
             ensure_host_header(&mut ureq, &upstream_host, port, secure);
 
-            let upstream_resp = match state.upstream.send(secure, &upstream_host, port, ureq).await {
+            let upstream_resp = match state
+                .upstream
+                .send(secure, &upstream_host, port, ureq)
+                .await
+            {
                 Ok(resp) => resp,
                 Err(error) => {
                     warn!("upstream {upstream_host}:{port} failed: {error:#}");
@@ -761,6 +853,105 @@ mod tests {
         let head = String::from_utf8_lossy(&buf[..total]);
         assert!(head.starts_with("HTTP/1.1 200"), "got: {head}");
         tcp
+    }
+
+    struct RecoverIpTlsName;
+
+    impl crate::InterceptDecider for RecoverIpTlsName {
+        fn should_intercept(&self, _authority: &Authority, _sni: Option<&str>) -> bool {
+            false
+        }
+
+        fn recover_hostname_for_ip_connect(&self) -> bool {
+            true
+        }
+    }
+
+    #[derive(Default)]
+    struct BlockCachedHost {
+        observed: std::sync::Mutex<Vec<String>>,
+    }
+
+    #[async_trait::async_trait]
+    impl crate::inspect::RequestInspector for BlockCachedHost {
+        async fn inspect_connect(&self, _meta: &ConnMeta, authority: &Authority) -> RequestAction {
+            self.observed
+                .lock()
+                .unwrap()
+                .push(authority.host().to_owned());
+            if authority.host() == "blocked.example" {
+                RequestAction::Respond(Response::new(Bytes::new()))
+            } else {
+                RequestAction::Continue
+            }
+        }
+
+        async fn inspect_request(
+            &self,
+            _meta: &ConnMeta,
+            _request: &mut crate::inspect::BufferedRequest,
+        ) -> RequestAction {
+            RequestAction::Continue
+        }
+    }
+
+    #[tokio::test]
+    async fn cached_dns_ip_connect_checks_tls_sni_before_opening_tunnel() {
+        crate::install_crypto_provider();
+        let inspector = Arc::new(BlockCachedHost::default());
+        let (cert_pem, key_pem) = CertAuthority::generate_root().unwrap();
+        let ca = Arc::new(CertAuthority::from_pem(cert_pem, &key_pem).unwrap());
+        let resolver = Arc::new(DynamicCertResolver::new(ca));
+        let server_tls = crate::tls::server_config(resolver.clone(), crate::tls::TCP_ALPN);
+        let client_tls = crate::tls::client_config(false, crate::tls::TCP_ALPN).unwrap();
+        let temp = tempfile::TempDir::new().unwrap();
+        let state = Arc::new(ProxyState {
+            server_tls,
+            cert_resolver: resolver.clone(),
+            h3_tls: crate::tls::server_config(resolver.clone(), crate::tls::H3_ALPN),
+            upstream: Upstream::new(client_tls),
+            inspectors: Inspectors {
+                request: inspector.clone(),
+                ..Inspectors::default()
+            },
+            intercept_decider: Arc::new(RecoverIpTlsName),
+            config: Arc::new(ProxyConfig::new(
+                "127.0.0.1:0".parse().unwrap(),
+                temp.path(),
+            )),
+        });
+
+        let (mut browser, incoming) = tokio::io::duplex(16384);
+        let server = tokio::spawn(mitm_tunnel(
+            incoming,
+            "127.0.0.1:443".parse().unwrap(),
+            "127.0.0.1:1234".parse().unwrap(),
+            state,
+        ));
+        let config = rustls::ClientConfig::builder()
+            .with_root_certificates(rustls::RootCertStore::empty())
+            .with_no_client_auth();
+        let mut browser_tls =
+            rustls::ClientConnection::new(Arc::new(config), "blocked.example".try_into().unwrap())
+                .unwrap();
+        let mut hello = Vec::new();
+        browser_tls.write_tls(&mut hello).unwrap();
+        browser.write_all(&hello).await.unwrap();
+
+        tokio::time::timeout(Duration::from_secs(3), server)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            inspector.observed.lock().unwrap().as_slice(),
+            ["blocked.example"]
+        );
+        assert_eq!(
+            resolver.cache_len(),
+            0,
+            "blocked SNI must not mint a certificate"
+        );
     }
 
     /// Invariant: a tunnel the decider rejects must never mint a leaf

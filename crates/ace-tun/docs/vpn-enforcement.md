@@ -44,6 +44,20 @@ basenames to full paths and adds their WFP application identities to the
 dynamic session. Portable/custom browser installs therefore become protected as
 soon as their executable path is observed.
 
+Once WinTun routes and WFP filters are installed, ACE resets established
+**public IPv4 TCP sockets owned by protected browsers** using the Windows IP
+Helper API. This forces a browser started before ACE to reconnect through the
+interception path, without restarting it. Local/private sockets and other
+applications are untouched. This is best-effort: Windows has no equivalent
+public TCP reset API for IPv6 or QUIC UDP, so WFP policy-change reauthorization
+remains the protection for those pre-existing flows.
+
+When a browser resolved a hostname before ACE started (or uses DoH), ACE can
+recover its hostname from TLS ClientHello SNI before relaying an IP-literal
+CONNECT. An unknown or invalid TLS identity is rejected rather than silently
+allowed. ECH can conceal the real hostname behind an outer SNI, so encrypted
+ClientHello remains a limitation when no authoritative hostname is available.
+
 The WFP session is dynamic: closing the session removes its filters. ACE removes
 the WFP guard before restoring ordinary capture routes during graceful teardown.
 
