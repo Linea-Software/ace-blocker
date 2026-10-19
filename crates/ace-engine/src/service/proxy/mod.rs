@@ -307,6 +307,10 @@ impl RequestInspector for ProxyAdapter {
     }
 }
 
+/// Set on an upstream response head only when decrypted HTML needs scripts.
+#[derive(Clone, Copy)]
+struct NeedsScriptInjection;
+
 #[async_trait]
 impl ResponseInspector for ProxyAdapter {
     async fn inspect_response_head(
@@ -327,6 +331,33 @@ impl ResponseInspector for ProxyAdapter {
             "proxy response head"
         );
 
+        // Most HTML documents do not need mutation. Decide *before* reading the
+        // body so those responses can stream to the browser immediately.
+        if is_top_level_document_request(req_head)
+            && res
+                .headers()
+                .get(http::header::CONTENT_TYPE)
+                .and_then(|value| value.to_str().ok())
+                .is_some_and(|value| value.contains("text/html"))
+            && !csp_headers_block_script_injection(res.headers())
+        {
+            let host = req_head.uri.host().or_else(|| {
+                req_head
+                    .headers
+                    .get("host")
+                    .and_then(|value| value.to_str().ok())
+            });
+            if let Some(host) = host {
+                let eligible = {
+                    let manager = self.network_manager.read().await;
+                    manager.is_resistance_mode_enabled() && manager.has_scripts_of(host)
+                };
+                if eligible && self.account_manager.is_pro().await {
+                    res.extensions_mut().insert(NeedsScriptInjection);
+                }
+            }
+        }
+
         ResponseAction::Continue
     }
 
@@ -338,15 +369,8 @@ impl ResponseInspector for ProxyAdapter {
         req_head: &http::request::Parts,
         res: &BufferedResponse,
     ) -> ResponseBodyMode {
-        let is_document = is_top_level_document_request(req_head);
-
-        let is_html = res
-            .headers()
-            .get(http::header::CONTENT_TYPE)
-            .and_then(|value| value.to_str().ok())
-            .is_some_and(|content_type| content_type.contains("text/html"));
-
-        if is_document && is_html {
+        let _ = req_head;
+        if res.extensions().get::<NeedsScriptInjection>().is_some() {
             ResponseBodyMode::Buffer
         } else {
             ResponseBodyMode::Stream
@@ -1492,7 +1516,10 @@ mod tests {
         let (_manager, adapter) = adapter_with_resistance(true).await;
         let meta = conn_meta("example.com");
         let document = document_request("example.com");
-        let html = html_response(HTML);
+        let mut html = html_response(HTML);
+        adapter
+            .inspect_response_head(&meta, &document, &mut html)
+            .await;
         assert_eq!(
             adapter.response_body_mode(&meta, &document, &html),
             ResponseBodyMode::Buffer
@@ -1524,6 +1551,21 @@ mod tests {
             .unwrap();
         assert_eq!(
             adapter.response_body_mode(&meta, &api_request, &json),
+            ResponseBodyMode::Stream
+        );
+    }
+
+    #[tokio::test]
+    async fn resistance_disabled_html_streams_without_buffering() {
+        let (_manager, adapter) = adapter_with_resistance(false).await;
+        let meta = conn_meta("example.com");
+        let document = document_request("example.com");
+        let mut html = html_response(HTML);
+        adapter
+            .inspect_response_head(&meta, &document, &mut html)
+            .await;
+        assert_eq!(
+            adapter.response_body_mode(&meta, &document, &html),
             ResponseBodyMode::Stream
         );
     }
