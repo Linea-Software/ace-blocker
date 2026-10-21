@@ -29,16 +29,19 @@
         endTime = $bindable("17:00"),
         onCancel,
         onApply,
+        isEditing = false,
     }: {
         days?: WeekdayKey[];
         startTime?: string;
         endTime?: string;
         onCancel: () => void;
         onApply: () => void;
+        isEditing?: boolean;
     } = $props();
 
     const hasDays = $derived(days.length > 0);
-    const hasTimes = $derived(startTime.length > 0 && endTime.length > 0);
+    const hasTimes = $derived(/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) && /^([01]\d|2[0-3]):[0-5]\d$/.test(endTime));
+    const crossesMidnight = $derived(hasTimes && endTime < startTime);
     const canApply = $derived(hasDays && hasTimes);
 
     function setDays(nextDays: WeekdayKey[]) {
@@ -52,17 +55,20 @@
 
 <div class="space-y-3" data-period-editor>
     <div class="space-y-2">
-        <div class="grid grid-cols-7 gap-1" role="group" aria-label={m.active_days()}>
+        <p class="text-muted-foreground text-xs font-medium" id="schedule-days-label">
+            {m.schedule_period_days_label()}
+        </p>
+        <div class="grid grid-cols-7 gap-1" role="group" aria-labelledby="schedule-days-label">
             {#each dayLabels as day (day.key)}
                 <button
                     type="button"
                     aria-pressed={days.includes(day.key)}
                     aria-label={day.label}
                     class={cn(
-                        "h-8 min-w-0 rounded-sm border px-1 font-mono text-[11px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/50 focus-visible:ring-offset-1",
+                        "h-9 min-w-0 rounded-sm border px-1 font-mono text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                         days.includes(day.key)
                             ? "border-foreground bg-foreground text-background"
-                            : "border-border bg-background text-muted-foreground hover:border-foreground/35 hover:text-foreground",
+                            : "border-input bg-background text-muted-foreground hover:border-foreground/60 hover:text-foreground",
                     )}
                     onclick={() => toggleDay(day.key)}
                 >
@@ -70,37 +76,9 @@
                 </button>
             {/each}
         </div>
-
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <button
-                type="button"
-                class="text-muted-foreground hover:text-foreground focus-visible:ring-foreground/50 rounded-sm px-0.5 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2"
-                onclick={() =>
-                    setDays([
-                        "monday",
-                        "tuesday",
-                        "wednesday",
-                        "thursday",
-                        "friday",
-                    ])}
-            >
-                {m.schedule_quick_weekdays()}
-            </button>
-            <button
-                type="button"
-                class="text-muted-foreground hover:text-foreground focus-visible:ring-foreground/50 rounded-sm px-0.5 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2"
-                onclick={() => setDays(["saturday", "sunday"])}
-            >
-                {m.schedule_quick_weekends()}
-            </button>
-            <button
-                type="button"
-                class="text-muted-foreground hover:text-foreground focus-visible:ring-foreground/50 rounded-sm px-0.5 py-0.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2"
-                onclick={() => setDays(dayKeys)}
-            >
-                {m.schedule_quick_every_day()}
-            </button>
-        </div>
+        {#if !hasDays}
+            <p class="text-muted-foreground text-xs">{m.schedule_period_choose_day()}</p>
+        {/if}
     </div>
 
     <div class="grid grid-cols-2 gap-2.5">
@@ -115,7 +93,7 @@
                 autocomplete="off"
                 step="60"
                 bind:value={startTime}
-                class="border-border bg-background text-foreground focus:border-foreground/50 focus:ring-foreground/35 h-9 w-full rounded-sm border px-3 font-mono text-sm tabular-nums outline-none focus:ring-2"
+                class="border-input bg-background text-foreground focus:border-ring focus:ring-ring/35 h-10 w-full rounded-sm border px-3 font-mono text-sm tabular-nums outline-none focus:ring-2"
             />
         </label>
         <label class="space-y-1" for="schedule-period-end">
@@ -129,10 +107,16 @@
                 autocomplete="off"
                 step="60"
                 bind:value={endTime}
-                class="border-border bg-background text-foreground focus:border-foreground/50 focus:ring-foreground/35 h-9 w-full rounded-sm border px-3 font-mono text-sm tabular-nums outline-none focus:ring-2"
+                class="border-input bg-background text-foreground focus:border-ring focus:ring-ring/35 h-10 w-full rounded-sm border px-3 font-mono text-sm tabular-nums outline-none focus:ring-2"
             />
         </label>
     </div>
+
+    {#if hasTimes && (crossesMidnight || startTime === endTime)}
+        <p class="text-muted-foreground text-xs" role="status">
+            {crossesMidnight ? m.schedule_period_overnight() : m.schedule_period_all_day()}
+        </p>
+    {/if}
 
     <div class="flex items-center justify-end gap-2">
         <button
@@ -148,7 +132,8 @@
             disabled={!canApply}
             onclick={onApply}
         >
-            {m.schedule_period_apply()}
+            {isEditing ? m.schedule_period_update() : m.schedule_period_add()}
         </button>
     </div>
 </div>
+

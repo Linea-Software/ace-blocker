@@ -32,6 +32,7 @@
     } = $props();
 
     let editorMode = $state<"add" | "edit" | null>(null);
+    let confirmClear = $state(false);
     let editingEntryId = $state<string | null>(null);
     let editorDays = $state<WeekdayKey[]>([]);
     let editorStartTime = $state("09:00");
@@ -71,6 +72,7 @@
 
     function openAddEditor() {
         if (hasOpenEditor) return;
+        confirmClear = false;
         editorMode = "add";
         editingEntryId = null;
         editorDays = [];
@@ -81,6 +83,7 @@
 
     function openEditEditor(entry: ScheduleEntrySchema) {
         if (hasOpenEditor || !canModifyEntry(entry)) return;
+        confirmClear = false;
         editorMode = "edit";
         editingEntryId = entry.id;
         editorDays = getEntryDays(entry);
@@ -111,6 +114,7 @@
 
     function handleDeleteEntry(entry: ScheduleEntrySchema) {
         if (hasOpenEditor || !canModifyEntry(entry)) return;
+        confirmClear = false;
 
         if (isTempEntry(entry)) {
             delta.removeTempScheduleEntry(entry.id as TempId);
@@ -265,7 +269,8 @@
     }
 
     function handleCoveragePreset(preset: CoveragePreset) {
-        if (hasOpenEditor) return;
+        // Presets are starting points only; never replace populated schedules.
+        if (hasOpenEditor || delta.currentScheduleEntries.length > 0) return;
 
         const allDays = [...WEEKDAY_KEYS];
         const weekdays = WEEKDAY_KEYS.slice(0, 5);
@@ -288,6 +293,18 @@
         replaceScheduleWithCoverage(
             editWeeklyCoverage([], days, startMinute, endMinute, "block"),
         );
+    }
+
+    function clearSchedule() {
+        if (isLocked || hasOpenEditor || !confirmClear) return;
+        for (const entry of [...delta.currentScheduleEntries]) {
+            if (isTempEntry(entry)) {
+                delta.removeTempScheduleEntry(entry.id as TempId);
+            } else {
+                delta.removeScheduleEntry(entry.id);
+            }
+        }
+        confirmClear = false;
     }
 
     function getEntryDays(entry: ScheduleEntrySchema): WeekdayKey[] {
@@ -322,58 +339,27 @@
     function formatEntryTime(time: string): string {
         return localizationStore.formatTime(time);
     }
+
+    function formatPeriodTimes(entry: ScheduleEntrySchema): string {
+        if (entry.startTime === entry.endTime) return m.schedule_coverage_all_day();
+        return `${formatEntryTime(entry.startTime)}–${formatEntryTime(entry.endTime)}`;
+    }
 </script>
 
-<div id="schedule" class="space-y-4">
-    <div class="bg-background sticky top-0 z-10 pb-2">
-        <WeeklyCoverage entries={appliedPreviewEntries} {previewEntry} />
-    </div>
-
-    <div class="border-border border-t py-3">
-        <div class="flex flex-wrap items-center gap-1.5">
+<div id="schedule" class="space-y-6">
+    <section class="space-y-3" aria-labelledby="schedule-periods-heading">
+        <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+                <h3 id="schedule-periods-heading" class="font-condensed text-lg font-semibold text-foreground">
+                    {m.schedule_exact_windows()}
+                </h3>
+                <p class="text-muted-foreground mt-1 text-xs leading-relaxed">
+                    {m.schedule_periods_description()}
+                </p>
+            </div>
             <button
                 type="button"
-                class="border-border bg-background text-foreground hover:bg-muted focus-visible:ring-foreground/50 h-8 rounded-sm border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
-                disabled={hasOpenEditor}
-                onclick={() => handleCoveragePreset("always")}
-            >
-                {m.schedule_coverage_preset_always()}
-            </button>
-            <button
-                type="button"
-                class="border-border bg-background text-foreground hover:bg-muted focus-visible:ring-foreground/50 h-8 rounded-sm border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
-                disabled={hasOpenEditor}
-                onclick={() => handleCoveragePreset("weekdays")}
-            >
-                {m.schedule_coverage_preset_weekdays()}
-            </button>
-            <button
-                type="button"
-                class="border-border bg-background text-foreground hover:bg-muted focus-visible:ring-foreground/50 h-8 rounded-sm border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
-                disabled={hasOpenEditor}
-                onclick={() => handleCoveragePreset("work_hours")}
-            >
-                {m.schedule_coverage_preset_work_hours()}
-            </button>
-            <button
-                type="button"
-                class="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-foreground/50 h-8 rounded-sm px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
-                disabled={isLocked || hasOpenEditor}
-                onclick={() => handleCoveragePreset("clear")}
-            >
-                {m.schedule_coverage_preset_clear()}
-            </button>
-        </div>
-    </div>
-
-    <div class="border-border border-t pt-4">
-        <div class="flex items-center justify-between gap-3">
-            <p class="font-condensed text-sm font-semibold text-foreground">
-                {m.schedule_exact_windows()}
-            </p>
-            <button
-                type="button"
-                class="border-border bg-background text-foreground hover:bg-muted focus-visible:ring-foreground/50 h-8 shrink-0 rounded-sm border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
+                class="border-border bg-card text-foreground hover:bg-muted focus-visible:ring-ring h-9 shrink-0 rounded-sm border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
                 disabled={hasOpenEditor}
                 onclick={openAddEditor}
             >
@@ -382,29 +368,28 @@
         </div>
 
         {#if delta.currentScheduleEntries.length > 0 || editorMode === "add"}
-            <div class="border-border/70 divide-border/60 mt-2 divide-y border-y">
+            <div class="divide-border border-border divide-y border-y">
                 {#each delta.currentScheduleEntries as entry (entry.id)}
                     {@const days = getEntryDays(entry)}
                     {@const modifiable = canModifyEntry(entry)}
                     <div data-period-row={entry.id}>
-                        <div class="flex min-w-0 items-center gap-2 px-1 py-2">
-                            <p
-                                class="text-foreground/90 min-w-0 flex-1 text-xs font-medium tabular-nums"
-                            >
-                                <span class="text-muted-foreground">
-                                    {formatDays(days)}
+                        <div class="flex min-w-0 items-center gap-2 py-2.5">
+                            <p class="text-foreground min-w-0 flex-1 text-[13px] leading-relaxed">
+                                <span class="text-muted-foreground">{formatDays(days)}</span>
+                                <span class="text-muted-foreground/70 mx-1">·</span>
+                                <span class="font-mono tabular-nums">
+                                    {formatPeriodTimes(entry)}
                                 </span>
-                                <span class="text-muted-foreground/45 mx-1.5">·</span>
-                                <span class="font-mono">
-                                    {formatEntryTime(entry.startTime)}–{formatEntryTime(
-                                        entry.endTime,
-                                    )}
-                                </span>
+                                {#if entry.startTime !== entry.endTime && entry.endTime < entry.startTime}
+                                    <span class="text-muted-foreground ml-1 text-[11px]">
+                                        ({m.schedule_period_overnight()})
+                                    </span>
+                                {/if}
                             </p>
                             <div class="flex shrink-0 items-center gap-1">
                                 <button
                                     type="button"
-                                    class="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-foreground/50 h-7 rounded-sm px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
                                     disabled={hasOpenEditor || !modifiable}
                                     onclick={() => openEditEditor(entry)}
                                 >
@@ -412,7 +397,7 @@
                                 </button>
                                 <button
                                     type="button"
-                                    class="text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-foreground/50 h-7 rounded-sm px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
+                                    class="text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:ring-ring h-8 rounded-sm px-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
                                     disabled={hasOpenEditor || !modifiable}
                                     onclick={() => handleDeleteEntry(entry)}
                                 >
@@ -422,13 +407,14 @@
                         </div>
 
                         {#if editorMode === "edit" && editingEntryId === entry.id}
-                            <div class="border-border/60 bg-muted/20 border-t px-1 py-3">
+                            <div class="border-border bg-muted/35 border-t px-3 py-3" data-edit-period-editor>
                                 <SchedulePeriodEditor
                                     bind:days={editorDays}
                                     bind:startTime={editorStartTime}
                                     bind:endTime={editorEndTime}
                                     onCancel={closeEditor}
                                     onApply={handlePeriodApply}
+                                    isEditing
                                 />
                             </div>
                         {/if}
@@ -436,7 +422,7 @@
                 {/each}
 
                 {#if editorMode === "add"}
-                    <div class="bg-muted/20 px-1 py-3" data-add-period-editor>
+                    <div class="bg-muted/35 px-3 py-3" data-add-period-editor>
                         <SchedulePeriodEditor
                             bind:days={editorDays}
                             bind:startTime={editorStartTime}
@@ -447,10 +433,99 @@
                     </div>
                 {/if}
             </div>
+            {#if !isLocked && delta.currentScheduleEntries.length > 0}
+                <div class="flex flex-wrap items-center gap-2">
+                    {#if confirmClear}
+                        <p class="text-muted-foreground flex-1 text-xs leading-relaxed" role="status">
+                            {m.schedule_clear_confirmation()}
+                        </p>
+                        <button type="button" class="text-muted-foreground hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-2 text-xs focus-visible:outline-none focus-visible:ring-2" onclick={() => (confirmClear = false)}>
+                            {m.cancel()}
+                        </button>
+                        <button type="button" class="border-destructive/50 text-destructive hover:bg-destructive/10 focus-visible:ring-ring h-8 rounded-sm border px-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2" onclick={clearSchedule}>
+                            {m.schedule_clear_confirm_action()}
+                        </button>
+                    {:else}
+                        <button type="button" class="text-muted-foreground hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-1 text-xs focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40" disabled={hasOpenEditor} onclick={() => (confirmClear = true)}>
+                            {m.schedule_clear_all()}
+                        </button>
+                    {/if}
+                </div>
+            {/if}
         {:else}
-            <p class="text-muted-foreground mt-2 text-xs">
-                {m.schedule_coverage_empty()}
+            <p class="border-border border-l-2 py-1 pl-3 text-sm leading-relaxed text-foreground" role="status">
+                {m.schedule_no_periods_warning()}
             </p>
+            <div class="space-y-2">
+                <p class="text-muted-foreground text-xs font-medium">{m.schedule_starting_schedules()}</p>
+                <div class="preset-grid">
+                    <button type="button" class="preset-button" onclick={() => handleCoveragePreset("always")}>
+                        <strong>{m.schedule_coverage_preset_always()}</strong>
+                        <span>{m.schedule_preset_always_detail()}</span>
+                    </button>
+                    <button type="button" class="preset-button" onclick={() => handleCoveragePreset("weekdays")}>
+                        <strong>{m.schedule_coverage_preset_weekdays()}</strong>
+                        <span>{m.schedule_preset_weekdays_detail()}</span>
+                    </button>
+                    <button type="button" class="preset-button" onclick={() => handleCoveragePreset("work_hours")}>
+                        <strong>{m.schedule_coverage_preset_work_hours()}</strong>
+                        <span>{m.schedule_preset_work_hours_detail({start:formatEntryTime("09:00"),end:formatEntryTime("17:00")})}</span>
+                    </button>
+                </div>
+            </div>
         {/if}
-    </div>
+    </section>
+
+    <section class="border-border space-y-2 border-t pt-4" aria-label={m.schedule_weekly_preview()}>
+        <WeeklyCoverage entries={appliedPreviewEntries} {previewEntry} />
+    </section>
 </div>
+
+<style>
+    .preset-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+    }
+    .preset-button {
+        min-width: 0;
+        min-height: 62px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 4px;
+        padding: 9px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--card);
+        color: var(--foreground);
+        text-align: left;
+        cursor: pointer;
+    }
+    .preset-button strong {
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .preset-button span {
+        color: var(--muted-foreground);
+        font-size: 11px;
+        line-height: 1.25;
+    }
+    .preset-button:hover {
+        border-color: var(--input);
+        background: var(--muted);
+    }
+    .preset-button:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+    @container inspector (max-width: 440px) {
+        .preset-grid {
+            grid-template-columns: 1fr;
+        }
+        .preset-button {
+            min-height: 44px;
+        }
+    }
+</style>

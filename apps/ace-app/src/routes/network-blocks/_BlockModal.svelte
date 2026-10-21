@@ -4,7 +4,7 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import { Skeleton } from "$lib/components/ui/skeleton/index.js";
     import { Spinner } from "$lib/components/ui/spinner/index.js";
-    import { onMount } from "svelte";
+    import { onMount, tick } from "svelte";
     import * as m from "$lib/paraglide/messages.js";
     import { toast } from "svelte-sonner";
     import {
@@ -235,6 +235,13 @@
         }
     }
 
+    async function goToBlockName() {
+        if (scheduleEditorOpen) return;
+        activeSection = "blocking";
+        await tick();
+        document.getElementById("name")?.focus();
+    }
+
     function handleWindowKeydown(event: KeyboardEvent) {
         if (event.key === "Escape" && open && !isSubmitting) {
             if (scheduleEditorOpen) {
@@ -337,25 +344,26 @@
     {#snippet footer()}
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0 flex-1" aria-live="polite">
-                {#if !name || name.trim() === ""}
-                    <div
-                        class="text-muted-foreground flex items-center gap-2 text-xs"
-                    >
-                        <CircleAlert
-                            class="size-4 shrink-0"
-                            aria-hidden="true"
-                        />
-                        <span>{m.enter_block_name_warning()}</span>
-                    </div>
-                {:else if scheduleEditorOpen}
-                    <div
-                        class="text-muted-foreground flex items-center gap-2 text-xs"
-                    >
-                        <CircleAlert
-                            class="size-4 shrink-0"
-                            aria-hidden="true"
-                        />
+                {#if scheduleEditorOpen}
+                    <div class="text-muted-foreground flex items-center gap-2 text-xs">
+                        <CircleAlert class="size-4 shrink-0" aria-hidden="true" />
                         <span>{m.schedule_period_finish_edit()}</span>
+                    </div>
+                {:else if !name || name.trim() === ""}
+                    <div class="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+                        <CircleAlert class="size-4 shrink-0" aria-hidden="true" />
+                        <span>{activeSection === "schedule"
+                            ? m.schedule_missing_name_hint()
+                            : m.enter_block_name_warning()}</span>
+                        {#if activeSection === "schedule"}
+                            <button
+                                type="button"
+                                class="text-foreground focus-visible:ring-ring rounded-sm underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
+                                onclick={goToBlockName}
+                            >
+                                {m.schedule_go_to_blocking()}
+                            </button>
+                        {/if}
                     </div>
                 {:else if isScheduleViolation}
                     <div
@@ -402,3 +410,4 @@
         </div>
     {/snippet}
 </Inspector>
+

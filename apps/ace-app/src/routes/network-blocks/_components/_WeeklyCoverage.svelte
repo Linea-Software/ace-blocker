@@ -46,6 +46,22 @@
         return summary || m.schedule_coverage_none_summary();
     });
 
+    const shortSummary = $derived.by(() => {
+        const activeDays = combinedCoverage.filter((row) => row.ranges.length > 0);
+        if (activeDays.length === 0) return m.schedule_coverage_none_summary();
+        const sameRange = activeDays.every((row) => formatRanges(row.ranges) === formatRanges(activeDays[0].ranges));
+        const indices = activeDays.map((row) => DAY_ORDER.findIndex((day) => day.key === row.day));
+        const consecutive = indices.every((index, i) => i === 0 || index === indices[i - 1] + 1);
+        if (sameRange && consecutive) {
+            const days = activeDays.length === 7 ? m.schedule_quick_every_day()
+                : activeDays.length === 5 && indices[0] === 0 ? m.schedule_quick_weekdays()
+                : activeDays.length > 1 ? `${shortDay(activeDays[0].day)}–${shortDay(activeDays[activeDays.length - 1].day)}`
+                : shortDay(activeDays[0].day);
+            return m.schedule_weekly_summary_uniform({ days, range: formatRanges(activeDays[0].ranges) });
+        }
+        return m.schedule_weekly_summary_coverage({ days: activeDays.length, duration: formatDuration(totalMinutes) });
+    });
+
     onMount(() => {
         localizationStore.detectSystemTimeFormat();
         timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -106,12 +122,12 @@
                     {m.schedule_weekly_preview()}
                 </p>
                 {#if timezone}
-                    <p class="text-muted-foreground/80 mt-0.5 font-mono text-[10px]">
+                    <p class="text-muted-foreground mt-0.5 font-mono text-[11px]">
                         {m.schedule_coverage_timezone({ timezone })}
                     </p>
                 {/if}
             </div>
-            <p class="text-muted-foreground shrink-0 font-mono text-[10px]">
+            <p class="text-muted-foreground shrink-0 font-mono text-[11px]">
                 {m.schedule_coverage_total_exact({
                     duration: formatDuration(totalMinutes),
                 })}
@@ -119,17 +135,17 @@
         </div>
 
         <div
-            class="border-border bg-background border p-1"
+            class="border-border bg-card border p-2"
             role="img"
             aria-label={m.schedule_weekly_preview_aria({ summary: coverageSummary })}
             data-weekly-preview
         >
             <div
-                class="coverage-row mb-0.5 grid grid-cols-[24px_minmax(0,1fr)] items-end gap-1"
+                class="coverage-row mb-1 grid grid-cols-[34px_minmax(0,1fr)] items-end gap-1.5"
             >
                 <span></span>
                 <div
-                    class="text-muted-foreground relative h-2 font-mono text-[7px]"
+                    class="text-muted-foreground relative h-3 font-mono text-[10px]"
                 >
                     <span class="absolute left-0">{formatMinute(0)}</span>
                     <span
@@ -158,15 +174,15 @@
                         (candidate) => candidate.day === day.key,
                     )!}
                     <div
-                        class="coverage-row grid grid-cols-[24px_minmax(0,1fr)] items-center gap-1"
+                        class="coverage-row mb-1 grid grid-cols-[34px_minmax(0,1fr)] items-center gap-1.5"
                     >
                         <span
-                            class="text-muted-foreground pr-0.5 text-right font-mono text-[7px] font-medium"
+                            class="text-muted-foreground pr-0.5 text-right font-mono text-[11px] font-medium"
                         >
                             {day.short}
                         </span>
                         <div
-                            class="border-border/60 bg-muted/65 relative h-2 min-w-0 overflow-hidden border-y"
+                            class="bg-muted relative h-3 min-w-0 overflow-hidden rounded-[2px]"
                             aria-hidden="true"
                             data-preview-track={day.key}
                         >
@@ -208,6 +224,9 @@
         </div>
     </div>
 
+    <p class="text-muted-foreground text-xs leading-relaxed" data-testid="weekly-human-summary">
+        {shortSummary}
+    </p>
     <p class="sr-only" data-testid="weekly-coverage-summary">
         {coverageSummary}
     </p>
@@ -220,3 +239,4 @@
         }
     }
 </style>
+
