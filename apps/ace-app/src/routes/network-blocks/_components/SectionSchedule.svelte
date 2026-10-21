@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    import { onMount, tick } from "svelte";
     import * as m from "$lib/paraglide/messages.js";
     import type {
         ScheduleChanges,
@@ -70,7 +70,7 @@
         return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
     }
 
-    function openAddEditor() {
+    async function openAddEditor() {
         if (hasOpenEditor) return;
         confirmClear = false;
         editorMode = "add";
@@ -79,9 +79,11 @@
         editorStartTime = "09:00";
         editorEndTime = "17:00";
         hasOpenEditor = true;
+        await tick();
+        document.querySelector<HTMLButtonElement>("#schedule [data-period-editor] button[aria-pressed]")?.focus();
     }
 
-    function openEditEditor(entry: ScheduleEntrySchema) {
+    async function openEditEditor(entry: ScheduleEntrySchema) {
         if (hasOpenEditor || !canModifyEntry(entry)) return;
         confirmClear = false;
         editorMode = "edit";
@@ -90,15 +92,24 @@
         editorStartTime = entry.startTime.slice(0, 5);
         editorEndTime = entry.endTime.slice(0, 5);
         hasOpenEditor = true;
+        await tick();
+        document.querySelector<HTMLButtonElement>("#schedule [data-period-editor] button[aria-pressed]")?.focus();
     }
 
-    function closeEditor() {
+    async function closeEditor() {
+        const previousEntryId = editingEntryId;
         editorMode = null;
         editingEntryId = null;
         editorDays = [];
         editorStartTime = "09:00";
         editorEndTime = "17:00";
         hasOpenEditor = false;
+        await tick();
+        const row = [...document.querySelectorAll<HTMLElement>("#schedule [data-period-row]")]
+            .find((element) => element.dataset.periodRow === previousEntryId);
+        const target = row?.querySelector<HTMLButtonElement>("button")
+            ?? document.querySelector<HTMLButtonElement>("#schedule section button");
+        target?.focus();
     }
 
     function isTempEntry(entry: ScheduleEntrySchema): boolean {
@@ -357,23 +368,24 @@
                     {m.schedule_periods_description()}
                 </p>
             </div>
-            <button
-                type="button"
-                class="border-border bg-card text-foreground hover:bg-muted focus-visible:ring-ring h-9 shrink-0 rounded-sm border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
-                disabled={hasOpenEditor}
-                onclick={openAddEditor}
-            >
-                {m.schedule_exact_add()}
-            </button>
+            {#if !hasOpenEditor}
+                <button
+                    type="button"
+                    class="border-border bg-card text-foreground hover:bg-muted focus-visible:ring-ring h-9 shrink-0 rounded-sm border px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2"
+                    onclick={openAddEditor}
+                >
+                    {m.schedule_exact_add()}
+                </button>
+            {/if}
         </div>
 
         {#if delta.currentScheduleEntries.length > 0 || editorMode === "add"}
-            <div class="divide-border border-border divide-y border-y">
+            <div class="border-border bg-card divide-border divide-y overflow-hidden rounded-sm border" data-period-list>
                 {#each delta.currentScheduleEntries as entry (entry.id)}
                     {@const days = getEntryDays(entry)}
                     {@const modifiable = canModifyEntry(entry)}
                     <div data-period-row={entry.id}>
-                        <div class="flex min-w-0 items-center gap-2 py-2.5">
+                        <div class="flex min-w-0 items-center gap-2 px-3 py-3">
                             <p class="text-foreground min-w-0 flex-1 text-[13px] leading-relaxed">
                                 <span class="text-muted-foreground">{formatDays(days)}</span>
                                 <span class="text-muted-foreground/70 mx-1">·</span>
@@ -407,7 +419,7 @@
                         </div>
 
                         {#if editorMode === "edit" && editingEntryId === entry.id}
-                            <div class="border-border bg-muted/35 border-t px-3 py-3" data-edit-period-editor>
+                            <div class="border-border bg-muted/30 border-t px-3 py-3" data-edit-period-editor>
                                 <SchedulePeriodEditor
                                     bind:days={editorDays}
                                     bind:startTime={editorStartTime}
@@ -422,7 +434,7 @@
                 {/each}
 
                 {#if editorMode === "add"}
-                    <div class="bg-muted/35 px-3 py-3" data-add-period-editor>
+                    <div class="bg-muted/30 px-3 py-3" data-add-period-editor>
                         <SchedulePeriodEditor
                             bind:days={editorDays}
                             bind:startTime={editorStartTime}
@@ -432,26 +444,26 @@
                         />
                     </div>
                 {/if}
+                {#if !isLocked && delta.currentScheduleEntries.length > 0}
+                    <div class="bg-muted/15 flex flex-wrap items-center gap-2 px-3 py-2.5" data-clear-periods>
+                        {#if confirmClear}
+                            <p class="text-muted-foreground flex-1 text-xs leading-relaxed" role="status">
+                                {m.schedule_clear_confirmation()}
+                            </p>
+                            <button type="button" class="text-muted-foreground hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-2 text-xs focus-visible:outline-none focus-visible:ring-2" onclick={() => (confirmClear = false)}>
+                                {m.cancel()}
+                            </button>
+                            <button type="button" class="border-destructive/50 text-destructive hover:bg-destructive/10 focus-visible:ring-ring h-8 rounded-sm border px-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2" onclick={clearSchedule}>
+                                {m.schedule_clear_confirm_action()}
+                            </button>
+                        {:else}
+                            <button type="button" class="text-muted-foreground hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-1 text-xs focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40" disabled={hasOpenEditor} onclick={() => (confirmClear = true)}>
+                                {m.schedule_clear_all()}
+                            </button>
+                        {/if}
+                    </div>
+                {/if}
             </div>
-            {#if !isLocked && delta.currentScheduleEntries.length > 0}
-                <div class="flex flex-wrap items-center gap-2">
-                    {#if confirmClear}
-                        <p class="text-muted-foreground flex-1 text-xs leading-relaxed" role="status">
-                            {m.schedule_clear_confirmation()}
-                        </p>
-                        <button type="button" class="text-muted-foreground hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-2 text-xs focus-visible:outline-none focus-visible:ring-2" onclick={() => (confirmClear = false)}>
-                            {m.cancel()}
-                        </button>
-                        <button type="button" class="border-destructive/50 text-destructive hover:bg-destructive/10 focus-visible:ring-ring h-8 rounded-sm border px-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2" onclick={clearSchedule}>
-                            {m.schedule_clear_confirm_action()}
-                        </button>
-                    {:else}
-                        <button type="button" class="text-muted-foreground hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-1 text-xs focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40" disabled={hasOpenEditor} onclick={() => (confirmClear = true)}>
-                            {m.schedule_clear_all()}
-                        </button>
-                    {/if}
-                </div>
-            {/if}
         {:else}
             <p class="border-border border-l-2 py-1 pl-3 text-sm leading-relaxed text-foreground" role="status">
                 {m.schedule_no_periods_warning()}

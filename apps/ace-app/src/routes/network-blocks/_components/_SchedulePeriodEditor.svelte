@@ -39,6 +39,7 @@
         isEditing?: boolean;
     } = $props();
 
+    const editorHeadingId = $props.id();
     const hasDays = $derived(days.length > 0);
     const hasTimes = $derived(/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) && /^([01]\d|2[0-3]):[0-5]\d$/.test(endTime));
     const crossesMidnight = $derived(hasTimes && endTime < startTime);
@@ -53,7 +54,10 @@
     }
 </script>
 
-<div class="space-y-3" data-period-editor>
+<div class="space-y-3" data-period-editor role="group" aria-labelledby={editorHeadingId}>
+    <h4 id={editorHeadingId} class="font-condensed text-[15px] font-semibold text-foreground">
+        {isEditing ? m.schedule_period_edit_heading() : m.schedule_period_new_heading()}
+    </h4>
     <div class="space-y-2">
         <p class="text-muted-foreground text-xs font-medium" id="schedule-days-label">
             {m.schedule_period_days_label()}
@@ -121,14 +125,14 @@
     <div class="flex items-center justify-end gap-2">
         <button
             type="button"
-            class="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-foreground/50 h-8 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2"
+            class="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring h-8 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2"
             onclick={onCancel}
         >
             {m.cancel()}
         </button>
         <button
             type="button"
-            class="bg-foreground text-background hover:bg-foreground/90 focus-visible:ring-foreground/50 h-8 rounded-sm px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
+            class="bg-foreground text-background hover:bg-foreground/90 focus-visible:ring-ring h-8 rounded-sm px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
             disabled={!canApply}
             onclick={onApply}
         >

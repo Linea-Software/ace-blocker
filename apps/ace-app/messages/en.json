@@ -656,6 +656,8 @@
     "schedule_period_apply": "Apply",
     "schedule_period_add": "Add period",
     "schedule_period_update": "Update period",
+    "schedule_period_new_heading": "New period",
+    "schedule_period_edit_heading": "Edit period",
     "schedule_period_days_label": "Days",
     "schedule_period_choose_day": "Choose at least one day.",
     "schedule_period_overnight": "Crosses midnight",
