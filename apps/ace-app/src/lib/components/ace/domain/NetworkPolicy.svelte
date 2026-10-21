@@ -393,7 +393,7 @@
     .state-word {
         color: var(--muted-foreground);
         font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 12px;
+        font-size: 13px;
         font-weight: 600;
     }
 
@@ -426,7 +426,7 @@
         overflow: hidden;
         color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
-        font-size: 12px;
+        font-size: 13px;
         line-height: 1.35;
     }
 
@@ -445,7 +445,7 @@
         padding-left: 9px;
         border-left: 1px solid var(--border);
         color: var(--foreground);
-        font-size: 11px;
+        font-size: 12px;
     }
 
     .actions {
@@ -551,6 +551,15 @@
         opacity: 0.35;
     }
 
+    /* Locked switches must remain recognizable even when non-interactive. */
+    button.enable-switch:disabled {
+        opacity: 0.65;
+    }
+
+    :global(.dark) button.enable-switch[aria-checked="false"] {
+        border-color: var(--input);
+    }
+
     .policy-grid {
         display: grid;
         grid-template-columns: minmax(240px, 1fr) auto;
@@ -579,8 +588,8 @@
         flex-wrap: wrap;
         gap: 6px 16px;
         margin: 0;
-        color: var(--muted-foreground);
-        font-size: 11px;
+        color: var(--ace-text-tertiary);
+        font-size: 12px;
     }
 
     .policy-facts > div {
@@ -596,7 +605,7 @@
     }
 
     dt {
-        color: var(--muted-foreground);
+        color: var(--ace-text-tertiary);
     }
 
     dd {

@@ -111,6 +111,10 @@
         overflow: hidden;
     }
 
+    :global(.dark) .theme-options {
+        border-color: var(--input);
+    }
+
     .theme-options button {
         min-height: 38px;
         display: inline-flex;

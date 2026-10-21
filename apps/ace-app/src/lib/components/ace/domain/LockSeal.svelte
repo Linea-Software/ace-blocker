@@ -112,7 +112,7 @@
     .seal-copy p {
         margin: 4px 0 0;
         color: var(--muted-foreground);
-        font-size: 11px;
+        font-size: 12px;
         line-height: 1.45;
     }
 
@@ -120,7 +120,7 @@
         margin-right: 14px;
         color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
+        font-size: 12px;
         white-space: nowrap;
     }
 
@@ -157,12 +157,12 @@
 
     .compact .seal-copy p {
         margin-top: 1px;
-        font-size: 11px;
+        font-size: 12px;
     }
 
     .compact .seal-detail {
         margin-right: 14px;
-        font-size: 11px;
+        font-size: 12px;
     }
 
     @media (max-width: 620px) {

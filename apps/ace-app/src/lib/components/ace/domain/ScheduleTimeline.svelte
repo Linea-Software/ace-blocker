@@ -113,7 +113,7 @@
         justify-content: space-between;
         color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
+        font-size: 12px;
         line-height: 1;
     }
 
@@ -133,7 +133,7 @@
     .day {
         color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
         line-height: 1;
     }

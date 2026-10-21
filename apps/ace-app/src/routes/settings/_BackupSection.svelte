@@ -367,7 +367,7 @@
         margin-top: 5px;
         color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
+        font-size: 12px;
     }
 
     .row-actions {
@@ -391,6 +391,10 @@
         font-size: 12px;
         font-weight: 600;
         cursor: pointer;
+    }
+
+    :global(.dark) .row-actions button {
+        border-color: var(--input);
     }
 
     .row-actions button:hover:not(:disabled) {
