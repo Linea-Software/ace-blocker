@@ -31,6 +31,25 @@ impl NetworkManager {
         self.network_blocks.values().collect()
     }
 
+    /// Common permission check for edits that are forbidden while a block is locked.
+    /// Strengthening operations (such as enabling a block) use their own guards.
+    fn require_unlocked_network_block(
+        &self,
+        network_block_id: &NetworkBlockId,
+    ) -> Result<(), NetworkManagerOpErr> {
+        let block = self
+            .get_network_block_from(network_block_id)
+            .ok_or_else(|| NetworkManagerOpErr::NetworkBlockNotFound {
+                id: network_block_id.clone(),
+            })?;
+        if block.is_locked(&chrono::Local::now()) {
+            return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
+                id: network_block_id.clone(),
+            });
+        }
+        Ok(())
+    }
+
     pub fn create_network_block(
         &mut self,
         network_block_name: String,
@@ -127,19 +146,7 @@ impl NetworkManager {
         &mut self,
         network_block_id: &NetworkBlockId,
     ) -> Result<(), NetworkManagerOpErr> {
-        let now = &chrono::Local::now();
-
-        if let Some(block) = self.network_blocks.get(network_block_id) {
-            if block.is_locked(now) {
-                return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
-                    id: network_block_id.clone(),
-                });
-            }
-        } else {
-            return Err(NetworkManagerOpErr::NetworkBlockNotFound {
-                id: network_block_id.clone(),
-            });
-        }
+        self.require_unlocked_network_block(network_block_id)?;
 
         self.db
             .delete_network_block(network_block_id)
@@ -174,19 +181,7 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         enabled: bool,
     ) -> Result<(), NetworkManagerOpErr> {
-        let now = &chrono::Local::now();
-
-        if let Some(block) = self.network_blocks.get(network_block_id) {
-            if block.is_locked(now) {
-                return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
-                    id: network_block_id.clone(),
-                });
-            }
-        } else {
-            return Err(NetworkManagerOpErr::NetworkBlockNotFound {
-                id: network_block_id.clone(),
-            });
-        }
+        self.require_unlocked_network_block(network_block_id)?;
 
         self.db
             .set_safe_search(network_block_id, enabled)
@@ -205,19 +200,7 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         new_name: String,
     ) -> Result<(), NetworkManagerOpErr> {
-        let now = &chrono::Local::now();
-
-        if let Some(block) = self.network_blocks.get(network_block_id) {
-            if block.is_locked(now) {
-                return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
-                    id: network_block_id.clone(),
-                });
-            }
-        } else {
-            return Err(NetworkManagerOpErr::NetworkBlockNotFound {
-                id: network_block_id.clone(),
-            });
-        }
+        self.require_unlocked_network_block(network_block_id)?;
 
         self.db
             .rename_network_block(network_block_id, new_name.clone())
@@ -314,6 +297,57 @@ mod tests {
         ).execute(&mut conn).unwrap();
         assert!(ctx.manager.delete_network_block(&id).is_err());
         assert!(ctx.manager.get_network_block_from(&id).is_some());
+    }
+
+    #[test]
+    fn block_mutations_report_missing_block_consistently() {
+        let mut ctx = setup_test_manager();
+        let missing_id = NetworkBlockId::from(uuid::Uuid::new_v4());
+
+        assert!(matches!(
+            ctx.manager.delete_network_block(&missing_id),
+            Err(NetworkManagerOpErr::NetworkBlockNotFound { id }) if id == missing_id
+        ));
+        assert!(matches!(
+            ctx.manager.set_network_block_safe_search(&missing_id, true),
+            Err(NetworkManagerOpErr::NetworkBlockNotFound { id }) if id == missing_id
+        ));
+        assert!(matches!(
+            ctx.manager.rename_network_block(&missing_id, "Renamed".into()),
+            Err(NetworkManagerOpErr::NetworkBlockNotFound { id }) if id == missing_id
+        ));
+    }
+
+    #[test]
+    fn block_mutations_reject_active_lock_without_changing_policy() {
+        let mut ctx = setup_test_manager();
+        let block_id = ctx.manager.create_network_block("Locked".into()).unwrap();
+        let lock = Lock::from(LockState::ActiveUntilLockEnd {
+            end: Local::now() + chrono::Duration::hours(1),
+        });
+        ctx.manager.set_lock(&block_id, lock).unwrap();
+
+        assert!(matches!(
+            ctx.manager.delete_network_block(&block_id),
+            Err(NetworkManagerOpErr::NetworkBlockIsLocked { id }) if id == block_id
+        ));
+        assert!(matches!(
+            ctx.manager.set_network_block_safe_search(&block_id, true),
+            Err(NetworkManagerOpErr::NetworkBlockIsLocked { id }) if id == block_id
+        ));
+        assert!(matches!(
+            ctx.manager.rename_network_block(&block_id, "Renamed".into()),
+            Err(NetworkManagerOpErr::NetworkBlockIsLocked { id }) if id == block_id
+        ));
+
+        // Verify persisted state too: rejected edits cannot take effect after restart.
+        let db = ctx.manager.db.clone();
+        let account_manager = crate::manager::AccountManager::from(db.clone()).unwrap();
+        let reloaded = NetworkManager::from(db, account_manager).unwrap();
+        let block = reloaded.get_network_block_from(&block_id).unwrap();
+        assert_eq!(block.get_name(), "Locked");
+        assert!(!block.is_safe_search_enabled());
+        assert!(block.is_locked(&Local::now()));
     }
 
     #[test]

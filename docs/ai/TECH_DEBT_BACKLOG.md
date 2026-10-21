@@ -20,6 +20,8 @@ This file tracks **verified, actionable maintainability work**, not a wishlist o
 | [TD-010](#td-010--http1-upstream-reuse) | P2 | blocked | mitm-proxy upstream | HTTP/1.1 reconnects per request; a simple idle-sender pool serializes live streams | Design body-lifetime-aware bounded pooling; streaming concurrency regression committed |
 | [TD-011](#td-011--windows-pid-table-attribution) | P2 | candidate | Windows TUN attribution | Every flow still snapshots/scans IP-Helper ownership tables | Consider safe reuse of ownership snapshots after attribution-race and PID-reuse tests |
 | [TD-012](#td-012--rpc-and-production-h3-footprint) | P3 | candidate | UI RPC and proxy features | Bridge repeats dispatch boilerplate and opens connections per call; H3 unused by Ace production | Consider generated dispatch/persistent reconnecting client and feature gate with native integration tests |
+| [TD-013](#td-013--network-block-mutation-lock-guard) | P2 | review | NetworkManager block mutations | Deletion, safe-search edits and renaming independently duplicate missing-block and active-lock checks | Centralize this repeated guard within the block manager; preserve error and persistence order |
+| [TD-014](#td-014--site-pack-link-persistence-consistency) | P1 | verified | NetworkManager site-pack assignments | Attach/detach mutate the live block before a fallible SQLite write | Add failure-path regressions and make DB/memory assignment changes consistent |
 
 For each non-placeholder item, add a detailed section below using the template. Link the queue's ID to its section. Order by expected maintenance benefit and risk, not cosmetic code metrics.
 
@@ -110,6 +112,23 @@ For each non-placeholder item, add a detailed section below using the template. 
 - **Risk / gate:** Persisting clients requires robust pipe-restart and capability authorization behavior; feature gating must keep standalone proxy/test functionality. Requires native Windows IPC and H3 tests.
 
 **Audit implementation verification (2026-10-19):** `cargo check --workspace --all-targets` passed; `cargo test -p ace-engine --lib -- --test-threads=1` passed (216 after all engine changes), `cargo test -p ace-tun --lib` passed (132), `cargo test -p mitm-proxy --tests` passed with one intentionally ignored external-network test (before the new concurrent-stream test), and `cargo test -p mitm-proxy --test proxy_http1` passed with the new test. One parallel engine run failed on a missing global resistance-script test fixture; the failing test passed individually and the full suite passed serially. No performance benchmarks were run (by request). Existing generated-client/watchdog/test warnings remain. Native installer/service and independent code review have not run.
+
+### TD-013 — Network block mutation lock guard
+
+- **Status:** review; **priority:** P2; **scope:** `crates/ace-engine/src/manager/network/network_blocks.rs`.
+- **Evidence:** `delete_network_block`, `set_network_block_safe_search`, and `rename_network_block` each independently check existence then active lock state with the same error cases.
+- **Cost / change:** Repeated authorization checks make future lock-related maintenance error-prone. Replace these three branches with one private, narrowly scoped guard; leave the strengthening-only `set_network_block_enabled` condition and all persisted write ordering unchanged.
+- **Security constraints:** Missing blocks yield `NetworkBlockNotFound`; actively locked blocks yield `NetworkBlockIsLocked`; successful calls still persist before mutating live state. No rule, lock, or IPC semantics change.
+- **Baseline (Windows, 2026-10-21):** `cargo test -p ace-engine --lib manager::network::network_blocks::tests -- --test-threads=1` passed (7 tests). Two warnings in generated `ace_server_api/types.rs`.
+- **Outcome (Windows, 2026-10-21):** Added a private `require_unlocked_network_block` guard for these three mutations only. Added two regression tests before refactoring for missing-block errors and active locks (including persisted policy after rejected writes). Left strengthening operations and DB-before-memory write ordering unchanged.
+- **Verification:** Pre-refactor tests passed (9/9 after adding characterization coverage); post-refactor focused tests passed (9/9); full `cargo test -p ace-engine --lib -- --test-threads=1` passed (221/221); `cargo check -p ace-engine --bin ace-engine` passed; scoped `rustfmt --check --edition 2024 crates/ace-engine/src/manager/network/network_blocks.rs` passed. Two pre-existing generated-client dead-code warnings persist. No Windows installed-service/VM tests were run because the change is restricted to a previously tested manager guard.
+- **Review:** In-session diff inspection found no changed public interfaces, error variants, persistence order, or strengthening-only lock exception. An independent reviewer has not yet reviewed the diff, so this item remains `review` rather than `done`.
+
+### TD-014 — Site-pack link persistence consistency
+
+- **Status:** verified; **priority:** P1; **scope:** `crates/ace-engine/src/manager/network/network_blocks_to_site_pack.rs`. Separate task; not part of TD-013.
+- **Evidence:** `add_network_block_to_site_pack` calls `NetworkBlock::add_site_pack` before `db.add_network_block_to_site_pack`; `remove_network_block_to_site_pack` calls `remove_site_pack` before `db.remove_network_block_to_site_pack`. Either DB call can fail, leaving the live policy inconsistent with persisted assignments.
+- **Risk / gate:** Enforcement-sensitive, requiring explicit failure-path tests for both directions, including lock checks and site-pack preconditions; preserve existing caller-visible success/error contracts on successful writes. No implementation attempted in this pass.
 
 ## Item template
 
