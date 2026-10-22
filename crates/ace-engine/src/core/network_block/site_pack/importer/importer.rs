@@ -17,18 +17,13 @@ use async_stream::stream;
 use chrono::Utc;
 use futures::StreamExt;
 use std::path::{Path, PathBuf};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing::{info, warn};
 
 use crate::core::utils::file_download;
 
 /// Number of host hashes written to the database in a single insert.
 const INSERT_BATCH_SIZE: usize = 50_000;
-
-/// Cap on a single downloaded list source. Real host lists reach ~100 MB
-/// compressed; 2 GiB bounds a hostile or broken server without breaking
-/// legitimate sources.
-const MAX_SOURCE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 
 pub struct Importer;
 
@@ -69,73 +64,31 @@ impl Importer {
                     SitePackSourceType::Url => {
                         let file_path = temp_dir.join(format!("{}.txt", source.id));
 
-                        // Timeout policy + size cap from file_download so a
-                        // hung or hostile server cannot stall the importer
-                        // or fill the disk.
-                        let response = match file_download::http_client()
-                            .get(&source.source)
-                            .send()
-                            .await
-                        {
-                            Ok(response) => response,
-                            Err(error) => {
-                                yield Self::failed(
-                                    SitePackImportError::DownloadFailure {
-                                        message: error.to_string(),
-                                    },
-                                    SitePackImportPhase::Downloading,
-                                );
-                                return;
-                            }
-                        };
-                        let response = match response.error_for_status() {
-                            Ok(response) => response,
-                            Err(error) => {
-                                yield Self::failed(
-                                    SitePackImportError::DownloadFailure {
-                                        message: error.to_string(),
-                                    },
-                                    SitePackImportPhase::Downloading,
-                                );
-                                return;
-                            }
-                        };
-
-                        if let Some(total) = response.content_length()
-                            && total > MAX_SOURCE_BYTES
-                        {
-                            yield Self::failed(
-                                SitePackImportError::DownloadFailure {
-                                    message: format!(
-                                        "source {} refused: content length {total} exceeds the {MAX_SOURCE_BYTES}-byte limit",
-                                        source.source
-                                    ),
-                                },
-                                SitePackImportPhase::Downloading,
-                            );
-                            return;
-                        }
-
-                        let total_bytes = response.content_length();
-
-                        let mut file = match tokio::fs::File::create(&file_path).await {
-                            Ok(file) => file,
-                            Err(error) => {
-                                yield Self::failed(
-                                    io_error(error),
-                                    SitePackImportPhase::Downloading,
-                                );
-                                return;
-                            }
-                        };
-
-                        let mut byte_stream = response.bytes_stream();
-                        let mut downloaded_bytes: u64 = 0;
+                        // Reuse the engine's bounded HTTP downloader rather
+                        // than maintaining a second request/chunk/size policy.
+                        // Quantize percentage for the existing event contract.
+                        let download = file_download::download_file_with_limit(
+                            &source.source,
+                            file_path.clone(),
+                            file_download::DEFAULT_MAX_DOWNLOAD_BYTES,
+                        );
+                        futures::pin_mut!(download);
                         let mut last_percent: u32 = 0;
-                        while let Some(chunk) = byte_stream.next().await {
-                            let chunk = match chunk {
-                                Ok(chunk) => chunk,
+                        while let Some(progress) = download.next().await {
+                            match progress {
+                                Ok(progress) => {
+                                    let percent = progress.into_inner().floor() as u32;
+                                    if percent != last_percent {
+                                        last_percent = percent;
+                                        yield Self::in_progress(
+                                            &site_pack_id,
+                                            Percentage::new(source_base + percent as f64 / sources_count),
+                                            SitePackImportPhase::Downloading,
+                                        );
+                                    }
+                                }
                                 Err(error) => {
+                                    let _ = tokio::fs::remove_file(&file_path).await;
                                     yield Self::failed(
                                         SitePackImportError::DownloadFailure {
                                             message: error.to_string(),
@@ -143,34 +96,6 @@ impl Importer {
                                         SitePackImportPhase::Downloading,
                                     );
                                     return;
-                                }
-                            };
-                            downloaded_bytes += chunk.len() as u64;
-                            if downloaded_bytes > MAX_SOURCE_BYTES {
-                                yield Self::failed(
-                                    SitePackImportError::DownloadFailure {
-                                        message: format!(
-                                            "source {} refused: body exceeds the {MAX_SOURCE_BYTES}-byte limit",
-                                            source.source
-                                        ),
-                                    },
-                                    SitePackImportPhase::Downloading,
-                                );
-                                return;
-                            }
-                            if let Err(error) = file.write_all(&chunk).await {
-                                yield Self::failed(io_error(error), SitePackImportPhase::Downloading);
-                                return;
-                            }
-                            if let Some(total) = total_bytes {
-                                let percent = progress_percent(downloaded_bytes, total);
-                                if percent != last_percent {
-                                    last_percent = percent;
-                                    yield Self::in_progress(
-                                        &site_pack_id,
-                                        Percentage::new(source_base + percent as f64 / sources_count),
-                                        SitePackImportPhase::Downloading,
-                                    );
                                 }
                             }
                         }
@@ -740,5 +665,32 @@ mod tests {
                 .unwrap()
                 .is_blocked()
         );
+    }
+    #[tokio::test]
+    async fn http_error_during_import_emits_download_failure() {
+        let router = axum::Router::new().route(
+            "/error",
+            get(|| async { (axum::http::StatusCode::BAD_GATEWAY, "temporary failure") }),
+        );
+        let server = axum_test::TestServer::builder()
+            .transport(axum_test::Transport::HttpRandomPort)
+            .build(router);
+        let url = server.server_url("/error").unwrap();
+        let temp = tempdir().unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+
+        let statuses = run_import(
+            &db,
+            vec![url_source(url.to_string(), SitePackFormat::WildCardDomains)],
+        )
+        .await;
+        assert!(statuses.iter().any(|status| matches!(
+            status,
+            SitePackCreationStatus::Failed {
+                phase: Some(SitePackImportPhase::Downloading),
+                ..
+            }
+        )));
+        assert_eq!(db.count_entries().unwrap(), 0);
     }
 }
