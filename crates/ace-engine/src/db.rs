@@ -14,6 +14,7 @@ pub mod script_state_repo;
 pub mod settings_repo;
 pub mod site_pack_repo;
 pub mod site_pack_source_repo;
+pub(crate) mod sqlite_pool;
 pub mod user_defined_rule_repo;
 
 use crate::schema_main_db::network_block_to_site_pack;
@@ -21,7 +22,7 @@ use diesel::prelude::*;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::Pool;
 use diesel::r2d2::PooledConnection;
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use diesel_migrations::{EmbeddedMigrations, embed_migrations};
 use models::*;
 use std::{collections::HashMap, path::Path};
 // migrations is simply the ace-engine/migrations/ folder from the perspective of cargo
@@ -36,31 +37,7 @@ pub use error::DBError;
 
 impl EngineDB {
     pub fn from(db_path: &Path) -> Result<EngineDB, DBError> {
-        let db_path_str = db_path
-            .to_str()
-            .ok_or_else(|| DBError::DatabaseConnectionError {
-                message: "provided database path is not a valid string".to_string(),
-            })?;
-
-        let db_manager = ConnectionManager::<SqliteConnection>::new(db_path_str);
-        let pool = Pool::builder().build(db_manager).map_err(|error| {
-            DBError::DatabaseConnectionError {
-                message: format!("failed to establish connection pool: {}", error),
-            }
-        })?;
-
-        let mut db_connection = pool
-            .get()
-            .map_err(|error| DBError::DatabaseConnectionError {
-                message: format!("failed to get connection from pool: {}", error),
-            })?;
-
-        db_connection
-            .run_pending_migrations(MIGRATIONS)
-            .map_err(|error| DBError::MigrationError {
-                message: error.to_string(),
-            })?;
-
+        let pool = sqlite_pool::open_pool(db_path, MIGRATIONS)?;
         Ok(EngineDB { db_pool: pool })
     }
 

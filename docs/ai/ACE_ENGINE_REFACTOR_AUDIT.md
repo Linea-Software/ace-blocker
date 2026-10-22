@@ -44,7 +44,7 @@
 | AE-15 | P2 | partial | Version/clock | Versioni canoniche X.Y.Z + test; schedule mantenuti al minuto, gate DST/round-trip ancora aperti |
 | AE-16 | P2 | implementation, review pending | Domain ID | ID vuoti invalidi, serde/DB/RPC validati, test; review consumer finale richiesta |
 | AE-17 | P2 | candidate | Site-pack importer | Ripetizione gestione download/progress |
-| AE-18 | P2 | candidate | DB pool | Duplicazione infrastrutturale connessione/migrazione |
+| AE-18 | P2 | implementation, review pending | DB pool | Pool/migration bootstrap condiviso fra DB distinti senza unificare repo/migrazioni; 22 test site-pack e check all-features superati |
 | AE-19 | P2 | verified | Test | Override process-global delle directory di test |
 | AE-26 | P2 | partial | Lock/errors | `Result` propagato in dashboard, count, site-pack open, updater, restore e version-check; restano fallback da valutare ai confini non modificati |
 
