@@ -158,10 +158,9 @@ impl Settings {
 
     /// Path of the per-install capability token file.
     ///
-    /// The token authorizes state-changing requests against the local API
-    /// (see `docs/local-api-protection-design.md`). It lives next to
-    /// `port.lock` inside the app-data directory, which is hidden at startup
-    /// by `hide_important_files`.
+    /// The token authorizes capability-protected remoc calls over the local
+    /// Named Pipe/Unix socket. It is stored in app data with restrictive
+    /// permissions and hidden at startup by `hide_important_files`.
     pub fn get_capability_token_path() -> PathBuf {
         let mut path = Self::get_app_data_dir();
         path.push("capability.token");
@@ -191,5 +190,4 @@ impl Settings {
         }
         token
     }
-
 }

@@ -1,5 +1,7 @@
 # Ace Engine Update Policy
 
+> **Historical design note (pre-remoc):** The local REST endpoints, port routing and restart scripts below describe a former design, not the current engine control contract. For current typed remoc RPC on Named Pipes/Unix sockets and the running updater, see `docs/IPC_ARCHITECTURE.md`, `src/service/api/` and `src/service/content_updater.rs`.
+
 This document defines the comprehensive update strategy for all updatable assets in the Ace Engine ecosystem: **site packs**, **resistance scripts**, **ace-engine** (the engine binary), and **ace-app** (the client UI).
 
 ---

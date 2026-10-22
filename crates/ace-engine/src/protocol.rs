@@ -6,19 +6,19 @@
 //! the website places the parameters in the URL **fragment**
 //! (`aceblocker://account/api-key#apiKey=...&callback=...`). Fragments are
 //! never sent over HTTP, so the protocol handler parses them here and
-//! forwards the key as a JSON request body instead.
+//! forwards the key via a typed, capability-authenticated remoc RPC call.
 //!
 //! # Security boundary
 //!
 //! The OS invokes the protocol handler (`ace-redirect.exe` in release,
 //! `ace-engine.exe` in debug) with the full URI in its argv. The handler
-//! then forwards a **capability-token-authenticated** POST to the local
-//! engine API. Any website can render an `aceblocker://` link (the browser
+//! then forwards a **capability-token-authenticated** `setApiKey` RPC call
+//! over the local engine pipe/socket. Any website can render an `aceblocker://` link (the browser
 //! asks the user to confirm opening the app once), so the forwarded path is
 //! restricted to an explicit allowlist here — a malicious
 //! `aceblocker://system/shutdown` link must never turn into an
-//! authenticated engine request. `get-engine-port` is a separate probe that
-//! never reaches the engine.
+//! authenticated engine request. The legacy `get-engine-port` deep-link
+//! probe has no equivalent privileged engine operation.
 
 use std::collections::HashMap;
 

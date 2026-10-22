@@ -55,10 +55,6 @@ pub enum NetworkManagerOpErr {
     InvalidBackupVersion { message: String },
 }
 
-// Temporary alias to avoid breaking everything at once if needed,
-// but I will try to fix all call sites.
-pub type NetworkMangerOpErr = NetworkManagerOpErr;
-
 impl From<crate::db::DBError> for NetworkManagerOpErr {
     fn from(error: crate::db::DBError) -> Self {
         NetworkManagerOpErr::DatabaseError {

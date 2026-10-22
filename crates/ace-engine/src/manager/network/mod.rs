@@ -66,7 +66,7 @@ pub struct NetworkManager {
 
     /// Site packs with an import/resync stream currently in flight. Guarded by
     /// its own mutex because streams outlive the manager write lock (they run
-    /// on the SSE response body); the set is what prevents concurrent or
+    /// on the import stream lifecycle); the set is what prevents concurrent or
     /// replayed resyncs of the same pack from running duplicates.
     in_flight_site_pack_syncs: Arc<Mutex<HashSet<SitePackId>>>,
 

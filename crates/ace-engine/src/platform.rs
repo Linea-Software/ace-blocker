@@ -51,8 +51,8 @@ mod imp {
     const SERVICE_DISPLAY_NAME: &str = "Ace Blocker Engine";
 
     /// The registered service status handle. Needed to report
-    /// `SERVICE_STOPPED` when the engine shuts itself down through its own API
-    /// (`POST /system/shutdown`): the service no longer accepts STOP from the
+    /// `SERVICE_STOPPED` when the engine shuts itself down through its
+    /// authenticated shutdown RPC: the service no longer accepts STOP from the
     /// SCM, so an exit while still RUNNING would be recorded as an abnormal
     /// termination (1067) and trigger the SCM failure actions (restart).
     static SERVICE_STATUS_HANDLE: Mutex<Option<ServiceStatusHandle>> = Mutex::new(None);
@@ -150,8 +150,8 @@ mod imp {
 
         // Stop the service if it is running. The engine deliberately refuses
         // SCM STOP (see `service_event_handler`), so this normally does not
-        // stop anything — the user must shut the engine down via its own API
-        // (`POST /system/shutdown`) first. Warn loudly instead of silently
+        // stop anything — the user must shut the engine down via its
+        // authenticated shutdown RPC first. Warn loudly instead of silently
         // deleting a service whose process keeps running (LIF-01).
         if let Ok(status) = service.query_status()
             && status.current_state != ServiceState::Stopped
@@ -208,7 +208,7 @@ mod imp {
     /// Service control handler. The engine deliberately does NOT accept STOP:
     /// `sc stop`, `net stop` and Task Manager's Services tab all fail, so an
     /// admin cannot stop the engine through the SCM. The engine shuts itself
-    /// down only via its own API (`POST /system/shutdown`), which reports
+    /// down only via its authenticated shutdown RPC, which reports
     /// `SERVICE_STOPPED` first (see [`report_service_stopped`]).
     fn service_event_handler(
         _status_handle: ServiceStatusHandle,
@@ -360,24 +360,25 @@ mod imp {
             .wrap_err("failed to query watchdog service status")?;
         match status.current_state {
             ServiceState::Running | ServiceState::StartPending => Ok(()),
-            ServiceState::Stopped => {
-                match service.start(&[] as &[&std::ffi::OsStr]) {
-                    Ok(()) => {
-                        info!("Watchdog restarted by engine through the SCM.");
+            ServiceState::Stopped => match service.start(&[] as &[&std::ffi::OsStr]) {
+                Ok(()) => {
+                    info!("Watchdog restarted by engine through the SCM.");
+                    Ok(())
+                }
+                Err(error) => {
+                    let current = service
+                        .query_status()
+                        .wrap_err("watchdog start failed and status re-check failed")?;
+                    if matches!(
+                        current.current_state,
+                        ServiceState::Running | ServiceState::StartPending
+                    ) {
                         Ok(())
-                    }
-                    Err(error) => {
-                        let current = service
-                            .query_status()
-                            .wrap_err("watchdog start failed and status re-check failed")?;
-                        if matches!(current.current_state, ServiceState::Running | ServiceState::StartPending) {
-                            Ok(())
-                        } else {
-                            Err(error).wrap_err("failed to start watchdog service")
-                        }
+                    } else {
+                        Err(error).wrap_err("failed to start watchdog service")
                     }
                 }
-            }
+            },
             _ => Ok(()),
         }
     }
@@ -587,9 +588,7 @@ mod imp {
 
 #[cfg(target_os = "linux")]
 mod linux_imp {
-    use crate::watchdog_protocol::{
-        LINUX_ENGINE_SERVICE_NAME, LINUX_WATCHDOG_SERVICE_NAME,
-    };
+    use crate::watchdog_protocol::{LINUX_ENGINE_SERVICE_NAME, LINUX_WATCHDOG_SERVICE_NAME};
     use eyre::{Context, Result, bail};
     use std::os::unix::ffi::OsStrExt;
     use std::path::{Path, PathBuf};
@@ -622,12 +621,10 @@ mod linux_imp {
         let engine_unit_path = unit_path(LINUX_ENGINE_SERVICE_NAME);
         let watchdog_unit_path = unit_path(LINUX_WATCHDOG_SERVICE_NAME);
 
-        std::fs::write(&engine_unit_path, engine_unit).wrap_err_with(|| {
-            format!("failed to write {}", engine_unit_path.display())
-        })?;
-        std::fs::write(&watchdog_unit_path, watchdog_unit).wrap_err_with(|| {
-            format!("failed to write {}", watchdog_unit_path.display())
-        })?;
+        std::fs::write(&engine_unit_path, engine_unit)
+            .wrap_err_with(|| format!("failed to write {}", engine_unit_path.display()))?;
+        std::fs::write(&watchdog_unit_path, watchdog_unit)
+            .wrap_err_with(|| format!("failed to write {}", watchdog_unit_path.display()))?;
 
         require_systemctl_success(&["daemon-reload"])?;
         require_systemctl_success(&[
@@ -748,7 +745,9 @@ WantedBy=multi-user.target\n",
         match std::fs::remove_file(&path) {
             Ok(()) => Ok(()),
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-            Err(error) => Err(error).wrap_err_with(|| format!("failed to remove {}", path.display())),
+            Err(error) => {
+                Err(error).wrap_err_with(|| format!("failed to remove {}", path.display()))
+            }
         }
     }
 

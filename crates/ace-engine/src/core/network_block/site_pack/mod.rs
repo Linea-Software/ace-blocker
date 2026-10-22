@@ -13,7 +13,7 @@ use std::{
     fs::File,
     path::{Path, PathBuf},
 };
-use tracing::{error, warn};
+use tracing::warn;
 use zip::ZipArchive;
 
 /// Name of the SQLite database file inside a site pack's directory.
@@ -36,20 +36,6 @@ pub struct SitePack {
     membership_cache: moka::sync::Cache<UriHash, BlockingResult>,
     sources: Vec<SitePackSource>,
     last_updated_at: Option<chrono::DateTime<chrono::Local>>,
-}
-
-pub fn get_site_packs_temp_dir() -> PathBuf {
-    let mut dir = std::env::temp_dir();
-    dir.push("AceBlocker");
-    dir.push("temp_sites");
-
-    if let Err(error) = std::fs::create_dir_all(&dir) {
-        error!(
-            "CRITICAL ERROR: Failed to access/create temp sites directory: {}",
-            error
-        );
-    }
-    dir
 }
 
 impl SitePack {

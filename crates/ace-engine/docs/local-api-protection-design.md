@@ -1,5 +1,7 @@
 # Local API Protection — Design Note (Resistance Mode v1 Beta)
 
+> **Historical security design (2026-08-31):** This document describes the retired local HTTPS/REST control API. Ace Engine now uses typed remoc RPC over Named Pipe/Unix socket; the capability token remains relevant, but HTTP headers, CORS and port-discovery descriptions below are not the current boundary. See `docs/IPC_ARCHITECTURE.md` and `src/service/api/{rpc,transport,security}.rs`.
+
 **Date:** 2026-08-31
 **Status:** Implemented as part of the Resistance Mode v1 beta scope
 **Related:** `docs/engine-communication-audit.md` (finding V1), `docs/resistance-mode-audit-2026-08-31.md` (finding S2)
