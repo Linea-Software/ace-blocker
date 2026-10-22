@@ -20,30 +20,21 @@ fn bad_args(error: impl std::fmt::Display) -> RpcError {
     }
 }
 
+// One typed remoc call + standard JSON serialization. Only argument-free
+// bridge arms use this; complex responses and streaming remain explicit.
+macro_rules! no_arg_call {
+    ($call:expr) => {{
+        let result = ($call).await.map_err(transport_error)??;
+        serde_json::to_value(result).map_err(transport_error)
+    }};
+}
+
 pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<Value, RpcError> {
     let client: EngineControlClient = super::transport::connect().await.map_err(transport_error)?;
     match op {
-        "getAccountInfo" => {
-            let result = client
-                .get_account_info(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "refreshAccount" => {
-            let result = client
-                .refresh_account(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "acceptTos" => {
-            let result = client
-                .accept_tos(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "getAccountInfo" => no_arg_call!(client.get_account_info(capability)),
+        "refreshAccount" => no_arg_call!(client.refresh_account(capability)),
+        "acceptTos" => no_arg_call!(client.accept_tos(capability)),
         "setApiKey" => {
             let payload: SetApiKeyRequest =
                 serde_json::from_value(args.get("payload").cloned().unwrap_or(Value::Null))
@@ -54,31 +45,10 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "logout" => {
-            let result = client.logout(capability).await.map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "exportBackup" => {
-            let result = client
-                .export_backup(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "exportBackupToCloud" => {
-            let result = client
-                .export_backup_to_cloud(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "importBackupFromCloud" => {
-            let result = client
-                .import_backup_from_cloud(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "logout" => no_arg_call!(client.logout(capability)),
+        "exportBackup" => no_arg_call!(client.export_backup(capability)),
+        "exportBackupToCloud" => no_arg_call!(client.export_backup_to_cloud(capability)),
+        "importBackupFromCloud" => no_arg_call!(client.import_backup_from_cloud(capability)),
         "importBackup" => {
             let payload: crate::manager::network::backup::EngineBackup =
                 serde_json::from_value(args.get("payload").cloned().unwrap_or(Value::Null))
@@ -89,20 +59,8 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "getDashboardSnapshot" => {
-            let result = client
-                .get_dashboard_snapshot(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "getDebugProPolicy" => {
-            let result = client
-                .get_debug_pro_policy(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "getDashboardSnapshot" => no_arg_call!(client.get_dashboard_snapshot(capability)),
+        "getDebugProPolicy" => no_arg_call!(client.get_debug_pro_policy(capability)),
         "setDebugProPolicy" => {
             let policy: crate::manager::network::DebugProPolicy =
                 serde_json::from_value(args.get("policy").cloned().unwrap_or(Value::Null))
@@ -113,13 +71,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "getDebugResistanceLevel" => {
-            let result = client
-                .get_debug_resistance_level(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "getDebugResistanceLevel" => no_arg_call!(client.get_debug_resistance_level(capability)),
         "setDebugResistanceLevel" => {
             let level: crate::manager::network::DebugResistanceLevel =
                 serde_json::from_value(args.get("level").cloned().unwrap_or(Value::Null))
@@ -130,27 +82,9 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "hideFiles" => {
-            let result = client
-                .hide_files(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "showFiles" => {
-            let result = client
-                .show_files(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "getUpdateCheckInterval" => {
-            let result = client
-                .get_update_check_interval(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "hideFiles" => no_arg_call!(client.hide_files(capability)),
+        "showFiles" => no_arg_call!(client.show_files(capability)),
+        "getUpdateCheckInterval" => no_arg_call!(client.get_update_check_interval(capability)),
         "setUpdateCheckInterval" => {
             let seconds: u64 =
                 serde_json::from_value(args.get("seconds").cloned().unwrap_or(Value::Null))
@@ -161,13 +95,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "resetTos" => {
-            let result = client
-                .reset_tos(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "resetTos" => no_arg_call!(client.reset_tos(capability)),
         "getLock" => {
             let network_block_id: uuid::Uuid = serde_json::from_value(
                 args.get("network_block_id").cloned().unwrap_or(Value::Null),
@@ -250,13 +178,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "getAllNetworkBlocks" => {
-            let result = client
-                .get_all_network_blocks(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "getAllNetworkBlocks" => no_arg_call!(client.get_all_network_blocks(capability)),
         "createNetworkBlock" => {
             let payload: CreateNetworkBlockRequest =
                 serde_json::from_value(args.get("payload").cloned().unwrap_or(Value::Null))
@@ -321,11 +243,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
             serde_json::to_value(result).map_err(transport_error)
         }
         "getResistanceModeSettings" => {
-            let result = client
-                .get_resistance_mode_settings(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
+            no_arg_call!(client.get_resistance_mode_settings(capability))
         }
         "setResistanceModeEnabled" => {
             let payload: SetEnabledRequest =
@@ -347,13 +265,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "getAllScripts" => {
-            let result = client
-                .get_all_scripts(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "getAllScripts" => no_arg_call!(client.get_all_scripts(capability)),
         "getScript" => {
             let script_id: String =
                 serde_json::from_value(args.get("script_id").cloned().unwrap_or(Value::Null))
@@ -377,13 +289,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "downloadResistanceScripts" => {
-            let result = client
-                .download_resistance_scripts(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "downloadResistanceScripts" => no_arg_call!(client.download_resistance_scripts(capability)),
         "getScheduleEntries" => {
             let network_block_id: uuid::Uuid = serde_json::from_value(
                 args.get("network_block_id").cloned().unwrap_or(Value::Null),
@@ -438,13 +344,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "getAllSitePacks" => {
-            let result = client
-                .get_all_site_packs(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "getAllSitePacks" => no_arg_call!(client.get_all_site_packs(capability)),
         "createSitePack" => Err(RpcError {
             status: 400,
             code: "stream_operation".into(),
@@ -498,52 +398,13 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "reEnableRemoteSitePacks" => {
-            let result = client
-                .re_enable_remote_site_packs(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "ping" => {
-            let result = client.ping(capability).await.map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "getVersion" => {
-            let result = client
-                .get_version(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "openProPage" => {
-            let result = client
-                .open_pro_page(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "checkUpdates" => {
-            let result = client
-                .check_updates(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "triggerContentUpdate" => {
-            let result = client
-                .trigger_content_update(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "shutdown" => {
-            let result = client
-                .shutdown(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "reEnableRemoteSitePacks" => no_arg_call!(client.re_enable_remote_site_packs(capability)),
+        "ping" => no_arg_call!(client.ping(capability)),
+        "getVersion" => no_arg_call!(client.get_version(capability)),
+        "openProPage" => no_arg_call!(client.open_pro_page(capability)),
+        "checkUpdates" => no_arg_call!(client.check_updates(capability)),
+        "triggerContentUpdate" => no_arg_call!(client.trigger_content_update(capability)),
+        "shutdown" => no_arg_call!(client.shutdown(capability)),
         "initiateUnlock" => {
             let network_block_id: uuid::Uuid = serde_json::from_value(
                 args.get("network_block_id").cloned().unwrap_or(Value::Null),
@@ -616,13 +477,7 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "getResistanceModeType" => {
-            let result = client
-                .get_resistance_mode_type(capability)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
+        "getResistanceModeType" => no_arg_call!(client.get_resistance_mode_type(capability)),
         "setResistanceModeType" => {
             let mode: crate::manager::resistance::punishment::PunishmentMode =
                 serde_json::from_value(args.get("mode").cloned().unwrap_or(Value::Null))
@@ -671,5 +526,58 @@ pub async fn stream(
             code: "unknown_operation".into(),
             error: format!("Unknown streaming operation: {op}"),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    #[test]
+    fn tauri_bridge_covers_every_typed_remoc_operation() {
+        let rpc = include_str!("rpc.rs");
+        let bridge = include_str!("bridge.rs");
+        let trait_body = rpc
+            .split_once("pub trait EngineControl {")
+            .expect("typed remoc trait exists")
+            .1
+            .split_once("\n}")
+            .expect("typed remoc trait closes")
+            .0;
+        let mut expected = HashSet::new();
+        for line in trait_body.lines() {
+            let Some(method) = line.trim().strip_prefix("async fn ") else {
+                continue;
+            };
+            let method = method.split('(').next().unwrap();
+            let mut operation = String::new();
+            let mut uppercase_next = false;
+            for ch in method.chars() {
+                if ch == '_' {
+                    uppercase_next = true;
+                } else if uppercase_next {
+                    operation.push(ch.to_ascii_uppercase());
+                    uppercase_next = false;
+                } else {
+                    operation.push(ch);
+                }
+            }
+            expected.insert(operation);
+        }
+
+        let declared: HashSet<_> = bridge
+            .lines()
+            .filter_map(|line| {
+                line.trim_start()
+                    .strip_prefix('"')?
+                    .split_once("\" =>")
+                    .map(|(operation, _)| operation.to_string())
+            })
+            .collect();
+        assert_eq!(expected.len(), 63, "remoc operation inventory changed");
+        assert_eq!(
+            expected, declared,
+            "bridge operation inventory drifted from the typed remoc trait"
+        );
     }
 }
