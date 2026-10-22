@@ -34,7 +34,8 @@ pub(super) async fn open_pro_page() -> Result<&'static str, ApiError> {
 }
 
 pub(super) async fn check_updates(state: AppState) -> Result<UpdateCheckResponse, ApiError> {
-    let mut content_service = state.content_update_service.lock().await;
+    let (mut content_service, gate) = state.content_update_service.lock().await.detached();
+    let _single_flight = gate.lock().await;
 
     // Metadata and local DB failures remain errors; empty lists/versions are
     // reserved for genuinely empty results, never as error sentinels.
@@ -75,6 +76,11 @@ pub(super) async fn check_updates(state: AppState) -> Result<UpdateCheckResponse
         .await
         .map_err(|error| ApiError::Internal(format!("Resistance update check failed: {error}")))?;
 
+    state
+        .content_update_service
+        .lock()
+        .await
+        .publish_metadata_from(&content_service);
     Ok(UpdateCheckResponse {
         engine,
         content: ContentUpdateInfo {
@@ -85,45 +91,15 @@ pub(super) async fn check_updates(state: AppState) -> Result<UpdateCheckResponse
 }
 
 pub(super) async fn trigger_content_update(state: AppState) -> Result<(), ApiError> {
-    // Metadata fetch + staging (downloads/extraction) happen WITHOUT the
-    // manager write lock; only the commit runs under it (SVC-02). Failures
-    // are propagated: a partial failure must not report success (API-02).
-    let mut content_service = state.content_update_service.lock().await;
-
-    content_service
-        .check_for_updates()
-        .await
-        .map_err(|error| ApiError::Internal(format!("Update check failed: {}", error)))?;
-
-    let api_key = state
-        .account_manager
-        .get_api_key()
-        .await
-        .map_err(ApiError::Internal)?;
-    let is_pro = state.account_manager.is_pro().await;
-    let staged = content_service
-        .stage_pending_updates(api_key.as_ref(), is_pro)
-        .await
-        .map_err(|error| ApiError::Internal(format!("Update staging failed: {}", error)))?;
-
-    let mut manager = state.network_manager.write().await;
-    manager
-        .apply_staged_content_updates(staged)
-        .await
-        .map_err(|error| ApiError::Internal(format!("Content update failed: {}", error)))?;
-
-    // Register any new remote site lists (metadata + DB only).
-    if let Err(error) = content_service
-        .fetch_and_register_remote_site_packs(&mut manager)
-        .await
-    {
-        return Err(ApiError::Internal(format!(
-            "Failed to register new site lists: {}",
-            error
-        )));
-    }
-
-    Ok(())
+    // Share the same single-flight path as the background task. No shared
+    // metadata mutex is held during downloads, staging or commit.
+    crate::service::content_updater::run_update_pass(
+        &state.content_update_service,
+        &state.network_manager,
+        &state.account_manager,
+    )
+    .await
+    .map_err(|error| ApiError::Internal(format!("Content update failed: {error}")))
 }
 
 pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {

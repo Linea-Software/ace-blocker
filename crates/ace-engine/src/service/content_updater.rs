@@ -96,13 +96,27 @@ pub struct StagedContentUpdate {
     pub staging_errors: Vec<String>,
 }
 
+#[derive(Clone)]
 pub struct ContentUpdateService {
     db: Arc<EngineDB>,
     latest_releases_info: Option<LatestReleasesInfo>,
     latest_check: Option<DateTime<Utc>>,
+    /// Serializes full content transitions independently of the metadata mutex.
+    update_gate: Arc<Mutex<()>>,
 }
 
 impl ContentUpdateService {
+    /// Snapshot state without retaining the shared metadata mutex during I/O.
+    pub(crate) fn detached(&self) -> (Self, Arc<Mutex<()>>) {
+        (self.clone(), self.update_gate.clone())
+    }
+
+    /// Publish metadata from a completed pass while the single-flight gate is held.
+    pub(crate) fn publish_metadata_from(&mut self, completed: &Self) {
+        self.latest_releases_info = completed.latest_releases_info.clone();
+        self.latest_check = completed.latest_check;
+    }
+
     /// Constructs the service. Cannot fail (LIF-03): the persisted
     /// "last check" timestamp is loaded on the first check, not at startup,
     /// so failure propagates to the update caller without aborting engine startup.
@@ -111,6 +125,7 @@ impl ContentUpdateService {
             db,
             latest_releases_info: None,
             latest_check: None,
+            update_gate: Arc::new(Mutex::new(())),
         }
     }
 
@@ -644,17 +659,22 @@ pub type SharedUpdateInterval = Arc<RwLock<Duration>>;
 /// Runs one full content-update pass: fetch metadata (network), stage
 /// downloads/extractions (network, no manager lock), then commit under the
 /// manager write lock (local disk swaps + DB/memory transitions only).
-async fn run_update_pass(
+pub(crate) async fn run_update_pass(
     content_service: &SharedContentUpdateService,
     network_manager: &Arc<RwLock<NetworkManager>>,
     account_manager: &crate::manager::AccountManager,
 ) -> Result<(), SitePackUpdateError> {
-    let mut service = content_service.lock().await;
+    let (mut service, gate) = content_service.lock().await.detached();
+    let _single_flight = gate.lock().await;
 
     // 1. Fetch fresh metadata — no manager lock.
     service.check_for_updates().await.map_err(|error| {
         SitePackUpdateError::FetchError(format!("update check failed: {error}"))
     })?;
+
+    // Publish fetched metadata immediately: a later staging failure must not
+    // strand the shared cache on an obsolete release after the DB timestamp advanced.
+    content_service.lock().await.publish_metadata_from(&service);
 
     // 2. Stage all pending downloads/extractions — no manager lock.
     let api_key = account_manager
@@ -673,16 +693,18 @@ async fn run_update_pass(
     // Register any new remote site lists that appeared since last check
     // (metadata + DB only; the releases info is fresh from step 1, so this
     // performs no network I/O).
-    if let Err(error) = service
+    let register_result = service
         .fetch_and_register_remote_site_packs(&mut manager)
-        .await
-    {
-        warn!("Failed to register new site lists: {}", error);
-    }
+        .await;
     drop(manager);
-    drop(service);
 
-    commit_result
+    // Metadata is the only shared mutable state: publish it quickly after I/O.
+    content_service.lock().await.publish_metadata_from(&service);
+    commit_result.map_err(|error| SitePackUpdateError::UpdateError(error.to_string()))?;
+    register_result.map_err(|error| {
+        SitePackUpdateError::UpdateError(format!("Failed to register remote site packs: {error}"))
+    })?;
+    Ok(())
 }
 
 /// Runs a periodic background content-update check.
@@ -724,6 +746,32 @@ pub async fn run_background_update_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn content_update_gate_serializes_passes_without_locking_shared_metadata() {
+        let temp = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&temp.path().join("singleflight.sqlite")).unwrap());
+        let shared = Arc::new(Mutex::new(ContentUpdateService::from(db)));
+        let (mut detached, gate) = shared.lock().await.detached();
+        let (_, other_gate) = shared.lock().await.detached();
+        assert!(Arc::ptr_eq(&gate, &other_gate));
+
+        let guard = gate.lock().await;
+        assert!(
+            other_gate.try_lock().is_err(),
+            "another update may not run concurrently"
+        );
+        assert!(
+            shared.try_lock().is_ok(),
+            "metadata access must stay responsive"
+        );
+
+        detached.latest_check = Some(Utc::now());
+        shared.lock().await.publish_metadata_from(&detached);
+        assert_eq!(shared.lock().await.latest_check, detached.latest_check);
+        drop(guard);
+        assert!(other_gate.try_lock().is_ok());
+    }
 
     #[tokio::test]
     async fn update_history_load_reports_invalid_timestamp_and_database_failures() {

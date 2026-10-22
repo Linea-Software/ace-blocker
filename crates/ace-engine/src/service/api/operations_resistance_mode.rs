@@ -116,7 +116,8 @@ pub(super) async fn download_resistance_scripts(state: AppState) -> Result<(), A
         .get_api_key()
         .await
         .map_err(ApiError::Internal)?;
-    let content_service = state.content_update_service.lock().await;
+    let (content_service, gate) = state.content_update_service.lock().await.detached();
+    let _single_flight = gate.lock().await;
     let staged = content_service
         .stage_resistance_scripts(api_key.as_ref())
         .await
