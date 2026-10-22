@@ -1,5 +1,5 @@
 // Stable bindings to the generated Rust RPC trait; no HTTP endpoint mapping.
-export const rpcParameters: Record<string, string[]> = {
+export const rpcParameters = {
   "getAccountInfo": [],
   "refreshAccount": [],
   "acceptTos": [],
@@ -148,4 +148,6 @@ export const rpcParameters: Record<string, string[]> = {
   "resyncSitePack": [
     "site_pack_id"
   ]
-} as const;
+} as const satisfies Record<string, readonly string[]>;
+
+export type RpcOperation = keyof typeof rpcParameters;

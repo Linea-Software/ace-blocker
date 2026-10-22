@@ -5,17 +5,15 @@
     import { Skeleton } from "$lib/components/ui/skeleton/index.js";
     import { Spinner } from "$lib/components/ui/spinner/index.js";
     import { onMount, tick } from "svelte";
+    import { invalidateAll } from "$app/navigation";
     import * as m from "$lib/paraglide/messages.js";
     import { toast } from "svelte-sonner";
     import {
-        createNetworkBlock,
-        renameNetworkBlock,
+        getDashboardSnapshot,
         getAllSitePacks,
         getScheduleEntries,
         getNetBlockToSitePackConnections,
         getUserRules,
-        setNetworkBlockSafeSearch,
-        setNetworkBlockIcon,
     } from "$engine-client";
     import type {
         NetworkBlockSchema,
@@ -27,6 +25,7 @@
     import { UserDefinedRulesDelta } from "$lib/deltas/user-defined-rules-delta.svelte";
     import { ScheduleChanges } from "$lib/deltas/schedule-delta.svelte";
     import { SitePacksConnectionDelta } from "$lib/deltas/site-packs-connection-delta.svelte";
+    import { saveNetworkBlock } from "./_save-network-block";
 
     import SectionGeneral from "./_components/SectionGeneral.svelte";
     import SectionRules from "./_components/SectionRules.svelte";
@@ -68,6 +67,7 @@
     // Set when an existing block's editor data failed to load: saving against
     // empty rules/schedule/connections would clobber the server state.
     let dataLoadFailed = $state(false);
+    let partialSaveWarning = $state(false);
 
     const editorSections = [
         { id: "blocking", label: m.blocking() },
@@ -147,76 +147,52 @@
     });
 
     async function handleSave() {
-        if (!name.trim() || scheduleEditorOpen) return;
+        if (!name.trim() || scheduleEditorOpen || dataLoadFailed) return;
         isSubmitting = true;
         try {
-            let currentBlockId: string;
+            const outcome = await saveNetworkBlock({
+                block: block ? $state.snapshot(block) : null,
+                name,
+                icon: blockIcon,
+                safeSearch: isSafeSearch,
+                rules: rulesDelta,
+                schedule: scheduleDelta,
+                packs: sitePacksDelta,
+            });
 
-            if (!block) {
-                // Creation
-                const response = await createNetworkBlock({
-                    body: { blockName: name, icon: blockIcon },
-                });
-
-                if (response.error) {
-                    console.error(
-                        "Failed to create network block:",
-                        response.error,
-                    );
+            if (outcome.kind === "failed") {
+                console.error("Failed to save network block:", outcome.error);
+                if (!outcome.attempted) {
                     toast.error(m.failed_to_sync());
-                    isSubmitting = false;
                     return;
                 }
 
-                if (response.data?.networkBlock) {
-                    currentBlockId = response.data.networkBlock.id;
+                // These writes are not transactional. Re-read canonical state
+                // before allowing further edits, even if the first RPC failed.
+                partialSaveWarning = true;
+                isLoadingData = true;
+                await invalidateAll();
+                const snapshot = await getDashboardSnapshot();
+                const canonical = snapshot.data?.blocks.find(
+                    (entry) => entry.block.id === outcome.id,
+                );
+                if (snapshot.error || !canonical) {
+                    dataLoadFailed = true;
                 } else {
-                    toast.error(m.failed_to_sync());
-                    isSubmitting = false;
-                    return;
+                    block = canonical.block;
+                    name = canonical.block.name;
+                    blockIcon = canonical.block.icon ?? null;
+                    isSafeSearch = canonical.block.safeSearch;
+                    dataLoadFailed = !(await loadData(canonical.block.id));
                 }
-            } else {
-                currentBlockId = block.id;
-                // Update basic settings if changed
-                if (name !== block.name) {
-                    const updateRes = await renameNetworkBlock({
-                        path: { network_block_id: currentBlockId },
-                        body: { newName: name },
-                    });
-                    if (updateRes.error) {
-                        console.error(
-                            "Failed to update network block:",
-                            updateRes.error,
-                        );
-                        toast.error(m.failed_to_sync());
-                        isSubmitting = false;
-                        return;
-                    }
-                }
-
-                // Update icon if changed during editing
-                if (blockIcon !== (block.icon ?? null)) {
-                    await setNetworkBlockIcon({
-                        path: { network_block_id: currentBlockId },
-                        body: { icon: blockIcon },
-                    });
-                }
+                toast.error(m.block_save_partially_applied());
+                return;
             }
-
-            // Push all deltas
-            await Promise.all([
-                rulesDelta.pushChangesToServer(currentBlockId),
-                scheduleDelta.pushChangesToServer(currentBlockId),
-                sitePacksDelta.pushChangesToServer(currentBlockId),
-                setNetworkBlockSafeSearch({
-                    path: { network_block_id: currentBlockId },
-                    body: { enabled: isSafeSearch },
-                }),
-            ]);
+            const currentBlockId = outcome.id;
 
             onSave({
                 id: currentBlockId,
-                name: name,
+                name,
                 icon: blockIcon,
                 enabled: block?.enabled ?? true,
                 isActive: block ? block.isActive : true,
@@ -229,13 +205,16 @@
             open = false;
         } catch (error) {
             console.error("Failed to save network block:", error);
-            toast.error(m.failed_to_sync());
+            dataLoadFailed = true;
+            partialSaveWarning = true;
+            toast.error(m.block_save_partially_applied());
         } finally {
+            isLoadingData = false;
             isSubmitting = false;
         }
     }
 
-    async function goToBlockName() {
+        async function goToBlockName() {
         if (scheduleEditorOpen) return;
         activeSection = "blocking";
         await tick();
@@ -290,6 +269,13 @@
         </nav>
     {/snippet}
 
+    {#if partialSaveWarning}
+        <Alert.Root variant="destructive">
+            <CircleAlert aria-hidden="true" />
+            <Alert.Title>{m.block_save_partially_applied_title()}</Alert.Title>
+            <Alert.Description>{m.block_save_partially_applied()}</Alert.Description>
+        </Alert.Root>
+    {/if}
     {#if isLoadingData}
         <div
             class="flex flex-col gap-5"

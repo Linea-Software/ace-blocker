@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { resolve } from "node:path";
 
 /**
  * Vitest is scoped to pure unit tests under `src/` (e.g.
@@ -10,6 +11,12 @@ import { defineConfig } from "vitest/config";
  * Paraglide / Tailwind plugins never load for unit tests.
  */
 export default defineConfig({
+    resolve: {
+        alias: {
+            "$lib": resolve(import.meta.dirname, "src/lib"),
+            "$engine-client": resolve(import.meta.dirname, "src/lib/engine-client"),
+        },
+    },
     test: {
         include: ["src/**/*.test.ts"],
         environment: "node",

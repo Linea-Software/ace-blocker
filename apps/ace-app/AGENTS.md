@@ -143,7 +143,14 @@ backend calls typed remoc RPC over a local named pipe. There is no local
 REST server, Swagger/OpenAPI generator, API port or HTTP fallback.
 Read the root docs/IPC_ARCHITECTURE.md before changing IPC or authorization.
 Preserve lock policy checks, handle error/data responses and streaming statuses,
-and localize user-visible errors.
+and localize user-visible errors. The TypeScript facade uses `RpcFailure`
+from `src/lib/engine-client/rpc-error.ts` for explicit error results, not
+Fetch-style `response.status` objects; `rpc-contract.test.ts` compares the
+operation map against the current Rust bridge. Network Block editing coordinates
+independent writes in `src/routes/network-blocks/_save-network-block.ts` and
+must never report success or blindly retry after an ambiguous partial commit.
+Native IPC/capability tests require the disposable Windows VM gate documented
+in `docs/ai/ACE_APP_NATIVE_TEST_GATE.md`.
 
 ## Localization (Paraglide JS)
 

@@ -91,8 +91,8 @@
         return undefined;
     }
 
-    function showMutationError(error: unknown, response?: Response) {
-        const code = errorCode(error);
+    function showMutationError(error: { code: string; status: number }) {
+        const code = error.code;
         if (code === "resistance_locked") {
             toast.error(m.locked_one_way_notice());
         } else if (code === "unsupported_lock_state") {
@@ -105,7 +105,7 @@
             toast.error(m.status_pro_required());
         } else if (code === "invalid_request_body") {
             toast.error(m.error_invalid_request());
-        } else if (response?.status === 401 || code === "capability_required") {
+        } else if (error.status === 401 || code === "capability_required") {
             toast.error(m.error_unexpected());
         } else if (!engineOnline) {
             toast.error(m.error_engine_offline_action());
@@ -118,12 +118,12 @@
     async function handleToggleEnabled(enabled: boolean) {
         if (isMutating) return; // prevent duplicated mutations from rapid clicks
         isMutating = true;
-        const { error, response } = await setResistanceModeEnabled({
+        const { error } = await setResistanceModeEnabled({
             body: { enabled },
         });
         isMutating = false;
         if (error) {
-            showMutationError(error, response);
+            showMutationError(error);
             return;
         }
         await refresh();
@@ -136,12 +136,12 @@
         if (isMutating || isLocked || !settings?.enabled) return;
         isMutating = true;
 
-        const { error, response } = await setResistanceModeType({
+        const { error } = await setResistanceModeType({
             body: { type: "static", intensity: level },
         });
         isMutating = false;
         if (error) {
-            showMutationError(error, response);
+            showMutationError(error);
             return;
         }
 
@@ -160,7 +160,7 @@
         scripts = scripts.map((s) =>
             s.id === script.id ? { ...s, isEnabled: next } : s,
         );
-        const { error, response } = await setScriptEnabled({
+        const { error } = await setScriptEnabled({
             path: { script_id: script.id },
             body: { enabled: next },
         });
@@ -168,7 +168,7 @@
             scripts = scripts.map((s) =>
                 s.id === script.id ? { ...s, isEnabled: original } : s,
             );
-            showMutationError(error, response);
+            showMutationError(error);
             return;
         }
         toast.success(
@@ -219,10 +219,10 @@
     async function handleSync() {
         if (isSyncing) return;
         isSyncing = true;
-        const { error, response } = await downloadResistanceScripts();
+        const { error } = await downloadResistanceScripts();
         isSyncing = false;
         if (error) {
-            showMutationError(error, response);
+            showMutationError(error);
             return;
         }
         toast.success(m.scripts_sync_success());
@@ -232,12 +232,12 @@
     async function handleCommitLock(isoEnd: string) {
         if (isMutating) return;
         isMutating = true;
-        const { error, response } = await setResistanceModeLock({
+        const { error } = await setResistanceModeLock({
             body: { lockState: "active_until_lock_end", lockEnd: isoEnd },
         });
         isMutating = false;
         if (error) {
-            showMutationError(error, response);
+            showMutationError(error);
             return;
         }
         lockDialogOpen = false;

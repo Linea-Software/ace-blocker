@@ -49,7 +49,7 @@
 <Toaster />
 
 {#if legalGateActive}
-    <TosModal loading={legalGateLoading} />
+    <TosModal loading={legalGateLoading} loadFailed={userStore.accountLoadStatus === "error"} />
 {:else if showOnboardingWizard}
     <OnboardingWizard />
 {/if}

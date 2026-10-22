@@ -157,7 +157,7 @@
 
             if (res.error) {
                 // Check for 425 Too Early
-                if (res.response?.status === 425) {
+                if (res.error.status === 425) {
                     const body = res.error as {
                         retryAfterSeconds?: number;
                         error?: string;

@@ -1,9 +1,3 @@
-import { getAllSitePacks } from "$engine-client";
-import type { PageLoad } from "./$types";
-
-export const load: PageLoad = async () => {
-    const response = await getAllSitePacks();
-    return {
-        sitePacks: response.data?.sitePacks ?? [],
-    };
-};
+// Site Pack retrieval is owned by +page.svelte: it has an explicit
+// loading/error/retry lifecycle and must not duplicate an invisible route fetch.
+export const load = () => ({});

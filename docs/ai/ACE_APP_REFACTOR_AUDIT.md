@@ -186,138 +186,46 @@ Reference interfaces: `docs/IPC_ARCHITECTURE.md:8-42`; `apps/ace-app/src-tauri/s
 
 - **Priority/status:** P2 / verified implementation pattern. **Evidence:** `src/lib/stores/engine.svelte.ts:11-34` starts a 10 s timer without retaining a cancellation handle; `src/lib/stores/dashboard.svelte.ts:39-81` writes snapshots with no sequence check; `src/lib/components/ace/domain/EngineState.svelte:25-31` triggers 5 s dashboard refreshes (and cleans that component timer).
 - **Current behavior/problem:** Delayed earlier responses can overwrite newer snapshots when refreshes overlap, and store-owned background timer lifetimes are implicit. Polling traffic should be assessed before replacing it with event plumbing.
-- **Approach:** Single-flight or monotonic request sequence in each existing store; explicit start/stop ownership for engine timer; skip redundant work while hidden/offline if UX tolerates it.
-- **Alternatives:** Do not create a generic global event bus or another RPC transport for polling.
-- **Dependencies/constraints:** Preserve timely enforcement display and recover when engine restarts.
-- **Risk/acceptance:** Low. Stale responses never replace new ones; no duplicate persistent timers; status updates after reconnect.
-- **Tests:** Deferred-promise out-of-order tests, mount/dispose and visibility/resume tests.
+- **Approach:** Single-flight or monotonic request sequence in each existing store; explicit start/stop ownership for engine timer; skip redundant work while hidden/o
 
-### AA-13 — Define bounded/cancellable site-pack stream lifecycle
+## I. P0/P1 implementation progress (2026-10-22; supersedes original audit status labels)
 
-- **Priority/status:** P2 / candidate. **Evidence:** `src/lib/engine-client/tauri-rpc.ts:52-77,92-117` appends each event to `parsed: unknown[]`; the generator drains when iterated but no maximum queue is enforced and no explicit cancel is supplied to the native command. Cursor-based compaction already avoids per-event O(n) `shift` (cross-reference previously addressed **TD-016**).
-- **Current behavior/problem:** When consumers fall behind or abandon iteration, progress events and native streaming work can outlive the visible operation. Whether this causes material memory use depends on real event frequency.
-- **Approach:** First measure/corroborate event rates and stream lifetimes. Prefer existing Tauri/remoc cancellation or bounded coalescing **only where progress semantics permit**; terminal/error events must never be discarded. Avoid custom framing/transport.
-- **Alternatives:** Arbitrarily dropping events or stopping on stream close without terminal status is unsafe.
-- **Dependencies/constraints:** AA-06 terminal handling, AA-07 native tests.
-- **Risk/acceptance:** Medium. Explicit abandonment does not retain an unbounded queue; terminal state and ordering survive.
-- **Tests:** Slow/abandoned iterator simulation and native cancellation/reconnect tests.
+The finding descriptions above are the **pre-implementation audit snapshot**.
+This follow-up records actual changes and verification without marking
+non-native tests as proof of installed security or runtime correctness.
 
-### AA-14 — Remove confirmed unused legacy UI implementations
+| Finding | Implementation status | Scope and remaining gate |
+| --- | --- | --- |
+| **AA-01 (P0)** | Implemented; unit verified | Edit icon and Safe Search RPC failures are checked and are never reported as successful saves. Native mutation errors not yet exercised. |
+| **AA-02 (P0)** | Implemented for explicit failure/reconciliation; native gate open | Independent writes now execute sequentially, with explicit `saved/failed` outcomes and reload or editor lockdown after ambiguous partial commits. No cross-resource atomicity claimed. |
+| **AA-03 (P1)** | **Partial; product/engine decision required** | Pure table-tested week-minute coverage for UI preview; proposed invalid overnight input is rejected in preview. Rust `ScheduleEntry::from_raw` rejects `22:00–02:00` but `contains` has special `end=00:00` and `Schedule::is_strictier_than` uses raw end-time ordering. Matching all Rust lock/midnight semantics requires a separate security-reviewed engine decision and native tests. |
+| **AA-04 (P1)** | Implemented; typed facade and contract tests pass | 61 request and 2 stream `as any` wrappers replaced by typed generics; operation names and JSON keys compared with actual Rust bridge source. Actual end-to-end serialization remains for AA-07. |
+| **AA-05 (P1)** | Implemented; unit verified | Canonical `RpcFailure` in TypeScript, structured serialized Rust/transport errors, 425 cooldown retained; removed HTTP-era `response.status` consumers. |
+| **AA-06 (P1)** | Implemented; unit verified | Site Pack import recognizes only `COMPLETED` as success; tests cover COMPLETED, FAILED, iterator exception and early EOF. |
+| **AA-07 (P1)** | **Blocked by test environment** | `CodexPro CAP vm images` returned no registered images. No disposable Windows VM, no native WebView/Named Pipe/installer validation. See `ACE_APP_NATIVE_TEST_GATE.md`, and TD-001. |
+| **AA-08 (P1)** | Implemented; behavior requires native/deferred UI verification | Removed default-theme auto-save before hydration; user changes serialized. Deferred store load/rapid writes are not yet covered by component tests. |
+| **AA-09 (P1)** | Implemented; static check/build verified | Network Blocks read errors are separate from legitimate empty data with retry; Site Packs already owned error state in Svelte page, duplicate hidden route fetch removed. |
+| **AA-10 (P1)** | **Pending approval + native gate** | Reviewed generic WebView Tauri operation and engine's separate installer shutdown path. Do **not** remove engine shutdown or silently change lock/maintenance policy. Proposed desktop-only deny restriction in `ACE_APP_NATIVE_TEST_GATE.md`; VM required first. |
+| **AA-11 (P1)** | Implemented; native error-path gate open | Account status loading/error/ready and legal-gate retry; no inferred ToS acceptance or Free downgrade on read failure; focus listeners and retry timer disposed with store. |
 
-- **Priority/status:** P2 / verified lexical nonuse, subject to final consumer audit. **Evidence:** No non-generated source references found for `src/lib/components/AppSidebar.svelte`, `PageCard.svelte`, `src/routes/network-blocks/_components/SectionLock.svelte` or `src/lib/components/_DebugLicenseSelector.svelte`. `DevToolsSheet.svelte` and `SidebarAccountWidget.svelte` appear to be referenced by the unused AppSidebar, not the active `+layout.svelte:5-13,61-73`.
-- **Current behavior/problem:** Legacy alternate shell/editor surfaces remain alongside the new NavigationRail/Inspector and impose review and dependency cost. Presence alone is not sufficient to delete the whole legacy `components/ui/` library, whose other consumers are active.
-- **Approach:** Check dynamic imports, build references, indirect component users, dev-only references and design migration plan. Remove only demonstrably unreachable components and their unused imports; keep active shared primitives.
-- **Alternatives:** Blanket deletion of shadcn-derived UI components before all usages migrate — rejected.
-- **Dependencies/constraints:** No functional UI regressions. Cross-reference approved UI identity.
-- **Risk/acceptance:** Low. All removed files have no source consumers; all application routes still compile and render.
-- **Tests:** `rg` reference checks before/after; `bun run check`, unit tests, build and UI smoke screenshots.
+**Tests executed in this implementation session:**
+`cd apps/ace-app; bun run check` **PASS**, Svelte 0 errors / 0
+diagnostic warnings (configuration still warns about deprecated SvelteKit
+alias and overwritten TS `paths`, tracked as AA-15 / TD-017).
+`bun run test:unit` **PASS: 67 tests / 9 suites** (baseline 42 / 5).
+`bun run build` **PASS**.
+`bun run test:e2e` **PASS: 4 browser-only smoke tests** (not native Tauri/remoc).
+`cargo check -p ace-app` **PASS** with two existing ace-engine unused-function warnings.
+The direct Tauri UI, browser/engine liveness, service ACL, native stream
+and locked maintenance/uninstall cases have **not** run; no VM was available.
 
-### AA-15 — Resolve SvelteKit alias warnings without API churn
+**Adjacent work:** AA-17's redundant Site Packs `+page.ts` initial fetch was
+removed; stale in-component response ordering remains separately open as P2.
+The original P2/P3 findings remain in the audit.
 
-- **Priority/status:** P2 / verified. **Evidence:** `vite.config.js:19-24` uses `sveltekit({alias: ...})`; `tsconfig.json:1-27` extends SvelteKit configuration. Executed `bun run check` and `bun run build` both emit `config_option_deprecated_alias` and `tsconfig_invalid` (“paths was overwritten”).
-- **Current behavior/problem:** Build currently passes, but warnings indicate a future upgrade break and potential alias typechecking drift.
-- **Approach:** Update import alias mechanism per installed SvelteKit, preserving existing source imports and types; isolate config changes from runtime work.
-- **Alternatives:** Silencing warnings without correcting their cause — rejected.
-- **Dependencies/constraints:** None; generated Paraglide output remains generated.
-- **Risk/acceptance:** Medium. No alias warnings in Svelte check/build; `$lib` and `$engine-client` resolve consistently.
-- **Tests:** `bun run check`, `bun run test:unit`, `bun run build`.
-
-### AA-16 — Specify inspector keyboard/focus lifecycle
-
-- **Priority/status:** P2 / candidate pending actual keyboard test. **Evidence:** `src/lib/components/ace/structural/Inspector.svelte:23-60` provides a fixed `aside role="region"` with close action, but no opening/return focus management. The caller binds Escape globally in `_BlockModal.svelte:245-256`.
-- **Current behavior/problem:** Keyboard/screen-reader users may remain focused behind the inspector or lose their place on close. It is a side inspector, **not automatically a modal**, so indiscriminate focus traps or inert backgrounds could violate the approved interaction model.
-- **Approach:** Test actual tab/Shift+Tab/Escape sequences in both Network Blocks and Site Packs. Give each opener an explicit focus target and restore focus where appropriate; choose region/dialog semantics based on real interaction behavior.
-- **Alternatives:** Convert every inspector into a modal dialog for easier focus trapping — rejected absent UX justification.
-- **Dependencies/constraints:** Respect `docs/ui-identity.md`; avoid purely subjective style changes.
-- **Risk/acceptance:** Low. Screen reader announces inspector context; keyboard can navigate and close without getting lost; return focus is deterministic.
-- **Tests:** Playwright keyboard/a11y checks on representative desktop viewports; manual Tauri light/dark checks.
-
-### AA-17 — Give Site Packs one authoritative fetch lifecycle
-
-- **Priority/status:** P2 / verified. **Evidence:** `src/routes/site-packs/+page.ts:4-9` fetches Site Packs and returns page data, but `+page.svelte:1-76` does not consume `PageData` and fetches on mount; `fetchPacks()` is also called after resync/delete (`+page.svelte:155-182,190-219`) without request sequence guard.
-- **Current behavior/problem:** Unused initial fetching adds an IPC call and silently converts errors to empty data. Concurrent refreshes may apply older results after newer mutations.
-- **Approach:** Remove the redundant load or make it the single source of initial truth; keep refresh responsibility clearly route-local with stale-response guards. Preserve retained selection when item still exists.
-- **Alternatives:** Introduce a global Site Packs cache/store with unrelated consumers — not justified.
-- **Dependencies/constraints:** AA-09 explicit errors; preserve progress state in `syncStore`.
-- **Risk/acceptance:** Low. Initial page requests once, each mutation refresh is ordered, no stale update overwrites a recent action.
-- **Tests:** Deferred overlapping results, delete/resync and selection restoration tests.
-
-### AA-18 — Reconcile temporary schedule IDs after persisted adds
-
-- **Priority/status:** P2 / candidate impact (normal modal currently closes on successful save). **Evidence:** `src/lib/deltas/schedule-delta.svelte.ts:180-199` stages `newTempId()` and inserts it into `currentState`. The add RPC response is not reconciled at `406-435`; `initialEntries` is replaced with `currentState` at `438-442`.
-- **Current behavior/problem:** Reusing this delta instance after a successful save may treat temporary IDs as persisted server IDs. The current editor closes after save (`_BlockModal.svelte:217-229`), reducing but not proving absence of risk.
-- **Approach:** Choose either single-use draft lifetime (enforce disposal) or refresh canonical persisted entries after success. Do not keep a fake historical-ID adapter.
-- **Alternatives:** Generate client UUIDs and assume the server adopted them — rejected.
-- **Dependencies/constraints:** AA-02 reconciliation should choose consistent post-save strategy.
-- **Risk/acceptance:** Medium. Successful add yields canonical IDs before subsequent edit/delete, or instance cannot be reused.
-- **Tests:** Two sequential edits using the same delta instance; partial failure; delete after successful add.
-
-### AA-19 — Remove obsolete REST/SSE-era descriptions after consumer check
-
-- **Priority/status:** P3 / verified stale terminology. **Evidence:** `docs/engine-rest-api.md` remains in app docs after remoc migration; `syncing-store.svelte.ts:134-151` describes an SSE stream although it now consumes typed Tauri events; `site-packs-connection-delta.svelte.ts:1-12` mentions RocksDB and old “Network List” terminology.
-- **Current behavior/problem:** AI/code readers can confuse obsolete HTTP terminology with current local RPC design.
-- **Approach:** Confirm the old document is no longer linked as authoritative, archive/remove it or relabel as historical; update comments to match current typed IPC and real storage ownership. Keep actual Ace Server HTTP documentation separate.
-- **Alternatives:** Delete all HTTP references everywhere — incorrect because remote Ace Server and browser updates legitimately use HTTPS.
-- **Dependencies/constraints:** None.
-- **Risk/acceptance:** Low. No documentation claims that Ace App uses a local REST control server; valid remote API docs remain.
-- **Tests:** Documentation link and terminology search; no runtime tests required.
-
-## E. Suggested implementation order
-
-| Batch | Findings | Goal / prerequisite | Independent verification |
-| --- | --- | --- | --- |
-| 0 | AA-01, AA-06, AA-09 | Immediate explicit error/terminal handling; no new abstractions | Targeted component/load/stream failure tests + `bun run check` |
-| 1 | AA-03 | Protect overnight schedule preview semantics | Table-driven coverage/lock tests, compare engine-authoritative behavior |
-| 2 | AA-02 | Characterize and reconcile partial Network Block commits | Fault-injection tests for each step and rollback; no false success |
-| 3 | AA-05, then AA-04 | Typed error contract first; narrow RPC type-safety improvements after | Complete mapping/error contract tests; Rust check; AA-07 where available |
-| 4 | AA-07 and AA-10 | Establish native security/IPC gate before high-risk transport hardening | Windows VM capability/lock/reconnect and installer integration |
-| 5 | AA-08, AA-11, AA-12, AA-17, AA-18 | Reactive lifecycle, persistence and data freshness | Deferred-promise race tests, UI retry/visibility scenarios |
-| 6 | AA-13, AA-16 | Stream consumer lifetime and inspector accessibility | Native stream lifecycle and keyboard smoke tests |
-| 7 | AA-14, AA-15, AA-19 | Remove dead UI/config/doc debt | Reference checks, static checks, build and UI smoke |
-
-Batches should be separately reviewable commits. **No item here authorizes a wholesale Svelte rewrite, an additional app-wide state framework, a custom remoc transport layer, or an engine change without a separate scope decision.**
-
-## F. Open architectural questions
-
-Only decisions that could change product-visible semantics or the security boundary need owner approval:
-
-1. **Network Block save partial success (AA-02):** (A, recommended initial default) preserve current engine RPCs and explicitly reconcile/report each committed group after any failure; (B) require all-or-nothing edit semantics, which necessitates a separately designed engine-owned atomic operation, authorization/lock review and native tests. **Default A** for refactoring; escalate if atomic save is a product requirement.
-2. **Desktop access to engine maintenance operations (AA-10):** (A, recommended) normal WebView cannot call privileged maintenance/shutdown from arbitrary generic operation names; authorized installer/uninstall path remains distinct; (B) retain full generic desktop bridge with explicit rationale and hardened trust model. Must confirm no legitimate UI workflow depends on direct shutdown before changing the allowlist. **Default A subject to native compatibility proof**.
-
-AA-08, AA-16 and AA-18 are engineering/test questions, not invitations to solicit visual or product preferences without evidence.
-
-## G. Verification strategy and actual checks
-
-### Executed during this audit (2026-10-22)
-
-- **Git baseline:** `main` at `c865a15`, clean status before editing.
-- **Inventory:** traversed `src/`, `src-tauri/`, `e2e/`; classified generated and legacy UI; inspected source and call sites across routes, deltas, stores, remoc facade, Tauri Rust, configs and tests.
-- **`cd apps/ace-app; bun run check`: PASS** — 0 Svelte errors and 0 Svelte diagnostic warnings. Configuration warnings reported separately: `config_option_deprecated_alias`, `tsconfig_invalid`.
-- **`cd apps/ace-app; bun run test:unit`: PASS** — five test files, **42 tests passed**.
-- **`cd apps/ace-app; bun run build`: PASS** — Vite/SvelteKit build completed, same configuration warnings.
-
-### Not executed / insufficient as proof
-
-- Native `cargo check -p ace-app` and cargo tests: **not run**; no Rust source changed.
-- `bun run test:e2e`: **not run**; current Playwright suites test static/browser routes, not real remoc.
-- Real Tauri GUI screenshot and keyboard audit, Windows VM/service/Named Pipe ACL, hostile WebView, installer/uninstall and watchdog checks: **not run**.
-- No mutation-failure injection or reproduction of speculative races was run; impact of *candidate* findings remains to be proven.
-
-### Required implementation gates
-
-Run `bun run check`, `bun run test:unit`, and `bun run build` from `apps/ace-app` after every relevant frontend batch. Add explicit failure-path tests **before** refactoring P0/P1 behavior. For Tauri/IPC changes run `cargo check -p ace-app` from repository root, relevant engine remoc unit/contract suites as scoped by ownership, and disposable native Windows VM checks defined in `docs/IPC_ARCHITECTURE.md`. Verify behavior/architecture/type gates separately from compilation; record exact outcomes per implementation batch. Review the final diff for accidental source or generated-code modifications.
-
-## H. Explicit non-goals
-
-- **No backward compatibility** for legacy Ace Blocker pre-release databases, historical backups/formats, old REST control endpoints, obsolete clients or old IPC payload shapes, except currently supported runtime behavior and active development data.
-- No implementation changes in this audit. No edits to engine, watchdog, installer, or generated external Ace Server client.
-- No local REST/HTTP fallback. Keep typed remoc over Named Pipes, Rust-owned capability and independent LocalSystem enforcement.
-- No global state/event bus merely to coordinate otherwise independent feature UI; no generic transaction framework in Svelte; no pointless types, wrappers, crates or dependencies.
-- No assumption that a successful UI check proves Windows service security; no automatic deletion solely from file size, appearance or lexical nonuse.
-- No speculative redesign of correct screens; subjective theme preferences are not audit findings. `apps/ace-app/docs/ui-identity.md` governs any future visible UI changes.
-
-## Cross-reference
-
-- Root `AGENTS.md`, nested `apps/ace-app/AGENTS.md`, `docs/ai/REFACTORING_PLAYBOOK.md`, `docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md`, `docs/ai/DOMAIN_TYPES.md`, `docs/ai/REVIEW_GATES.md`, `docs/ai/TECH_DEBT_BACKLOG.md`, `docs/ai/ACE_ENGINE_REFACTOR_DECISIONS.md`, `docs/IPC_ARCHITECTURE.md`, `apps/ace-app/docs/ui-identity.md`.
-- Existing **TD-001** (native IPC test gap) and **TD-017** (alias warnings) remain the project-wide tracking references. Previously addressed **TD-016** (stream queue `shift` cost) must not be re-opened as a finding; AA-13 is limited to lifecycle/boundedness.
-- **Audit conclusion:** apply small correctness and failure-reporting fixes before optional cleanup, retain server/engine policy authority, and never convert a failed operation into an apparently successful primitive or empty data shape.
+**Open decisions:** 1) whether Ace's authoritative engine should support
+overnight intervals crossing midnight or retain existing constrained
+representation, with separate lock-semantics review; 2) authorize AA-10's
+desktop-only shutdown restriction after registering a disposable Windows
+test VM. No legacy compatibility is required before public release, but
+current security and independent service enforcement remain mandatory.

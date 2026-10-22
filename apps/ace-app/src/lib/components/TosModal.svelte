@@ -9,7 +9,7 @@
     import { toast } from "svelte-sonner";
     import { openUrl } from "@tauri-apps/plugin-opener";
 
-    let { loading = false }: { loading?: boolean } = $props();
+    let { loading = false, loadFailed = false }: { loading?: boolean; loadFailed?: boolean } = $props();
 
     let termsAccepted = $state(false);
     let privacyAccepted = $state(false);
@@ -92,7 +92,16 @@
                 role="status"
                 aria-live="polite"
             >
-                {m.legal_gate_checking_body()}
+                {#if loadFailed}
+                    <div role="alert" class="space-y-3">
+                        <p>{m.account_info_load_failed()}</p>
+                        <Button variant="outline" onclick={() => void userStore.retryAccountInfo()}>
+                            {m.retry()}
+                        </Button>
+                    </div>
+                {:else}
+                    {m.legal_gate_checking_body()}
+                {/if}
             </div>
         {:else}
             <div class="max-h-[50vh] space-y-6 overflow-y-auto p-6">

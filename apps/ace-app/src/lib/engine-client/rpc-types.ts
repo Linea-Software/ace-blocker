@@ -1,10 +1,11 @@
 /** Narrow, transport-independent types for the Svelte/Tauri RPC facade. */
+import type { RpcFailure } from "./rpc-error";
 type ResponseValue<T> = T extends object ? T[keyof T] : T;
 export type RequestResult<TResponse, TError, ThrowOnError extends boolean = false> =
     Promise<ThrowOnError extends true
         ? { data: ResponseValue<TResponse>; error?: never }
         : { data: ResponseValue<TResponse>; error?: never } |
-          { data?: undefined; error: ResponseValue<TError> }>;
+          { data?: undefined; error: RpcFailure & { readonly domainError?: ResponseValue<TError> } }>;
 export type RpcStreamResult<TResponse> = {
     stream?: AsyncIterable<ResponseValue<TResponse>>;
 };

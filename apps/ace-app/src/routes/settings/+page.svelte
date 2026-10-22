@@ -9,42 +9,45 @@
     import BackupSection from "./_BackupSection.svelte";
     import LicenseSection from "./_LicenseSection.svelte";
 
-    let selectedTheme = $state("system");
+    let selectedTheme = $state<"light" | "dark" | "system">("system");
 
-    onMount(async () => {
-        try {
-            const store = await load("settings.json");
-            const savedTheme = await store.get<{ value: string }>("theme");
-            if (savedTheme) {
-                selectedTheme = savedTheme.value;
-                setMode(savedTheme.value as "light" | "dark" | "system");
-            }
-        } catch (error) {
-            console.error("Failed to load settings store:", error);
-        }
-    });
+    let userChangedTheme = false;
+    let pendingSave: Promise<void> = Promise.resolve();
+    let settingsStore: ReturnType<typeof load> | undefined;
 
-    $effect(() => {
-        const currentSettings = {
-            theme: { value: selectedTheme },
-        };
+    function isTheme(value: unknown): value is "light" | "dark" | "system" {
+        return value === "light" || value === "dark" || value === "system";
+    }
 
+    onMount(() => {
+        settingsStore = load("settings.json");
         void (async () => {
             try {
-                const store = await load("settings.json");
-                for (const [key, value] of Object.entries(currentSettings)) {
-                    await store.set(key, value);
+                const store = await settingsStore;
+                const savedTheme = await store.get<{ value: string }>("theme");
+                if (!userChangedTheme && isTheme(savedTheme?.value)) {
+                    selectedTheme = savedTheme.value;
+                    setMode(savedTheme.value);
                 }
-                await store.save();
             } catch (error) {
-                console.error("Failed to save settings:", error);
+                console.error("Failed to load settings store:", error);
             }
         })();
     });
 
     function handleThemeChange(value: string) {
+        if (!isTheme(value)) return;
+        userChangedTheme = true;
         selectedTheme = value;
-        setMode(value as "light" | "dark" | "system");
+        setMode(value);
+
+        pendingSave = pendingSave.then(async () => {
+            const store = await (settingsStore ?? load("settings.json"));
+            await store.set("theme", { value });
+            await store.save();
+        }).catch((error: unknown) => {
+            console.error("Failed to save settings:", error);
+        });
     }
 </script>
 

@@ -149,4 +149,32 @@ describe("typed desktop engine RPC adapter", () => {
             }),
         );
     });
+    it("normalizes a serialized engine authorization refusal", async () => {
+        vi.mocked(invoke).mockRejectedValue({
+            code: "capability_required",
+            status: 403,
+            error: "not authorized",
+        });
+        await expect(rpcRequest("setNetworkBlockIcon", {
+            path: { network_block_id: "block-id" },
+            body: { icon: "shield" },
+        })).resolves.toEqual({
+            error: { code: "capability_required", status: 403, error: "not authorized" },
+        });
+    });
+
+    it("returns a typed transport error instead of a rejected primitive", async () => {
+        vi.mocked(invoke).mockRejectedValue("named pipe unavailable");
+        expect(await rpcRequest("ping")).toEqual({
+            error: { code: "transport_unavailable", status: 503, error: "named pipe unavailable" },
+        });
+    });
+
+    it("throws the same normalized error when throwOnError is requested", async () => {
+        vi.mocked(invoke).mockRejectedValue({ code: "invalid_request_body", status: 400, error: "bad request" });
+        await expect(rpcRequest("ping", { throwOnError: true })).rejects.toMatchObject({
+            code: "invalid_request_body", status: 400,
+        });
+    });
+
 });

@@ -39,8 +39,10 @@ class UserStore {
     isPro: boolean = $state(false);
     tosAccepted: boolean = $state(true); // ignored until accountInfoLoaded
     accountInfoLoaded: boolean = $state(false);
+    accountLoadStatus: "loading" | "error" | "ready" = $state("loading");
     private intervalId: ReturnType<typeof setInterval> | null = null;
     private inFlight: Promise<void> | null = null;
+    private refreshOnVisible: (() => void) | null = null;
 
     constructor() {
         this.init();
@@ -62,6 +64,7 @@ class UserStore {
                     this.refreshAfterLoginOrEntitlementChange();
                 }
             };
+            this.refreshOnVisible = refreshOnVisible;
             window.addEventListener("focus", refreshOnVisible);
             document.addEventListener("visibilitychange", refreshOnVisible);
         }
@@ -69,6 +72,15 @@ class UserStore {
 
     /** Call this to stop polling when the store is no longer needed. */
     destroy() {
+        if (this.refreshOnVisible && typeof window !== "undefined") {
+            window.removeEventListener("focus", this.refreshOnVisible);
+            document.removeEventListener("visibilitychange", this.refreshOnVisible);
+            this.refreshOnVisible = null;
+        }
+        if (this.transientRetryTimer !== null) {
+            clearTimeout(this.transientRetryTimer);
+            this.transientRetryTimer = null;
+        }
         if (this.intervalId !== null) {
             clearInterval(this.intervalId);
             this.intervalId = null;
@@ -131,26 +143,40 @@ class UserStore {
                     // known entitlement rather than flipping to Free. This is
                     // a read of the engine's *cached* state, so an engine
                     // restart mid-poll must not downgrade the UI.
-                    this.scheduleTransientRetry();
+                    this.accountReadFailed();
                     return;
                 }
                 if (data) {
                     this.applyAccountInfo(data);
+                } else {
+                    this.accountReadFailed();
                 }
             } catch (error) {
                 if (error instanceof TypeError) {
                     // Network error during engine startup/shutdown. Keep the
                     // legal gate closed until a later fetch confirms the
                     // persisted account state.
-                    this.scheduleTransientRetry();
+                    this.accountReadFailed();
                     return;
                 }
                 console.error("Failed to fetch userStore info:", error);
+                this.accountReadFailed();
             }
         });
     }
 
     private transientRetryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async retryAccountInfo(): Promise<void> {
+        if (this.accountInfoLoaded) return;
+        this.accountLoadStatus = "loading";
+        await this.fetch();
+    }
+
+    private accountReadFailed() {
+        if (!this.accountInfoLoaded) this.accountLoadStatus = "error";
+        this.scheduleTransientRetry();
+    }
 
     private scheduleTransientRetry() {
         if (this.transientRetryTimer) return;
@@ -164,6 +190,7 @@ class UserStore {
         this.isPro = data.isPro;
         this.tosAccepted = data.tosAccepted ?? false;
         this.accountInfoLoaded = true;
+        this.accountLoadStatus = "ready";
     }
 }
 

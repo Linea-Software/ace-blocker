@@ -29,6 +29,7 @@
         Trash2,
     } from "@lucide/svelte";
     import IconPicker from "$lib/components/IconPicker.svelte";
+    import { IncompleteSitePackImportError, waitForSitePackImport } from "./_site-pack-import";
 
     let {
         open = $bindable(false),
@@ -127,51 +128,37 @@
     async function handleCreate() {
         if (!isFormReady) return;
         isCreating = true;
-
-        const { stream } = await createSitePack({
-            body: {
-                name: packName.trim(),
-                description: packDescription.trim() || null,
-                icon: selectedIcon,
-                sources: sources.map((s) => ({
-                    source: s.value,
-                    sourceType: s.type,
-                    format: s.format,
-                })),
-            },
-            onStreamError: (err: any) => {
-                throw err;
-            },
-        });
-
-        if (!stream) {
-            toast.error(m.failed_to_sync());
-            isCreating = false;
-            return;
-        }
-
         try {
-            for await (const value of stream) {
-                if (value && "FAILED" in value) {
-                    throw new Error(value.FAILED.error);
-                }
-
-                if (value && "COMPLETED" in value) {
-                    toast.success(m.site_pack_created_success());
-                    if (onSave) onSave();
-                    open = false;
-                    resetForm();
-                    break;
-                }
-            }
-        } catch (err: any) {
-            toast.error(err.message || m.failed_to_sync());
+            const { stream } = await createSitePack({
+                body: {
+                    name: packName.trim(),
+                    description: packDescription.trim() || null,
+                    icon: selectedIcon,
+                    sources: sources.map((s) => ({
+                        source: s.value,
+                        sourceType: s.type,
+                        format: s.format,
+                    })),
+                },
+            });
+            if (!stream) throw new IncompleteSitePackImportError();
+            await waitForSitePackImport(stream);
+            toast.success(m.site_pack_created_success());
+            onSave?.();
+            open = false;
+            resetForm();
+        } catch (error) {
+            toast.error(
+                error instanceof IncompleteSitePackImportError
+                    ? m.site_pack_import_incomplete()
+                    : error instanceof Error ? error.message : m.failed_to_sync(),
+            );
         } finally {
             isCreating = false;
         }
     }
 
-    function resetForm() {
+        function resetForm() {
         packName = "";
         packDescription = "";
         sources = [];

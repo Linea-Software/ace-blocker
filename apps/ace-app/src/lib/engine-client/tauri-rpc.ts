@@ -1,5 +1,7 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
-import { rpcParameters } from "./rpc-parameters";
+import { rpcParameters, type RpcOperation } from "./rpc-parameters";
+import type { RequestResult, RpcStreamResult } from "./rpc-types";
+import { normalizeRpcFailure } from "./rpc-error";
 
 type RequestOptions = {
     body?: unknown;
@@ -12,10 +14,10 @@ type RequestOptions = {
 
 // Only this adapter knows about Tauri. The WebView never handles pipe names,
 // transport credentials or serialized remoc messages.
-function argumentsFor(operation: string, options?: RequestOptions): Record<string, unknown> {
+function argumentsFor(operation: RpcOperation, options?: RequestOptions): Record<string, unknown> {
     const data: Record<string, unknown> = {};
     const path = options?.path ?? {};
-    for (const param of rpcParameters[operation] ?? []) {
+    for (const param of rpcParameters[operation]) {
         if (param === "payload" || param === "entry" || param === "mode" || param === "body") {
             data[param] = options?.body;
         } else if (param === "query") {
@@ -27,29 +29,44 @@ function argumentsFor(operation: string, options?: RequestOptions): Record<strin
     return data;
 }
 
-export async function rpcRequest(operation: string, options?: RequestOptions): Promise<any> {
+async function rpcRequestInternal(operation: RpcOperation, options?: RequestOptions): Promise<unknown> {
     try {
-        const value = await invoke<any>("engine_call", {
+        const value = await invoke<unknown>("engine_call", {
             op: operation,
             args: argumentsFor(operation, options),
         });
-        // This operation also returns the original 425 cooldown response.
-        if (operation === "confirmUnlock" && value?.status !== undefined) {
-            if (value.status >= 400) {
-                const error = { ...value.body, code: "too_early", status: value.status };
-                if (options?.throwOnError) throw error;
-                return { error };
+        // Only confirmUnlock embeds its cooldown result in an otherwise
+        // successful remoc response. Keep 425 as an explicit typed error.
+        if (operation === "confirmUnlock" && value !== null && typeof value === "object" && "status" in value) {
+            const outcome = value as { status: number; body: unknown };
+            if (outcome.status >= 400) {
+                const details = outcome.body && typeof outcome.body === "object"
+                    ? outcome.body : { error: "Unlock confirmation failed" };
+                throw normalizeRpcFailure({
+                    ...details,
+                    code: outcome.status === 425 ? "too_early" : "unlock_failed",
+                    status: outcome.status,
+                });
             }
-            return options?.responseStyle === "data" ? value.body : { data: value.body };
+            return options?.responseStyle === "data" ? outcome.body : { data: outcome.body };
         }
         return options?.responseStyle === "data" ? value : { data: value };
     } catch (error) {
-        if (options?.throwOnError) throw error;
-        return { error };
+        const failure = normalizeRpcFailure(error);
+        if (options?.throwOnError) throw failure;
+        return { error: failure };
     }
 }
 
-export async function rpcStream(operation: string, options?: RequestOptions): Promise<any> {
+export function rpcRequest<TResponse, TError = unknown, ThrowOnError extends boolean = false>(
+    operation: RpcOperation,
+    options?: RequestOptions,
+): RequestResult<TResponse, TError, ThrowOnError> {
+    // The unchecked cast is owned here at the untrusted Tauri serialization seam.
+    return rpcRequestInternal(operation, options) as RequestResult<TResponse, TError, ThrowOnError>;
+}
+
+export async function rpcStream<TResponse>(operation: RpcOperation, options?: RequestOptions): Promise<RpcStreamResult<TResponse>> {
     const parsed: unknown[] = [];
     let firstUnreadIndex = 0;
     let done = false;
@@ -114,5 +131,5 @@ export async function rpcStream(operation: string, options?: RequestOptions): Pr
                 if (streamError) throw streamError;
             },
         },
-    };
+    } as RpcStreamResult<TResponse>;
 }

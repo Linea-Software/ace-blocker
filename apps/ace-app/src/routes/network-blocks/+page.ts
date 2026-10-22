@@ -26,7 +26,7 @@ export const load: PageLoad = async () => {
         console.error("Failed to fetch dashboard snapshot", response.error);
         // Engine may be down — surface an offline notice instead of an
         // empty state (same pattern as resistance-mode).
-        return { blocks: [], engineOffline: !engineStore.isAlive };
+        return { blocks: [], engineOffline: !engineStore.isAlive, loadError: engineStore.isAlive };
     }
 
     const snapshots: NetworkBlockSnapshot[] = response.data?.blocks ?? [];
@@ -39,5 +39,5 @@ export const load: PageLoad = async () => {
         rulesCount: snapshot.userRulesCount,
     }));
 
-    return { blocks, engineOffline: false };
+    return { blocks, engineOffline: false, loadError: false };
 };

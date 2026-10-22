@@ -80,18 +80,18 @@
         if (!enabled && block.isLocked) return;
 
         try {
-            const { error, response } = await setNetworkBlockEnabled({
+            const { error } = await setNetworkBlockEnabled({
                 path: { network_block_id: block.id },
                 body: { enabled },
             });
 
             if (error) {
                 toast.error(
-                    response?.status === 403
+                    error.status === 403
                         ? m.block_locked_tooltip()
                         : m.failed_to_sync(),
                 );
-                if (response?.status === 403) await invalidateAll();
+                if (error.status === 403) await invalidateAll();
                 return;
             }
 
@@ -173,6 +173,15 @@
                 <strong>{m.status_engine_offline()}</strong>
                 <p>{m.status_engine_offline_description()}</p>
             </div>
+        </div>
+    {:else if data.loadError}
+        <div class="engine-offline" role="alert">
+            <WifiOff size={19} aria-hidden="true" />
+            <div>
+                <strong>{m.network_blocks_load_failed_title()}</strong>
+                <p>{m.network_blocks_load_failed_description()}</p>
+            </div>
+            <button type="button" onclick={() => invalidateAll()}>{m.retry()}</button>
         </div>
     {:else if blocks.length > 0}
         <div class="policy-stack">

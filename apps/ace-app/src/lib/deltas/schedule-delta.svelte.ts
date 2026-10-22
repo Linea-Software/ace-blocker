@@ -16,6 +16,7 @@ import {
     type ScheduleEntrySchema,
 } from "$engine-client";
 import { Result } from "typescript-result";
+import { isStrictlyMoreRestrictiveThan } from "./schedule-coverage";
 import { type TempId, newTempId, withRollback, type AppliedOp } from "./common";
 
 /** A simple hour+minute time representation used for schedule entries. */
@@ -25,67 +26,7 @@ function timeToString(time: PlainTime): string {
     return `${time.hour.toString().padStart(2, "0")}:${time.minute.toString().padStart(2, "0")}`;
 }
 
-function timeToMinutes(t: string): number {
-    const [h, m] = t.split(":").map(Number);
-    return h * 60 + m;
-}
-
-const WEEKDAY_KEYS = [
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday",
-] as const;
-
-/** Port of Rust `Schedule::is_stricter_than`.
- *  Returns true if `newSchedule` (a collection of entries) fully covers `oldEntry`. */
-function isStricterThan(
-    newSchedule: ScheduleEntrySchema[],
-    oldEntry: ScheduleEntrySchema,
-): boolean {
-    const oldStart = timeToMinutes(oldEntry.startTime);
-    const oldEnd = timeToMinutes(oldEntry.endTime);
-
-    for (const day of WEEKDAY_KEYS) {
-        if (!oldEntry[day]) continue;
-
-        const intervals = newSchedule
-            .filter((e) => e[day])
-            .map(
-                (e) =>
-                    [timeToMinutes(e.startTime), timeToMinutes(e.endTime)] as [
-                        number,
-                        number,
-                    ],
-            )
-            .sort((a, b) => a[0] - b[0]);
-
-        let currentPos = oldStart;
-        for (const [start, end] of intervals) {
-            if (start <= currentPos) {
-                if (end > currentPos) currentPos = end;
-            } else {
-                break;
-            }
-            if (currentPos >= oldEnd) break;
-        }
-
-        if (currentPos < oldEnd) return false;
-    }
-    return true;
-}
-
-/** Port of Rust `Schedule::is_strictly_more_restrictive_than`.
- *  Returns true if `newSchedule` covers every entry in `oldSchedule`. */
-export function isStrictlyMoreRestrictiveThan(
-    oldSchedule: ScheduleEntrySchema[],
-    newSchedule: ScheduleEntrySchema[],
-): boolean {
-    return oldSchedule.every((entry) => isStricterThan(newSchedule, entry));
-}
+export { isStrictlyMoreRestrictiveThan } from "./schedule-coverage";
 
 /**
  * Represents the days of the week for a schedule entry.
