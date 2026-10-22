@@ -9,7 +9,7 @@ default = []
 # Developer-only tool binaries (not shipped): build/lint them with
 # `--features dev-tools`. `ace-redirect` and `install-cert` are product
 # binaries and are always built (the installer packages them).
-dev-tools = []
+dev-tools = ["dep:crates_llms_txt"]
 # Experimental kernel anti-tampering integration. Keep disabled in normal
 # release builds until Ace Guard is ready to ship.
 experimental-ace-guard = []
@@ -67,7 +67,7 @@ async-stream = "~0.3"
 base64 = "~0.23"
 bytes = "~1.12"
 chrono = { version = "~0.4", features = ["serde"] }
-crates_llms_txt = { git = "https://github.com/kingsword09/crates_llms_txt" }
+crates_llms_txt = { git = "https://github.com/kingsword09/crates_llms_txt", optional = true }
 diesel = { version = "~2.3", features = [
     "sqlite",
     "returning_clauses_for_sqlite_3_35",
@@ -92,6 +92,7 @@ flate2 = "~1.1"
 reqwest = { version = "~0.13", features = ["json", "stream"] }
 remoc = { version = "0.20.4", default-features = false, features = ["rch", "rtc"] }
 sha2 = "~0.11"
+subtle = "~2.6"
 single-instance = "~0.3"
 regex = "~1.13"
 reqwest-middleware = { version = "~0.5", features = ["query"] }

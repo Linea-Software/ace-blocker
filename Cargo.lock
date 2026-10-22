@@ -87,6 +87,7 @@ dependencies = [
  "single-instance",
  "strum",
  "strum_macros",
+ "subtle",
  "syn 3.0.6",
  "sysuri",
  "tempfile",

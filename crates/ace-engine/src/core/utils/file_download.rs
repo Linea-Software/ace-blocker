@@ -128,7 +128,7 @@ pub fn download_file_with_limit(
 /// `expected_sha256`. Retries up to `max_retries` times if verification
 /// fails. Returns the downloaded bytes on success.
 ///
-/// The body is read into memory, so it is capped at `max_bytes`.
+/// The body is read incrementally and never buffered beyond `max_bytes`.
 pub async fn download_and_verify(
     url: &str,
     expected_sha256: &str,
@@ -162,25 +162,30 @@ pub async fn download_and_verify(
             .into());
         }
 
-        let bytes = response
-            .bytes()
-            .await
-            .map_err(|error| -> DownloadError { Box::new(error) })?;
-
-        if bytes.len() as u64 > max_bytes {
-            return Err(format!(
-                "download of {label} refused: body exceeds the {max_bytes}-byte limit"
-            )
-            .into());
-        }
-
+        let mut response = response;
+        let mut bytes = bytes::BytesMut::new();
         let mut hasher = Sha256::new();
-        hasher.update(&bytes);
+        let mut downloaded: u64 = 0;
+        while let Some(chunk) = response
+            .chunk()
+            .await
+            .map_err(|error| -> DownloadError { Box::new(error) })?
+        {
+            if chunk.len() as u64 > max_bytes.saturating_sub(downloaded) {
+                return Err(format!(
+                    "download of {label} refused: body exceeds the {max_bytes}-byte limit"
+                )
+                .into());
+            }
+            downloaded += chunk.len() as u64;
+            hasher.update(&chunk);
+            bytes.extend_from_slice(&chunk);
+        }
         let actual = hex::encode(hasher.finalize());
 
         if actual == expected {
             info!("{} SHA-256 verified successfully.", label);
-            return Ok(bytes);
+            return Ok(bytes.freeze());
         }
 
         if attempt < max_retries {
@@ -394,6 +399,63 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn download_and_verify_caps_chunked_responses_before_buffering() {
+        use bytes::Bytes;
+        let router = axum::Router::new().route(
+            "/stream",
+            get(|| async {
+                axum::body::Body::from_stream(futures::stream::iter(
+                    (0..16).map(|_| Ok::<_, std::io::Error>(Bytes::from_static(&[b'x'; 128]))),
+                ))
+            }),
+        );
+        let server = axum_test::TestServer::builder()
+            .transport(axum_test::Transport::HttpRandomPort)
+            .build(router);
+        let url = server.server_url("/stream").unwrap();
+        let expected = hex::encode(Sha256::digest([b'x'; 2048]));
+        let result = download_and_verify(url.as_str(), &expected, "chunked", 1, 1024).await;
+        assert!(result.unwrap_err().to_string().contains("body exceeds"));
+    }
+
+    #[tokio::test]
+    async fn download_and_verify_accepts_exact_cap_and_empty_body() {
+        let router = axum::Router::new()
+            .route("/exact", get(|| async { "1234" }))
+            .route("/empty", get(|| async { "" }));
+        let server = axum_test::TestServer::builder()
+            .transport(axum_test::Transport::HttpRandomPort)
+            .build(router);
+        let exact_url = server.server_url("/exact").unwrap();
+        let empty_url = server.server_url("/empty").unwrap();
+        assert_eq!(
+            download_and_verify(
+                exact_url.as_str(),
+                &hex::encode(Sha256::digest(b"1234")),
+                "exact",
+                1,
+                4
+            )
+            .await
+            .unwrap()
+            .as_ref(),
+            b"1234"
+        );
+        assert!(
+            download_and_verify(
+                empty_url.as_str(),
+                &hex::encode(Sha256::digest(b"")),
+                "empty",
+                1,
+                0
+            )
+            .await
+            .unwrap()
+            .is_empty()
+        );
     }
 
     /// Builds an in-memory zip archive from `(name, contents)` pairs.
