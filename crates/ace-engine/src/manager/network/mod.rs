@@ -90,7 +90,7 @@ impl NetworkManager {
 
         let network_blocks = Self::load_net_lists(&db, &site_packs)?;
 
-        let mut resistance_mode = Self::load_resistance_manager(&db);
+        let mut resistance_mode = Self::load_resistance_manager(&db)?;
 
         // Load the script tree into the resistance mode manager
         let script_tree = Self::try_load_resistance_mode(&db).unwrap_or_else(|error| {
@@ -103,13 +103,8 @@ impl NetworkManager {
         });
         resistance_mode.script_tree = script_tree;
 
-        // Load resistance mode settings from DB
-        if let Ok(settings) = db.get_resistance_mode_settings() {
-            resistance_mode.enabled = settings.enabled;
-            if let Ok(lock) = crate::core::Lock::from_raw(settings.lock_state, settings.lock_end) {
-                resistance_mode.lock = lock;
-            }
-        }
+        // Read/validate all persisted resistance settings in the fallible loader.
+        // An invalid lock must never be silently replaced with an inactive one.
 
         let manager = NetworkManager {
             network_blocks,
@@ -561,12 +556,19 @@ impl NetworkManager {
     /// v1 beta ships static mode only (MGR-24): the persisted row carries a
     /// single `static_intensity`; there is no dynamic ladder or usage history
     /// to reconstruct.
-    fn load_resistance_manager(db: &Arc<EngineDB>) -> ResistanceModeManager {
+    fn load_resistance_manager(
+        db: &Arc<EngineDB>,
+    ) -> Result<ResistanceModeManager, NetworkManagerOpErr> {
         let mut resistance_manager = ResistanceModeManager::new_static(PunishmentIntensity::None);
 
-        if let Ok(settings) = db.get_resistance_mode_settings() {
-            let static_intensity = std::str::FromStr::from_str(&settings.static_intensity)
-                .unwrap_or(PunishmentIntensity::None);
+        {
+            let settings = db.get_resistance_mode_settings()?;
+            let static_intensity = settings
+                .static_intensity
+                .parse::<PunishmentIntensity>()
+                .map_err(|error| NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid persisted resistance intensity: {error}"),
+                })?;
 
             let mode = PunishmentMode::Static {
                 intensity: static_intensity,
@@ -577,9 +579,16 @@ impl NetworkManager {
             punishment.static_intensity = static_intensity;
             resistance_manager.set_punishment(punishment);
             resistance_manager.scripts_version = settings.scripts_version.clone();
+            resistance_manager.enabled = settings.enabled;
+            resistance_manager.lock =
+                crate::core::Lock::from_raw(settings.lock_state, settings.lock_end).map_err(
+                    |error| NetworkManagerOpErr::InternalError {
+                        message: format!("Invalid persisted resistance lock: {error}"),
+                    },
+                )?;
         }
 
-        resistance_manager
+        Ok(resistance_manager)
     }
 
     /// Increments the aggregate blocked-attempts counter for today (UTC).
@@ -685,6 +694,27 @@ mod tests {
             _temp_dir: temp_dir,
         }
     }
+    #[test]
+    fn persisted_resistance_errors_are_not_silently_replaced_by_inactive_settings() {
+        use diesel::connection::SimpleConnection;
+
+        let temp = tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&temp.path().join("invalid-resistance.sqlite")).unwrap());
+        let mut connection = db.get_db_connection().unwrap();
+        connection
+            .batch_execute("PRAGMA ignore_check_constraints = ON; UPDATE resistance_mode_settings SET static_intensity = 'invalid'; PRAGMA ignore_check_constraints = OFF;")
+            .unwrap();
+        drop(connection);
+        assert!(NetworkManager::load_resistance_manager(&db).is_err());
+
+        let mut connection = db.get_db_connection().unwrap();
+        connection.batch_execute(
+            "PRAGMA ignore_check_constraints = ON; UPDATE resistance_mode_settings SET static_intensity = 'none', lock_state = 'bogus'; PRAGMA ignore_check_constraints = OFF;"
+        ).unwrap();
+        drop(connection);
+        assert!(NetworkManager::load_resistance_manager(&db).is_err());
+    }
+
     #[test]
     fn test_network_manager_from_db() {
         let mut ctx = setup_test_manager();

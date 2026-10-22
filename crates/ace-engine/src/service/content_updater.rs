@@ -104,36 +104,31 @@ pub struct ContentUpdateService {
 
 impl ContentUpdateService {
     /// Constructs the service. Cannot fail (LIF-03): the persisted
-    /// "last check" timestamp is loaded best-effort so a DB hiccup can never
-    /// prevent the engine from starting.
+    /// "last check" timestamp is loaded on the first check, not at startup,
+    /// so failure propagates to the update caller without aborting engine startup.
     pub fn from(db: Arc<EngineDB>) -> Self {
-        let mut service = ContentUpdateService {
+        ContentUpdateService {
             db,
             latest_releases_info: None,
             latest_check: None,
-        };
-
-        service.load_latest_check();
-
-        service
-    }
-
-    fn load_latest_check(&mut self) {
-        if let Ok(settings) = self.db.get_settings()
-            && let Some(check_at) = settings.latest_update_check_at
-            && let Ok(dt) = DateTime::parse_from_rfc3339(&check_at)
-        {
-            self.latest_check = Some(dt.with_timezone(&Utc));
         }
     }
 
-    pub async fn requires_update_check(&mut self) -> bool {
-        self.load_latest_check();
+    fn load_latest_check(&mut self) -> Result<()> {
+        let settings = self.db.get_settings()?;
+        self.latest_check = settings
+            .latest_update_check_at
+            .map(|at| DateTime::parse_from_rfc3339(&at).map(|date| date.with_timezone(&Utc)))
+            .transpose()?;
+        Ok(())
+    }
 
-        match self.latest_check {
+    pub async fn requires_update_check(&mut self) -> Result<bool> {
+        self.load_latest_check()?;
+        Ok(match self.latest_check {
             None => true,
             Some(last_check) => Utc::now() - last_check > UPDATE_FETCH_THRESHOLD,
-        }
+        })
     }
 
     pub async fn check_for_updates(&mut self) -> Result<()> {
@@ -151,7 +146,7 @@ impl ContentUpdateService {
     }
 
     async fn get_latest_info(&mut self) -> Result<LatestReleasesInfo> {
-        if self.latest_releases_info.is_none() || self.requires_update_check().await {
+        if self.latest_releases_info.is_none() || self.requires_update_check().await? {
             self.check_for_updates().await?;
         }
         Ok(self
@@ -729,6 +724,28 @@ pub async fn run_background_update_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn update_history_load_reports_invalid_timestamp_and_database_failures() {
+        use diesel::connection::SimpleConnection;
+
+        let temp = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&temp.path().join("history.sqlite")).unwrap());
+        let mut service = ContentUpdateService::from(db.clone());
+        assert!(service.requires_update_check().await.unwrap());
+
+        let mut connection = db.get_db_connection().unwrap();
+        connection
+            .batch_execute("UPDATE settings SET latest_update_check_at = 'invalid-timestamp';")
+            .unwrap();
+        drop(connection);
+        assert!(service.requires_update_check().await.is_err());
+
+        let mut connection = db.get_db_connection().unwrap();
+        connection.batch_execute("DROP TABLE settings;").unwrap();
+        drop(connection);
+        assert!(service.requires_update_check().await.is_err());
+    }
 
     #[test]
     fn version_is_newer_compares_dotted_numbers() {

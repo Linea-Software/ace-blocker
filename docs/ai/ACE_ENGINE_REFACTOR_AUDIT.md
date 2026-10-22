@@ -40,7 +40,7 @@
 | AE-15 | P2 | partial | Schedule/minute semantics | Input con secondi/frazioni rifiutato via errore tipizzato; test costruttori superati. Restano gate round-trip DB, mezzanotte e DST |
 | AE-17 | P2 | candidate | Site-pack importer | Ripetizione gestione download/progress |
 | AE-19 | P2 | verified | Test | Override process-global delle directory di test |
-| AE-26 | P2 | partial | Typed error propagation | Restano fallback ambigui nel caricamento Resistance Mode e della cronologia updater, e audit dei consumer non ancora trattati |
+| AE-26 | P2 | partial | Typed error propagation | Load Resistance Mode e cronologia updater ora propaga `Err` e ha test di corruzione DB; resta audit degli altri consumer e boundary |
 
 ---
 
@@ -92,7 +92,8 @@
 ### AE-26 — Errori residui ancora codificati come valori validi [P2, partial]
 
 - **Stato attuale:** dashboard, conteggi, lookup dei site pack, restore e update-check RPC propagano `Result` e distinguono errore, assenza del dato e valore vuoto.
-- **Evidenza residua:** `src/manager/network/mod.rs::load_resistance_manager` ritorna un manager con intensità `None` se la lettura o il parsing falliscono; `src/service/content_updater.rs::load_latest_check` ignora fallimenti di lettura/parsing dell'ultimo check. Occorre esaminare gli ulteriori ingress e il motivo dei fallback.
+- **Implementato (2026-10-22):** `load_resistance_manager` restituisce `Result` per settings/intensità/lock invalidi; la cronologia updater è caricata in modo fallibile durante il controllo aggiornamenti e non al bootstrap. Test di valori persistiti invalidi e letture fallite superati.
+- **Rimane:** audit completo dei consumer e dei boundary ancora non trattati, senza indebolire la disponibilità approvata per l'avvio.
 - **Prossimo refactor:** trasformare i fallimenti reali in `Err`/errori tipizzati, distinguendoli dall'assenza prevista. Solo al boundary di enforcement applicare le policy fail-open esplicitamente approvate, senza introdurre sentinelle primitive né modificare le garanzie lock/uninstall.
 - **Gate:** errori di query e parse, vista stale, comportamento update-check, locked state, mapping degli errori RPC.
 
