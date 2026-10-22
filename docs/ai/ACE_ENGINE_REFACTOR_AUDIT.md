@@ -1,11 +1,11 @@
 # Ace Engine — audit del refactoring e backlog dedicato
 
 **Data:** 2026-10-22
-**Repository:** `C:\Projects\ace-project\ace-blocker` (`main`, audit senza modifiche al codice)
+**Repository:** `C:\Projects\ace-project\ace-blocker` (`main`, backlog residuo dopo interventi incrementali)
 **Ambito:** `crates/ace-engine/` (core, manager, DB, servizi, API/RPC, proxy adapter, lifecycle, CLI, test/documentazione). Dipendenze `ace-domain-blocklist`, `ace-tun`, `mitm-proxy` e `ace-watchdog` considerate *solo* nei contratti e nei punti di integrazione dell'engine; **Ace App esclusa**.
 **Procedura:** `AGENTS.md`, `crates/ace-engine/AGENTS.md`, `docs/ai/{REFACTORING_PLAYBOOK,BOUNDARIES_AND_ABSTRACTIONS,DOMAIN_TYPES,REVIEW_GATES}.md`; confronto con `TECH_DEBT_BACKLOG.md` e `docs/IPC_ARCHITECTURE.md`.
 
-> **Nota:** questo è un inventario di opportunità di refactoring, **non una lista di fix già applicati**. La ricognizione ha coperto l'albero sorgente e i principali flussi per sottosistema, con letture mirate dei call site e ricerche statiche; non costituisce una review riga-per-riga di ogni sorgente generato/migrazione/test. `verified` significa che la struttura o il comportamento descritto è direttamente visibile nei file; **non** significa che un bug sia riprodotto in runtime. `candidate` richiede ulteriori verifiche; `decision` richiede approvazione della semantica prima di qualsiasi modifica. Priorità riferite al rischio e al costo di manutenzione, non a line count.
+> **Nota:** questa versione contiene **soltanto le questioni ancora aperte**; gli interventi implementati e verificati sono stati rimossi dalla queue e dai dettagli. La ricognizione ha coperto l'albero sorgente e i principali flussi per sottosistema, con letture mirate dei call site e ricerche statiche; non costituisce una review riga-per-riga di ogni sorgente generato/migrazione/test. `verified` significa che la struttura o il comportamento descritto è direttamente visibile nei file; **non** significa che un bug sia riprodotto in runtime. `candidate` richiede ulteriori verifiche; `decision` richiede approvazione della semantica prima di qualsiasi modifica. Priorità riferite al rischio e al costo di manutenzione, non a line count.
 
 ## Invarianti non negoziabili
 
@@ -26,38 +26,25 @@
 | Persistenza | `src/db.rs`, `src/db/{schedule_repo,site_pack_repo,...}.rs`, migrations | Transazioni, fallimenti e modello SQL |
 | Service/control | `src/service/api/{rpc,transport,bridge,security,operations_*}.rs` | Trust boundary e autorizzazione, error mapping |
 | Update/proxy | `src/service/{content_updater,bundled_site_packs,proxy/*}.rs`, `src/core/utils/file_download.rs` | Staging, limite memoria, lock, contenuto |
-| Utility, test e generazione | `src/bin/*`, `build.rs`, `tests/api-harness`, `docs/rest-api.md`, `Cargo.toml` | Artefatti legacy, tool/dev, copertura e documentazione |
+| Utility, test e generazione | `src/bin/*`, `build.rs`, `docs/rest-api.md`, `Cargo.toml` | Artefatti legacy, tool/dev, copertura e documentazione |
 
 ## Queue prioritaria
 
 | ID | Priorità | Stato | Area | Motivo / prossima azione |
 | --- | --- | --- | --- | --- |
 | AE-01 | P0, decision | candidate | Startup/enforcement | Valutare fallback del manager vuoto dopo errore di caricamento |
-| AE-02 | P1 | verified | Capability comparison | Rivedere la pretesa di confronto constant-time |
 | AE-03 | P1, decision | candidate | Site-pack paths/ID | Validare gli ID prima di derivarne percorsi filesystem |
 | AE-04 | P1, decision | candidate | Site-pack DB errors | Evitare di confondere errore SQLite e `NotBlocked` |
-| AE-05 | P1 | verified | Backup restore | All-or-nothing / errori ignorati |
-| AE-06 | P1 | verified | Site-pack assignment | DB e memoria aggiornati nell'ordine sbagliato (TD-014) |
-| AE-07 | P1 | verified | Site-pack creation/import | Memoria inserita prima del DB; fallimenti sorgenti ignorati |
-| AE-08 | P1 | verified | Resistance state | Modifiche in memoria prima di scritture fallibili |
-| AE-09 | P1 | verified | Download/integrità | Limite bytes controllato dopo `response.bytes()` |
-| AE-10 | P1 | verified | Account API | Manager read lock detenuto durante possibile I/O remoto |
+| AE-05 | P1, decision | verified | Backup restore | All-or-nothing / errori ignorati |
 | AE-11 | P1, decision | candidate | Backup/scripts activation | Stato filesystem/DB durante errori di commit |
-| AE-12 | P2 | verified | Site-pack read APIs | `write().await` / `&mut self` per sole letture |
 | AE-13 | P2 | verified | Content updater | Mutex servizio trattenuto nel download/staging/commit |
 | AE-14 | P2 | verified | API bridge | Map dei nomi operazioni replicata rispetto al trait |
 | AE-15 | P2, decision | candidate | Version/clock | Comparazione versioni e schedule rounding da caratterizzare |
-| AE-16 | P2 | verified | Domain ID | `ScriptId` e `SitePackId` non impongono invarianti propri |
+| AE-16 | P2, decision | verified | Domain ID | `ScriptId` e `SitePackId` non impongono invarianti propri |
 | AE-17 | P2 | candidate | Site-pack importer | Ripetizione gestione download/progress |
 | AE-18 | P2 | candidate | DB pool | Duplicazione infrastrutturale connessione/migrazione |
 | AE-19 | P2 | verified | Test | Override process-global delle directory di test |
-| AE-20 | P3 | verified | Legacy test harness | Test REST/porta locali incompatibili con remoc |
-| AE-21 | P3 | verified | Legacy API alias | Alias `NetworkMangerOpErr` senza call site rilevati |
-| AE-22 | P3 | verified | Paths | Due helper equivalenti per directory temporanee |
-| AE-23 | P3 | verified | Docs/comments | Riferimenti SSE/REST e URL obsolete |
-| AE-24 | P3 | candidate | Generated code/tooling | Tooling OpenAPI e dependency scope: audit, non patch generati |
-| AE-25 | P3 | candidate | Account DTO | Due letture di account con corpo pressoché identico |
-| AE-26 | P2 | candidate | Lock/errors | Alcuni errori vengono silenziati durante aggregazione stato |
+| AE-26 | P2 | candidate | Lock/errors | Fallback documentati con warning; contratto di errore ancora da definire |
 
 ---
 
@@ -68,13 +55,6 @@
 - **Evidenza:** `src/lib.rs:286-301`: quando `NetworkManager::from` fallisce, viene eseguito `NetworkManager::new_empty` e l'engine prosegue; `src/manager/network/mod.rs:131-144` inizializza mappe vuote. **Rischio dedotto:** policy persistite non caricate potrebbero non essere applicate. Non è stato riprodotto un caso di avvio reale.
 - **Refactor proponibile:** modellare esplicitamente esito e motivi del bootstrap, separando “configurazione vuota valida” da “configurazione non caricabile”; definire l'azione corretta solo dopo decisione sulla policy fail-safe. **Non introdurre un fail-closed nuovo in un refactor meccanico.**
 - **Gate:** test su DB corrotto, lock persistiti, dati mancanti, recovery, avvio servizi su VM Windows/Linux; considerare effetti su uninstall/restart.
-
-### AE-02 — Confronto capability dichiarato constant-time [P1, verified]
-
-- **Evidenza:** `src/service/api/security.rs:3-9`: SHA-256 dei due token, conversione in hex, confronto `presented_digest == expected_digest`, descritto nel commento come constant-time; `src/service/api/rpc.rs:359-371` lo usa per richieste protette.
-- **Costo/rischio:** il confronto ordinario di `String` **non fornisce garanzia esplicita di timing costante**. La valutazione dell'effettiva sfruttabilità è separata. I digest hanno lunghezza costante, ma questo da solo non prova la promessa del commento.
-- **Refactor:** confrontare digest byte-wise con primitiva constant-time già disponibile/verificata nella dependency graph, senza modificare token, persistenza, algoritmo o esiti; oppure correggere la documentazione solo se approvata la garanzia reale.
-- **Gate:** unit test equal/mismatch e regressione di accesso autorizzato/non autorizzato su remoc/Named Pipe; nessuna modifica ad ACL o al caso capability assente.
 
 ### AE-03 — Identificatori usati come path component [P1, candidate, **decision**]
 
@@ -90,46 +70,12 @@
 - **Refactor:** introdurre prima osservabilità/test per “no match” vs “I/O failure” senza cambiare risposte; discutere poi eventuale modello di decisione fallibile al confine di valutazione.
 - **Gate:** DB temporaneamente bloccato/corrotto, ripristino automatico, latenza del proxy e non-browser passthrough, lock, cache.
 
-### AE-05 — Restore backup non atomico [P1, verified]
+### AE-05 — Restore backup non atomico [P1, verified, **decision**]
 
-- **Evidenza:** `src/manager/network/backup.rs:171-362`: per ogni pack/block effettua scritture SQL separate; `get_all_network_blocks().unwrap_or_default()` (255-261); elimina prima di ricreare un block (261-265); ignora errori di associazione pack e script (`let _ = ...`, 345-355); ricostruisce memoria solo al termine (357-360).
+- **Evidenza:** `src/manager/network/backup.rs:171-362`: per ogni pack/block effettua scritture SQL separate; fallback a elenco vuoto su errore di lettura DB (255-261); elimina prima di ricreare un block (261-265); ora registra gli errori di associazione pack/script ma continua in modalità best-effort; ricostruisce memoria solo al termine (357-360).
 - **Costo:** un errore intermedio può lasciare restore parziale e memoria divergente fino al reload; alcuni errori passano inosservati. Sono osservazioni del flusso di codice, non fault injection già eseguita.
 - **Refactor:** prima test con failure injection su ogni fase e una definizione del comportamento del restore (best effort vs atomico); poi transazioni **per unità indipendente** o staging con rollback coerente, senza cancellare pack bloccati né cambiare schema.
 - **Gate:** backup vecchi, Pro/free, ID catalogo, blocchi locked, errore SQLite, referential integrity, cloud restore, reinizializzazione.
-
-### AE-06 — Associazioni site-pack memoria prima di DB [P1, verified; **TD-014**]
-
-- **Evidenza:** `src/manager/network/network_blocks_to_site_pack.rs:71-84,100-116`: `add_site_pack/remove_site_pack` prima di `db.add_.../remove_...`.
-- **Refactor:** validazione delle precondizioni prima, DB persistito prima dell'aggiornamento in memoria, oppure staging atomico; preservare `NetworkBlockNotFound`, lock refusal, errori e idempotenza.
-- **Gate:** failure injection attach e detach, lock, pack unsynced, cache invalidation; è un task autonomo già registrato nel backlog generale.
-
-### AE-07 — Creazione pack e source errors [P1, verified]
-
-- **Evidenza:** `src/manager/network/site_pack.rs:357-409`: `self.site_packs.insert` precede `db.add_site_pack`; `import_site_pack` in `:412-458` registra sorgenti con `let _ = ...map_err(log)` (434-445), poi procede comunque all'import.
-- **Costo:** possibile presenza di pack “fantasma” in memoria in caso di errore DB e metadati sorgente incompleti; il parser potrebbe usare sorgenti non tutte registrate.
-- **Refactor:** creare/persistire metadati con ordering affidabile, propagare o raccogliere esplicitamente errori per sorgente; mantenere progress events, lock Pro, cancellazione e staging di TD-002.
-- **Gate:** insert SQL fallito, sorgente n invalida, cancellazione, directory già esistente, riavvio ed eventuali side effects su DB staging.
-
-### AE-08 — Modifiche Resistance Mode prima del commit [P1, verified]
-
-- **Evidenza:** `src/manager/network/resistance_mode.rs:95-110` imposta `script_tree.enabled` prima di `db.set_script_state`; `:143-154,157-190,192-213` modifica `enabled`, lock e intensity prima di `save_resistance_mode_settings()` fallibile.
-- **Costo:** possibilità di policy live diversa da SQLite dopo un write failure; particolarmente sensibile con lock attivi.
-- **Refactor:** prevalidare e persistere gli aggiornamenti coerenti prima del publish in memoria, uno per setter, preservando lock strictness e transizioni consentite. Non unificare stati diversi in un mutatore generico.
-- **Gate:** test fallimento SQLite per script switch, master switch, lock e intensity; riavvio e test su `UnsupportedLockState`.
-
-### AE-09 — Download potenzialmente non limitato durante il body read [P1, verified]
-
-- **Evidenza:** `src/core/utils/file_download.rs:132-175` in `download_and_verify` verifica `Content-Length` quando presente, poi usa `response.bytes().await` e confronta `bytes.len()` con `max_bytes` **solo dopo** l'acquisizione completa; la funzione `download_file_with_limit` (61-124) controlla ogni chunk.
-- **Costo:** un server senza length o con length non corretta può richiedere memoria oltre il limite dichiarato prima del rifiuto.
-- **Refactor:** lettura incrementale limitata con SHA streaming e stesso contratto `Bytes` solo entro soglia; in alternativa spool a file se il consumer lo permette, ma senza cambiare errori/timeout/retry arbitrariamente.
-- **Gate:** HTTP chunked oltre cap, length falsa, checksum errato, empty response, retries e progress, verifica RAM/peak-memory.
-
-### AE-10 — Remote account verification sotto network-manager read lock [P1, verified]
-
-- **Evidenza:** `src/service/api/operations_account.rs:9-35` acquisisce `state.network_manager.read().await` e invoca `manager.is_pro_user().await`; `src/manager/account.rs:63-145,167-213` può effettuare HTTP remoto e scrivere SQLite; pattern analogo in `src/service/api/operations_backup.rs:14-18` e `operations_site_pack.rs:145-155` (qui write lock).
-- **Costo:** un controllo licenza potenzialmente lento trattiene il lock di policy e ostacola modifiche; non dedurre rallentamenti misurati in produzione.
-- **Refactor:** usare il già posseduto `AppState.account_manager` per verifica Pro fuori dal lock policy, poi riacquisire il manager solo per operazioni; assicurare che debug policy/Pro override non cambino semantica.
-- **Gate:** account stale vs fresh, update concorrente, Pro in debug, mutazioni simultanee, latenza con mock server lento e permessi.
 
 ### AE-11 — Commit script bundle filesystem + DB [P1, candidate, **decision**]
 
@@ -137,12 +83,6 @@
 - **Costo/rischio:** un fallimento DB dopo uno swap riuscito può produrre stato disk/mem/version non coordinato; il comportamento preciso post-restart non è stato caratterizzato.
 - **Refactor:** test dei crash point e delle scritture fallite, pianificare journal/rollback solo se richiesti, preservare last-known-good e script catalog verificato.
 - **Gate:** Windows rename e file handles, versioni vecchie, hash, retry, riavvio su VM.
-
-### AE-12 — Letture site-pack trattate come scritture [P2, verified]
-
-- **Evidenza:** `src/manager/network/site_pack.rs:343-355` (`get_all_site_packs(&mut self)` senza mutazioni), `:693-704` (`get_site_pack_sources(&mut self)`); `src/service/api/operations_site_pack.rs:7-37,129-143` apre `network_manager.write().await` per questi read endpoints.
-- **Refactor:** restringere gli accessor a `&self` ove dimostrato e usare `read().await`; rilasciare i `std::sync::RwLockReadGuard` dei singoli pack prima di richiedere altri dati se necessario.
-- **Gate:** test paralleli get/list e add/delete/resync, lock-order, performance solo se misurata. Collegabile al **TD-006** senza dichiararlo concluso.
 
 ### AE-13 — Mutex dell'updater detenuto lungo tutta la passata [P2, verified]
 
@@ -165,7 +105,7 @@
 - **Refactor:** documentare contratti con test su versioni semver/bundle non confrontabili e secondi negli orari; solo poi semplificare parser/interval folding **a comportamento invariato**.
 - **Gate:** round-trip DB, backup, midnight, precisione subminuto, DST e migrazioni storiche.
 
-### AE-16 — Identità dei tipi a validazione incompleta [P2, verified]
+### AE-16 — Identità dei tipi a validazione incompleta [P2, verified, **decision**]
 
 - **Evidenza:** `src/core/common/injectable_scripts.rs:24-42` `ScriptId(String)` ammette default stringa vuota; `src/core/network_block/site_pack/importer/mod.rs:43-58` `SitePackId(String)` ha `From/Deserialize` non fallibili; `RemoteSitePackId` controlla solo non-empty (`src/core/common/domain_types.rs:4-24`).
 - **Refactor:** identificare l'invariante *effettivo* di ciascuna identità e l'authority del dato; valutare parser fallibili a ingress/persistence o validatore specifico di path quando serve. Non cambiare indiscriminatamente serializzazione o convertire ID canonici in UUID.
@@ -191,57 +131,19 @@
 - **Refactor:** localizzare i path a un test context/injected settings **solo** in componenti con seam già disponibile; altrimenti test serializzati o fixture condivise esplicite. Non introdurre settings globali ulteriori.
 - **Gate:** `cargo test -p ace-engine --lib -- --test-threads=1` e suite parallela con race/fixture clean up.
 
-### AE-20 — Harness API REST non funzionante rispetto all'IPC attuale [P3, verified]
+### AE-26 — Aggregazione stato con fallback non distinguibili [P2, candidate]
 
-- **Evidenza:** `tests/api-harness/harness.ts:1-28,68-155` documenta e usa REST locale, porta 10567/port.lock, HTTPS localhost e fetch; il contratto engine attuale è remoc su Named Pipe/Unix socket (`docs/IPC_ARCHITECTURE.md:3-25`).
-- **Costo:** test manuali/LLM suggeriti dalla repo mirano a un endpoint rimosso e forniscono falsi segnali.
-- **Refactor:** verificare riferimenti in CI/docs e poi archiviare/eliminare l'harness obsoleto oppure sostituirlo con test nativi remoc. **Non** introdurre listener HTTP per mantenerlo.
-- **Gate:** test smoke IPC concorrenti, auth e release, script/dev docs.
-
-### AE-21 — Alias misspelled legacy non usato [P3, verified]
-
-- **Evidenza:** `src/manager/network/error.rs:58-60` esporta `NetworkMangerOpErr = NetworkManagerOpErr` con commento “Temporary alias”; ricerca simbolo nell'albero `src` trova solo la dichiarazione.
-- **Refactor:** controllare consumer esterni/integration tests e rimuovere l'alias se nessun uso; non cambiare `NetworkManagerOpErr`.
-- **Gate:** `cargo check -p ace-engine --all-targets`, ricerca su tutto workspace e confronto API pubbliche.
-
-### AE-22 — Stessa utility temporary sites directory in due owner [P3, verified]
-
-- **Evidenza:** `src/settings.rs:118-130` e `src/core/network_block/site_pack/mod.rs:41-53` costruiscono entrambe `std::env::temp_dir()/AceBlocker/temp_sites` e creano directories.
-- **Refactor:** verificare consumers e mantenere un solo punto owner, preferibilmente il path provider `Settings`; nessuna nuova utility crate.
-- **Gate:** percorsi Windows/Linux, test con override e errori create_dir.
-
-### AE-23 — Commenti/documentazione dell'API REST ormai superati [P3, verified]
-
-- **Evidenza:** `src/manager/network/site_pack.rs:38-42,252-255` chiama ancora “SSE response body/reconnect” il stream guard; `src/service/content_updater.rs:698-701` documenta `POST /dev/update-check-interval`; `src/platform.rs:53-56,150-155`, `src/protocol.rs:13-21`, `src/settings.rs:159-164` conservano descrizioni HTTP/porta interna.
-- **Refactor:** aggiornare *solo testo/commenti* per riflettere remoc, Tauri Channels e product behavior reale, preservando citazioni storiche pertinenti ed esplicite.
-- **Gate:** review documentazione, nessun cambiamento binario.
-
-### AE-24 — Tooling/generator dependencies da rivalutare [P3, candidate]
-
-- **Evidenza:** `Cargo.toml` include `crates_llms_txt` come dependency ordinaria, ma la ricerca dei call site Rust la colloca in `src/bin/doc_gen.rs` (bin `dev-tools`); `openapi-to-rust` appartiene a generazione client esterno; `build.rs:1-22` dichiara che non si genera nulla al compile normale.
-- **Refactor:** mappare per feature i bin, valutare spostare dipendenze esclusivamente di sviluppo su feature gate e rimuovere quelle effettivamente orfane solo dopo `cargo tree` e controlli `--all-targets --all-features`. Non toccare `src/ace_server_api/*` generati.
-- **Gate:** `cargo check -p ace-engine --all-targets --all-features`, dev binaries, release, generate-api command, Windows resources.
-
-### AE-25 — Duplice risposta account API [P3, candidate]
-
-- **Evidenza:** `src/service/api/operations_account.rs:9-35` le funzioni `get_account_info` e `refresh_account` hanno oggi corpi identici; `src/manager/account.rs:159-161` `refresh_pro_status` delega a `is_pro`.
-- **Refactor:** possibile funzione privata condivisa se le semantiche dei due endpoint continuano a coincidere; in alternativa documentare la differenza contrattuale prevista e lasciare duplicazione locale.
-- **Gate:** `getAccountInfo` lettura anonima, `refreshAccount` con capability (diverse in `rpc.rs:375-399`), scadenza caching ed errore server.
-
-### AE-26 — Aggregazione stato che silenzia fallimenti [P2, candidate]
-
-- **Evidenza:** `src/manager/network/network_blocks_to_site_pack.rs:27-40`: `count_synced_site_packs_of` rende 0 se `get_network_block_to_site_packs` fallisce e conta poison lock come false; `src/service/content_updater.rs:505-512` `get_ignored_remote_site_packs().unwrap_or_default()`; `src/manager/network/backup.rs:254-263` suppress di errori sul lookup blocchi.
+- **Evidenza:** `src/manager/network/network_blocks_to_site_pack.rs`: `count_synced_site_packs_of` rende 0 se una lettura fallisce e conta poison lock come false; `src/service/content_updater.rs` usa lista vuota se il DB degli ignored pack fallisce; `src/manager/network/backup.rs` usa lista vuota sul lookup dei blocchi. I fallback sono ora accompagnati da warning, senza alterare il comportamento esistente.
 - **Costo:** “nessun dato” e “impossibile leggere” diventano indistinguibili, con effetti diversi tra visualizzazione, update e restore. Non generalizzare una singola strategia di fallimento a subsistemi diversi.
 - **Refactor:** individuare ogni consumer e scegliere esiti fallibili/telemetria alla boundary corretta dove utile; test success/failure, senza cambiare lock/uninstall fallback.
 - **Gate:** query fallite, stale view, ignored packs, lock state, regressioni su API errors.
 
-## Ordine operativo proposto (interventi *separati*)
+## Ordine operativo dei problemi residui
 
-1. **Review di sicurezza/decisione:** AE-01, AE-03, AE-04 e AE-02. Non trattare la semantica fail-open/fail-closed come refactoring invisibile. Registrare ADR/test requirements prima di cambiare comportamento.
-2. **Coerenza stato/DB:** AE-06 (già TD-014), AE-07 e AE-08: un mutatore per commit, test di fallimento SQL *prima* delle modifiche, revisioni indipendenti; AE-05 e AE-11 richiedono una progettazione più articolata.
-3. **Resource limits e lock:** AE-09 (test del caso chunked senza content-length), AE-10, AE-12 e AE-13; prestare attenzione alle garanzie single-flight e ai cambi di Pro policy.
-4. **Semplificazioni immediate e basso rischio:** AE-21, AE-22, AE-23 e AE-20 (quest'ultimo solo previa verifica del suo uso), ciascuno con commit dedicato.
-5. **Consolidamento condizionato:** AE-14–19 e AE-24–26 soltanto dopo characterization tests e review dei confini; non sono mandato per nuove crate, trait universali o riscritture massive.
+1. **Decisioni su policy, compatibilità e recovery:** AE-01, AE-03, AE-04, AE-05, AE-11, AE-15, AE-16. Non modificare comportamenti fail-open/fail-closed o contratti persistiti senza definire prima la semantica.
+2. **Concorrenza e orchestrazione:** AE-13 e AE-14. Servono characterization tests per single-flight, aggiornamenti concorrenti e correttezza del dispatch RPC.
+3. **Isolamento e deduplicazione prudente:** AE-17, AE-18, AE-19. Prima verificare gli effetti su progress streaming, connessioni ai DB e fixture process-global.
+4. **Error handling:** AE-26. La nuova diagnostica mantiene i fallback esistenti; resta da definire se e a quale boundary propagare gli errori.
 
 ## Matrice di verifica da applicare *prima* di implementare
 
@@ -255,4 +157,4 @@
 | Rust compile | `cargo fmt --all --check` (solo lettura), `cargo check -p ace-engine --all-targets`, lint mirato senza autofix |
 | Audit/documentazione | Diff review architettura + dominio/tipi + correttezza **indipendenti**, percorsi e gate aggiornati |
 
-**Risultato dell'audit:** soltanto documento; nessun sorgente, contratto, file generato, modulo Ace App o installer modificato. Nessun test di VM/anti-tampering effettuato in questa fase di ricognizione. Le evidenze statiche servono per creare test prima dei refactor; non costituiscono garanzia di comportamento reale. **Riferimento di backlog generale:** `docs/ai/TECH_DEBT_BACKLOG.md` (TD-001/002/003/004/006/012/014; non duplicare implementazioni concluse).
+**Stato di verifica (2026-10-22):** gli interventi a basso rischio sono stati applicati nell'engine e rimossi da questo elenco. La suite `cargo test -p ace-engine --lib -- --test-threads=1` ha superato **227/227** test; `cargo check -p ace-engine --all-targets --all-features` e il controllo `git diff --check` sono passati. Solo i file Rust modificati sono stati formattati: `cargo fmt --all --check` continua a rilevare difformità preesistenti in binari e codice generato non toccati. Non sono stati eseguiti test su installer/watchdog in VM Windows né una review indipendente conclusiva. Il backlog generale resta `docs/ai/TECH_DEBT_BACKLOG.md` (in particolare TD-001/002/003/004/006/012/014).

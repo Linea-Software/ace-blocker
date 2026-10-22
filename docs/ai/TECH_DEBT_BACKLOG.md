@@ -21,7 +21,7 @@ This file tracks **verified, actionable maintainability work**, not a wishlist o
 | [TD-011](#td-011--windows-pid-table-attribution) | P2 | candidate | Windows TUN attribution | Every flow still snapshots/scans IP-Helper ownership tables | Consider safe reuse of ownership snapshots after attribution-race and PID-reuse tests |
 | [TD-012](#td-012--rpc-and-production-h3-footprint) | P3 | candidate | UI RPC and proxy features | Bridge repeats dispatch boilerplate and opens connections per call; H3 unused by Ace production | Consider generated dispatch/persistent reconnecting client and feature gate with native integration tests |
 | [TD-013](#td-013--network-block-mutation-lock-guard) | P2 | review | NetworkManager block mutations | Deletion, safe-search edits and renaming independently duplicate missing-block and active-lock checks | Centralize this repeated guard within the block manager; preserve error and persistence order |
-| [TD-014](#td-014--site-pack-link-persistence-consistency) | P1 | verified | NetworkManager site-pack assignments | Attach/detach mutate the live block before a fallible SQLite write | Add failure-path regressions and make DB/memory assignment changes consistent |
+| [TD-014](#td-014--site-pack-link-persistence-consistency) | P1 | review | NetworkManager site-pack assignments | Attach/detach mutate the live block before a fallible SQLite write | Add failure-path regressions and make DB/memory assignment changes consistent |
 | [TD-015](#td-015--allocation-free-hosts-token-scanning) | P2 | review | Domain blocklist hosts parser | Collects all whitespace tokens into a temporary `Vec` for each input line | Iterate tokens directly while retaining error order and alias validation |
 | [TD-016](#td-016--linear-time-tauri-stream-queue) | P2 | review | Ace App Tauri RPC stream | Uses `Array.shift()` for each event in site-pack progress streams | Replace head-removal with cursor-based draining without changing event/error ordering |
 | [TD-017](#td-017--sveltekit-alias-configuration-warnings) | P2 | candidate | Ace App tooling | Current SvelteKit build reports deprecated config alias and overwritten tsconfig paths | Validate and separately migrate aliases without breaking imports |
@@ -129,9 +129,11 @@ For each non-placeholder item, add a detailed section below using the template. 
 
 ### TD-014 — Site-pack link persistence consistency
 
-- **Status:** verified; **priority:** P1; **scope:** `crates/ace-engine/src/manager/network/network_blocks_to_site_pack.rs`. Separate task; not part of TD-013.
-- **Evidence:** `add_network_block_to_site_pack` calls `NetworkBlock::add_site_pack` before `db.add_network_block_to_site_pack`; `remove_network_block_to_site_pack` calls `remove_site_pack` before `db.remove_network_block_to_site_pack`. Either DB call can fail, leaving the live policy inconsistent with persisted assignments.
-- **Risk / gate:** Enforcement-sensitive, requiring explicit failure-path tests for both directions, including lock checks and site-pack preconditions; preserve existing caller-visible success/error contracts on successful writes. No implementation attempted in this pass.
+- **Status:** review; **priority:** P1; **scope:** `crates/ace-engine/src/manager/network/network_blocks_to_site_pack.rs`. Separate task; not part of TD-013.
+- **Evidence:** Previously, both attach and detach changed the live block before a fallible SQLite write, potentially diverging policy and persistence.
+- **Change (2026-10-22):** Validate block and pack preconditions first; commit SQLite assignment before publishing the in-memory link change. Existing lock checks, unsynced rejection, and cache invalidation remain intact.
+- **Verification:** New test `site_pack_assignment_sql_failures_do_not_change_live_links` injects SQL failures for both add/remove, asserting policy remains unchanged. Complete engine serial library suite **227/227 passed**; `cargo check -p ace-engine --all-targets --all-features` passed. No installer/SCM/VM test performed.
+- **Residual gate:** Independent security/domain/architecture diff review and installed-service validation remain open; therefore `review`, not `done`.
 
 ### TD-015 — Allocation-free hosts token scanning
 
