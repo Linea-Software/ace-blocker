@@ -34,60 +34,53 @@
 
 | ID | Priorità | Stato | Area | Motivo / prossima azione |
 | --- | --- | --- | --- | --- |
-| AE-11 | P1 | partial | Script bundle activation | Rollback dopo errore DB implementato e testato; resta recovery da crash tra rename/DB e test VM Windows |
-| AE-13 | P2 | verified | Content updater | Mutex servizio trattenuto nel download/staging/commit |
-| AE-14 | P2 | verified | API bridge | Map dei nomi operazioni replicata rispetto al trait |
-| AE-15 | P2 | partial | Schedule/minute semantics | Input con secondi/frazioni rifiutato via errore tipizzato; test costruttori superati. Restano gate round-trip DB, mezzanotte e DST |
-| AE-17 | P2 | candidate | Site-pack importer | Ripetizione gestione download/progress |
-| AE-19 | P2 | verified | Test | Override process-global delle directory di test |
+| AE-11 | P1 | implementation, VM pending | Script bundle activation | Journal e recupero al bootstrap; 5 crash point simulati e rollback SQL; resta kill/restart reale Windows |
+| AE-13 | P2 | implementation, stress pending | Content updater | Snapshot e gate single-flight separati dal mutex metadata; pass manuale/background unificato; stress/cancel aperto |
+| AE-14 | P2 | implementation, integration pending | API bridge | 27 chiamate semplificate, test di confronto 63 RPC; gate Tauri, status 425 e reconnect Windows ancora aperti |
+| AE-15 | P2 | partial | Schedule/minute semantics | Secondi e frazioni rifiutati, test mezzanotte e merge; DST e round-trip integrato ancora aperti |
+| AE-17 | P2 | implementation, stress pending | Site-pack importer | Download delegato a bounded downloader, progress conservato; 10 test importer; cancel/multi-source ancora aperti |
+| AE-19 | P2 | partial | Test | Fixture possedute da OnceLock<TempDir> e recovery con path injected; override Settings globali ancora aperti |
 | AE-26 | P2 | partial | Typed error propagation | Load Resistance Mode e cronologia updater ora propaga `Err` e ha test di corruzione DB; resta audit degli altri consumer e boundary |
 
 ---
 
 ## Dettaglio interventi
 
-### AE-11 — Recovery da crash durante l'attivazione degli script [P1, partial]
+### AE-11 — Recovery dopo crash degli script [P1, verifica parziale]
 
-- **Stato attuale:** `src/manager/network/resistance_mode.rs` conserva l'albero precedente e ripristina filesystem/memoria quando `update_scripts_version` fallisce; il caso SQLite è coperto da fault injection.
-- **Rischio residuo:** se il processo termina fra rinomina della directory, reload e commit della versione, il riavvio può osservare filesystem, memoria e versione DB incoerenti. Alcuni rollback delle rinomine sono ancora best-effort.
-- **Prossimo refactor:** caratterizzare i singoli crash point e implementare riconciliazione idempotente all'avvio, mantenendo il catalogo last-known-good.
-- **Gate:** crash/restart, errore file handles e rename Windows, DB/version consistency, attivazione e rollback su VM.
+- **Implementato:** journal persistente scritto prima delle rinomine, riconciliazione della versione SQLite al bootstrap e ripristino dell'ultima versione funzionante. Cinque test sui punti di interruzione e un test di errore SQL dopo lo swap sono superati.
+- **Rimane:** test di terminazione reale del processo/riavvio SCM, handle Windows bloccati, perdita improvvisa di alimentazione e journal illeggibile. Nessuna validazione VM conclusiva.
+- **Gate:** crash/riavvio ripetuti in VM Windows, coerenza versione/DB, enforcement dei lock e fault injection filesystem.
 
-### AE-13 — Mutex dell'updater detenuto lungo tutta la passata [P2, verified]
+### AE-13 — Durata del mutex nell'updater [P2, verifica parziale]
 
-- **Evidenza:** `src/service/content_updater.rs:647-685` apre `content_service.lock().await` prima di `check_for_updates`, `stage_pending_updates`, account calls e commit; `src/service/api/operations_resistance_mode.rs:108-124` tiene lo stesso mutex durante `stage_resistance_scripts(...).await`.
-- **Costo:** il lock dell'intero servizio può serializzare download e comandi non dipendenti; è necessario capire quali campi realmente richiedono mutabilità condivisa.
-- **Refactor:** tracciare stato e consumers, provare snapshot per metadata/parametri e lock più brevi senza introdurre race fra due update; non eliminare il serializzatore finché non c'è un'altra garanzia single-flight.
-- **Gate:** download concorrente/background, cancellazione, release/version race, scripts vs site packs, retry.
+- **Implementato:** mutex dei metadata mantenuto breve, snapshot del servizio per I/O di rete, gate single-flight condiviso per aggiornamenti manuali, automatici e download degli script, pubblicazione esplicita della cache. I test locali di concorrenza passano.
+- **Rimane:** stress test con aggiornamenti di rete simultanei, cancellazione, cambi di account e retry.
+- **Gate:** aggiornamenti background/manuale concorrenti, cancellazione dello staging e race sulle versioni.
 
-### AE-14 — Doppio registry dei metodi remoc/bridge [P2, verified; collegato a TD-012]
+### AE-14 — Duplicazioni nel bridge remoc [P2, verifica parziale]
 
-- **Evidenza:** `src/service/api/rpc.rs:70+` dichiara il trait con 63 operazioni; `src/service/api/bridge.rs:23-641,644-675` mappa manualmente stringhe, JSON arguments, encoding ed errori a metodi dello stesso trait. È un adapter al confine Tauri, **non** un HTTP router.
-- **Costo:** modificare/aggiungere un metodo richiede toccare più punti e può provocare drift nei nomi/argomenti/shape UI.
-- **Refactor:** prima test di corrispondenza operation names + schema/response; ridurre solo boilerplate *identico* dentro il bridge o valutarne la generazione da un catalogo controllato. Non creare nuova RPC dinamica, framework dispatch o protocollo.
-- **Gate:** 63 operazioni, capability, debug-gated, stream/cancel, `confirmUnlock` 425, error envelope, Windows reconnect.
+- **Implementato:** macro locale per 27 chiamate remoc identiche senza argomenti, senza cambiare trasporto tipizzato e risposte JSON. Il test verifica la presenza nel bridge di tutti i 63 metodi del trait, inclusi gli stream.
+- **Rimane:** integrazione su schema payload, capability/autorizzazione, status 425 di confirmUnlock, stream/cancellazione e reconnect Windows.
+- **Invariante:** nessun nuovo protocollo JSON, framework RPC dinamico o cambiamento al contratto server.
 
-### AE-15 — Semantica degli schedule al minuto [P2, partial]
+### AE-15 — Contratto degli schedule al minuto [P2, verifica parziale]
 
-- **Stato attuale:** `SitePackVersion` usa il formato canonico `X.Y.Z` con confronto numerico, senza compatibilità con versioni legacy. Il versionamento non richiede ulteriori interventi in questa voce.
-- **Evidenza residua:** `src/manager/network/schedule.rs` normalizza `NaiveTime` con `num_seconds_from_midnight() / 60`, mentre il dominio conserva secondi; è approvata la precisione **al minuto**.
-- **Implementato:** `ScheduleEntry::from` e `from_raw` rifiutano secondi e nanosecondi non nulli (decisione A), senza arrotondamento implicito; test di dominio passati.
-- **Rimane:** caratterizzazione completa di merge dei periodi, mezzanotte e salvataggio/ricaricamento con DST, senza introdurre precisione ai secondi.
-- **Gate:** round-trip DB/backup, boundary 00:00 e 24:00, DST, lock durante schedule.
+- **Implementato:** entrambi i costruttori rifiutano secondi e nanosecondi non nulli con errore tipizzato (scelta A). Test caratterizzano la mezzanotte come limite di fine giornata; i test di merge passano. Il versionamento è già canonico.
+- **Rimane:** verificare il passaggio ora legale/solare e round-trip DB/backup integrati, senza introdurre la precisione ai secondi.
+- **Gate:** ore ripetute/inesistenti per DST, mezzanotte, lock legati ai giorni e persistenza DB.
 
-### AE-17 — Download e progress ripetuti nell'importer [P2, candidate]
+### AE-17 — Download HTTP duplicato nell'importer [P2, verifica parziale]
 
-- **Evidenza:** `src/core/network_block/site_pack/importer/importer.rs:68-178` ripete costruzione client, status, controllo Content-Length/chunks, limiti, scrittura e progress; `src/core/utils/file_download.rs:52-124` ha già pipeline streaming limitata con yield delle percentuali.
-- **Valutazione:** la duplicazione tecnica è reale, ma il reporting di progress multi-sorgente e la semantica d'errore non sono uguali; **non** estrarre un helper generico per il solo numero di righe.
-- **Refactor:** fissare nei test la forma degli eventi e i limiti, poi riusare piccole primitive già presenti *solo se* stessi ownership e failure modes.
-- **Gate:** molte sorgenti, cancellazione, retry, client disconnect, percentuali e tempfile cleanup.
+- **Implementato:** gli URL dell'importer usano file_download_with_limit, conservando il limite di 2 GiB e il progress a percentuali intere. Aggiunto test per errore HTTP; dieci test importer superati.
+- **Rimane:** test con molte sorgenti, cancellazione, disconnessione client, dimensioni HTTP e cleanup dei file temporanei.
+- **Invariante:** conservare gli eventi streaming e gli errori per sorgente; nessuna nuova astrazione di download.
 
-### AE-19 — Override globali delle directory test [P2, verified]
+### AE-19 — Override globali delle directory di test [P2, parziale]
 
-- **Evidenza:** `src/settings.rs:27-66,82-110`: `TEST_SITES_DIR`, `TEST_RESISTANCE_SCRIPTS_DIR`, `TEST_BUNDLED_PACKS_DIR` sono condivise/globali; `src/manager/network/backup.rs:374-393` deve usare una directory process-wide con `OnceLock` e `mem::forget` per evitare race.
-- **Costo:** isolamento tra test difficoltoso e fixture globali/immortali; ampliare test parallelizzati può provocare collisioni (la codebase lo dichiara esplicitamente).
-- **Refactor:** localizzare i path a un test context/injected settings **solo** in componenti con seam già disponibile; altrimenti test serializzati o fixture condivise esplicite. Non introdurre settings globali ulteriori.
-- **Gate:** `cargo test -p ace-engine --lib -- --test-threads=1` e suite parallela con race/fixture clean up.
+- **Implementato:** le directory condivise sono possedute da OnceLock<TempDir> senza mem::forget; cinque test di recovery usano percorsi espliciti, senza override globale Settings. La suite library è passata anche con quattro thread.
+- **Rimane:** TEST_SITES_DIR, TEST_RESISTANCE_SCRIPTS_DIR e TEST_BUNDLED_PACKS_DIR usano ancora override process-global. Iniettare gradualmente i path nei componenti, evitando sostituzioni thread-local nei percorsi asincroni.
+- **Gate:** suite parallele ripetute, isolamento delle fixture, cleanup e rimozione delle dipendenze dallo stato globale.
 
 ### AE-26 — Errori residui ancora codificati come valori validi [P2, partial]
 
@@ -116,4 +109,4 @@
 | Rust compile | `cargo fmt --all --check` (solo lettura), `cargo check -p ace-engine --all-targets`, lint mirato senza autofix |
 | Audit/documentazione | Diff review architettura + dominio/tipi + correttezza **indipendenti**, percorsi e gate aggiornati |
 
-**Ultimi gate registrati (2026-10-22):** `cargo test -p ace-engine --lib -- --test-threads=1`: **240/240** superati; `cargo check -p ace-engine --all-targets --all-features`: superato; `cargo test -p ace-watchdog-protocol`: **3/3**; `git diff --check`: superato. Non risultano conclusi test VM Windows su servizi/installer, recovery tramite crash reale e review indipendente. `cargo fmt --all --check` evidenziava difformità preesistenti in altri sorgenti non toccati. Per le decisioni di prodotto vedere `ACE_ENGINE_REFACTOR_DECISIONS.md`; per il debito generale `TECH_DEBT_BACKLOG.md`.
+**Ultimi gate registrati (2026-10-22):** `cargo test -p ace-engine --lib -- --test-threads=1`: **252/252** superati; suite parallela a 4 thread **251/251** superati prima dell'ultimo test recovery; `cargo check -p ace-engine --all-targets --all-features`: superato; `cargo test -p ace-watchdog-protocol`: **3/3**; `git diff --check`: superato. Non risultano conclusi test VM Windows su servizi/installer, recovery tramite crash reale e review indipendente. `cargo fmt --all --check` evidenziava difformità preesistenti in altri sorgenti non toccati. Per le decisioni di prodotto vedere `ACE_ENGINE_REFACTOR_DECISIONS.md`; per il debito generale `TECH_DEBT_BACKLOG.md`.
