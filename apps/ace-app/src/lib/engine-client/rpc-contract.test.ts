@@ -15,6 +15,9 @@ const bridgeSource = readFileSync(
 const matches = [
     ...bridgeSource.matchAll(/^\s{8}"([A-Za-z][A-Za-z0-9]*)"\s*=>/gm),
 ];
+// These operations exist in the engine for privileged maintenance, but are
+// deliberately unavailable from the ordinary desktop WebView.
+const webviewForbidden = new Set(["shutdown"]);
 const operations = new Map<string, Set<string>>();
 for (const [index, match] of matches.entries()) {
     const op = match[1];
@@ -31,13 +34,15 @@ for (const [index, match] of matches.entries()) {
 
 describe("Rust/Tauri/TypeScript operation contract", () => {
     it("lists exactly the Rust bridge's operation names", () => {
-        expect([...operations.keys()].sort()).toEqual(
-            Object.keys(rpcParameters).sort(),
-        );
+        expect(operations.has("shutdown")).toBe(true);
+        expect(Object.keys(rpcParameters)).not.toContain("shutdown");
+        expect([...operations.keys()].filter((op) => !webviewForbidden.has(op)).sort())
+            .toEqual(Object.keys(rpcParameters).sort());
     });
 
     it("maps all required Rust JSON argument keys for every operation", () => {
         for (const [name, rustFields] of operations) {
+            if (webviewForbidden.has(name)) continue;
             expect(
                 new Set(rpcParameters[name as keyof typeof rpcParameters]),
                 name,

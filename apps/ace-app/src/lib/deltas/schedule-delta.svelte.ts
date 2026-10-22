@@ -16,7 +16,7 @@ import {
     type ScheduleEntrySchema,
 } from "$engine-client";
 import { Result } from "typescript-result";
-import { isStrictlyMoreRestrictiveThan } from "./schedule-coverage";
+import { isStrictlyMoreRestrictiveThan, isSupportedSchedulePeriod } from "./schedule-coverage";
 import { type TempId, newTempId, withRollback, type AppliedOp } from "./common";
 
 /** A simple hour+minute time representation used for schedule entries. */
@@ -119,6 +119,12 @@ export class ScheduleChanges {
         startTime: PlainTime,
         endTime: PlainTime,
     ): Result<void, ScheduleChangeError> {
+        if (!isSupportedSchedulePeriod(timeToString(startTime), timeToString(endTime))) {
+            return Result.error({
+                type: "invalid_time_format",
+                message: "Unsupported schedule interval: end before start (except midnight)",
+            });
+        }
         const tempId = newTempId();
 
         // update the changes
@@ -189,7 +195,16 @@ export class ScheduleChanges {
         scheduleId: string,
         schedule: Weekday,
         timeInterval: TimeInterval,
-    ) {
+    ): Result<void, ScheduleChangeError> {
+        if (!isSupportedSchedulePeriod(
+            timeToString(timeInterval.startTime),
+            timeToString(timeInterval.endTime),
+        )) {
+            return Result.error({
+                type: "invalid_time_format",
+                message: "Unsupported schedule interval: end before start (except midnight)",
+            });
+        }
         this.changes.push({
             type: "UPDATE",
             scheduleId,
@@ -208,6 +223,7 @@ export class ScheduleChanges {
             }
             return entry;
         });
+        return Result.ok();
     }
 
     /**

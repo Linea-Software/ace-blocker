@@ -150,7 +150,13 @@ operation map against the current Rust bridge. Network Block editing coordinates
 independent writes in `src/routes/network-blocks/_save-network-block.ts` and
 must never report success or blindly retry after an ambiguous partial commit.
 Native IPC/capability tests require the disposable Windows VM gate documented
-in `docs/ai/ACE_APP_NATIVE_TEST_GATE.md`.
+in `docs/ai/ACE_APP_NATIVE_TEST_GATE.md`. **Desktop WebView shutdown is forbidden**:
+`src-tauri/src/lib.rs` denies the `shutdown` operation before capability
+loading, while the independent installer/engine maintenance RPC remains intact.
+`src/lib/deltas/schedule-coverage.ts` mirrors the current engine interval
+shape: end-before-start is invalid except `00:00` as the end of the selected
+day; do not restore unsupported overnight editor behavior without an approved
+engine policy change.
 
 ## Localization (Paraglide JS)
 

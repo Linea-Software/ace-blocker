@@ -2,6 +2,7 @@
     import * as m from "$lib/paraglide/messages.js";
     import { cn } from "$lib/utils";
     import type { WeekdayKey } from "$lib/utils/weekly-coverage";
+    import { isSupportedSchedulePeriod } from "$lib/deltas/schedule-coverage";
 
     const dayKeys: WeekdayKey[] = [
         "monday",
@@ -42,8 +43,10 @@
     const editorHeadingId = $props.id();
     const hasDays = $derived(days.length > 0);
     const hasTimes = $derived(/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) && /^([01]\d|2[0-3]):[0-5]\d$/.test(endTime));
-    const crossesMidnight = $derived(hasTimes && endTime < startTime);
-    const canApply = $derived(hasDays && hasTimes);
+    const invalidOvernight = $derived(hasTimes && endTime < startTime && endTime !== "00:00");
+    const isFullDay = $derived(hasTimes && startTime === "00:00" && endTime === "00:00");
+    const endsAtMidnight = $derived(hasTimes && startTime !== "00:00" && endTime === "00:00");
+    const canApply = $derived(hasDays && isSupportedSchedulePeriod(startTime, endTime));
 
     function setDays(nextDays: WeekdayKey[]) {
         days = dayKeys.filter((day) => nextDays.includes(day));
@@ -116,9 +119,11 @@
         </label>
     </div>
 
-    {#if hasTimes && (crossesMidnight || startTime === endTime)}
+    {#if invalidOvernight}
+        <p class="text-destructive text-xs" role="alert">{m.schedule_period_invalid_overnight()}</p>
+    {:else if isFullDay || endsAtMidnight}
         <p class="text-muted-foreground text-xs" role="status">
-            {crossesMidnight ? m.schedule_period_overnight() : m.schedule_period_all_day()}
+            {isFullDay ? m.schedule_period_all_day() : m.schedule_period_ends_at_midnight()}
         </p>
     {/if}
 

@@ -120,7 +120,6 @@ export const rpcParameters = {
   "openProPage": [],
   "checkUpdates": [],
   "triggerContentUpdate": [],
-  "shutdown": [],
   "initiateUnlock": [
     "network_block_id"
   ],

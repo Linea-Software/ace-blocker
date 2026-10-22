@@ -38,8 +38,23 @@ fn read_engine_capability() -> Option<String> {
         .map(|value| value.trim().to_string())
 }
 
+// A WebView may invoke registered commands with arbitrary JSON, regardless of
+// what the TypeScript SDK exports. Privileged service lifecycle belongs to the
+// independent installer/maintenance client, never to the desktop UI.
+fn authorize_webview_operation(op: &str) -> Result<(), RpcError> {
+    if op == "shutdown" {
+        return Err(RpcError {
+            status: 403,
+            code: "desktop_operation_forbidden".into(),
+            error: "Engine shutdown is reserved for authorized maintenance".into(),
+        });
+    }
+    Ok(())
+}
+
 #[tauri::command]
 async fn engine_call(op: String, args: Value) -> Result<Value, RpcError> {
+    authorize_webview_operation(&op)?;
     bridge::call(&op, args, read_engine_capability()).await
 }
 
@@ -49,6 +64,7 @@ async fn engine_stream(
     args: Value,
     on_event: Channel<ace_engine::core::network_block::site_pack::SitePackCreationStatus>,
 ) -> Result<(), RpcError> {
+    authorize_webview_operation(&op)?;
     let mut receiver = bridge::stream(&op, args, read_engine_capability()).await?;
     loop {
         match receiver.recv().await {
@@ -96,4 +112,24 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::authorize_webview_operation;
+
+    #[test]
+    fn webview_shutdown_is_denied_before_capability_or_pipe_connection() {
+        let error = authorize_webview_operation("shutdown").unwrap_err();
+        assert_eq!(error.status, 403);
+        assert_eq!(error.code, "desktop_operation_forbidden");
+    }
+
+    #[test]
+    fn ordinary_desktop_and_stream_operations_remain_forwardable() {
+        assert!(authorize_webview_operation("ping").is_ok());
+        assert!(authorize_webview_operation("createNetworkBlock").is_ok());
+        assert!(authorize_webview_operation("createSitePack").is_ok());
+        assert!(authorize_webview_operation("resyncSitePack").is_ok());
+    }
 }

@@ -6,6 +6,7 @@
         Weekday,
     } from "$lib/deltas/schedule-delta.svelte.ts";
     import type { TempId } from "$lib/deltas/common";
+    import { isSupportedSchedulePeriod } from "$lib/deltas/schedule-coverage";
     import type { ScheduleEntrySchema } from "$engine-client";
     import { localizationStore } from "$lib/stores/localization.svelte";
     import SchedulePeriodEditor from "./_SchedulePeriodEditor.svelte";
@@ -48,7 +49,7 @@
 
     const previewEntry = $derived.by<ScheduleEntrySchema | null>(() => {
         if (!hasOpenEditor || editorDays.length === 0) return null;
-        if (!isValidTime(editorStartTime) || !isValidTime(editorEndTime)) {
+        if (!isSupportedSchedulePeriod(editorStartTime, editorEndTime)) {
             return null;
         }
 
@@ -65,10 +66,6 @@
     onMount(() => {
         localizationStore.detectSystemTimeFormat();
     });
-
-    function isValidTime(value: string): boolean {
-        return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
-    }
 
     async function openAddEditor() {
         if (hasOpenEditor) return;
@@ -137,8 +134,7 @@
     function handlePeriodApply() {
         if (
             editorDays.length === 0 ||
-            !isValidTime(editorStartTime) ||
-            !isValidTime(editorEndTime)
+            !isSupportedSchedulePeriod(editorStartTime, editorEndTime)
         ) {
             return;
         }
@@ -176,7 +172,7 @@
             const startMinute = sh * 60 + sm;
             const endMinute = eh * 60 + em;
 
-            // Preserve the engine's existing same-day overnight semantics.
+            // Midnight is a special engine-supported endpoint (not a general overnight interval).
             if (endMinute <= startMinute) {
                 delta.addScheduleEntry(
                     structuredClone(weekday),
@@ -392,9 +388,9 @@
                                 <span class="font-mono tabular-nums">
                                     {formatPeriodTimes(entry)}
                                 </span>
-                                {#if entry.startTime !== entry.endTime && entry.endTime < entry.startTime}
+                                {#if entry.startTime !== entry.endTime && entry.endTime === "00:00"}
                                     <span class="text-muted-foreground ml-1 text-[11px]">
-                                        ({m.schedule_period_overnight()})
+                                        ({m.schedule_period_ends_at_midnight()})
                                     </span>
                                 {/if}
                             </p>

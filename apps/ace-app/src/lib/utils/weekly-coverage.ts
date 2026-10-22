@@ -9,9 +9,9 @@ import type { ScheduleEntrySchema } from "$engine-client";
  * of the day are covered by at least one entry:
  *
  *  - overlapping entries combine (union) — the grid never double-counts;
- *  - an entry whose end time is at/before its start time wraps past midnight
- *    on the SAME weekday (22:00–02:00 covers 22:00–24:00 AND 00:00–02:00),
- *    mirroring how the engine evaluates "active now" for that day.
+ *  - end at 00:00 denotes the end of the same weekday; 00:00–00:00
+ *    represents the full day. Other end-before-start intervals are rejected
+ *    by the engine. Equal non-midnight bounds cover a single minute.
  *
  * This module computes minute-resolution ranges and hourly buckets plus
  * human-readable summaries; rendering lives in the component.
@@ -75,8 +75,8 @@ function minutesToTime(minutes: number): string {
 
 /**
  * Returns the minute intervals an entry contributes for the given weekday.
- * Overnight entries (end <= start) contribute two intervals: [start, 24:00)
- * and [00:00, end).
+ * End at midnight means the end of the selected weekday, and equal
+ * non-midnight times represent one selected minute (Rust engine semantics).
  */
 function entryIntervalsForDay(
     entry: ScheduleEntrySchema,
@@ -86,14 +86,17 @@ function entryIntervalsForDay(
     const end = timeToMinutes(entry.endTime);
     if (!entry[day] || Number.isNaN(start) || Number.isNaN(end)) return [];
 
+    if (end === 0) {
+        return [{ start, end: 24 * 60 }];
+    }
+    if (end === start) {
+        return [{ start, end: start + 1 }];
+    }
     if (end > start) {
         return [{ start, end }];
     }
-    // Wrap past midnight on the same weekday.
-    return [
-        { start, end: 24 * 60 },
-        { start: 0, end },
-    ];
+    // Untrusted/obsolete overnight ranges are not accepted by the engine.
+    return [];
 }
 
 /**

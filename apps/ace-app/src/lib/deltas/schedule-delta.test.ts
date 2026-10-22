@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ScheduleEntrySchema } from "$engine-client";
-import { isStrictlyMoreRestrictiveThan } from "./schedule-coverage";
+import { isStrictlyMoreRestrictiveThan, isSupportedSchedulePeriod } from "./schedule-coverage";
 
 type Day = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 function entry(startTime: string, endTime: string, ...days: Day[]): ScheduleEntrySchema {
@@ -34,5 +34,22 @@ describe("locked schedule preview coverage", () => {
         ["invalid overnight draft", [entry("09:00", "10:00", "monday")], [entry("22:00", "02:00", "monday")], false],
     ] as const)("%s", (_name, before, after, expected) => {
         expect(isStrictlyMoreRestrictiveThan([...before], [...after])).toBe(expected);
+    });
+});
+
+describe("engine-compatible schedule interval validation", () => {
+    it.each([
+        ["09:00", "17:00", true],
+        ["22:00", "00:00", true],
+        ["00:00", "00:00", true],
+        ["09:00", "09:00", true],
+        ["22:00", "02:00", false],
+        ["00:00", "23:00", true],
+        ["9:00", "17:00", false],
+        ["24:00", "00:00", false],
+        ["09:60", "10:00", false],
+        ["bad", "10:00", false],
+    ])("%s to %s allowed: %s", (start, end, allowed) => {
+        expect(isSupportedSchedulePeriod(start, end)).toBe(allowed);
     });
 });

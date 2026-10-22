@@ -95,16 +95,28 @@ describe("computeWeeklyCoverage", () => {
         expect(monday.ranges).toHaveLength(2);
     });
 
-    it("handles overnight windows that wrap past midnight on the same weekday", () => {
-        // 22:00 -> 02:00 covers 22:00-24:00 and 00:00-02:00.
+    it("treats 22:00 to 00:00 as an end-of-day interval, not next-day coverage", () => {
+        const rows = computeWeeklyCoverage([
+            entry({ friday: true, startTime: "22:00", endTime: "00:00" }),
+        ]);
+        expect(rows.find((r) => r.day === "friday")!.ranges).toEqual([
+            { start: 22 * 60, end: 24 * 60 },
+        ]);
+        expect(rows.find((r) => r.day === "saturday")!.ranges).toEqual([]);
+    });
+
+    it("ignores unsupported overnight ranges", () => {
         const rows = computeWeeklyCoverage([
             entry({ friday: true, startTime: "22:00", endTime: "02:00" }),
         ]);
-        const friday = rows.find((r) => r.day === "friday")!;
-        expect(friday.ranges).toEqual([
-            { start: 0, end: 2 * 60 },
-            { start: 22 * 60, end: 24 * 60 },
+        expect(hasAnyCoverage(rows)).toBe(false);
+    });
+
+    it("models equal non-midnight bounds as one minute, not 24 hours", () => {
+        const rows = computeWeeklyCoverage([
+            entry({ monday: true, startTime: "09:00", endTime: "09:00" }),
         ]);
+        expect(rows[0].ranges).toEqual([{ start: 9 * 60, end: 9 * 60 + 1 }]);
     });
 
     it("ignores entries with no active day and malformed times", () => {
@@ -124,16 +136,16 @@ describe("hourBuckets / formatDayCoverage", () => {
         expect(hours.slice(17)).toEqual(Array(7).fill(false));
     });
 
-    it("formats a readable summary with overnight clarity", () => {
+    it("formats a readable summary for an end-at-midnight period", () => {
         const row = computeWeeklyCoverage([
-            entry({ monday: true, startTime: "22:00", endTime: "02:00" }),
+            entry({ monday: true, startTime: "22:00", endTime: "00:00" }),
         ])[0];
-        expect(formatDayCoverage(row)).toBe("Mon 00:00-02:00, 22:00-24:00");
+        expect(formatDayCoverage(row)).toBe("Mon 22:00-24:00");
     });
 
     it("summarizes all-day coverage", () => {
         const row = computeWeeklyCoverage([
-            entry({ sunday: true, startTime: "00:00", endTime: "24:00" }),
+            entry({ sunday: true, startTime: "00:00", endTime: "00:00" }),
         ])[6];
         expect(formatDayCoverage(row)).toBe("Sun all day");
     });
