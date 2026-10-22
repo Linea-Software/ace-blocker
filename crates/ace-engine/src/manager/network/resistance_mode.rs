@@ -100,20 +100,29 @@ impl NetworkManager {
         if self.resistance_mode.is_locked() && !enabled {
             return Err(NetworkManagerOpErr::ResistanceModeIsLocked);
         }
-        let success = self
+        if self
             .resistance_mode
             .script_tree
-            .set_script_enabled(id, enabled);
-        if success {
-            self.db.set_script_state((*id).as_ref(), enabled)?;
+            .get_script_by_id(id)
+            .is_none()
+        {
+            return Ok(false);
         }
-        Ok(success)
+        self.db.set_script_state((*id).as_ref(), enabled)?;
+        Ok(self
+            .resistance_mode
+            .script_tree
+            .set_script_enabled(id, enabled))
     }
 
-    pub(crate) fn save_resistance_mode_settings(&self) -> Result<(), NetworkManagerOpErr> {
+    fn persist_resistance_mode_settings(
+        &self,
+        enabled: bool,
+        lock: &crate::core::Lock,
+        intensity: PunishmentIntensity,
+    ) -> Result<(), NetworkManagerOpErr> {
         // Clean up expired lock before persisting — an ActiveUntilLockEnd lock
         // whose end time has passed should be stored as Inactive.
-        let lock = &self.resistance_mode.lock;
         let (lock_state, lock_end) = match lock.get_state() {
             crate::core::LockState::ActiveUntilLockEnd { end } if chrono::Local::now() > end => {
                 ("inactive".to_string(), None)
@@ -127,14 +136,13 @@ impl NetworkManager {
             ),
         };
 
-        let punishment = self.resistance_mode.get_punishment();
         self.db
             .set_resistance_mode_settings(crate::db::models::ResistanceModeSettingsModel {
                 table_lock: "0".to_string(),
-                enabled: self.resistance_mode.enabled,
+                enabled,
                 lock_state,
                 lock_end,
-                static_intensity: punishment.static_intensity.to_string(),
+                static_intensity: intensity.to_string(),
                 scripts_version: self.resistance_mode.scripts_version.clone(),
             })?;
         Ok(())
@@ -147,11 +155,19 @@ impl NetworkManager {
         if self.resistance_mode.is_locked() && !enabled {
             return Err(NetworkManagerOpErr::ResistanceModeIsLocked);
         }
+        let next_lock = if enabled {
+            self.resistance_mode.lock.clone()
+        } else {
+            crate::core::Lock::default()
+        };
+        self.persist_resistance_mode_settings(
+            enabled,
+            &next_lock,
+            self.resistance_mode.get_intensity(),
+        )?;
         self.resistance_mode.enabled = enabled;
-        if !enabled {
-            self.resistance_mode.lock = crate::core::Lock::default();
-        }
-        self.save_resistance_mode_settings()
+        self.resistance_mode.lock = next_lock;
+        Ok(())
     }
 
     pub fn set_resistance_mode_lock(
@@ -185,8 +201,13 @@ impl NetworkManager {
             return Err(NetworkManagerOpErr::ResistanceModeIsLocked);
         }
 
+        self.persist_resistance_mode_settings(
+            self.resistance_mode.enabled,
+            &lock,
+            self.resistance_mode.get_intensity(),
+        )?;
         self.resistance_mode.lock = lock;
-        self.save_resistance_mode_settings()
+        Ok(())
     }
 
     pub fn set_resistance_mode_type(
@@ -198,18 +219,17 @@ impl NetworkManager {
         }
 
         // v1 beta: static mode only (MGR-24) — there is no dynamic variant.
-        match mode {
-            crate::manager::resistance::punishment::PunishmentMode::Static { intensity } => {
-                // Switch to static with the requested intensity
-                self.resistance_mode
-                    .switch_to_static(intensity)
-                    .map_err(|error| NetworkManagerOpErr::InternalError {
-                        message: error.to_string(),
-                    })?;
-            }
-        }
-
-        self.save_resistance_mode_settings()
+        let crate::manager::resistance::punishment::PunishmentMode::Static { intensity } = mode;
+        self.persist_resistance_mode_settings(
+            self.resistance_mode.enabled,
+            &self.resistance_mode.lock,
+            intensity,
+        )?;
+        self.resistance_mode
+            .set_punishment(crate::manager::resistance::Punishment::new_static(
+                intensity,
+            ));
+        Ok(())
     }
 
     /// Commits a staged resistance-scripts bundle under the manager write lock.
@@ -595,6 +615,54 @@ mod tests {
         assert!(
             live_catalog.contains("Grayscale"),
             "the previous on-disk bundle must survive"
+        );
+    }
+
+    #[test]
+    fn failed_settings_writes_leave_resistance_policy_unchanged() {
+        use diesel::connection::SimpleConnection;
+        let _guard = TEST_DIR_LOCK.lock().unwrap();
+        let (_temp, db, mut manager) = setup(&[("grayscale", "Grayscale", "grayscale.js")]);
+        manager.reload_scripts().unwrap();
+        db.get_db_connection()
+            .unwrap()
+            .batch_execute("DROP TABLE script_states")
+            .unwrap();
+        let script_id = ScriptId::from("grayscale");
+        assert!(manager.set_script_enabled(&script_id, false).is_err());
+        assert!(
+            manager
+                .resistance_mode
+                .script_tree
+                .get_script_by_id(&script_id)
+                .unwrap()
+                .enabled
+        );
+
+        manager.set_resistance_mode_enabled(true).unwrap();
+        db.get_db_connection()
+            .unwrap()
+            .batch_execute("DROP TABLE resistance_mode_settings")
+            .unwrap();
+
+        assert!(manager.set_resistance_mode_enabled(false).is_err());
+        assert!(manager.is_resistance_mode_enabled());
+        let future = chrono::Local::now() + chrono::Duration::hours(1);
+        let lock =
+            crate::core::Lock::from(crate::core::LockState::ActiveUntilLockEnd { end: future });
+        assert!(manager.set_resistance_mode_lock(lock).is_err());
+        assert!(!manager.is_resistance_mode_locked());
+
+        assert!(
+            manager
+                .set_resistance_mode_type(crate::manager::resistance::PunishmentMode::Static {
+                    intensity: PunishmentIntensity::Medium,
+                },)
+                .is_err()
+        );
+        assert_eq!(
+            manager.resistance_mode.get_intensity(),
+            PunishmentIntensity::None
         );
     }
 

@@ -33,11 +33,19 @@ impl NetworkManager {
                         pack_arc
                             .read()
                             .map(|pack| pack.is_synced())
-                            .unwrap_or(false)
+                            .unwrap_or_else(|error| {
+                                tracing::warn!(network_block_id = %network_block_id, %error,
+                                    "Site-pack read lock poisoned while counting coverage");
+                                false
+                            })
                     })
                     .count()
             })
-            .unwrap_or(0)
+            .unwrap_or_else(|error| {
+                tracing::warn!(network_block_id = %network_block_id, %error,
+                    "Unable to count synced site packs; reporting zero coverage");
+                0
+            })
     }
 
     pub fn add_network_block_to_site_pack(
@@ -62,17 +70,12 @@ impl NetworkManager {
             });
         }
 
-        let network_block = self.get_mut_network_block_from(network_block_id).ok_or(
+        // Validate every precondition before publishing a live policy change.
+        self.get_network_block_from(network_block_id).ok_or(
             NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
             },
         )?;
-
-        network_block
-            .add_site_pack(site_pack_id.clone(), site_pack_arc)
-            .map_err(|error| NetworkManagerOpErr::InternalError {
-                message: error.to_string(),
-            })?;
 
         self.db
             .add_network_block_to_site_pack(network_block_id, site_pack_id)
@@ -83,6 +86,13 @@ impl NetworkManager {
                 ),
             })?;
 
+        self.get_mut_network_block_from(network_block_id)
+            .expect("network block was validated before persistence")
+            .add_site_pack(site_pack_id.clone(), site_pack_arc)
+            .map_err(|error| NetworkManagerOpErr::InternalError {
+                message: error.to_string(),
+            })?;
+
         Ok(())
     }
 
@@ -91,7 +101,7 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         site_pack_id: &SitePackId,
     ) -> Result<(), NetworkManagerOpErr> {
-        let network_block = self.get_mut_network_block_from(network_block_id).ok_or(
+        let network_block = self.get_network_block_from(network_block_id).ok_or(
             NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
             },
@@ -103,8 +113,6 @@ impl NetworkManager {
             });
         }
 
-        network_block.remove_site_pack(site_pack_id);
-
         self.db
             .remove_network_block_to_site_pack(network_block_id, site_pack_id)
             .map_err(|error| NetworkManagerOpErr::DatabaseError {
@@ -113,6 +121,10 @@ impl NetworkManager {
                     error
                 ),
             })?;
+
+        self.get_mut_network_block_from(network_block_id)
+            .expect("network block was validated before persistence")
+            .remove_site_pack(site_pack_id);
 
         Ok(())
     }

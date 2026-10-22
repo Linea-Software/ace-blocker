@@ -134,6 +134,51 @@ impl EngineDB {
             })
     }
 
+    /// Create a local pack and all source rows in one main-DB transaction.
+    /// The manager must publish the new pack into live state only after commit.
+    pub fn add_local_site_pack_with_sources(
+        &self,
+        pack_id: &str,
+        pack_name: &str,
+        description: Option<String>,
+        icon: Option<String>,
+        sources: &[crate::core::importer::SitePackSource],
+    ) -> Result<(), DBError> {
+        use crate::schema_main_db::{site_pack_sources, site_packs};
+        let conn = &mut self.get_db_connection()?;
+        conn.transaction::<(), diesel::result::Error, _>(|conn| {
+            diesel::insert_into(site_packs::table)
+                .values((
+                    site_packs::id.eq(pack_id),
+                    site_packs::name.eq(pack_name),
+                    site_packs::description.eq(description.clone()),
+                    site_packs::requires_pro.eq(true),
+                    site_packs::last_updated_at.eq(None::<String>),
+                    site_packs::version.eq(None::<String>),
+                    site_packs::is_ignored.eq(false),
+                    site_packs::icon.eq(icon.clone()),
+                ))
+                .execute(conn)?;
+
+            for source in sources {
+                diesel::insert_into(site_pack_sources::table)
+                    .values((
+                        site_pack_sources::id.eq(source.id.to_string()),
+                        site_pack_sources::site_pack_id.eq(pack_id),
+                        site_pack_sources::source.eq(&source.source),
+                        site_pack_sources::source_type.eq(source.source_type.to_string()),
+                        site_pack_sources::format.eq(source.format.to_string()),
+                    ))
+                    .execute(conn)?;
+            }
+            Ok(())
+        })
+        .map_err(|error| DBError::InsertionError {
+            table: "site_packs/site_pack_sources".to_string(),
+            message: error.to_string(),
+        })
+    }
+
     pub fn update_site_pack_last_updated(
         &self,
         site_pack_id: &str,

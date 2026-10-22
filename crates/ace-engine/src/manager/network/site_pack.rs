@@ -37,7 +37,7 @@ use uuid::Uuid;
 
 /// RAII token that marks a site pack as "sync in progress" in the manager's
 /// shared set. Dropping the token (normal stream end, stream failure, or the
-/// SSE response body being dropped on client disconnect) releases the slot, so
+/// remoc import stream being dropped on client disconnect) releases the slot, so
 /// a cancelled or replayed sync can never leave the pack permanently busy.
 struct SitePackSyncGuard {
     in_flight: Arc<Mutex<HashSet<SitePackId>>>,
@@ -251,7 +251,7 @@ impl NetworkManager {
 
     /// Marks a site pack as syncing. Returns the RAII guard that releases the
     /// slot on drop, or [`NetworkManagerOpErr::SitePackBusy`] when a sync for
-    /// the same pack is already in flight (concurrent requests, SSE reconnects,
+    /// the same pack is already in flight (concurrent requests, stream reconnects,
     /// or replayed retries must never start a duplicate import/resync).
     fn begin_site_pack_sync(
         &self,
@@ -341,7 +341,7 @@ impl NetworkManager {
     }
 
     pub fn get_all_site_packs(
-        &mut self,
+        &self,
     ) -> Result<Vec<RwLockReadGuard<'_, SitePack>>, NetworkManagerOpErr> {
         self.site_packs
             .values()
@@ -368,36 +368,13 @@ impl NetworkManager {
 
         let db_path = Settings::get_site_pack_path(&site_pack_id);
 
-        let site_pack = SitePack::from(
-            site_pack_id.clone(),
-            None,
-            pack_name.to_string(),
-            description.clone(),
-            true,
-            None,
-            icon.clone(),
-            &db_path,
-            Vec::new(),
-            None,
-        );
-
-        self.site_packs
-            .insert(site_pack_id.clone(), Arc::new(RwLock::new(site_pack)));
-
-        let site_pack_arc =
-            self.site_packs
-                .get(&site_pack_id)
-                .ok_or(NetworkManagerOpErr::InternalError {
-                    message: "Couldn't fetch just inserted site pack somehow".to_string(),
-                })?;
-
         self.db
             .add_site_pack(
                 &site_pack_id,
                 pack_name,
-                description,
+                description.clone(),
                 true, // Default requires_pro to true
-                icon,
+                icon.clone(),
             )
             .map_err(|error| {
                 error!("Failed to add site list: {}", error);
@@ -406,7 +383,21 @@ impl NetworkManager {
                 }
             })?;
 
-        Ok(site_pack_arc.clone())
+        let site_pack = SitePack::from(
+            site_pack_id.clone(),
+            None,
+            pack_name.to_string(),
+            description,
+            true,
+            None,
+            icon,
+            &db_path,
+            Vec::new(),
+            None,
+        );
+        let site_pack_arc = Arc::new(RwLock::new(site_pack));
+        self.site_packs.insert(site_pack_id, site_pack_arc.clone());
+        Ok(site_pack_arc)
     }
 
     pub async fn import_site_pack(
@@ -416,33 +407,69 @@ impl NetworkManager {
         icon: Option<String>,
         sources: Vec<SitePackSource>,
     ) -> Result<SitePackImportStream<'static>, NetworkManagerOpErr> {
-        let site_pack_arc = self
-            .add_local_site_pack(pack_name, description.clone(), icon)
-            .await
+        if !self.is_pro_user().await {
+            return Err(NetworkManagerOpErr::InternalError {
+                message: "Failed to add site list".to_string(),
+            });
+        }
+
+        self.import_site_pack_for_verified_pro(pack_name, description, icon, sources)
+    }
+
+    /// Entry point for RPC after checking Pro status without holding the
+    /// network-policy lock during a possible remote entitlement verification.
+    /// Callers must verify the effective Pro policy before taking the write lock.
+    pub(crate) fn import_site_pack_for_verified_pro(
+        &mut self,
+        pack_name: &str,
+        description: Option<String>,
+        icon: Option<String>,
+        sources: Vec<SitePackSource>,
+    ) -> Result<SitePackImportStream<'static>, NetworkManagerOpErr> {
+        let site_pack_id = SitePackId::from(Uuid::now_v7().to_string());
+        // Persist generated source IDs (as in add_site_pack_source), but retain
+        // the incoming source values for the import progress stream.
+        let stored_sources: Vec<SitePackSource> = sources
+            .iter()
+            .map(|source| SitePackSource {
+                id: SitePackSourceId::from(Uuid::now_v7()),
+                site_pack_id: site_pack_id.clone(),
+                source: source.source.clone(),
+                source_type: source.source_type,
+                format: source.format,
+            })
+            .collect();
+
+        self.db
+            .add_local_site_pack_with_sources(
+                &site_pack_id,
+                pack_name,
+                description.clone(),
+                icon.clone(),
+                &stored_sources,
+            )
             .map_err(|error| {
-                error!("Failed to add site list: {}", error);
-                NetworkManagerOpErr::InternalError {
-                    message: "Failed to add site list".to_string(),
+                error!("Failed to persist site list and sources: {}", error);
+                NetworkManagerOpErr::DatabaseError {
+                    message: format!("Failed to add site list sources: {error}"),
                 }
             })?;
 
-        let site_pack_id = {
-            let site_pack = site_pack_arc.read().unwrap();
-            site_pack.get_id().clone()
-        };
-
-        for source in sources.iter() {
-            let _ = self
-                .add_site_pack_source(
-                    &site_pack_id,
-                    &source.source,
-                    source.source_type,
-                    source.format,
-                )
-                .map_err(|error| {
-                    error!("Failed to add site list source: {}", error);
-                });
-        }
+        let db_path = Settings::get_site_pack_path(&site_pack_id);
+        let site_pack_arc = Arc::new(RwLock::new(SitePack::from(
+            site_pack_id.clone(),
+            None,
+            pack_name.to_string(),
+            description,
+            true,
+            None,
+            icon,
+            &db_path,
+            stored_sources,
+            None,
+        )));
+        self.site_packs
+            .insert(site_pack_id.clone(), site_pack_arc.clone());
 
         // The long-running import owns its sync slot, but never closes the live DB
         // until a validated replacement is ready.
@@ -527,7 +554,7 @@ impl NetworkManager {
         }
 
         // Reject concurrent/replayed syncs of the same pack. The returned
-        // stream runs outside the manager write lock (the SSE body lives on
+        // stream runs outside the manager write lock (the import stream lives on
         // after the route returns), so the slot is only freed when the stream
         // ends — completion, failure, or client disconnect dropping the body.
         let guard = self.begin_site_pack_sync(site_pack_id)?;
@@ -574,7 +601,7 @@ impl NetworkManager {
                 // must not run under the manager write lock, and its failure
                 // (e.g. the Ace server answering 404 "Site pack not found")
                 // must reach the client as a terminal FAILED event — never as
-                // a silent 500 that the SSE transport swallows.
+                // a terminal FAILED event emitted over the RPC stream.
                 let client = AceServerClient::new_http_client(api_key.as_ref());
                 let url = match client.get_site_pack_backup(&remote_id).await {
                     Ok(response) => response.url,
@@ -691,7 +718,7 @@ impl NetworkManager {
     // --- Site List Sources ---
 
     pub fn get_site_pack_sources(
-        &mut self,
+        &self,
         site_pack_id: &SitePackId,
     ) -> Result<Vec<SitePackSource>, NetworkManagerOpErr> {
         Ok(self
@@ -1550,6 +1577,55 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn local_pack_insert_failure_does_not_publish_a_ghost_pack() {
+        use diesel::connection::SimpleConnection;
+        let mut ctx = setup_test_manager();
+        ctx.manager
+            .get_db()
+            .get_db_connection()
+            .unwrap()
+            .batch_execute("DROP TABLE site_packs")
+            .unwrap();
+        let before = ctx.manager.site_packs.len();
+        assert!(
+            ctx.manager
+                .add_local_site_pack("Failure", None, None)
+                .await
+                .is_err()
+        );
+        assert_eq!(ctx.manager.site_packs.len(), before);
+    }
+
+    #[tokio::test]
+    async fn import_source_insert_failure_rolls_back_the_new_pack() {
+        use diesel::connection::SimpleConnection;
+        let mut ctx = setup_test_manager();
+        let before = ctx.manager.get_db().get_all_site_packs().unwrap().len();
+        let before_live = ctx.manager.site_packs.len();
+        ctx.manager
+            .get_db()
+            .get_db_connection()
+            .unwrap()
+            .batch_execute("DROP TABLE site_pack_sources")
+            .unwrap();
+        let source = local_source(
+            &SitePackId::from("provisional".to_string()),
+            std::path::Path::new("invalid-list.txt"),
+        );
+        assert!(
+            ctx.manager
+                .import_site_pack("Failure", None, None, vec![source])
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            ctx.manager.get_db().get_all_site_packs().unwrap().len(),
+            before
+        );
+        assert_eq!(ctx.manager.site_packs.len(), before_live);
+    }
+
+    #[tokio::test]
     async fn test_get_all_site_packs() {
         let mut ctx = setup_test_manager();
 
@@ -1673,6 +1749,51 @@ mod tests {
             .unwrap();
 
         (pack_id, block_id)
+    }
+
+    #[tokio::test]
+    async fn site_pack_assignment_sql_failures_do_not_change_live_links() {
+        use diesel::connection::SimpleConnection;
+
+        let mut ctx = setup_test_manager();
+        let (pack_id, attached_block_id) = attach_pack_to_block(&mut ctx).await;
+        let detached_block_id = ctx
+            .manager
+            .create_network_block("Unattached block".to_string())
+            .unwrap();
+
+        // Remove only the join table in this isolated test database to cause
+        // deterministic failures for both link mutation directions.
+        ctx.manager
+            .get_db()
+            .get_db_connection()
+            .unwrap()
+            .batch_execute("DROP TABLE network_block_to_site_pack")
+            .unwrap();
+
+        assert!(matches!(
+            ctx.manager
+                .add_network_block_to_site_pack(&detached_block_id, &pack_id),
+            Err(NetworkManagerOpErr::DatabaseError { .. })
+        ));
+        assert!(
+            !ctx.manager
+                .get_network_block_from(&detached_block_id)
+                .unwrap()
+                .has_site_pack(&pack_id)
+        );
+
+        assert!(matches!(
+            ctx.manager
+                .remove_network_block_to_site_pack(&attached_block_id, &pack_id),
+            Err(NetworkManagerOpErr::DatabaseError { .. })
+        ));
+        assert!(
+            ctx.manager
+                .get_network_block_from(&attached_block_id)
+                .unwrap()
+                .has_site_pack(&pack_id)
+        );
     }
 
     fn lock_block_until_end(manager: &mut NetworkManager, block_id: &crate::core::NetworkBlockId) {
