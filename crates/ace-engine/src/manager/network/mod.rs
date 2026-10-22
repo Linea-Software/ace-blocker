@@ -12,6 +12,7 @@ pub mod network_blocks_to_site_pack;
 pub mod proxy_exclusions;
 pub mod resistance_mode;
 pub mod schedule;
+mod script_activation_recovery;
 pub mod site_pack;
 pub mod user_defined;
 
@@ -90,6 +91,9 @@ impl NetworkManager {
 
         let network_blocks = Self::load_net_lists(&db, &site_packs)?;
 
+        // Reconcile a script directory swap interrupted by a prior engine crash.
+        // Do this before reading the tree, or live rules could mismatch SQLite.
+        script_activation_recovery::recover_pending(&db)?;
         let mut resistance_mode = Self::load_resistance_manager(&db)?;
 
         // Load the script tree into the resistance mode manager

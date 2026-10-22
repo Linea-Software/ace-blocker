@@ -253,6 +253,13 @@ impl NetworkManager {
             .to_path_buf();
         let unique = uuid::Uuid::new_v4();
         let old_dir = parent.join(format!(".resistance_scripts.old-{unique}"));
+        super::script_activation_recovery::begin_activation(
+            &self.db,
+            &live_dir,
+            unique,
+            &staged.version,
+            live_dir.exists(),
+        )?;
         let previous_tree = self.resistance_mode.script_tree.clone();
         let previous_load_error = self.resistance_mode.scripts_load_error.clone();
 
@@ -332,6 +339,7 @@ impl NetworkManager {
             );
         }
 
+        super::script_activation_recovery::clear_completed(&live_dir)?;
         info!("Resistance scripts committed and reloaded successfully.");
         Ok(())
     }
@@ -615,7 +623,7 @@ mod tests {
 
     #[test]
     fn commit_resistance_scripts_sqlite_failure_rolls_back_disk_and_memory() {
-        use diesel::RunQueryDsl;
+        use diesel::connection::SimpleConnection;
 
         let _guard = TEST_DIR_LOCK.lock().unwrap();
         let (temp, db, mut manager) = setup(&[("grayscale", "Grayscale", "grayscale.js")]);
@@ -623,9 +631,10 @@ mod tests {
 
         // Failure injection: updating the version fails after activating the catalog.
         let mut conn = db.get_db_connection().unwrap();
-        diesel::sql_query("DROP TABLE resistance_mode_settings")
-            .execute(&mut conn)
-            .unwrap();
+        conn.batch_execute(
+            "CREATE TRIGGER reject_script_version BEFORE UPDATE OF scripts_version ON resistance_mode_settings
+             BEGIN SELECT RAISE(ABORT, 'injected script version write failure'); END;"
+        ).unwrap();
         drop(conn);
 
         let bundle = staged_bundle(
