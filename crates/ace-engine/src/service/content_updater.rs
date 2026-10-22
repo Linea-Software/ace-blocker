@@ -160,33 +160,20 @@ impl ContentUpdateService {
             .expect("Should be some after check_for_updates"))
     }
 
-    pub async fn resistance_scripts_require_update(&mut self) -> bool {
-        let latest = match self.get_latest_info().await {
-            Ok(info) => info,
-            Err(error) => {
-                warn!("Failed to get latest info: {}", error);
-                return false;
-            }
-        };
-
+    pub async fn resistance_scripts_require_update(&mut self) -> Result<bool, SitePackUpdateError> {
+        let latest = self.get_latest_info().await.map_err(|error| {
+            SitePackUpdateError::FetchError(format!("Cannot fetch resistance metadata: {error}"))
+        })?;
         let Some(remote) = latest.resistance else {
-            return false;
+            return Ok(false);
         };
-
-        let current = match self.db.get_resistance_mode_settings() {
-            Ok(s) => s,
-            Err(error) => {
-                warn!("Failed to get current resistance settings: {}", error);
-                return false;
-            }
-        };
-
-        // Check if version is different OR if the directory doesn't exist
+        let current = self.db.get_resistance_mode_settings().map_err(|error| {
+            SitePackUpdateError::UpdateError(format!("Cannot read resistance settings: {error}"))
+        })?;
         let scripts_dir = crate::settings::Settings::get_resistance_scripts_dir();
         let version_mismatch = current.scripts_version.as_ref() != Some(&remote.version);
         let files_missing = !scripts_dir.exists();
-
-        version_mismatch || files_missing
+        Ok(version_mismatch || files_missing)
     }
 
     /// Stages every pending content update (site packs + resistance scripts)
@@ -231,7 +218,12 @@ impl ContentUpdateService {
         }
 
         // ── Resistance scripts (Pro only) ─────────────────────────────
-        if is_pro && self.resistance_scripts_require_update().await {
+        let scripts_need_update = if is_pro {
+            self.resistance_scripts_require_update().await?
+        } else {
+            false
+        };
+        if scripts_need_update {
             match self.stage_resistance_scripts(api_key).await {
                 Ok(bundle) => staged.resistance_scripts = Some(bundle),
                 Err(error) => {
@@ -615,16 +607,27 @@ impl ContentUpdateService {
 
     /// Local version of a remote site pack, for honest status reporting
     /// (API-01): the update-check response must not fabricate empty versions.
-    pub fn db_get_site_pack_version(&self, remote_id: &str) -> Option<String> {
+    pub fn db_get_site_pack_version(
+        &self,
+        remote_id: &str,
+    ) -> Result<Option<String>, SitePackUpdateError> {
         self.db
-            .get_site_pack_by_remote_id(remote_id)
-            .ok()
-            .and_then(|model| model.version)
+            .find_site_pack_by_remote_id(remote_id)
+            .map(|model| model.and_then(|pack| pack.version))
+            .map_err(|error| {
+                SitePackUpdateError::FetchError(format!(
+                    "Failed to read local site-pack version: {error}"
+                ))
+            })
     }
 
-    pub async fn get_latest_installer_version(&mut self) -> Option<String> {
-        let latest = self.get_latest_info().await.ok()?;
-        latest.installer.map(|i| i.version)
+    pub async fn get_latest_installer_version(
+        &mut self,
+    ) -> Result<Option<String>, SitePackUpdateError> {
+        let latest = self.get_latest_info().await.map_err(|error| {
+            SitePackUpdateError::FetchError(format!("Cannot fetch installer metadata: {error}"))
+        })?;
+        Ok(latest.installer.map(|installer| installer.version))
     }
 }
 
@@ -743,5 +746,20 @@ mod tests {
         assert!(!is_newer("1.0.0", "2.0.0"));
         assert!(is_newer("2026.09.01", "2.1.0"));
         assert!(is_newer("2026.10.01", "2026.09.30"));
+    }
+
+    #[test]
+    fn local_pack_version_lookup_distinguishes_absence_from_database_error() {
+        use diesel::connection::SimpleConnection;
+
+        let temp = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&temp.path().join("content.sqlite")).unwrap());
+        let service = ContentUpdateService::from(db.clone());
+        assert_eq!(service.db_get_site_pack_version("absent").unwrap(), None);
+
+        let mut connection = db.get_db_connection().unwrap();
+        connection.batch_execute("DROP TABLE site_packs").unwrap();
+        drop(connection);
+        assert!(service.db_get_site_pack_version("absent").is_err());
     }
 }

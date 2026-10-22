@@ -46,7 +46,7 @@
 | AE-17 | P2 | candidate | Site-pack importer | Ripetizione gestione download/progress |
 | AE-18 | P2 | implementation, review pending | DB pool | Pool/migration bootstrap condiviso fra DB distinti senza unificare repo/migrazioni; 22 test site-pack e check all-features superati |
 | AE-19 | P2 | verified | Test | Override process-global delle directory di test |
-| AE-26 | P2 | partial | Lock/errors | `Result` propagato in dashboard, count, site-pack open, updater, restore e version-check; restano fallback da valutare ai confini non modificati |
+| AE-26 | P2 | partial | Lock/errors | Update-check RPC propaga `Err` per rete/SQLite, `Ok(None)` distingue pack assente; dashboard, restore e pack open fallibili; restano altri consumer da verificare |
 
 ---
 
@@ -161,4 +161,4 @@
 
 **Baseline precedente (2026-10-22):** prima delle decisioni pre-release, 227/227 test engine superati; `cargo fmt --all --check` riportava difformità preesistenti in binari e sorgenti generati non modificati.
 
-**Progresso implementazione (2026-10-22):** `cargo test -p ace-engine --lib -- --test-threads=1`: **238 superati, 0 falliti**. `cargo check -p ace-engine --all-targets --all-features`: passato; `cargo test -p ace-watchdog-protocol`: 3/3; `git diff --check`: passato. Il test aggiuntivo di restore su blocco locked ha portato i test mirati del backup a 8/8 dopo la suite completa. Aggiunti test di fault injection per restore di pack e blocchi (rollback per unità e sincronizzazione memoria/DB dopo un errore), commit scripts con errore SQLite, errori di membership site pack, ID/path traversal e versioni canoniche. `SitePack::from` propaga adesso l'errore di apertura DB. Nessun test su servizi installer/watchdog installati in VM Windows, recovery tramite crash reale, oppure review indipendente conclusiva. Il backlog generale rimane `docs/ai/TECH_DEBT_BACKLOG.md` (TD-001/002/003/004/006/012/014).
+**Progresso implementazione (2026-10-22):** `cargo test -p ace-engine --lib -- --test-threads=1`: **240 superati, 0 falliti** (suite rieseguita dopo AE-18 e il nuovo test AE-26). `cargo check -p ace-engine --all-targets --all-features`: passato; `cargo test -p ace-watchdog-protocol`: 3/3; `git diff --check`: passato. Il test aggiuntivo di restore su blocco locked ha portato i test mirati del backup a 8/8 dopo la suite completa. Aggiunti test di fault injection per restore di pack e blocchi (rollback per unità e sincronizzazione memoria/DB dopo un errore), commit scripts con errore SQLite, errori di membership site pack, ID/path traversal e versioni canoniche. `SitePack::from` propaga adesso l'errore di apertura DB. Nessun test su servizi installer/watchdog installati in VM Windows, recovery tramite crash reale, oppure review indipendente conclusiva. Il backlog generale rimane `docs/ai/TECH_DEBT_BACKLOG.md` (TD-001/002/003/004/006/012/014).

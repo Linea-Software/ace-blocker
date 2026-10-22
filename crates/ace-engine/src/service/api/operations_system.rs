@@ -36,30 +36,44 @@ pub(super) async fn open_pro_page() -> Result<&'static str, ApiError> {
 pub(super) async fn check_updates(state: AppState) -> Result<UpdateCheckResponse, ApiError> {
     let mut content_service = state.content_update_service.lock().await;
 
-    // Engine binary info — Phase 4 not yet implemented, so always return not-available.
+    // Metadata and local DB failures remain errors; empty lists/versions are
+    // reserved for genuinely empty results, never as error sentinels.
     let engine = BinaryUpdateInfo {
         current_version: env!("CARGO_PKG_VERSION").to_string(),
-        latest_version: content_service.get_latest_installer_version().await,
+        latest_version: content_service
+            .get_latest_installer_version()
+            .await
+            .map_err(|error| {
+                ApiError::Internal(format!("Installer update check failed: {error}"))
+            })?,
         available: false,
     };
 
-    // Content update info.
-    let site_packs_to_update: Vec<SitePackUpdateEntry> = content_service
+    let site_packs_to_update = content_service
         .get_site_packs_to_update()
         .await
-        .unwrap_or_default()
+        .map_err(|error| ApiError::Internal(format!("Site-pack update check failed: {error}")))?
         .into_iter()
-        .map(|(id, latest_version)| SitePackUpdateEntry {
-            current_version: content_service
+        .map(|(id, latest_version)| {
+            let current_version = content_service
                 .db_get_site_pack_version(&id)
-                .unwrap_or_default(),
-            id: id.to_string(),
-            name: id.to_string(), // remote_id doubles as name for now
-            latest_version: latest_version.to_string(),
+                .map_err(|error| {
+                    ApiError::Internal(format!("Site-pack version lookup failed: {error}"))
+                })?
+                .unwrap_or_default(); // Absent pack has no current version.
+            Ok(SitePackUpdateEntry {
+                current_version,
+                id: id.to_string(),
+                name: id.to_string(),
+                latest_version: latest_version.to_string(),
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, ApiError>>()?;
 
-    let resistance_scripts_need_update = content_service.resistance_scripts_require_update().await;
+    let resistance_scripts_need_update = content_service
+        .resistance_scripts_require_update()
+        .await
+        .map_err(|error| ApiError::Internal(format!("Resistance update check failed: {error}")))?;
 
     Ok(UpdateCheckResponse {
         engine,
