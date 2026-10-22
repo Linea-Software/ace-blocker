@@ -7,7 +7,7 @@ use crate::service::api::{AppState, error::ApiError, schemas};
 pub(super) async fn get_all_site_packs(
     state: AppState,
 ) -> Result<schemas::GetAllSitePacksResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let manager = state.network_manager.read().await;
 
     // Drop the read guards first: enriching each schema needs a second,
     // immutable manager call (`is_site_pack_locked`), which cannot run while
@@ -56,16 +56,23 @@ pub(super) async fn create_site_pack(
         });
     }
 
+    if !state.is_pro_account_entitled().await {
+        return Err(
+            crate::manager::network::error::NetworkManagerOpErr::InternalError {
+                message: "Failed to add site list".to_string(),
+            }
+            .into(),
+        );
+    }
+
     let stream = {
         let mut manager = state.network_manager.write().await;
-        manager
-            .import_site_pack(
-                &payload.name,
-                payload.description,
-                payload.icon,
-                core_sources,
-            )
-            .await?
+        manager.import_site_pack_for_verified_pro(
+            &payload.name,
+            payload.description,
+            payload.icon,
+            core_sources,
+        )?
     };
 
     Ok(stream)
@@ -131,7 +138,7 @@ pub(super) async fn get_site_pack_sources(
     site_pack_id: String,
 ) -> Result<schemas::GetSitePackSourcesResponse, ApiError> {
     let site_pack_id = SitePackId::from(site_pack_id);
-    let mut manager = state.network_manager.write().await;
+    let manager = state.network_manager.read().await;
     let sources = manager.get_site_pack_sources(&site_pack_id)?;
 
     let dtos = sources
@@ -148,11 +155,10 @@ pub(super) async fn add_site_pack_source(
     payload: schemas::AddSitePackSourceRequest,
 ) -> Result<schemas::AddSitePackSourceResponse, ApiError> {
     let site_pack_id = SitePackId::from(site_pack_id);
-    let mut manager = state.network_manager.write().await;
-
-    if !manager.is_pro_user().await {
+    if !state.is_pro_account_entitled().await {
         return Err(ApiError::Forbidden("Pro subscription required".to_string()));
     }
+    let mut manager = state.network_manager.write().await;
 
     let source = manager.add_site_pack_source(
         &site_pack_id,

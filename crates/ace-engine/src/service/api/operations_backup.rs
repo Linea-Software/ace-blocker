@@ -12,10 +12,7 @@ pub(super) async fn export_backup(
 }
 
 pub(super) async fn export_backup_to_cloud(state: AppState) -> Result<(), ApiError> {
-    let is_pro = {
-        let manager = state.network_manager.read().await;
-        manager.is_pro_user().await
-    };
+    let is_pro = state.is_pro_account_entitled().await;
 
     if !is_pro {
         return Err(ApiError::Forbidden(
@@ -117,10 +114,7 @@ pub(super) async fn export_backup_to_cloud(state: AppState) -> Result<(), ApiErr
 }
 
 pub(super) async fn import_backup_from_cloud(state: AppState) -> Result<(), ApiError> {
-    let is_pro = {
-        let manager = state.network_manager.read().await;
-        manager.is_pro_user().await
-    };
+    let is_pro = state.is_pro_account_entitled().await;
 
     if !is_pro {
         return Err(ApiError::Forbidden(

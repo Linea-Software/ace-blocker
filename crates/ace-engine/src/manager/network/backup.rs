@@ -254,11 +254,17 @@ impl NetworkManager {
             if self
                 .db
                 .get_all_network_blocks()
-                .unwrap_or_default()
+                .unwrap_or_else(|error| {
+                    tracing::warn!(%error, "Backup restore cannot enumerate existing blocks; using previous empty fallback");
+                    Vec::new()
+                })
                 .iter()
                 .any(|b| b.id == id.to_string())
             {
-                let _ = self.db.delete_network_block(&id);
+                if let Err(error) = self.db.delete_network_block(&id) {
+                    tracing::warn!(%error, network_block_id = %id,
+                        "Backup restore could not remove an existing block");
+                }
             }
 
             self.db
@@ -343,7 +349,10 @@ impl NetworkManager {
             }
 
             for site_pack_id in block.connected_site_packs {
-                let _ = self.db.add_network_block_to_site_pack(&id, &site_pack_id);
+                if let Err(error) = self.db.add_network_block_to_site_pack(&id, &site_pack_id) {
+                    tracing::warn!(%error, network_block_id = %id, site_pack_id = %site_pack_id,
+                        "Backup restore skipped a site-pack association");
+                }
             }
         }
 
@@ -351,7 +360,9 @@ impl NetworkManager {
         // RESISTANCE SCRIPTS //
         /////////////////////
         for script_id in backup.deactivated_resistance_scripts {
-            let _ = self.db.set_script_state(&script_id.to_string(), false);
+            if let Err(error) = self.db.set_script_state(&script_id.to_string(), false) {
+                tracing::warn!(%error, script_id = %script_id, "Backup restore skipped a script state");
+            }
         }
 
         let db_arc = self.get_db();

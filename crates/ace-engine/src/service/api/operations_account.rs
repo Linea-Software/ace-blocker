@@ -7,14 +7,7 @@ use crate::service::api::{
 };
 
 pub(super) async fn get_account_info(state: AppState) -> AccountInfoResponse {
-    let manager = state.network_manager.read().await;
-    let is_pro = manager.is_pro_user().await;
-    let tos_accepted = state.account_manager.has_accepted_tos().await;
-
-    AccountInfoResponse {
-        is_pro,
-        tos_accepted,
-    }
+    account_info(&state).await
 }
 
 /// Re-read the account's Pro status after an event that may have changed it
@@ -27,10 +20,12 @@ pub(super) async fn get_account_info(state: AppState) -> AccountInfoResponse {
 /// keep the previous entitlement; authorization failures clear the API key
 /// and transition the account to free.
 pub(super) async fn refresh_account(state: AppState) -> AccountInfoResponse {
-    let manager = state.network_manager.read().await;
-    let is_pro = manager.is_pro_user().await;
-    let tos_accepted = state.account_manager.has_accepted_tos().await;
+    account_info(&state).await
+}
 
+async fn account_info(state: &AppState) -> AccountInfoResponse {
+    let is_pro = state.is_pro_account_entitled().await;
+    let tos_accepted = state.account_manager.has_accepted_tos().await;
     AccountInfoResponse {
         is_pro,
         tos_accepted,

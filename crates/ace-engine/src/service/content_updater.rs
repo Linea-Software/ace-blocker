@@ -506,7 +506,10 @@ impl ContentUpdateService {
         let ignored_ids: std::collections::HashSet<RemoteSitePackId> = self
             .db
             .get_ignored_remote_site_packs()
-            .unwrap_or_default()
+            .unwrap_or_else(|error| {
+                warn!(%error, "Ignored remote site-pack query failed; preserving existing fallback");
+                Vec::new()
+            })
             .into_iter()
             .filter_map(|model| model.remote_id)
             .map(RemoteSitePackId::try_new)
@@ -697,7 +700,7 @@ async fn run_update_pass(
 ///
 /// In **release** builds the interval is fixed at 24 hours.  In **debug**
 /// builds the interval can be mutated at runtime via
-/// `POST /dev/update-check-interval/{seconds}`.
+/// the debug-only `setUpdateCheckInterval` remoc operation.
 pub async fn run_background_update_loop(
     content_service: SharedContentUpdateService,
     network_manager: Arc<RwLock<NetworkManager>>,

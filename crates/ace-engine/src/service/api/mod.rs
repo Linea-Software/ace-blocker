@@ -3,6 +3,8 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use crate::core::{NetworkBlockId, common::unlock_challenge::UnlockChallenge};
+#[cfg(debug_assertions)]
+use crate::manager::network::DebugProPolicy;
 use crate::manager::{AccountManager, NetworkManager};
 
 pub mod bridge;
@@ -46,4 +48,27 @@ pub struct AppState {
     /// debug builds may accept token-less development calls; release builds
     /// require the capability. Debug-only methods are separately compile-gated.
     pub enforce_capability: bool,
+}
+
+impl AppState {
+    /// Verify Pro entitlement without holding the policy lock across remote I/O.
+    /// Debug overrides are read before and after verification so concurrent
+    /// changes to an override cannot return an outdated effective policy.
+    async fn is_pro_account_entitled(&self) -> bool {
+        #[cfg(debug_assertions)]
+        match self.network_manager.read().await.get_debug_pro_policy() {
+            DebugProPolicy::Pro => return true,
+            DebugProPolicy::Free => return false,
+            DebugProPolicy::Default => {}
+        }
+
+        let verified = self.account_manager.is_pro().await;
+        #[cfg(debug_assertions)]
+        match self.network_manager.read().await.get_debug_pro_policy() {
+            DebugProPolicy::Pro => return true,
+            DebugProPolicy::Free => return false,
+            DebugProPolicy::Default => {}
+        }
+        verified
+    }
 }
