@@ -25,29 +25,32 @@ impl DomainListFormat for HostsListStandardFormat {
             return Ok(Skip);
         }
 
-        let parts: Vec<&str> = line.split_whitespace().collect();
+        let mut parts = line.split_whitespace();
 
         // A hosts line requires a redirect IP and at least one hostname.
-        if parts.len() < 2 {
+        let Some(redirect) = parts.next() else {
             return Err(DomainLineParsingError::InvalidLineFormat);
-        }
+        };
+        let Some(first_domain) = parts.next() else {
+            return Err(DomainLineParsingError::InvalidLineFormat);
+        };
 
-        if !is_valid_redirect(parts[0]) {
+        if !is_valid_redirect(redirect) {
             return Err(DomainLineParsingError::InvalidRedirectFormat {
-                input: parts[0].to_string(),
+                input: redirect.to_string(),
             });
         }
 
         let mut domains: Vec<DomainName> = Vec::new();
 
-        for part in &parts[1..] {
+        for part in std::iter::once(first_domain).chain(parts) {
             if is_bare_ip(part) {
                 return Err(DomainLineParsingError::InvalidDomainFormat {
                     input: part.to_string(),
                 });
             }
 
-            let domain = DomainName::try_new(*part).map_err(|_| {
+            let domain = DomainName::try_new(part).map_err(|_| {
                 DomainLineParsingError::InvalidDomainFormat {
                     input: part.to_string(),
                 }
@@ -168,6 +171,23 @@ mod tests {
                 "www.example.com",
                 "api.example.com"
             ]))
+        );
+    }
+
+    #[test]
+    fn long_alias_lists_preserve_every_domain_in_order() {
+        let aliases: Vec<String> = (0..128)
+            .map(|index| format!("alias{index}.example.com"))
+            .collect();
+        let line = format!("0.0.0.0 {}", aliases.join(" "));
+        let expected_domains = aliases
+            .iter()
+            .map(|domain| DomainName::try_new(domain.as_str()).unwrap())
+            .collect();
+
+        assert_eq!(
+            HostsListStandardFormat::parse_line(&line),
+            Ok(Domains(expected_domains))
         );
     }
 

@@ -22,6 +22,8 @@ This file tracks **verified, actionable maintainability work**, not a wishlist o
 | [TD-012](#td-012--rpc-and-production-h3-footprint) | P3 | candidate | UI RPC and proxy features | Bridge repeats dispatch boilerplate and opens connections per call; H3 unused by Ace production | Consider generated dispatch/persistent reconnecting client and feature gate with native integration tests |
 | [TD-013](#td-013--network-block-mutation-lock-guard) | P2 | review | NetworkManager block mutations | Deletion, safe-search edits and renaming independently duplicate missing-block and active-lock checks | Centralize this repeated guard within the block manager; preserve error and persistence order |
 | [TD-014](#td-014--site-pack-link-persistence-consistency) | P1 | verified | NetworkManager site-pack assignments | Attach/detach mutate the live block before a fallible SQLite write | Add failure-path regressions and make DB/memory assignment changes consistent |
+| [TD-015](#td-015--allocation-free-hosts-token-scanning) | P2 | review | Domain blocklist hosts parser | Collects all whitespace tokens into a temporary `Vec` for each input line | Iterate tokens directly while retaining error order and alias validation |
+| [TD-016](#td-016--linear-time-tauri-stream-queue) | P2 | verified | Ace App Tauri RPC stream | Uses `Array.shift()` for each event in site-pack progress streams | Replace head-removal with cursor-based draining without changing event/error ordering |
 
 For each non-placeholder item, add a detailed section below using the template. Link the queue's ID to its section. Order by expected maintenance benefit and risk, not cosmetic code metrics.
 
@@ -129,6 +131,26 @@ For each non-placeholder item, add a detailed section below using the template. 
 - **Status:** verified; **priority:** P1; **scope:** `crates/ace-engine/src/manager/network/network_blocks_to_site_pack.rs`. Separate task; not part of TD-013.
 - **Evidence:** `add_network_block_to_site_pack` calls `NetworkBlock::add_site_pack` before `db.add_network_block_to_site_pack`; `remove_network_block_to_site_pack` calls `remove_site_pack` before `db.remove_network_block_to_site_pack`. Either DB call can fail, leaving the live policy inconsistent with persisted assignments.
 - **Risk / gate:** Enforcement-sensitive, requiring explicit failure-path tests for both directions, including lock checks and site-pack preconditions; preserve existing caller-visible success/error contracts on successful writes. No implementation attempted in this pass.
+
+### TD-015 — Allocation-free hosts token scanning
+
+- **Status:** review; **priority:** P2; **owner:** `main`.
+- **Area / evidence:** `crates/ace-domain-blocklist/src/format/hosts.rs`, `HostsListStandardFormat::parse_line` collects `line.split_whitespace().collect::<Vec<&str>>()` solely to inspect the first token and process the remaining tokens. Imports potentially process many lines, so this is a redundant per-line allocation and intermediate collection.
+- **Scope / simplest improvement:** Within this parser alone, use the `split_whitespace` iterator and preserve its redirect-first, alias-second validation, comment handling, alias order and error variants. No shared helper or new crate/type.
+- **Architecture / domain impact:** Ownership stays within `ace-domain-blocklist::format::hosts`; external public parsing trait and `DomainName` validator remain unchanged, as do the importer integration and any persisted data. No new dependency edges, protocol modifications or unchecked primitives.
+- **Baseline (Windows, 2026-10-22):** `cargo test -p ace-domain-blocklist`: 54 passed. Existing tests cover comments, redirects, multiple aliases, malformed input, bare IP rejection and first-invalid-domain reporting. Add focused characterization coverage for whitespace-only and long alias lists if warranted.
+- **Risk / acceptance:** Low. Exact `Result` and error precedence for all inputs must remain identical; same 54 tests plus new cases and scoped formatting/check. Rollback: revert only the parser commit.
+- **Outcome (2026-10-22):** Replaced per-line token collection with an iterator and added a 128-alias order regression. `cargo test -p ace-domain-blocklist`: 55/55 passed; `cargo check -p ace-domain-blocklist`: passed; `rustfmt --check --edition 2024 crates/ace-domain-blocklist/src/format/hosts.rs`: passed; `git diff --check`: passed. No benchmark or installed-service testing attempted. In-session architecture review: no dependency edges or authority changes; domain/type review: unchanged `DomainName` validation and `DomainLineParsingError`; behavior review: same missing-redirect and missing-alias precedence, valid aliases and malformed-input errors. Independent reviewer unavailable in active CodexPro toolset; remains `review` rather than `done`.
+
+### TD-016 — Linear-time Tauri stream queue
+
+- **Status:** verified; **priority:** P2; **owner:** unassigned until started.
+- **Area / evidence:** `apps/ace-app/src/lib/engine-client/tauri-rpc.ts`, `rpcStream`: every queued event is consumed using `parsed.shift()` (array head removal). When multiple events accumulate before the UI drains them, repeated head removal moves remaining array elements. Event-stream consumers include `src/lib/stores/syncing-store.svelte.ts` and site-pack import UI.
+- **Scope / simplest improvement:** Keep the same local typed-Tauri adapter API but use an indexed queue, reclaim consumed entries without quadratic array head shifts and add asynchronous burst/error regression tests. No new third-party library or shared state.
+- **Architecture / type impact:** UI stream adapter only; `engine-client` façade, Tauri channel and remoc wire, auth, error callback and consumers remain unchanged. `unknown` event values remain opaque Tauri payloads; avoid adding a competing payload schema.
+- **Baseline (Windows, 2026-10-22):** `bun run test:unit` from `apps/ace-app`: 39 passed, including 4 existing RPC-adapter tests. `bun run check` and focused tests required after implementation.
+- **Risk / acceptance:** Low-to-moderate due to asynchronous notification. Preserve FIFO, completion, error propagation, callback behavior, no lost wakeups, and all existing response shapes. Native remoc stream integration remains a separate TD-001 obligation.
+- **Review:** Independent review not yet performed; mark `review` if implemented but not independently reviewed.
 
 ## Item template
 
