@@ -220,7 +220,7 @@ mod tests {
                 ScheduleEntryId::from(uuid::Uuid::nil()),
                 list_id.clone(),
                 chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-                chrono::NaiveTime::from_hms_opt(23, 59, 59).unwrap(),
+                chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(), // midnight end = full day
                 chrono::WeekdaySet::ALL,
             )
             .unwrap(),

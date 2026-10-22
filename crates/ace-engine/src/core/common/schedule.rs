@@ -450,6 +450,16 @@ mod tests {
     }
 
     #[test]
+    fn midnight_end_preserves_existing_day_boundary_semantics() {
+        let entry = create_entry("22:00:00", "00:00:00", 1);
+        assert!(entry.contains(NaiveTime::from_hms_opt(22, 0, 0).unwrap()));
+        assert!(entry.contains(NaiveTime::from_hms_opt(23, 59, 59).unwrap()));
+        assert!(entry.contains(NaiveTime::from_hms_opt(0, 0, 0).unwrap()));
+        assert!(!entry.contains(NaiveTime::from_hms_opt(21, 59, 59).unwrap()));
+        assert!(!entry.contains(NaiveTime::from_hms_opt(12, 0, 0).unwrap()));
+    }
+
+    #[test]
     fn test_invalid_range() {
         let id = uuid::Uuid::now_v7().to_string();
         let parent_id = uuid::Uuid::now_v7().to_string();
