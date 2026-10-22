@@ -34,14 +34,24 @@ A **Network Block** is a bundle of rules used to decide what to block and when. 
 - **Storage:** Metadata stored in **SQLite** via **Diesel**; site entries live in a
   per-pack **SQLite** database (XXH3-64 host hashes), not RocksDB.
 
-### 2. High-Performance ID System
+### 2. Domain identifiers
 
-The engine uses a strictly typed ID system built on **UUID v7** for performance and database compatibility.
+- `NetworkBlockId` and other internally generated UUID identities use UUID v7
+  where their actual contract requires it.
+- `SitePackId` is an opaque, validated, non-empty **single filesystem
+  component**, not necessarily a UUID. Canonical catalog IDs such as
+  `pack-adult-free` are legitimate. Incoming/persisted IDs must be validated.
+- `RemoteSitePackId` obeys the same safe-component constraints; `ScriptId`
+  is a non-empty string identity validated at the catalog, DB and RPC boundaries.
+- Do not assume every domain identity is a UUID or admit empty IDs through
+  `Default`/`From` constructors. Keep typed, fallible parsing at trust boundaries.
 
-- **Types:** Custom wrapper types (`NetworkBlockId`, `SitePackId`, `ScheduleEntryId`, `ScriptId`) encapsulate `uuid::Uuid`.
-- **Generation:** All new IDs are generated using `Uuid::now_v7()` to ensure time-based ordering and uniqueness.
-- **Serialization:** IDs are automatically serialized/deserialized as standard UUID strings in typed RPC data.
-- **Database Mapping:** Stored as `TEXT` in SQLite, but converted to/from `uuid::Uuid` at the repository layer.
+**Pre-release policy:** Ace Blocker has not yet been publicly released. No
+backward compatibility for legacy program data, old databases, historical
+backups or old local protocols is required. Remove rather than perpetuate
+compatibility-only code; preserve security, locks, service isolation and current
+typed IPC. The binding decisions are in
+`../../docs/ai/ACE_ENGINE_REFACTOR_DECISIONS.md`.
 
 ### 3. Site Packs
 

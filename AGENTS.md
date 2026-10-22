@@ -53,6 +53,8 @@ client is independent of this remoc control interface.
 
 ## AI refactoring: read only what applies
 
+**Pre-release compatibility decision (2026-10-22):** Ace Blocker has not been publicly released. Legacy program formats, old databases/backups and older internal protocol shapes require **no backward compatibility**; do not introduce legacy migrations, compatibility shims or fallback paths for historical data solely to preserve them. See [`docs/ai/ACE_ENGINE_REFACTOR_DECISIONS.md`](docs/ai/ACE_ENGINE_REFACTOR_DECISIONS.md) for approved engine-specific behavior and typed-error policies. This does **not** relax current security/lock/watchdog/installer/IPC invariants or authorize arbitrary deletion of active development data.
+
 Use [`docs/ai/REFACTORING_PLAYBOOK.md`](docs/ai/REFACTORING_PLAYBOOK.md)
 for the audit → bounded implementation → independent review → verification workflow.
 Route to the relevant specialized guidance **before proposing an abstraction**:
