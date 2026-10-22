@@ -6,7 +6,7 @@
 
 use super::constants;
 use crate::core::NetworkBlockId;
-use chrono::{self, Datelike, Weekday, WeekdaySet};
+use chrono::{self, Datelike, Timelike, Weekday, WeekdaySet};
 use nutype::nutype;
 use thiserror::Error;
 use uuid::Uuid;
@@ -33,6 +33,9 @@ pub enum ScheduleEntryError {
         #[source]
         source: uuid::Error,
     },
+
+    #[error("schedule times must have zero seconds and subseconds: {invalid_value}")]
+    SubMinutePrecision { invalid_value: chrono::NaiveTime },
 
     #[error("start time ({start}) must be before or equal to end time ({end})")]
     StartTimeAfterEndTime {
@@ -71,6 +74,15 @@ pub fn weekday_set_to_bitmask(weekday_set: &WeekdaySet) -> i32 {
 }
 
 impl ScheduleEntry {
+    fn validate_minute_precision(time: chrono::NaiveTime) -> Result<(), ScheduleEntryError> {
+        if time.second() != 0 || time.nanosecond() != 0 {
+            return Err(ScheduleEntryError::SubMinutePrecision {
+                invalid_value: time,
+            });
+        }
+        Ok(())
+    }
+
     pub fn from_raw(
         schedule_entry_id: String,
         parent_list_id: String,
@@ -92,6 +104,9 @@ impl ScheduleEntry {
                 source: error,
             },
         )?;
+
+        Self::validate_minute_precision(start)?;
+        Self::validate_minute_precision(end)?;
 
         if start > end && end != chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap() {
             return Err(ScheduleEntryError::StartTimeAfterEndTime { start, end });
@@ -123,6 +138,9 @@ impl ScheduleEntry {
         end_time: chrono::NaiveTime,
         weekday_set: WeekdaySet,
     ) -> Result<ScheduleEntry, ScheduleEntryError> {
+        Self::validate_minute_precision(start_time)?;
+        Self::validate_minute_precision(end_time)?;
+
         if start_time > end_time && end_time != chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap() {
             return Err(ScheduleEntryError::StartTimeAfterEndTime {
                 start: start_time,
@@ -303,6 +321,38 @@ mod tests {
         let id = Uuid::now_v7().to_string();
         let parent_id = Uuid::now_v7().to_string();
         ScheduleEntry::from_raw(id, parent_id, start, end, bitmask).unwrap()
+    }
+
+    #[test]
+    fn rejects_subminute_times_at_all_domain_entry_points() {
+        let id = Uuid::now_v7();
+        let block_id = Uuid::now_v7();
+        for (start, end) in [("08:30:45", "09:30:00"), ("08:30:00", "09:30:01")] {
+            assert!(matches!(
+                ScheduleEntry::from_raw(id.to_string(), block_id.to_string(), start, end, 1),
+                Err(ScheduleEntryError::SubMinutePrecision { .. })
+            ));
+        }
+        let weekday_set = bitmask_to_weekday_set(1);
+        let fractional = NaiveTime::from_hms_nano_opt(8, 30, 0, 1).unwrap();
+        assert!(matches!(
+            ScheduleEntry::from(
+                ScheduleEntryId::from(id),
+                NetworkBlockId::from(block_id),
+                fractional,
+                NaiveTime::from_hms_opt(9, 0, 0).unwrap(),
+                weekday_set
+            ),
+            Err(ScheduleEntryError::SubMinutePrecision { .. })
+        ));
+        let valid = ScheduleEntry::from_raw(
+            id.to_string(),
+            block_id.to_string(),
+            "08:30:00",
+            "00:00:00",
+            1,
+        );
+        assert!(valid.is_ok());
     }
 
     #[test]

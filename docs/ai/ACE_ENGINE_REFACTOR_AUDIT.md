@@ -37,7 +37,7 @@
 | AE-11 | P1 | partial | Script bundle activation | Rollback dopo errore DB implementato e testato; resta recovery da crash tra rename/DB e test VM Windows |
 | AE-13 | P2 | verified | Content updater | Mutex servizio trattenuto nel download/staging/commit |
 | AE-14 | P2 | verified | API bridge | Map dei nomi operazioni replicata rispetto al trait |
-| AE-15 | P2 | partial | Schedule/minute semantics | Versionamento canonico già implementato; restano caratterizzazione di arrotondamento al minuto, mezzanotte, DST e round-trip |
+| AE-15 | P2 | partial | Schedule/minute semantics | Input con secondi/frazioni rifiutato via errore tipizzato; test costruttori superati. Restano gate round-trip DB, mezzanotte e DST |
 | AE-17 | P2 | candidate | Site-pack importer | Ripetizione gestione download/progress |
 | AE-19 | P2 | verified | Test | Override process-global delle directory di test |
 | AE-26 | P2 | partial | Typed error propagation | Restano fallback ambigui nel caricamento Resistance Mode e della cronologia updater, e audit dei consumer non ancora trattati |
@@ -71,7 +71,8 @@
 
 - **Stato attuale:** `SitePackVersion` usa il formato canonico `X.Y.Z` con confronto numerico, senza compatibilità con versioni legacy. Il versionamento non richiede ulteriori interventi in questa voce.
 - **Evidenza residua:** `src/manager/network/schedule.rs` normalizza `NaiveTime` con `num_seconds_from_midnight() / 60`, mentre il dominio conserva secondi; è approvata la precisione **al minuto**.
-- **Prossimo refactor:** testare e documentare in modo esplicito canonicalizzazione, input con secondi, merge dei periodi, mezzanotte e salvataggio/ricaricamento, senza introdurre precisione ai secondi.
+- **Implementato:** `ScheduleEntry::from` e `from_raw` rifiutano secondi e nanosecondi non nulli (decisione A), senza arrotondamento implicito; test di dominio passati.
+- **Rimane:** caratterizzazione completa di merge dei periodi, mezzanotte e salvataggio/ricaricamento con DST, senza introdurre precisione ai secondi.
 - **Gate:** round-trip DB/backup, boundary 00:00 e 24:00, DST, lock durante schedule.
 
 ### AE-17 — Download e progress ripetuti nell'importer [P2, candidate]
