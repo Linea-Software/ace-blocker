@@ -4,6 +4,8 @@
 
 **Use this document whenever an AI is asked to audit, tidy, simplify, refactor, or remove obsolete code in the unified Ace Blocker repository.** Read the root `AGENTS.md` and the relevant component instructions first.
 
+**Load guidance by concern, not all at once:** [BOUNDARIES_AND_ABSTRACTIONS.md](BOUNDARIES_AND_ABSTRACTIONS.md) for ownership, imports and extraction decisions; [DOMAIN_TYPES.md](DOMAIN_TYPES.md) for newtypes, invariants and validation; and [REVIEW_GATES.md](REVIEW_GATES.md) for the two distinct architecture/type reviews, independent diff review and conflicting skill advice. Root runtime/security rules and existing accepted contracts always take priority over generic skills. Do not assume a named skill is installed until its actual contents are available.
+
 This is a **repeatable process**, not permission for a repository-wide rewrite. An audit may cover the whole repository, but implementation must be scoped, incremental, and independently verifiable.
 
 ## Principles
@@ -16,6 +18,9 @@ This is a **repeatable process**, not permission for a repository-wide rewrite. 
 6. **Run checks and report the truth.** A compile succeeds only if it ran and passed. A unit test does not prove that Windows service behavior or anti-tampering still works.
 7. **Minimize review cost.** Avoid unrelated formatting, gratuitous renaming, moving files without benefit, large dependency upgrades, and speculative abstractions.
 8. **Keep a durable record.** Track discovered debt and completed work in `docs/ai/TECH_DEBT_BACKLOG.md`. Never invent findings, test outcomes, or supporting references.
+9. **Respect semantic boundaries.** Do not connect unrelated features, crates, stores or layers just because their code looks similar. Small duplication can be cheaper and safer than an abstraction that couples independent behavior.
+10. **Use types to enforce real invariants.** Check if an unchecked primitive crosses a meaningful domain/trust boundary; also reject newtypes, traits, schemas and wrappers with no demonstrable benefit. Preserve wire/storage compatibility and validate untrusted inputs at the authoritative boundary.
+11. **Check design separately from compilation.** Green tests and lint do not prove that dependency direction, responsibility ownership, domain concepts, and state lifecycle are sound.
 
 ## Workflow: audit → test → refactor → independent review → merge
 
@@ -27,6 +32,9 @@ This is a **repeatable process**, not permission for a repository-wide rewrite. 
   - duplicate implementations, unnecessary indirection, confusing ownership;
   - state synchronization problems, unnecessary polling, scattered error handling;
   - excessive coupling, cycles, leaky APIs, inconsistent types or naming;
+  - accidental cross-feature imports, unnecessary shared stores/managers or code extraction across independently evolving concepts;
+  - raw primitives masking identity, domain validation, units or secrets; and the converse problem of pointless wrapper types;
+  - duplicate state, validation or implicit authority crossing UI → Tauri → remoc → engine;
   - missing regression tests in areas where cleanup would be risky.
 - Separate **verified debt** (with exact paths/symbols and evidence) from **hypotheses** that require further investigation.
 - Prioritize by expected maintenance benefit, likelihood of regression, user impact, and prerequisite tests. Do **not** use lines removed as the primary ranking metric.
@@ -40,6 +48,8 @@ Before code edits:
 
 - Check `git status`. Preserve other contributors' work; do not revert, reset, stage, or reformat unrelated changes. Use an isolated branch/worktree when parallel agents are active.
 - Pick **one backlog item**. Define the exact boundary, the undesirable complexity to remove, and the behavior that must stay unchanged.
+- Before inventing a helper, trait, new type, cross-feature import or shared state, document the owning concept, invariant/use case, simpler alternatives, consumers and the reason existing boundaries are insufficient (see architecture and domain-type guides).
+- Record a **dependency/type impact sketch** for the affected scope: current edges and contracts, edges proposed, where validation happens, and why no unrelated subsystem becomes coupled. If the design cannot be justified, do not implement it as a cleanup.
 - Locate and run relevant existing tests/checks; record results. For a risky path with inadequate coverage, add focused characterization/regression tests **before** structural changes.
 - Write explicit acceptance criteria and a rollback boundary (one reviewable commit/PR). If you cannot establish how to verify a high-risk change, stop and report the blocker rather than guessing.
 
@@ -49,7 +59,8 @@ Before code edits:
 
 - Prefer small, mechanical, incremental patches; preserve public behavior and serialization/IPC/database contracts unless specifically authorized otherwise.
 - Remove unused code rather than keeping redundant old and new paths indefinitely.
-- Use existing language/library capabilities. Do not hand-roll utilities already provided by dependencies.
+- Use existing language/library capabilities. Do not hand-roll utilities already provided by dependencies. Do not extract shared logic merely because two implementations resemble each other.
+- Keep local Svelte state local; share only a stable contract. For Rust, prefer domain-owned types and fallible validation where real invariants exist, not pervasive string wrappers.
 - Maintain compatibility at system boundaries, including persisted data, time interpretation, error semantics, reconnect handling, and installer behavior.
 - If a supposed cleanup requires new product semantics, a new architectural layer, or broad cross-component churn, **split it into a separately proposed task**.
 - Run targeted checks during implementation; do not hide warnings, skip tests, or weaken validation to obtain green results.
@@ -58,7 +69,11 @@ Before code edits:
 
 Use a **separate reviewer or fresh AI context** where practical. Review the actual diff against the baseline, not just the implementer's summary.
 
-Review for:
+Perform **two explicit design passes** before general correctness review:
+- **Architecture/abstraction pass:** verify ownership, new dependency edges, module independence, import direction, state lifecycle, shared-code justification and the absence of convenience-driven coupling.
+- **Domain/types pass:** verify meaningful invariants, constructors/parsers, validation and trust boundaries, use of existing types, untrusted deserialization, secret handling, and absence of gratuitous wrappers.
+
+Follow the fuller checklist in [REVIEW_GATES.md](REVIEW_GATES.md). Review for:
 - preserved behavior and complete migration of affected call sites;
 - new or weakened security boundaries, failure modes, races, or unchecked errors;
 - regressions in startup/recovery, restart, shutdown, and uninstall paths;
@@ -113,7 +128,9 @@ bun run test:unit
 
 Use the relevant integration/e2e tests and installer VM test matrix for changes that affect those boundaries. **Do not automatically run an autofix over the whole repository** (for example, `cargo clippy --fix`, `cargo fmt`, or mass formatting) when task scope is narrower. Treat pre-existing warnings separately from new ones.
 
-Additional *optional* tools: `cargo-machete` for potential unused dependencies (verify false positives), `cargo-nextest` for running Rust tests, `ast-grep` for reviewed structural transformations, and coverage reports to locate gaps. These are aids, not substitutes for understanding behavior.
+Additional *optional* tools: `cargo-machete` for potential unused dependencies (verify false positives), `cargo-nextest` for running Rust tests, `ast-grep` for reviewed structural transformations, and coverage reports to locate gaps. These are aids, not substitutes for understanding behavior. Existing tools such as `cargo metadata`, targeted import/call-site searches, and Svelte/TypeScript type checks can provide dependency evidence. Do not install new tooling or set hard thresholds without an identified need; counts of files, lines, imports, or newtypes are diagnostic signals, **not automatic refactoring goals**.
+
+External Skills.sh or local skill packs are optional specialist references. Check that the actual `SKILL.md` exists and inspect its instructions/security implications. If a generic skill conflicts with the root service, security, IPC or ownership rules, follow the documented Ace contract and record the conflict instead of silently reconciling it; see [REVIEW_GATES.md](REVIEW_GATES.md).
 
 ## Backlog and delivery rules
 

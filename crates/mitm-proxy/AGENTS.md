@@ -4,6 +4,20 @@
 
 This is **mitm-proxy**, the MITM proxy workspace subcrate embedded in `ace-engine` under `crates/mitm-proxy`.
 
+## Refactoring boundaries
+
+Follow the root `../../AGENTS.md` and `../../docs/ai/REFACTORING_PLAYBOOK.md`
+for AI-led cleanup. For cross-crate changes read
+`../../docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md` and use
+`../../docs/ai/REVIEW_GATES.md` for independent review.
+The proxy owns transport/interception machinery, **not** engine policy,
+UI state, or service lifecycle. Similar network/proxy utilities do not justify
+new cross-crate dependencies unless ownership and runtime effects are proven.
+Preserve opaque passthrough for unintercepted/non-browser traffic, TLS/cert
+behavior, streaming/cancellation and error semantics; characterize them in
+focused tests before refactoring. Never let a structural cleanup broaden
+interception or weaken enforcement.
+
 ## Build & test
 
 ```sh

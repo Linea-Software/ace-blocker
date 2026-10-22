@@ -142,12 +142,13 @@ Copy this section for each verified or candidate finding. Do not fabricate evide
 - **Evidence:** Observed duplication, coupling, unnecessary dependency, obsolete path, or test gap. Cite concrete call sites.
 - **Cost:** Why this makes maintenance harder or increases regression risk.
 - **Smallest proposed improvement:** Favor simplification or deletion; state why a new abstraction is truly needed, if one is proposed.
+- **Architecture/type evidence:** Affected ownership, existing/proposed dependency edges, whether shared code represents the same stable concept, and any weak primitive/invalid-state risk. State why a new type, helper, cross-feature import or crate is genuinely needed; otherwise record why not.
 - **In scope / out of scope:** Explicit module boundaries; no bundled unrelated rewrites.
-- **Behavior and security invariants:** Identify the observable contracts to preserve.
+- **Behavior and security invariants:** Identify observable contracts, validation/serialization/DB compatibility and trust/privilege boundaries to preserve.
 - **Baseline / tests needed:** Commands, currently observed results, and any characterization tests to add before edits.
 - **Dependencies / blockers:** None or explicit linked items.
 - **Owner / branch or worktree:** Unassigned until work starts.
-- **Reviewer and review findings:** Independent review record.
+- **Reviewer and review findings:** Independent architecture/abstraction and domain/type passes, plus behavior/security review with file references; record unresolved conflicts.
 - **Outcome / verification / commit:** Fill in only after implementation and actual checks.
 
 ## Operating rules

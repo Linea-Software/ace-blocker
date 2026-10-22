@@ -1,4 +1,4 @@
-You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
+If the Svelte MCP server is connected, use its documentation tools for Svelte 5 and SvelteKit work. If unavailable, rely on the official documentation, repository source and checks; do not claim to have called a missing tool.
 
 ## Self-Maintenance (IMPORTANT)
 
@@ -56,6 +56,27 @@ This is a **Tauri + SvelteKit** application. The project serves as a UI wrapper 
 - **i18n**: Paraglide JS
 - **Engine client**: Typed remoc RPC through the Tauri backend; no local REST/HTTP client.
 
+## AI-led refactoring and feature boundaries
+
+Read the root `../../AGENTS.md` and, for refactoring, `../../docs/ai/REFACTORING_PLAYBOOK.md`.
+Consult `../../docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md` before sharing a
+route component, state store, or module across features; consult
+`../../docs/ai/DOMAIN_TYPES.md` for untrusted input and typed forms, and
+`../../docs/ai/REVIEW_GATES.md` for independent architecture/type reviews.
+These documents are authoritative for refactoring when generic skill advice
+conflicts; the IPC/security constraints in the root instructions always win.
+
+Keep route-specific components and state local by default. Reuse UI code when
+consumers genuinely share behavior and lifecycle, not solely because markup
+looks similar. Avoid making a shared store or `$effect` synchronization bus
+for otherwise independent routes. The existing `$lib/engine-client/` facade
+is the boundary to engine data; Tauri owns native IPC, Rust owns policy and
+validation at its trust boundary. Do not bypass authorization or recreate a
+local HTTP API. For user input, separate editable form strings from parsed,
+validated domain values; do not create branded types or Zod schemas without
+a real invariant/trust boundary. Verify relevant `bun run check` and
+`bun run test:unit` from this directory; native IPC needs separate tests.
+
 ## UI Identity / Rebuild Direction
 
 **Before any task that creates, redesigns, or materially alters visible UI, read `docs/ui-identity.md`.** It is the local source of truth for the approved Ace App redesign.
@@ -81,9 +102,15 @@ Key rules:
 - The shell workspace establishes `ace-workspace`, and `Inspector` establishes `inspector`; use those named containers when responsiveness depends on those surfaces rather than on the browser viewport.
 - Keep primary facts visible at the default desktop window size; only collapse secondary columns when the actual page container becomes narrow.
 
-### Mandatory UI skills
+### UI skill references (when available)
 
-For material UI work:
+For material UI work, first check which skills and MCP tools are actually installed
+and accessible. A skill listed here or in `skills-lock.json` is not proof that
+the implementation is present. Consult relevant verified skills when available;
+otherwise follow the Ace UI identity, Svelte docs and repository checks.
+No skill may override root security/IPC or domain-ownership rules.
+
+For material UI work, when available:
 
 1. Use `frontend-design`.
 2. Use `ui-ux-pro-max`.
@@ -107,7 +134,7 @@ Most tasks occur within `./src` (Frontend). The Rust backend (`src-tauri`) is pr
 - **Running Locally**: Both the desktop app and the website are ALWAYS running during development.
     - **App UI**: Accessible via browser at `http://localhost:1420`. You can connect through your browser to this address to access the app UI.
     - **App (Tauri)**: Access directly via the **Tauri MCP** tools.
-- **Committing Changes**: You **MUST** perform git commits yourself. Once you have finished a task and verified it, run `git add .` and `git commit -m "..."` with a descriptive message. Do NOT ask the user to commit for you.
+- **Committing Changes**: You **MUST** perform git commits yourself. Once you have finished a task and verified it, stage only the task's reviewed files (never `git add .`) and commit with a descriptive message, following root `AGENTS.md`. Do NOT ask the user to commit for you.
 
 ## Ace Engine Access
 
@@ -203,7 +230,13 @@ Before performing ANY task related to the technologies below, you MUST read the 
 
 CRITICAL: ALWAYS read `docs/engine-docs.md` to understand what the engine is and how it works before performing any task. This is the source of truth for backend concepts. For any visible UI/design task, also read `docs/ui-identity.md`.
 
-## Available MCP Tools:
+## MCP tool workflows (only when connected)
+
+The tools below are optional integrations and may not exist in every agent
+session. If absent, use the official documentation and local compiler/tests
+instead. Never block a documentation-only or unrelated refactor solely because
+an MCP tool or optional skill is unavailable; never claim a tool was run when
+it was not.
 
 ### 1. list-sections
 
@@ -227,11 +260,17 @@ After completing the code, ask the user if they want a playground link. Only cal
 
 ### 5. tauri-mcp-server
 
-You should have a Tauri MCP server at your disposal. Use it to test if your code works and to see if the UI is correct.
+When a Tauri MCP server is actually connected, use it for native runtime/UI checks. If unavailable, record native verification as not run; Vite/browser tests alone cannot validate remoc or installed Windows services.
 
-## Installed npx Skills
+## Skill catalog (availability must be checked)
 
-The following skills are installed via `npx skills` and are available to enhance AI agent knowledge for this project. They are located in `.agents/skills/` and are shared across Antigravity, Claude Code, Gemini CLI, and Qwen Code agents.
+Skill names below record previously selected references. Check for actual
+`SKILL.md` files before use; the catalog or lockfile does not guarantee
+installation. Inspect their content and executable scripts. Do not fetch or
+execute third-party skills automatically. During refactoring, root invariants
+and Ace-specific architecture/type guides take precedence.
+
+The following names were previously tracked via `npx skills`. They may or may not be available under `.agents/skills/` in the current workspace or agent environment; verify each relevant skill before use.
 
 ### Svelte / SvelteKit
 

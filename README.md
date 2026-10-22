@@ -55,7 +55,12 @@ Do not replace its service configuration with Tauri's basic bundler.
 
 AI agents should follow the [Refactoring Playbook](docs/ai/REFACTORING_PLAYBOOK.md)
 for read-only audits, bounded implementation, independent review, and verification.
-Track actionable findings in the [Technical Debt Backlog](docs/ai/TECH_DEBT_BACKLOG.md).
+Use the guides for [module boundaries and abstraction](docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md),
+[domain types and validation](docs/ai/DOMAIN_TYPES.md), and
+[architecture/type review gates](docs/ai/REVIEW_GATES.md) as needed.
+Track actionable, evidenced findings in the [Technical Debt Backlog](docs/ai/TECH_DEBT_BACKLOG.md).
+Root and nested `AGENTS.md` files are the entry points; generic external skills
+cannot override established security, IPC or ownership contracts.
 
 ## Repository boundaries
 

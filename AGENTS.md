@@ -51,13 +51,40 @@ Always run Bun from `apps/ace-app/`. The local engine API is maintained in
 `apps/ace-app/src/lib/engine-client/`; the generated external Ace Server
 client is independent of this remoc control interface.
 
-## Refactoring and technical debt
+## AI refactoring: read only what applies
 
-For AI-led audits, cleanup, and refactors, follow
-[`docs/ai/REFACTORING_PLAYBOOK.md`](docs/ai/REFACTORING_PLAYBOOK.md).
-Record findings and verification in
-[`docs/ai/TECH_DEBT_BACKLOG.md`](docs/ai/TECH_DEBT_BACKLOG.md).
+Use [`docs/ai/REFACTORING_PLAYBOOK.md`](docs/ai/REFACTORING_PLAYBOOK.md)
+for the audit → bounded implementation → independent review → verification workflow.
+Route to the relevant specialized guidance **before proposing an abstraction**:
+
+- [`docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md`](docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md):
+  ownership, dependency direction, Rust crate boundaries, Tauri/Svelte separation,
+  and when *not* to deduplicate unrelated modules.
+- [`docs/ai/DOMAIN_TYPES.md`](docs/ai/DOMAIN_TYPES.md):
+  meaningful newtypes, fallible validation and Rust/TypeScript trust boundaries;
+  avoid both primitive obsession **and** pointless wrappers.
+- [`docs/ai/REVIEW_GATES.md`](docs/ai/REVIEW_GATES.md):
+  architecture and domain-model review gates, independent diff assessment,
+  evidence requirements, and handling contradictory external skills.
+- [`docs/ai/TECH_DEBT_BACKLOG.md`](docs/ai/TECH_DEBT_BACKLOG.md):
+  verified findings, scope, risks, acceptance criteria and check results.
+
 Do not interpret a broad cleanup request as permission for a wholesale rewrite.
+Before introducing a dependency between previously independent modules, new
+shared/global state, a crate, a generic abstraction or a domain type, identify
+the owning concept, specific invariant/use case, alternatives and verification.
+Keep similar-looking but independently evolving domains separate. Prefer
+existing narrow interfaces; a small amount of duplication can be correct.
+If a refactor requires new product semantics, public contracts or privileged
+runtime boundaries, stop and propose a separately approved change.
+
+**Instruction priority:** root security/runtime constraints and actual contracts
+always win. Nested `AGENTS.md` adds component-specific requirements, but
+cannot weaken root guarantees. Third-party skills are optional guidance only:
+verify they are actually present, examine their contents, and resolve conflicts
+explicitly (see the review gates); do not assume a skills list is an install.
+Never turn subjective metrics (line count, import count, duplication) into
+automatic reasons to reorganize code.
 
 ## Changes
 

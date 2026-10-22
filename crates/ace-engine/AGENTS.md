@@ -8,11 +8,11 @@ Ace Engine is a high-performance network and program blocker. It is built as a *
 
 The core logic resides in the `src/core/` module, while the `src/` directory contains the service layer, database management, and the **system-wide MITM proxy** (`src/service/proxy/mod.rs`) which coordinates URL evaluation and script injection.
 
-Traffic redirection is handled by the pure-Rust **[`ace-tun`](crates/ace-tun/)**
+Traffic redirection is handled by the pure-Rust **[`ace-tun`](../ace-tun/)**
 crate — a cross-platform transparent redirect (WinTun on Windows, TUN on
 Linux, utun on macOS) that replaces the earlier WinDivert-based
 `proxy-redirect`.
-See [`crates/ace-tun/README.md`](crates/ace-tun/README.md) for architecture. The `ace-tun` and `mitm-proxy` crates are workspace members under `crates/`, so engine builds always use the in-repo sources rather than remote Git revisions.
+See [`ace-tun/README.md`](../ace-tun/README.md) for architecture. The `ace-tun` and `mitm-proxy` crates are workspace members under `crates/`, so engine builds always use the in-repo sources rather than remote Git revisions.
 Only browser processes are routed through the MITM proxy; other applications'
 connections are passed through or blocked at the kernel level without decryption.
 
@@ -95,6 +95,9 @@ Custom JavaScript injected into specific websites to reduce their addictive qual
 
 - **Make Invalid States Unrepresentable**: When facing complex logic, avoid huge functions. Instead, design custom data structures (like enums with data) that only allow valid states. This eliminates entire classes of bugs and makes the code self-documenting (e.g., `LockState` in `lock.rs`).
 - **Function Splitting**: If a task is big, break it down into smaller, focused functions.
+- **Meaningful type boundaries, not type proliferation**: Reuse the existing validated `nutype` domain types in `src/core/common/domain_types.rs`; introduce new ones only when they protect a demonstrated identity, secret or invariant. Prefer existing standard types where sufficient. Validate untrusted data at the correct boundary without changing remoc/DB formats in an incidental refactor.
+- **Feature ownership before sharing**: Similar Rust code in unrelated subsystems is not automatically one abstraction. Keep domain semantics with their owner; avoid broad `pub` exposure, global utilities, trait layers or crate splits without a concrete boundary.
+- **Refactoring workflow**: Read root `../../AGENTS.md`, `../../docs/ai/REFACTORING_PLAYBOOK.md` and the relevant sections of `../../docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md`, `../../docs/ai/DOMAIN_TYPES.md` and `../../docs/ai/REVIEW_GATES.md`. Check call sites, error/persistence order and tests before editing. Local API behavior, lock checks, process isolation and proxy interception are never negotiable.
 
 ---
 
@@ -233,9 +236,14 @@ only the key length.
 
 ---
 
-## 🦀 Installed Rust Skills
+## 🦀 Rust skill catalog (conditional)
 
-This project has the following Rust skills installed in `.agents/skills/`. **ALWAYS refer to these skills** when writing Rust code, as they contain idiomatic patterns, best practices, and testing conventions specific to the language.
+These names document earlier Rust skill references. Consult them only if their
+actual `SKILL.md` exists and can be inspected in the active environment.
+A list is not proof of availability; do not auto-install external code. Root
+security boundaries and Ace-specific architecture/type guides take priority.
+
+The following Rust skill references may help with idiomatic patterns, ownership, error handling, and testing **when their actual instructions are accessible**.
 
 | Skill | Description | When to Use |
 | :------------ | :----------------------------- | :---------- |
@@ -245,7 +253,7 @@ This project has the following Rust skills installed in `.agents/skills/`. **ALW
 | **rust-patterns** | Common Rust design patterns and idiomatic implementations | Structuring new features, refactoring |
 
 > [!IMPORTANT]
-> When implementing Rust code or reviewing Rust-specific logic, consult the relevant skill documentation in `.agents/skills/` before proceeding to ensure idiomatic and performant implementations.
+> If a referenced Rust skill is actually present, consult it as optional specialist guidance. If absent, use the repository's tests, code and docs; do not claim it was consulted.
 
 ---
 
