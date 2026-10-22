@@ -377,15 +377,14 @@ mod tests {
     /// process-global and tests run in parallel, so a per-test dir would race
     /// (TESTINFRA-01); import_backup reloads the script tree from this path.
     fn shared_resistance_dir() -> PathBuf {
-        static DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+        static DIR: std::sync::OnceLock<tempfile::TempDir> = std::sync::OnceLock::new();
         DIR.get_or_init(|| {
             let dir = tempfile::tempdir().expect("failed to create shared resistance dir");
-            let path = dir.path().to_path_buf();
-            std::fs::write(path.join("scripts-data.json"), r#"{"sites":{}}"#).unwrap();
-            std::mem::forget(dir); // keep alive for the whole test process
-            path
+            std::fs::write(dir.path().join("scripts-data.json"), r#"{"sites":{}}"#).unwrap();
+            dir
         })
-        .clone()
+        .path()
+        .to_path_buf()
     }
 
     fn setup_manager() -> (NetworkManager, tempfile::TempDir) {

@@ -38,15 +38,13 @@ impl Settings {
     /// dir's own contents.
     #[cfg(test)]
     pub fn shared_test_sites_dir() -> PathBuf {
-        static SHARED: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+        // Own the fixture in OnceLock instead of deliberately forgetting it.
+        // Shared lifetime remains process-wide until path injection is available.
+        static SHARED: std::sync::OnceLock<tempfile::TempDir> = std::sync::OnceLock::new();
         SHARED
-            .get_or_init(|| {
-                let dir = tempfile::tempdir().expect("failed to create shared test sites dir");
-                let path = dir.path().to_path_buf();
-                std::mem::forget(dir); // keep alive for the whole test process
-                path
-            })
-            .clone()
+            .get_or_init(|| tempfile::tempdir().expect("failed to create shared test sites dir"))
+            .path()
+            .to_path_buf()
     }
 
     pub fn set_test_resistance_scripts_dir(path: PathBuf) {
