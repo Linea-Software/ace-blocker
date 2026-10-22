@@ -534,8 +534,11 @@ impl From<(&crate::core::NetworkBlock, &chrono::DateTime<chrono::Local>)> for Ne
     }
 }
 
-impl From<&crate::core::network_block::site_pack::SitePack> for SitePackSchema {
-    fn from(pack: &crate::core::network_block::site_pack::SitePack) -> Self {
+impl TryFrom<&crate::core::network_block::site_pack::SitePack> for SitePackSchema {
+    type Error = crate::db::error::DBError;
+    fn try_from(
+        pack: &crate::core::network_block::site_pack::SitePack,
+    ) -> Result<Self, Self::Error> {
         // The bundle-origin label reflects disk state: a `.bundled` marker
         // file exists next to `pack.db` exactly while the data came from the
         // installer bundle (any engine update swaps the whole directory and
@@ -544,21 +547,21 @@ impl From<&crate::core::network_block::site_pack::SitePack> for SitePackSchema {
             .get_db_path()
             .join(crate::service::bundled_site_packs::BUNDLED_MARKER_FILE)
             .is_file();
-        Self {
+        Ok(Self {
             id: pack.get_id().to_string(),
             name: pack.get_name().to_string(),
             description: pack.get_description().unwrap_or_default().to_string(),
             icon: pack.get_icon().map(|v| v.to_string()),
             is_synced: pack.is_synced(),
             is_bundled,
-            entries_count: pack.get_entry_count(),
+            entries_count: pack.get_entry_count()?,
             requires_pro: pack.requires_pro(),
             last_updated_at: pack.get_last_updated_at().map(|dt| dt.to_rfc3339()),
             version: pack.get_version().map(|v| v.to_string()),
             // Default false; the route enriches it with the manager's lock
             // predicate (a bare SitePack cannot know which blocks reference it).
             is_locked: false,
-        }
+        })
     }
 }
 

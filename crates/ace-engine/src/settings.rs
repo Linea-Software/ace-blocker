@@ -129,9 +129,9 @@ impl Settings {
         dir
     }
 
-    pub fn get_site_pack_path(id: &str) -> PathBuf {
+    pub fn get_site_pack_path(id: &crate::core::SitePackId) -> PathBuf {
         let mut dir = Settings::get_site_packs_dir();
-        dir.push(id);
+        dir.push(id.to_string());
         dir
     }
 

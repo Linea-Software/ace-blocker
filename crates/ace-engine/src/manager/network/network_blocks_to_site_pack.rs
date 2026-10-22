@@ -24,28 +24,21 @@ impl NetworkManager {
     /// never downloaded, or whose database is missing — enforces nothing, so
     /// reporting it as block coverage would be a "ghost" claim (dashboard,
     /// onboarding).
-    pub fn count_synced_site_packs_of(&self, network_block_id: &NetworkBlockId) -> usize {
-        self.get_network_block_to_site_packs(network_block_id)
-            .map(|packs| {
-                packs
-                    .iter()
-                    .filter(|pack_arc| {
-                        pack_arc
-                            .read()
-                            .map(|pack| pack.is_synced())
-                            .unwrap_or_else(|error| {
-                                tracing::warn!(network_block_id = %network_block_id, %error,
-                                    "Site-pack read lock poisoned while counting coverage");
-                                false
-                            })
-                    })
-                    .count()
-            })
-            .unwrap_or_else(|error| {
-                tracing::warn!(network_block_id = %network_block_id, %error,
-                    "Unable to count synced site packs; reporting zero coverage");
-                0
-            })
+    pub fn count_synced_site_packs_of(
+        &self,
+        network_block_id: &NetworkBlockId,
+    ) -> Result<usize, NetworkManagerOpErr> {
+        let packs = self.get_network_block_to_site_packs(network_block_id)?;
+        let mut count = 0;
+        for pack_arc in packs {
+            let pack = pack_arc
+                .read()
+                .map_err(|_| NetworkManagerOpErr::RwLockPoison)?;
+            if pack.is_synced() {
+                count += 1;
+            }
+        }
+        Ok(count)
     }
 
     pub fn add_network_block_to_site_pack(

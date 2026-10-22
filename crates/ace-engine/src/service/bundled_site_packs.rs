@@ -29,16 +29,10 @@
 //! - local row marked `is_ignored` (the user deleted the pack from the UI) →
 //!   skip, never resurrect;
 //! - local data missing or invalid → fall back to the bundled copy;
-//! - local data valid:
-//!   - local version absent → keep (last-known-good; cannot prove the bundle
-//!     is newer);
-//!   - local version and the bundled version are both dotted-numeric
-//!     "bundle-style" versions and the local one is newer or equal → keep;
-//!   - both comparable and the bundled one is strictly newer → refresh from
-//!     the bundle;
-//!   - versions not comparable (e.g. a semver recorded by an online update) →
-//!     keep the local copy (the bundle only fills gaps, it never clobbers
-//!     data it cannot compare).
+//! - local data valid: keep downloaded/local data untouched; for previously
+//!   bundled data (identified by the marker), refresh only when the canonical
+//!   numeric three-component bundle version is strictly newer.
+//! - no legacy version formats are supported by this pre-release build.
 //!
 //! Packs installed from the bundle are marked with a small marker file
 //! (`.bundled`) next to `pack.db` so the API can report "bundled and ready"
@@ -48,8 +42,8 @@
 
 use crate::{
     core::{
-        BundleSchemaVersion, PackDbFormatVersion, RemoteSitePackId, Sha256Digest, SitePackVersion,
-        network_block::site_pack::site_pack_db::SitePackDB,
+        BundleSchemaVersion, PackDbFormatVersion, RemoteSitePackId, Sha256Digest, SitePackId,
+        SitePackVersion, network_block::site_pack::site_pack_db::SitePackDB,
     },
     db::EngineDB,
     settings::Settings,
@@ -351,12 +345,19 @@ fn import_bundled_pack(
     }
 
     // 4. Decide: does the local state already satisfy the precedence?
-    let live_dir = Settings::get_site_pack_path(
-        existing
-            .as_ref()
-            .map(|row| row.id.as_str())
-            .unwrap_or(entry.id.as_ref()),
-    );
+    let path_component = existing
+        .as_ref()
+        .map(|row| row.id.as_str())
+        .unwrap_or(entry.id.as_ref());
+    let site_pack_id = match SitePackId::try_new(path_component.to_string()) {
+        Ok(id) => id,
+        Err(error) => {
+            return BundledPackAction::Rejected(format!(
+                "unsafe persisted site-pack path component: {error}"
+            ));
+        }
+    };
+    let live_dir = Settings::get_site_pack_path(&site_pack_id);
     // Only an *existing row* can hold "valid local data": a stray directory
     // without a row (e.g. a crash between the directory swap and the row
     // insert) must be adopted via a fresh install, not silently kept.
@@ -364,21 +365,18 @@ fn import_bundled_pack(
 
     if local_valid {
         let local_version = existing.as_ref().and_then(|row| row.version.clone());
-        let keep = match local_version {
-            None => true, // last-known-good with no recorded version: keep
-            Some(local) => match SitePackVersion::try_new(local) {
-                Err(_) => true, // Unknown persisted format: never clobber last-known-good data.
-                Ok(local) => {
-                    if !local.is_bundle_style() || !entry.content_version.is_bundle_style() {
-                        // Not comparable (e.g. semver written by an online
-                        // update): the bundle only fills gaps.
-                        true
-                    } else {
-                        // Both bundle-style: keep unless the bundle is strictly newer.
-                        !entry.content_version.is_newer_than(&local)
-                    }
-                }
-            },
+        // Bundles may update only previous installer-bundled data, never
+        // replace a valid online/local pack based on arbitrary version strings.
+        let is_bundled = live_dir.join(BUNDLED_MARKER_FILE).is_file();
+        let keep = if !is_bundled {
+            true
+        } else {
+            match local_version {
+                None => true, // Preserve a valid last-known-good without version metadata.
+                Some(local) => SitePackVersion::try_new(local)
+                    .map(|current| !entry.content_version.is_newer_than(&current))
+                    .unwrap_or(false), // No legacy version recovery: replace invalid metadata.
+            }
         };
         if keep {
             info!(
@@ -843,6 +841,8 @@ mod tests {
             "pack-gaming-free",
             &["old-game.example.com"],
         );
+        // This row represents a previous installer bundle, not an online update.
+        std::fs::write(env.sites_dir.join("pack-gaming-free/.bundled"), b"").unwrap();
 
         let bytes = write_pack_db(
             &env.bundle_dir.join("pack-gaming-free"),

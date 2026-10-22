@@ -43,16 +43,11 @@ pub struct BackupScheduleEntry {
     pub sunday: bool,
 }
 
-fn default_enabled() -> bool {
-    true
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, JsonSchema, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BackupNetworkBlock {
     pub id: uuid::Uuid,
     pub name: String,
-    #[serde(default = "default_enabled")]
     pub enabled: bool,
     pub safe_search: bool,
     pub icon: Option<String>,
@@ -168,6 +163,8 @@ impl NetworkManager {
         })
     }
 
+    /// Restores each eligible resource atomically. If a later unit fails, prior
+    /// commits remain and the live manager is reloaded before returning Err.
     pub async fn import_backup(&mut self, backup: EngineBackup) -> Result<(), NetworkManagerOpErr> {
         if backup.version != "1.0" {
             return Err(NetworkManagerOpErr::InvalidBackupVersion {
@@ -175,201 +172,189 @@ impl NetworkManager {
             });
         }
 
-        use crate::core::NetworkBlockId;
-        use crate::db::models::NetworkBlockScheduleEntryModel;
+        let result = self.persist_backup_units(backup);
+        // The database may contain successfully restored units even if a later
+        // unit failed. Always reconcile live policy before leaving this method.
+        let db = self.get_db();
+        let reload = (|| {
+            let site_packs = Self::load_site_packs(&db)?;
+            let network_blocks = Self::load_net_lists(&db, &site_packs)?;
+            let script_tree = Self::try_load_resistance_mode(&db)?;
+            self.site_packs = site_packs;
+            self.network_blocks = network_blocks;
+            self.resistance_mode.script_tree = script_tree;
+            Ok::<(), NetworkManagerOpErr>(())
+        })();
+        match (result, reload) {
+            (Err(error), Err(reload_error)) => {
+                tracing::error!(%reload_error, "Backup failed and live policy reload also failed");
+                Err(error)
+            }
+            (Err(error), _) => Err(error),
+            (Ok(()), reload) => reload,
+        }
+    }
 
-        /////////////////
-        // SITE PACKS //
-        /////////////////
+    fn persist_backup_units(&mut self, backup: EngineBackup) -> Result<(), NetworkManagerOpErr> {
+        use crate::core::common::injectable_scripts::ScriptId;
+        use crate::core::common::schedule::ScheduleEntry;
+        use crate::core::importer::{SitePackFormat, SitePackSourceType};
+        use crate::core::{
+            NetworkBlockId, RemoteSitePackId, SitePackId, SitePackVersion, UserDefinedRules,
+        };
+        use crate::db::backup_restore_repo::RestoredNetworkBlock;
+        use crate::db::models::{
+            NetworkBlockScheduleEntryModel, SitePackModel, SitePackSourceModel,
+        };
+
         for pack in backup.custom_site_packs {
-            let id = pack.id;
-
-            // Never delete-and-recreate an existing pack row: default packs
-            // (id == remote_id, seeded by migration 0022), updater-registered
-            // remote packs, and previously restored custom packs must keep
-            // their row (remote linkage, version, data directory). The backup
-            // only *adds* packs that are genuinely missing locally.
-            if self.db.get_site_pack(&id).is_ok() {
+            let id = SitePackId::try_new(pack.id).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid site-pack ID in backup: {error}"),
+                }
+            })?;
+            if self.db.site_pack_exists(&id)? {
                 continue;
             }
 
-            // Restore a missing pack with its original tier and remote
-            // linkage (Issue 5: a backup taken from a Pro install must not
-            // come back as a Free local pack, and a server-managed pack must
-            // stay server-managed so the content updater keeps matching it).
-            match pack.remote_id {
-                Some(remote_id) => {
-                    self.db
-                        .add_remote_site_pack_with_optional_version(
-                            &id,
-                            &remote_id,
-                            &pack.name,
-                            pack.description.clone(),
-                            pack.requires_pro,
-                            pack.version,
-                        )
-                        .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                            message: error.to_string(),
+            let remote_id = pack
+                .remote_id
+                .map(RemoteSitePackId::try_new)
+                .transpose()
+                .map_err(|error| NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid remote site-pack ID in backup: {error}"),
+                })?;
+            let version = pack
+                .version
+                .map(SitePackVersion::try_new)
+                .transpose()
+                .map_err(|error| NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid site-pack version in backup: {error}"),
+                })?;
+            let source_models = pack
+                .sources
+                .into_iter()
+                .map(|source| {
+                    let source_type = SitePackSourceType::try_from(source.source_type.as_str())
+                        .map_err(|error| NetworkManagerOpErr::InternalError {
+                            message: format!("Invalid site-pack source type in backup: {error}"),
                         })?;
-                }
-                None => {
-                    self.db
-                        .add_site_pack(
-                            &id,
-                            &pack.name,
-                            pack.description.clone(),
-                            pack.requires_pro,
-                            pack.icon,
-                        )
-                        .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                            message: error.to_string(),
+                    let format =
+                        SitePackFormat::try_from(source.format.as_str()).map_err(|error| {
+                            NetworkManagerOpErr::InternalError {
+                                message: format!(
+                                    "Invalid site-pack source format in backup: {error}"
+                                ),
+                            }
                         })?;
-                }
-            }
-
-            for source in pack.sources {
-                self.db
-                    .add_site_pack_source(
-                        &uuid::Uuid::now_v7(),
-                        &id,
-                        &source.source,
-                        &source.source_type,
-                        &source.format,
-                    )
-                    .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                        message: error.to_string(),
-                    })?;
-            }
+                    Ok(SitePackSourceModel {
+                        id: uuid::Uuid::now_v7().to_string(),
+                        site_pack_id: id.to_string(),
+                        source: source.source,
+                        source_type: source_type.to_string(),
+                        format: format.to_string(),
+                    })
+                })
+                .collect::<Result<Vec<_>, NetworkManagerOpErr>>()?;
+            let model = SitePackModel {
+                id: id.to_string(),
+                remote_id: remote_id.map(|value| value.to_string()),
+                name: pack.name,
+                description: pack.description,
+                requires_pro: pack.requires_pro,
+                last_updated_at: None,
+                version: version.map(|value| value.to_string()),
+                is_ignored: false,
+                icon: pack.icon,
+            };
+            self.db.restore_missing_site_pack(&model, &source_models)?;
         }
 
-        ////////////////////
-        // NETWORK BLOCKS //
-        ////////////////////
         for block in backup.network_blocks {
             let id = block.id;
             if self.is_network_block_locked(&NetworkBlockId::from(id)) {
+                tracing::info!(%id, "Skipping locked network block during backup restore");
                 continue;
             }
 
-            if self
-                .db
-                .get_all_network_blocks()
-                .unwrap_or_else(|error| {
-                    tracing::warn!(%error, "Backup restore cannot enumerate existing blocks; using previous empty fallback");
-                    Vec::new()
+            let schedules = block
+                .schedules
+                .into_iter()
+                .map(|schedule| {
+                    let mut days = 0;
+                    for (weekday, present) in [
+                        schedule.monday,
+                        schedule.tuesday,
+                        schedule.wednesday,
+                        schedule.thursday,
+                        schedule.friday,
+                        schedule.saturday,
+                        schedule.sunday,
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        if present {
+                            days |= 1 << weekday;
+                        }
+                    }
+                    let row = NetworkBlockScheduleEntryModel {
+                        id: uuid::Uuid::now_v7().to_string(),
+                        network_block_id: id.to_string(),
+                        start_time: schedule.start_time,
+                        end_time: schedule.end_time,
+                        schedule_days_bitmask: days,
+                    };
+                    ScheduleEntry::from_raw(
+                        row.id.clone(),
+                        row.network_block_id.clone(),
+                        &row.start_time,
+                        &row.end_time,
+                        row.schedule_days_bitmask,
+                    )
+                    .map_err(|error| NetworkManagerOpErr::InternalError {
+                        message: format!("Invalid schedule in backup for {id}: {error}"),
+                    })?;
+                    Ok(row)
                 })
-                .iter()
-                .any(|b| b.id == id.to_string())
-            {
-                if let Err(error) = self.db.delete_network_block(&id) {
-                    tracing::warn!(%error, network_block_id = %id,
-                        "Backup restore could not remove an existing block");
+                .collect::<Result<Vec<_>, NetworkManagerOpErr>>()?;
+            let normalized_rules = UserDefinedRules::new(block.user_rules).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid user rule in backup for {id}: {error}"),
                 }
-            }
+            })?;
+            let site_pack_ids = block
+                .connected_site_packs
+                .into_iter()
+                .map(|id| {
+                    SitePackId::try_new(id).map_err(|error| NetworkManagerOpErr::InternalError {
+                        message: format!("Invalid site-pack reference in backup: {error}"),
+                    })
+                })
+                .collect::<Result<Vec<_>, NetworkManagerOpErr>>()?;
 
-            self.db
-                .add_network_block_with_id(&id, block.name)
-                .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                    message: error.to_string(),
-                })?;
-
-            self.db
-                .set_network_block_enabled(&id, block.enabled)
-                .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                    message: error.to_string(),
-                })?;
-
-            self.db
-                .set_safe_search(&id, block.safe_search)
-                .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                    message: error.to_string(),
-                })?;
-
-            if let Some(ref icon) = block.icon {
-                self.db
-                    .set_network_block_icon(&id, Some(icon.clone()))
-                    .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                        message: error.to_string(),
-                    })?;
-            }
-
-            let mut schedule_models = Vec::new();
-            for sched in block.schedules {
-                let mut bitmask = 0;
-                if sched.monday {
-                    bitmask |= 1 << 0;
-                }
-                if sched.tuesday {
-                    bitmask |= 1 << 1;
-                }
-                if sched.wednesday {
-                    bitmask |= 1 << 2;
-                }
-                if sched.thursday {
-                    bitmask |= 1 << 3;
-                }
-                if sched.friday {
-                    bitmask |= 1 << 4;
-                }
-                if sched.saturday {
-                    bitmask |= 1 << 5;
-                }
-                if sched.sunday {
-                    bitmask |= 1 << 6;
-                }
-
-                schedule_models.push(NetworkBlockScheduleEntryModel {
-                    id: "".to_string(),
-                    network_block_id: id.to_string(),
-                    start_time: sched.start_time,
-                    end_time: sched.end_time,
-                    schedule_days_bitmask: bitmask,
-                });
-            }
-
-            self.db
-                .replace_schedule_entries(&id, schedule_models)
-                .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                    message: error.to_string(),
-                })?;
-
-            let normalized_user_rules = crate::core::UserDefinedRules::new(block.user_rules)
-                .map_err(|error| NetworkManagerOpErr::InternalError {
-                    message: format!("invalid user rule in backup: {error}"),
-                })?
-                .rules()
-                .to_vec();
-
-            if !normalized_user_rules.is_empty() {
-                self.db
-                    .add_user_defined_rules(&id, &normalized_user_rules)
-                    .map_err(|error| NetworkManagerOpErr::DatabaseError {
-                        message: error.to_string(),
-                    })?;
-            }
-
-            for site_pack_id in block.connected_site_packs {
-                if let Err(error) = self.db.add_network_block_to_site_pack(&id, &site_pack_id) {
-                    tracing::warn!(%error, network_block_id = %id, site_pack_id = %site_pack_id,
-                        "Backup restore skipped a site-pack association");
-                }
-            }
+            self.db.restore_network_block(RestoredNetworkBlock {
+                id,
+                name: &block.name,
+                enabled: block.enabled,
+                safe_search: block.safe_search,
+                icon: block.icon.as_deref(),
+                schedules: &schedules,
+                user_rules: normalized_rules.rules(),
+                site_pack_ids: &site_pack_ids,
+            })?;
         }
 
-        /////////////////////
-        // RESISTANCE SCRIPTS //
-        /////////////////////
+        // Script state writes do not weaken locked policies: the same lock
+        // checks remain authoritative for changes during normal operation.
         for script_id in backup.deactivated_resistance_scripts {
-            if let Err(error) = self.db.set_script_state(&script_id.to_string(), false) {
-                tracing::warn!(%error, script_id = %script_id, "Backup restore skipped a script state");
-            }
+            let script_id = ScriptId::try_new(script_id).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid script ID in backup: {error}"),
+                }
+            })?;
+            self.db.set_script_state(script_id.as_ref(), false)?;
         }
-
-        let db_arc = self.get_db();
-        self.site_packs = Self::load_site_packs(&db_arc)?;
-        self.network_blocks = Self::load_net_lists(&db_arc, &self.site_packs)?;
-        self.resistance_mode.script_tree = Self::try_load_resistance_mode(&db_arc)?;
-
         Ok(())
     }
 }
@@ -416,19 +401,17 @@ mod tests {
     }
 
     #[test]
-    fn test_legacy_backup_without_enabled_defaults_to_enabled() {
-        let legacy = serde_json::json!({
+    fn backup_requires_explicit_enabled_state() {
+        let incomplete = serde_json::json!({
             "id": uuid::Uuid::now_v7(),
-            "name": "Legacy Block",
+            "name": "Missing Enabled",
             "safeSearch": false,
             "icon": null,
             "schedules": [],
             "userRules": [],
             "connectedSitePacks": []
         });
-
-        let block: BackupNetworkBlock = serde_json::from_value(legacy).unwrap();
-        assert!(block.enabled);
+        assert!(serde_json::from_value::<BackupNetworkBlock>(incomplete).is_err());
     }
 
     #[tokio::test]
@@ -520,5 +503,214 @@ mod tests {
             .get_network_block_from(&block_id)
             .expect("block must still exist");
         assert!(block.has_site_pack(&pack_id));
+    }
+    fn backup_block(id: uuid::Uuid, name: &str) -> BackupNetworkBlock {
+        BackupNetworkBlock {
+            id,
+            name: name.to_string(),
+            enabled: true,
+            safe_search: false,
+            icon: None,
+            schedules: vec![],
+            user_rules: vec![],
+            connected_site_packs: vec![],
+        }
+    }
+
+    #[tokio::test]
+    async fn backup_block_transaction_rolls_back_after_sql_write_failure() {
+        use diesel::connection::SimpleConnection;
+        let (mut manager, _temp) = setup_manager();
+        let block_id = manager
+            .create_network_block("Original".to_string())
+            .unwrap();
+        let raw_id = *block_id.as_ref();
+        let mut backup = EngineBackup {
+            version: "1.0".to_string(),
+            custom_site_packs: vec![],
+            network_blocks: vec![backup_block(raw_id, "Replacement")],
+            deactivated_resistance_scripts: vec![],
+        };
+        backup.network_blocks[0]
+            .schedules
+            .push(BackupScheduleEntry {
+                start_time: "09:00:00".to_string(),
+                end_time: "10:00:00".to_string(),
+                monday: true,
+                tuesday: false,
+                wednesday: false,
+                thursday: false,
+                friday: false,
+                saturday: false,
+                sunday: false,
+            });
+
+        let db = manager.get_db();
+        let mut connection = db.get_db_connection().unwrap();
+        connection.batch_execute(
+            "CREATE TRIGGER reject_restored_schedule BEFORE INSERT ON network_block_schedule_entries
+             BEGIN SELECT RAISE(ABORT, 'injected schedule write failure'); END;",
+        ).unwrap();
+        drop(connection);
+
+        assert!(manager.import_backup(backup).await.is_err());
+        let block = db
+            .get_all_network_blocks()
+            .unwrap()
+            .into_iter()
+            .find(|row| row.id == raw_id.to_string())
+            .unwrap();
+        assert_eq!(
+            block.name, "Original",
+            "delete/insert must roll back as one unit"
+        );
+        assert!(db.get_schedule_entry_models_of(&raw_id).unwrap().is_empty());
+        assert_eq!(
+            manager
+                .get_network_block_from(&block_id)
+                .unwrap()
+                .get_name(),
+            "Original",
+            "live policy must remain consistent after failed transaction"
+        );
+    }
+
+    #[tokio::test]
+    async fn backup_partial_success_reloads_all_committed_units_before_err() {
+        let (mut manager, _temp) = setup_manager();
+        let first = manager
+            .create_network_block("First Original".to_string())
+            .unwrap();
+        let second = manager
+            .create_network_block("Second Original".to_string())
+            .unwrap();
+
+        let mut invalid_second = backup_block(*second.as_ref(), "Second Replacement");
+        invalid_second
+            .connected_site_packs
+            .push("not-present-pack".to_string());
+        let backup = EngineBackup {
+            version: "1.0".to_string(),
+            custom_site_packs: vec![],
+            network_blocks: vec![
+                backup_block(*first.as_ref(), "First Replacement"),
+                invalid_second,
+            ],
+            deactivated_resistance_scripts: vec![],
+        };
+        assert!(manager.import_backup(backup).await.is_err());
+        assert_eq!(
+            manager.get_network_block_from(&first).unwrap().get_name(),
+            "First Replacement",
+        );
+        assert_eq!(
+            manager.get_network_block_from(&second).unwrap().get_name(),
+            "Second Original",
+        );
+        let rows = manager.get_db().get_all_network_blocks().unwrap();
+        assert!(
+            rows.iter()
+                .any(|row| row.id == first.to_string() && row.name == "First Replacement")
+        );
+        assert!(
+            rows.iter()
+                .any(|row| row.id == second.to_string() && row.name == "Second Original")
+        );
+    }
+
+    #[tokio::test]
+    async fn invalid_site_pack_sources_cannot_leave_partial_restored_row() {
+        let (mut manager, _temp) = setup_manager();
+        let backup = EngineBackup {
+            version: "1.0".to_string(),
+            custom_site_packs: vec![BackupSitePack {
+                id: "test-invalid-backup-source".to_string(),
+                remote_id: None,
+                requires_pro: false,
+                version: None,
+                name: "Test".to_string(),
+                description: None,
+                icon: None,
+                sources: vec![BackupSitePackSource {
+                    source: "https://example.com/list".to_string(),
+                    source_type: "unexpected".to_string(),
+                    format: "standard".to_string(),
+                }],
+            }],
+            network_blocks: vec![],
+            deactivated_resistance_scripts: vec![],
+        };
+
+        assert!(manager.import_backup(backup).await.is_err());
+        let id = crate::core::SitePackId::try_new("test-invalid-backup-source").unwrap();
+        assert!(!manager.get_db().site_pack_exists(&id).unwrap());
+    }
+    #[tokio::test]
+    async fn backup_site_pack_sources_rollback_inserted_pack_on_sql_failure() {
+        use diesel::connection::SimpleConnection;
+
+        let (mut manager, _temp) = setup_manager();
+        let db = manager.get_db();
+        let mut connection = db.get_db_connection().unwrap();
+        connection
+            .batch_execute(
+                "CREATE TRIGGER reject_backup_source BEFORE INSERT ON site_pack_sources
+             BEGIN SELECT RAISE(ABORT, 'injected source write failure'); END;",
+            )
+            .unwrap();
+        drop(connection);
+
+        let backup = EngineBackup {
+            version: "1.0".to_string(),
+            custom_site_packs: vec![BackupSitePack {
+                id: "test-source-rollback".to_string(),
+                remote_id: None,
+                requires_pro: false,
+                version: None,
+                name: "Atomic Pack".to_string(),
+                description: None,
+                icon: None,
+                sources: vec![BackupSitePackSource {
+                    source: "https://example.com/list".to_string(),
+                    source_type: "url".to_string(),
+                    format: "standard".to_string(),
+                }],
+            }],
+            network_blocks: vec![],
+            deactivated_resistance_scripts: vec![],
+        };
+
+        assert!(manager.import_backup(backup).await.is_err());
+        let id = crate::core::SitePackId::try_new("test-source-rollback").unwrap();
+        assert!(
+            !db.site_pack_exists(&id).unwrap(),
+            "pack and sources must roll back together"
+        );
+    }
+
+    #[tokio::test]
+    async fn backup_restore_skips_locked_blocks_without_weakening_policy() {
+        use crate::core::{Lock, LockState};
+
+        let (mut manager, _temp) = setup_manager();
+        let block_id = manager
+            .create_network_block("Protected".to_string())
+            .unwrap();
+        manager
+            .set_lock(&block_id, Lock::from(LockState::SoftUnlockable))
+            .unwrap();
+
+        let backup = EngineBackup {
+            version: "1.0".to_string(),
+            custom_site_packs: vec![],
+            network_blocks: vec![backup_block(*block_id.as_ref(), "Unwanted replacement")],
+            deactivated_resistance_scripts: vec![],
+        };
+
+        manager.import_backup(backup).await.unwrap();
+        let block = manager.get_network_block_from(&block_id).unwrap();
+        assert_eq!(block.get_name(), "Protected");
+        assert_eq!(block.get_lock().get_state(), LockState::SoftUnlockable);
+        assert!(block.is_locked(&chrono::Local::now()));
     }
 }

@@ -1,4 +1,5 @@
 pub mod account_repo;
+pub mod backup_restore_repo;
 pub mod blocked_attempts_repo;
 pub mod exceptions_repo;
 pub mod lock_repo;
@@ -307,7 +308,7 @@ mod migration_seed_tests {
             .expect("social media block must load");
         // The pack connection resolved in memory instead of being skipped as
         // a dangling reference (MGR-01).
-        assert!(social_block.has_site_pack(&SitePackId::from(SOCIAL_PACK.to_string())));
+        assert!(social_block.has_site_pack(&SitePackId::try_new(SOCIAL_PACK.to_string()).unwrap()));
     }
 
     /// A DB that already ran 0021 upgrades cleanly: the old seeded rows are

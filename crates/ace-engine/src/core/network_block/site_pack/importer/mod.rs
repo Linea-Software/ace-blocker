@@ -40,21 +40,13 @@ pub enum SitePackSourceType {
     File,
 }
 
-#[nutype(derive(
-    Debug,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    From,
-    Into,
-    Display,
-    Deref,
-    AsRef,
-    Serialize,
-    Deserialize,
-    JsonSchema,
-))]
+#[nutype(
+    validate(predicate = crate::core::common::domain_types::is_safe_site_pack_id),
+    derive(
+        Debug, Clone, PartialEq, Eq, Hash, TryFrom, FromStr, Display,
+        Deref, AsRef, Serialize, Deserialize, JsonSchema
+    )
+)]
 pub struct SitePackId(String);
 
 #[nutype(derive(Debug, Clone, PartialEq, Eq, From, Into, Display, Deref, AsRef))]
@@ -96,5 +88,28 @@ impl From<ace_domain_blocklist::DomainLineParsingError> for SitePackImportError 
         SitePackImportError::ParsingFailure {
             message: error.to_string(),
         }
+    }
+}
+
+#[cfg(test)]
+mod site_pack_id_tests {
+    use super::SitePackId;
+
+    #[test]
+    fn rejects_unsafe_identifiers_and_serialized_empty_ids() {
+        for invalid in [
+            "",
+            ".",
+            "..",
+            "../etc",
+            "C:foo",
+            "folder/child",
+            "CON",
+            "pack?",
+        ] {
+            assert!(SitePackId::try_new(invalid).is_err(), "{invalid}");
+        }
+        assert!(serde_json::from_str::<SitePackId>(r#""""#).is_err());
+        assert!(SitePackId::try_new("pack-adult-free").is_ok());
     }
 }

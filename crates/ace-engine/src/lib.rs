@@ -294,7 +294,7 @@ async fn initialize_network_manager(
         Ok(m) => m,
         Err(error) => {
             tracing::error!(
-                "Failed to initialize NetworkManager: {}. Starting in Safe Mode.",
+                "CRITICAL: NetworkManager failed to load: {}. Starting with EMPTY POLICY under the approved availability policy; persisted blocks are NOT enforced until recovered.",
                 error
             );
             NetworkManager::new_empty(db.clone(), account_manager)

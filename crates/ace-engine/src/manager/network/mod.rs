@@ -328,19 +328,20 @@ impl NetworkManager {
         tracing::info!("Loading {} site packs from database", hl_models.len());
 
         for model in hl_models {
-            let site_pack_id = SitePackId::from(model.id.clone());
-
-            let source_models = match db.get_site_pack_sources(&model.id) {
-                Ok(sources) => sources,
-                Err(error) => {
-                    tracing::error!(
-                        "Failed to fetch sources for site pack {}: {}",
-                        site_pack_id,
-                        error
-                    );
-                    Vec::new()
+            let site_pack_id = SitePackId::try_new(model.id.clone()).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid persisted site-pack ID: {error}"),
                 }
-            };
+            })?;
+
+            let source_models = db.get_site_pack_sources(&model.id).map_err(|error| {
+                NetworkManagerOpErr::DatabaseError {
+                    message: format!(
+                        "Cannot load site-pack sources for {}: {error}",
+                        site_pack_id
+                    ),
+                }
+            })?;
 
             tracing::info!(
                 "Loading site pack: {} ({}) with {} sources",
@@ -368,7 +369,11 @@ impl NetworkManager {
 
                     Ok(SitePackSource {
                         id: SitePackSourceId::from(source_id),
-                        site_pack_id: SitePackId::from(source_model.site_pack_id),
+                        site_pack_id: SitePackId::try_new(source_model.site_pack_id).map_err(
+                            |error| NetworkManagerOpErr::InternalError {
+                                message: format!("Invalid persisted site-pack ID: {error}"),
+                            },
+                        )?,
                         source: source_model.source,
                         source_type,
                         format,
@@ -404,10 +409,10 @@ impl NetworkManager {
                 model.requires_pro,
                 version,
                 model.icon,
-                &Settings::get_site_pack_path(&model.id),
+                &Settings::get_site_pack_path(&site_pack_id),
                 sources,
                 last_updated_at,
-            );
+            )?;
 
             site_packs.insert(site_pack_id, Arc::new(RwLock::new(site_pack)));
         }
@@ -446,7 +451,16 @@ impl NetworkManager {
                 })?;
                 Ok((
                     NetworkBlockId::from(net_list_uuid),
-                    site_packs.into_iter().map(SitePackId::from).collect(),
+                    site_packs
+                        .into_iter()
+                        .map(|id| {
+                            SitePackId::try_new(id).map_err(|error| {
+                                NetworkManagerOpErr::InternalError {
+                                    message: format!("Invalid site-pack association ID: {error}"),
+                                }
+                            })
+                        })
+                        .collect::<Result<Vec<_>, _>>()?,
                 ))
             })
             .collect::<Result<HashMap<_, _>, NetworkManagerOpErr>>()?;

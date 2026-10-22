@@ -7,6 +7,8 @@
 
 > **Nota:** questa versione contiene **soltanto le questioni ancora aperte**; gli interventi implementati e verificati sono stati rimossi dalla queue e dai dettagli. La ricognizione ha coperto l'albero sorgente e i principali flussi per sottosistema, con letture mirate dei call site e ricerche statiche; non costituisce una review riga-per-riga di ogni sorgente generato/migrazione/test. `verified` significa che la struttura o il comportamento descritto è direttamente visibile nei file; **non** significa che un bug sia riprodotto in runtime. `candidate` richiede ulteriori verifiche; `decision` richiede approvazione della semantica prima di qualsiasi modifica. Priorità riferite al rischio e al costo di manutenzione, non a line count.
 
+**Decisioni approvate (2026-10-22):** vedere [`ACE_ENGINE_REFACTOR_DECISIONS.md`](ACE_ENGINE_REFACTOR_DECISIONS.md). Ace Blocker è pre-release, quindi **la retrocompatibilità con formati/dati/sistemi legacy non è richiesta**; le policy AE-01/03/04/05/11/15/16/26 hanno una scelta di prodotto esplicita. La queue qui sotto rimane un elenco di interventi aperti finché codice e verifiche non sono completati.
+
 ## Invarianti non negoziabili
 
 - Blocchi, schedule, lock (anche uninstall gate), safe search, Resistance Mode e priorità delle eccezioni invariati; in caso di fallimento di storage o caricamento non presupporre un nuovo comportamento senza decisione esplicita.
@@ -32,19 +34,19 @@
 
 | ID | Priorità | Stato | Area | Motivo / prossima azione |
 | --- | --- | --- | --- | --- |
-| AE-01 | P0, decision | candidate | Startup/enforcement | Valutare fallback del manager vuoto dopo errore di caricamento |
-| AE-03 | P1, decision | candidate | Site-pack paths/ID | Validare gli ID prima di derivarne percorsi filesystem |
-| AE-04 | P1, decision | candidate | Site-pack DB errors | Evitare di confondere errore SQLite e `NotBlocked` |
-| AE-05 | P1, decision | verified | Backup restore | All-or-nothing / errori ignorati |
-| AE-11 | P1, decision | candidate | Backup/scripts activation | Stato filesystem/DB durante errori di commit |
+| AE-01 | P0 | decision approved, behavior retained | Startup/enforcement | Fail-open con manager vuoto e log critico approvato; recovery end-to-end VM non verificato |
+| AE-03 | P1 | implementation, review pending | Site-pack paths/ID | Parser ID fallibile, componenti sicuri e path tipizzati; verificare tutti i file ingress |
+| AE-04 | P1 | implementation, review pending | Site-pack DB errors | Result distinto, warn e fail-open solo alla boundary; fault injection superata |
+| AE-05 | P1 | implementation, review pending | Backup restore | Restore SQLite atomico per pack e blocco; lock invariati, fault injection SQL e reload su errore verificati |
+| AE-11 | P1 | partial | Backup/scripts activation | Rollback su errore SQL + test; resta recovery crash tra rename/DB e VM Windows |
 | AE-13 | P2 | verified | Content updater | Mutex servizio trattenuto nel download/staging/commit |
 | AE-14 | P2 | verified | API bridge | Map dei nomi operazioni replicata rispetto al trait |
-| AE-15 | P2, decision | candidate | Version/clock | Comparazione versioni e schedule rounding da caratterizzare |
-| AE-16 | P2, decision | verified | Domain ID | `ScriptId` e `SitePackId` non impongono invarianti propri |
+| AE-15 | P2 | partial | Version/clock | Versioni canoniche X.Y.Z + test; schedule mantenuti al minuto, gate DST/round-trip ancora aperti |
+| AE-16 | P2 | implementation, review pending | Domain ID | ID vuoti invalidi, serde/DB/RPC validati, test; review consumer finale richiesta |
 | AE-17 | P2 | candidate | Site-pack importer | Ripetizione gestione download/progress |
 | AE-18 | P2 | candidate | DB pool | Duplicazione infrastrutturale connessione/migrazione |
 | AE-19 | P2 | verified | Test | Override process-global delle directory di test |
-| AE-26 | P2 | candidate | Lock/errors | Fallback documentati con warning; contratto di errore ancora da definire |
+| AE-26 | P2 | partial | Lock/errors | `Result` propagato in dashboard, count, site-pack open, updater, restore e version-check; restano fallback da valutare ai confini non modificati |
 
 ---
 
@@ -151,10 +153,12 @@
 | --- | --- |
 | Policy/lock/DB | `cargo test -p ace-engine --lib -- --test-threads=1`, test ad hoc DB write-failure, round-trip reboot, locked/unlocked |
 | RPC/security | `cargo test -p ace-engine --lib` (remoc), Named Pipe DACL/capability in VM Windows, release debug-gates |
-| Import/backup | Staging/cancel, backup storico, SQLite error injection, checksum/zip bomb, path traversal, retry |
+| Import/backup | Staging/cancel, backup corrente, SQLite error injection, checksum/zip bomb, path traversal, retry |
 | Proxy/sitepack | Test su `service::proxy`, HTTP/HTTPS tunnel, DOM/script inject, non-browser non decrypt, cache invalidation |
 | Watchdog/installer | `cargo test -p ace-watchdog-protocol` e VM SCM/recovery/maintenance/uninstall gate |
 | Rust compile | `cargo fmt --all --check` (solo lettura), `cargo check -p ace-engine --all-targets`, lint mirato senza autofix |
 | Audit/documentazione | Diff review architettura + dominio/tipi + correttezza **indipendenti**, percorsi e gate aggiornati |
 
-**Stato di verifica (2026-10-22):** gli interventi a basso rischio sono stati applicati nell'engine e rimossi da questo elenco. La suite `cargo test -p ace-engine --lib -- --test-threads=1` ha superato **227/227** test; `cargo check -p ace-engine --all-targets --all-features` e il controllo `git diff --check` sono passati. Solo i file Rust modificati sono stati formattati: `cargo fmt --all --check` continua a rilevare difformità preesistenti in binari e codice generato non toccati. Non sono stati eseguiti test su installer/watchdog in VM Windows né una review indipendente conclusiva. Il backlog generale resta `docs/ai/TECH_DEBT_BACKLOG.md` (in particolare TD-001/002/003/004/006/012/014).
+**Baseline precedente (2026-10-22):** prima delle decisioni pre-release, 227/227 test engine superati; `cargo fmt --all --check` riportava difformità preesistenti in binari e sorgenti generati non modificati.
+
+**Progresso implementazione (2026-10-22):** `cargo test -p ace-engine --lib -- --test-threads=1`: **238 superati, 0 falliti**. `cargo check -p ace-engine --all-targets --all-features`: passato; `cargo test -p ace-watchdog-protocol`: 3/3; `git diff --check`: passato. Il test aggiuntivo di restore su blocco locked ha portato i test mirati del backup a 8/8 dopo la suite completa. Aggiunti test di fault injection per restore di pack e blocchi (rollback per unità e sincronizzazione memoria/DB dopo un errore), commit scripts con errore SQLite, errori di membership site pack, ID/path traversal e versioni canoniche. `SitePack::from` propaga adesso l'errore di apertura DB. Nessun test su servizi installer/watchdog installati in VM Windows, recovery tramite crash reale, oppure review indipendente conclusiva. Il backlog generale rimane `docs/ai/TECH_DEBT_BACKLOG.md` (TD-001/002/003/004/006/012/014).

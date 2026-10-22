@@ -253,6 +253,8 @@ impl NetworkManager {
             .to_path_buf();
         let unique = uuid::Uuid::new_v4();
         let old_dir = parent.join(format!(".resistance_scripts.old-{unique}"));
+        let previous_tree = self.resistance_mode.script_tree.clone();
+        let previous_load_error = self.resistance_mode.scripts_load_error.clone();
 
         // Atomic swap: live dir -> old dir, staged dir -> live dir.
         let live_exists = live_dir.exists();
@@ -281,8 +283,41 @@ impl NetworkManager {
             return Err(error);
         }
 
-        // Mark the version installed only now that everything succeeded.
-        self.db.update_scripts_version(staged.version.clone())?;
+        // SQLite is not part of the filesystem rename transaction. If it
+        // rejects the version write, restore the previous working disk + memory
+        // state; never publish the new tree under the old persisted version.
+        if let Err(db_error) = self.db.update_scripts_version(staged.version.clone()) {
+            let failed_dir = parent.join(format!(".resistance_scripts.failed-{unique}"));
+            std::fs::rename(&live_dir, &failed_dir).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!(
+                        "script version persistence failed ({db_error}); unable to quarantine activated scripts for rollback: {error}; old scripts retained at {}",
+                        old_dir.display()
+                    ),
+                }
+            })?;
+
+            if live_exists {
+                if let Err(error) = std::fs::rename(&old_dir, &live_dir) {
+                    // Keep the previous bundle on disk for explicit recovery.
+                    let _ = std::fs::rename(&failed_dir, &live_dir);
+                    return Err(NetworkManagerOpErr::InternalError {
+                        message: format!(
+                            "script version persistence failed ({db_error}); rollback failed ({error}); previous scripts preserved at {}",
+                            old_dir.display()
+                        ),
+                    });
+                }
+            }
+
+            self.resistance_mode.script_tree = previous_tree;
+            self.resistance_mode.scripts_load_error = previous_load_error;
+            if let Err(error) = crate::core::utils::remove_superseded_dir(&failed_dir) {
+                warn!(%error, path = %failed_dir.display(),
+                    "failed to clean up uncommitted resistance scripts");
+            }
+            return Err(db_error.into());
+        }
         self.resistance_mode.scripts_version = Some(staged.version.clone());
 
         // Best-effort cleanup of the superseded directory. `NotFound`
@@ -358,7 +393,10 @@ impl NetworkManager {
         let states = db.get_all_script_states()?;
         for state in states {
             tree.set_script_enabled(
-                &crate::core::common::injectable_scripts::ScriptId::from(state.script_id),
+                &crate::core::common::injectable_scripts::ScriptId::try_new(state.script_id)
+                    .map_err(|error| NetworkManagerOpErr::InternalError {
+                        message: format!("Invalid persisted script identifier: {error}"),
+                    })?,
                 state.enabled,
             );
         }
@@ -517,7 +555,7 @@ mod tests {
             manager
                 .get_resistance_mode()
                 .script_tree
-                .get_script_by_id(&ScriptId::from("grayscale"))
+                .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
                 .is_some()
         );
 
@@ -535,11 +573,12 @@ mod tests {
         // The new tree is live.
         let tree = &manager.get_resistance_mode().script_tree;
         assert!(
-            tree.get_script_by_id(&ScriptId::from("shorts")).is_some(),
+            tree.get_script_by_id(&ScriptId::try_new("shorts").unwrap())
+                .is_some(),
             "new scripts must be live after the commit"
         );
         assert_eq!(
-            tree.get_script_by_id(&ScriptId::from("grayscale"))
+            tree.get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
                 .unwrap()
                 .name,
             "Grayscale v2"
@@ -575,6 +614,45 @@ mod tests {
     }
 
     #[test]
+    fn commit_resistance_scripts_sqlite_failure_rolls_back_disk_and_memory() {
+        use diesel::RunQueryDsl;
+
+        let _guard = TEST_DIR_LOCK.lock().unwrap();
+        let (temp, db, mut manager) = setup(&[("grayscale", "Grayscale", "grayscale.js")]);
+        manager.reload_scripts().unwrap();
+
+        // Failure injection: updating the version fails after activating the catalog.
+        let mut conn = db.get_db_connection().unwrap();
+        diesel::sql_query("DROP TABLE resistance_mode_settings")
+            .execute(&mut conn)
+            .unwrap();
+        drop(conn);
+
+        let bundle = staged_bundle(
+            temp.path(),
+            "resistance_scripts",
+            "2.0",
+            &[("shorts", "Shorts", "shorts.js")],
+        );
+        assert!(manager.commit_resistance_scripts(bundle).is_err());
+        assert!(manager.get_resistance_mode().scripts_version.is_none());
+        let tree = &manager.get_resistance_mode().script_tree;
+        assert!(
+            tree.get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
+                .is_some()
+        );
+        assert!(
+            tree.get_script_by_id(&ScriptId::try_new("shorts").unwrap())
+                .is_none()
+        );
+        let live_catalog =
+            std::fs::read_to_string(temp.path().join("resistance_scripts/scripts-data.json"))
+                .unwrap();
+        assert!(live_catalog.contains("Grayscale"));
+        assert!(!live_catalog.contains("Shorts"));
+    }
+
+    #[test]
     fn commit_resistance_scripts_failure_preserves_the_previous_bundle() {
         let _guard = TEST_DIR_LOCK.lock().unwrap();
         let (temp, _db, mut manager) = setup(&[("grayscale", "Grayscale", "grayscale.js")]);
@@ -596,7 +674,7 @@ mod tests {
             manager
                 .get_resistance_mode()
                 .script_tree
-                .get_script_by_id(&ScriptId::from("grayscale"))
+                .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
                 .is_some(),
             "the previous tree must survive"
         );
@@ -628,7 +706,7 @@ mod tests {
             .unwrap()
             .batch_execute("DROP TABLE script_states")
             .unwrap();
-        let script_id = ScriptId::from("grayscale");
+        let script_id = ScriptId::try_new("grayscale").unwrap();
         assert!(manager.set_script_enabled(&script_id, false).is_err());
         assert!(
             manager
@@ -682,10 +760,10 @@ mod tests {
 
         // Disable two scripts by id.
         manager
-            .set_script_enabled(&ScriptId::from("grayscale"), false)
+            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), false)
             .unwrap();
         manager
-            .set_script_enabled(&ScriptId::from("captcha"), false)
+            .set_script_enabled(&ScriptId::try_new("captcha").unwrap(), false)
             .unwrap();
 
         // Catalog update: grayscale renamed, captcha removed, shorts added.
@@ -704,17 +782,20 @@ mod tests {
 
         // Renamed script keeps its disabled state — the id is the key.
         let grayscale = tree
-            .get_script_by_id(&ScriptId::from("grayscale"))
+            .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
             .expect("grayscale should still be in the catalog");
         assert_eq!(grayscale.name, "Grayscale v2", "metadata should refresh");
         assert!(!grayscale.enabled, "disabled state must survive a rename");
 
         // Removed script is gone from the tree.
-        assert!(tree.get_script_by_id(&ScriptId::from("captcha")).is_none());
+        assert!(
+            tree.get_script_by_id(&ScriptId::try_new("captcha").unwrap())
+                .is_none()
+        );
 
         // New script id arrives enabled.
         let shorts = tree
-            .get_script_by_id(&ScriptId::from("shorts"))
+            .get_script_by_id(&ScriptId::try_new("shorts").unwrap())
             .expect("shorts should be in the catalog");
         assert!(shorts.enabled, "new script id should default to enabled");
     }
@@ -726,7 +807,7 @@ mod tests {
 
         manager.reload_scripts().unwrap();
         manager
-            .set_script_enabled(&ScriptId::from("grayscale"), false)
+            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), false)
             .unwrap();
 
         // v2: grayscale removed from the catalog.
@@ -737,7 +818,7 @@ mod tests {
             manager
                 .get_resistance_mode()
                 .script_tree
-                .get_script_by_id(&ScriptId::from("grayscale"))
+                .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
                 .is_none()
         );
 
@@ -751,7 +832,7 @@ mod tests {
         let grayscale = manager
             .get_resistance_mode()
             .script_tree
-            .get_script_by_id(&ScriptId::from("grayscale"))
+            .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
             .expect("grayscale should be back");
         assert!(
             !grayscale.enabled,
@@ -769,10 +850,10 @@ mod tests {
 
         manager.reload_scripts().unwrap();
         manager
-            .set_script_enabled(&ScriptId::from("grayscale"), false)
+            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), false)
             .unwrap();
         manager
-            .set_script_enabled(&ScriptId::from("captcha"), false)
+            .set_script_enabled(&ScriptId::try_new("captcha").unwrap(), false)
             .unwrap();
 
         // Export captures the deactivated ids.
@@ -792,10 +873,10 @@ mod tests {
         // Flip both back on, then import the backup: states must round-trip
         // and be applied after the reload-from-catalog.
         manager
-            .set_script_enabled(&ScriptId::from("grayscale"), true)
+            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), true)
             .unwrap();
         manager
-            .set_script_enabled(&ScriptId::from("captcha"), true)
+            .set_script_enabled(&ScriptId::try_new("captcha").unwrap(), true)
             .unwrap();
         assert!(all_enabled(&manager));
 
@@ -804,13 +885,13 @@ mod tests {
         let tree = &manager.get_resistance_mode().script_tree;
         assert!(
             !tree
-                .get_script_by_id(&ScriptId::from("grayscale"))
+                .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
                 .unwrap()
                 .enabled
         );
         assert!(
             !tree
-                .get_script_by_id(&ScriptId::from("captcha"))
+                .get_script_by_id(&ScriptId::try_new("captcha").unwrap())
                 .unwrap()
                 .enabled
         );
@@ -828,7 +909,7 @@ mod tests {
             manager
                 .get_resistance_mode()
                 .script_tree
-                .get_script_by_id(&ScriptId::from("grayscale"))
+                .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
                 .is_some()
         );
         assert!(manager.get_resistance_mode().scripts_load_error.is_none());
@@ -846,7 +927,7 @@ mod tests {
             manager
                 .get_resistance_mode()
                 .script_tree
-                .get_script_by_id(&ScriptId::from("grayscale"))
+                .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
                 .is_some(),
             "previous working tree must be preserved on failure"
         );
@@ -894,14 +975,14 @@ mod tests {
 
         // All scripts disabled → no_scripts_enabled.
         manager
-            .set_script_enabled(&ScriptId::from("grayscale"), false)
+            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), false)
             .unwrap();
         assert_eq!(
             manager.resistance_enforcement_status(),
             EnforcementStatus::NoScriptsEnabled
         );
         manager
-            .set_script_enabled(&ScriptId::from("grayscale"), true)
+            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), true)
             .unwrap();
 
         // Non-None static intensity + enabled script + Pro → operational.

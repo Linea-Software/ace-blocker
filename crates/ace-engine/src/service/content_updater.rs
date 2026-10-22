@@ -50,7 +50,7 @@ const MAX_DOWNLOAD_RETRIES: u8 = 3;
 
 /// Compares two validated site-pack versions using the domain comparison policy.
 pub fn version_is_newer(candidate: &SitePackVersion, current: &SitePackVersion) -> bool {
-    (candidate.is_bundle_style() && !current.is_bundle_style()) || candidate.is_newer_than(current)
+    candidate.is_newer_than(current)
 }
 
 /// A staged site-pack update: the new pack database has been downloaded and
@@ -423,13 +423,9 @@ impl ContentUpdateService {
     pub async fn get_site_packs_to_update(
         &mut self,
     ) -> Result<Vec<(RemoteSitePackId, SitePackVersion)>, SitePackUpdateError> {
-        let latest = match self.get_latest_info().await {
-            Ok(info) => info,
-            Err(error) => {
-                warn!("Failed to get latest site lists info: {}", error);
-                return Ok(Vec::new());
-            }
-        };
+        let latest = self.get_latest_info().await.map_err(|error| {
+            SitePackUpdateError::FetchError(format!("Failed to fetch site-pack metadata: {error}"))
+        })?;
 
         let mut updates_needed = Vec::new();
         for remote_list in latest.site_packs {
@@ -443,8 +439,16 @@ impl ContentUpdateService {
                     ))
                 })?;
 
-            match self.db.get_site_pack_by_remote_id(&remote_id) {
-                Ok(local_model) => {
+            let local_pack = self
+                .db
+                .find_site_pack_by_remote_id(&remote_id)
+                .map_err(|error| {
+                    SitePackUpdateError::FetchError(format!(
+                        "Failed to look up site pack {remote_id}: {error}"
+                    ))
+                })?;
+            match local_pack {
+                Some(local_model) => {
                     let current_version = local_model
                         .version
                         .map(SitePackVersion::try_new)
@@ -471,7 +475,7 @@ impl ContentUpdateService {
                         updates_needed.push((remote_id, candidate_version));
                     }
                 }
-                Err(_) => {
+                None => {
                     info!("Site list {} not found locally, will be added", remote_id);
                     updates_needed.push((remote_id, candidate_version));
                 }
@@ -492,13 +496,9 @@ impl ContentUpdateService {
         info!("Fetching remote site lists metadata from server...");
 
         // Get the latest releases info which contains site lists metadata
-        let latest = match self.get_latest_info().await {
-            Ok(info) => info,
-            Err(error) => {
-                warn!("Failed to get latest releases info: {}", error);
-                return Ok(());
-            }
-        };
+        let latest = self.get_latest_info().await.map_err(|error| {
+            SitePackUpdateError::FetchError(format!("Failed to fetch releases metadata: {error}"))
+        })?;
 
         let site_packs_info = latest.site_packs;
 
@@ -506,10 +506,9 @@ impl ContentUpdateService {
         let ignored_ids: std::collections::HashSet<RemoteSitePackId> = self
             .db
             .get_ignored_remote_site_packs()
-            .unwrap_or_else(|error| {
-                warn!(%error, "Ignored remote site-pack query failed; preserving existing fallback");
-                Vec::new()
-            })
+            .map_err(|error| {
+                SitePackUpdateError::UpdateError(format!("Cannot load ignored site packs: {error}"))
+            })?
             .into_iter()
             .filter_map(|model| model.remote_id)
             .map(RemoteSitePackId::try_new)
@@ -736,17 +735,13 @@ mod tests {
             version_is_newer(&candidate, &current)
         };
 
-        assert!(is_newer("1.10", "1.9"));
-        assert!(is_newer("2.0", "1.9.9"));
-        assert!(is_newer("1.0.1", "1.0"));
-        assert!(!is_newer("1.9", "1.10"));
-        assert!(!is_newer("1.0", "1.0"));
-        assert!(!is_newer("1.0", "1.0.0"));
-        assert!(is_newer("1.0.0", "1.0"));
-        assert!(!is_newer("1.0", "2.0"));
-        assert!(is_newer("2026.09.01", "pack-adult-free"));
-        // Non-numeric segments fall back to a string comparison.
-        assert!(is_newer("1.1-beta", "1.1-alpha"));
-        assert!(!is_newer("1.1-alpha", "1.1-beta"));
+        assert!(is_newer("1.10.0", "1.9.0"));
+        assert!(is_newer("2.0.0", "1.9.9"));
+        assert!(is_newer("1.0.1", "1.0.0"));
+        assert!(!is_newer("1.9.0", "1.10.0"));
+        assert!(!is_newer("1.0.0", "1.0.0"));
+        assert!(!is_newer("1.0.0", "2.0.0"));
+        assert!(is_newer("2026.09.01", "2.1.0"));
+        assert!(is_newer("2026.10.01", "2026.09.30"));
     }
 }

@@ -193,8 +193,10 @@ async fn main() -> Result<()> {
         .wrap_err("failed to create free directory")?;
 
     for site_pack in DEFAULT_PACKS {
+        let site_pack_id = SitePackId::try_new(site_pack.id.to_string())
+            .map_err(|error| eyre::eyre!("Invalid built-in site-pack ID: {error}"))?;
         let mut output_dir = site_packs_dir.clone();
-        output_dir.push(site_pack.id);
+        output_dir.push(site_pack_id.to_string());
 
         if output_dir.exists() {
             std::fs::remove_dir_all(&output_dir)
@@ -205,8 +207,6 @@ async fn main() -> Result<()> {
         let db_path = output_dir.join("pack.db");
         let db = SitePackDB::from(&db_path)
             .wrap_err_with(|| format!("failed to create site pack database at {:?}", db_path))?;
-
-        let site_pack_id = SitePackId::new(site_pack.id.to_string());
 
         let sources: Vec<_> = site_pack
             .sources

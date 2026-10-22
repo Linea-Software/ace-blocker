@@ -59,26 +59,29 @@ pub(super) async fn get_dashboard_snapshot(
 
         // Schedule entries
         let schedule_entries = manager
-            .get_schedule_entries_of(block_id_ref)
-            .map(|entries| {
-                entries
-                    .iter()
-                    .map(ScheduleEntrySchema::from)
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default();
+            .get_schedule_entries_of(block_id_ref)?
+            .iter()
+            .map(ScheduleEntrySchema::from)
+            .collect::<Vec<_>>();
 
         // Site pack connections count — only packs with usable local rules
         // count as coverage. A connected-but-unsynced pack (metadata row with
         // no data yet) enforces nothing, so reporting it would be a "ghost"
         // claim in the UI (onboarding, block cards).
-        let site_pack_connection_count = manager.count_synced_site_packs_of(block_id_ref);
+        let site_pack_connection_count = manager.count_synced_site_packs_of(block_id_ref)?;
 
         // User-defined rules count (already in memory)
         let user_rules_count = manager
             .get_network_block_from(block_id_ref)
-            .map(|block| block.get_user_defined_rules().rules().len())
-            .unwrap_or(0);
+            .ok_or_else(|| {
+                ApiError::NotFound(format!(
+                    "Network block {} vanished during snapshot",
+                    block_id_ref
+                ))
+            })?
+            .get_user_defined_rules()
+            .rules()
+            .len();
 
         snapshots.push(NetworkBlockSnapshot {
             block: NetworkBlockSchema {

@@ -16,11 +16,13 @@ pub(super) async fn get_all_site_packs(
         .get_all_site_packs()?
         .into_iter()
         .map(|site_pack| {
-            let schema = schemas::SitePackSchema::from(&*site_pack);
+            let schema = schemas::SitePackSchema::try_from(&*site_pack).map_err(|error| {
+                ApiError::Internal(format!("Failed to read site-pack entry count: {error}"))
+            })?;
             let site_pack_id = site_pack.get_id().clone();
-            (schema, site_pack_id)
+            Ok((schema, site_pack_id))
         })
-        .collect();
+        .collect::<Result<Vec<_>, ApiError>>()?;
 
     let site_packs_data = packs
         .into_iter()
@@ -49,7 +51,8 @@ pub(super) async fn create_site_pack(
     for source in payload.sources {
         core_sources.push(SitePackSource {
             id: SitePackSourceId::from(uuid::Uuid::now_v7()),
-            site_pack_id: SitePackId::from(uuid::Uuid::nil().to_string()),
+            site_pack_id: SitePackId::try_new(uuid::Uuid::nil().to_string())
+                .expect("UUID must be a safe site pack ID"),
             source: source.source,
             source_type: source.source_type,
             format: source.format,
@@ -82,7 +85,8 @@ pub(super) async fn delete_site_pack(
     state: AppState,
     site_pack_id: String,
 ) -> Result<(), ApiError> {
-    let site_pack_id = SitePackId::from(site_pack_id);
+    let site_pack_id = SitePackId::try_new(site_pack_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
     let mut manager = state.network_manager.write().await;
 
     // The backend enforces the lock rule — a stale frontend that believes a
@@ -125,7 +129,8 @@ pub(super) async fn resync_site_pack(
     state: AppState,
     site_pack_id: String,
 ) -> Result<impl Stream<Item = SitePackCreationStatus>, ApiError> {
-    let site_pack_id = SitePackId::from(site_pack_id);
+    let site_pack_id = SitePackId::try_new(site_pack_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
     let stream = {
         let mut manager = state.network_manager.write().await;
         manager.resync_site_pack(&site_pack_id).await?
@@ -137,7 +142,8 @@ pub(super) async fn get_site_pack_sources(
     state: AppState,
     site_pack_id: String,
 ) -> Result<schemas::GetSitePackSourcesResponse, ApiError> {
-    let site_pack_id = SitePackId::from(site_pack_id);
+    let site_pack_id = SitePackId::try_new(site_pack_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
     let manager = state.network_manager.read().await;
     let sources = manager.get_site_pack_sources(&site_pack_id)?;
 
@@ -154,7 +160,8 @@ pub(super) async fn add_site_pack_source(
     site_pack_id: String,
     payload: schemas::AddSitePackSourceRequest,
 ) -> Result<schemas::AddSitePackSourceResponse, ApiError> {
-    let site_pack_id = SitePackId::from(site_pack_id);
+    let site_pack_id = SitePackId::try_new(site_pack_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
     if !state.is_pro_account_entitled().await {
         return Err(ApiError::Forbidden("Pro subscription required".to_string()));
     }

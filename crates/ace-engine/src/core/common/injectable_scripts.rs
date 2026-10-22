@@ -22,6 +22,8 @@ struct SiteNode {
 }
 
 #[nutype(
+    sanitize(trim),
+    validate(not_empty),
     derive(
         Debug,
         Clone,
@@ -30,14 +32,12 @@ struct SiteNode {
         Hash,
         Serialize,
         Deserialize,
-        Default,
-        From,
-        Into,
+        TryFrom,
+        FromStr,
         Display,
         Deref,
         AsRef
-    ),
-    default = ""
+    )
 )]
 pub struct ScriptId(String);
 
@@ -175,7 +175,8 @@ impl InjectableScriptTree {
             version: "1.0".to_string(),
             domain: "".to_string(),
             content: script,
-            id: ScriptId::default(),
+            id: ScriptId::try_new(uuid::Uuid::now_v7().to_string())
+                .expect("generated UUID is a nonempty script identifier"),
             enabled: true,
         };
 
@@ -320,5 +321,17 @@ mod tests {
         // sub.google.com should inherit google.com
         let scripts = tree.get_scripts("sub.google.com");
         assert!(scripts.contains(&"google_script".to_string()));
+    }
+}
+
+#[cfg(test)]
+mod id_validation_tests {
+    use super::ScriptId;
+
+    #[test]
+    fn script_id_rejects_empty_and_whitespace_values() {
+        assert!(ScriptId::try_new("").is_err());
+        assert!(ScriptId::try_new("   ").is_err());
+        assert!(serde_json::from_str::<ScriptId>(r#""""#).is_err());
     }
 }

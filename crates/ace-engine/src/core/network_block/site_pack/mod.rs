@@ -4,6 +4,7 @@ pub mod site_pack_db;
 use crate::core::common::domain_types::{RemoteSitePackId, SitePackVersion};
 use crate::core::network_block::site_pack::site_pack_db::SitePackDB;
 use crate::core::network_block::{BlockingResult, UriHash};
+use crate::db::error::DBError;
 pub use importer::{
     Importer, SitePackCreationStatus, SitePackFormat, SitePackId, SitePackImportError,
     SitePackImportStream, SitePackSource,
@@ -101,17 +102,17 @@ impl SitePack {
         db_path: &Path,
         sources: Vec<SitePackSource>,
         last_updated_at: Option<chrono::DateTime<chrono::Local>>,
-    ) -> SitePack {
+    ) -> Result<SitePack, DBError> {
         // Local packs get an empty database created eagerly. Remote packs
         // only get one once they have been downloaded for the first time, so
         // they stay unsynced until then (see `is_synced`).
         let db = if db_path.exists() || remote_id.is_none() {
-            SitePackDB::from(&db_path.join(PACK_DB_FILE)).ok()
+            Some(SitePackDB::from(&db_path.join(PACK_DB_FILE))?)
         } else {
             None
         };
 
-        SitePack {
+        Ok(SitePack {
             id,
             remote_id,
             name,
@@ -126,32 +127,51 @@ impl SitePack {
                 .build(),
             sources,
             last_updated_at,
-        }
+        })
     }
 
     fn pack_db_path(&self) -> PathBuf {
         self.db_path.join(PACK_DB_FILE)
     }
 
-    pub fn blocking_result(&self, host: &str) -> BlockingResult {
+    /// Returns a real database error rather than conflating it with a rule miss.
+    /// Callers can decide the appropriate enforcement/error policy.
+    pub fn try_blocking_result(&self, host: &str) -> Result<BlockingResult, DBError> {
         let Some(db) = self.db.as_ref() else {
-            return BlockingResult::NotBlocked;
+            // A never-downloaded pack has no policy entries yet.
+            return Ok(BlockingResult::NotBlocked);
         };
 
         let uri_hash = site_pack_db::hash_host(host);
-        // Cache hits and misses; coalesce concurrent queries for the same host.
-        // Failed queries are not cached, so a transient DB error can recover.
-
+        // Cache successful hits and misses only, not transient DB failures.
         self.membership_cache
             .try_get_with(uri_hash.clone(), || db.blocking_result(&uri_hash))
-            .unwrap_or(BlockingResult::NotBlocked)
+            .map_err(|error| DBError::DataFetchError {
+                table: "entries".to_string(),
+                message: error.to_string(),
+            })
     }
 
-    pub fn get_entry_count(&self) -> u64 {
-        self.db
-            .as_ref()
-            .map(|db| db.get_entry_count().unwrap_or(0) as u64)
-            .unwrap_or(0)
+    /// Approved AE-04 fail-open policy: a DB error is observable but does not
+    /// turn an unknown host into a block. Never cache the error as a rule miss.
+    pub fn blocking_result(&self, host: &str) -> BlockingResult {
+        self.try_blocking_result(host).unwrap_or_else(|error| {
+            warn!(site_pack_id = %self.id, %error,
+                "Site-pack membership query failed; enforcing approved fail-open policy");
+            BlockingResult::NotBlocked
+        })
+    }
+
+    pub fn get_entry_count(&self) -> Result<u64, DBError> {
+        let Some(db) = self.db.as_ref() else {
+            // A never-downloaded pack has zero entries, not a failed lookup.
+            return Ok(0);
+        };
+        let count = db.get_entry_count()?;
+        u64::try_from(count).map_err(|error| DBError::DataFetchError {
+            table: "pack_meta".to_string(),
+            message: format!("negative site-pack entry count: {error}"),
+        })
     }
 
     /// A site pack is synced once its database is loaded. Remote packs have no
@@ -429,7 +449,7 @@ mod tests {
 
     fn test_pack(db_path: &Path) -> SitePack {
         SitePack::from(
-            SitePackId::new("test-pack".to_string()),
+            SitePackId::try_new("test-pack").unwrap(),
             None,
             "Test".to_string(),
             None,
@@ -440,6 +460,49 @@ mod tests {
             vec![],
             None,
         )
+        .unwrap()
+    }
+
+    #[test]
+    fn existing_corrupt_site_pack_database_fails_to_load_explicitly() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("pack.db"), b"not a SQLite database").unwrap();
+        let result = SitePack::from(
+            SitePackId::try_new("corrupt-pack").unwrap(),
+            None,
+            "Corrupted".to_string(),
+            None,
+            false,
+            None,
+            None,
+            dir.path(),
+            vec![],
+            None,
+        );
+        assert!(
+            result.is_err(),
+            "corrupt existing data must not become silent unsynced state"
+        );
+    }
+
+    #[test]
+    fn membership_lookup_preserves_database_errors_until_enforcement_boundary() {
+        use diesel::RunQueryDsl;
+
+        let temp = tempfile::tempdir().unwrap();
+        let db_path = temp.path().join("pack.db");
+        make_valid_pack_db(&db_path, &["known.example"]);
+        let pack = test_pack(temp.path());
+
+        // Invalidate the content schema after the pool has been opened.
+        let mut conn = pack.db.as_ref().unwrap().get_db_connection().unwrap();
+        diesel::sql_query("DROP TABLE entries")
+            .execute(&mut conn)
+            .unwrap();
+        drop(conn);
+
+        assert!(pack.try_blocking_result("known.example").is_err());
+        assert!(!pack.blocking_result("known.example").is_blocked());
     }
 
     #[test]

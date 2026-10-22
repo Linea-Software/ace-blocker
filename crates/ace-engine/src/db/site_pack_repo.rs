@@ -277,6 +277,24 @@ impl EngineDB {
             })
     }
 
+    /// Returns None only for a missing row; query failures propagate as Err.
+    pub fn find_site_pack_by_remote_id(
+        &self,
+        remote_id_val: &str,
+    ) -> Result<Option<SitePackModel>, DBError> {
+        use crate::schema_main_db::site_packs::dsl::*;
+        let conn = &mut self.get_db_connection()?;
+        site_packs
+            .filter(remote_id.eq(Some(remote_id_val.to_owned())))
+            .select(SitePackModel::as_select())
+            .first(conn)
+            .optional()
+            .map_err(|error| DBError::DataFetchError {
+                table: "site_packs".to_string(),
+                message: error.to_string(),
+            })
+    }
+
     pub fn get_site_pack_by_remote_id(
         &self,
         remote_id_val: &str,

@@ -400,7 +400,7 @@ mod tests {
     fn file_source(path: &str, format: SitePackFormat) -> SitePackSource {
         SitePackSource {
             id: SitePackSourceId::new(Uuid::now_v7()),
-            site_pack_id: SitePackId::new("test-pack".to_string()),
+            site_pack_id: SitePackId::try_new("test-pack").unwrap(),
             source: path.to_string(),
             source_type: SitePackSourceType::File,
             format,
@@ -410,7 +410,7 @@ mod tests {
     fn url_source(url: String, format: SitePackFormat) -> SitePackSource {
         SitePackSource {
             id: SitePackSourceId::new(Uuid::now_v7()),
-            site_pack_id: SitePackId::new("test-pack".to_string()),
+            site_pack_id: SitePackId::try_new("test-pack").unwrap(),
             source: url,
             source_type: SitePackSourceType::Url,
             format,
@@ -426,7 +426,7 @@ mod tests {
             db,
             sources,
             temp.path().to_path_buf(),
-            SitePackId::new("test-pack".to_string()),
+            SitePackId::try_new("test-pack").unwrap(),
         )
         .collect()
         .await

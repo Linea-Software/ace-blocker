@@ -28,7 +28,8 @@ pub(super) async fn add_net_block_to_site_pack_connection(
 ) -> Result<AddNetListToSitePackResponse, ApiError> {
     let mut manager = state.network_manager.write().await;
     let list_id = NetworkBlockId::from(network_block_id);
-    let site_pack_id = SitePackId::from(payload.sites_list_id);
+    let site_pack_id = SitePackId::try_new(payload.sites_list_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
     let site_pack_id_str = site_pack_id.to_string();
     manager.add_network_block_to_site_pack(&list_id, &site_pack_id)?;
 
@@ -46,7 +47,8 @@ pub(super) async fn remove_net_block_to_site_pack_connection(
 ) -> Result<(), ApiError> {
     let mut manager = state.network_manager.write().await;
     let list_id = NetworkBlockId::from(network_block_id);
-    let site_pack_id = SitePackId::from(site_pack_id);
+    let site_pack_id = SitePackId::try_new(site_pack_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
     manager.remove_network_block_to_site_pack(&list_id, &site_pack_id)?;
     Ok(())
 }

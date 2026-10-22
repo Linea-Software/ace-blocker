@@ -42,11 +42,11 @@ use ace_engine::core::{
     BundleSchemaVersion, PackDbFormatVersion, RemoteSitePackId, Sha256Digest, SitePackVersion,
     network_block::site_pack::site_pack_db::SitePackDB,
 };
+use ace_engine::schema_site_packs::pack_meta;
 use ace_engine::service::bundled_site_packs::{
     BundledManifest as BundleManifest, BundledPackEntry as ManifestPackEntry,
     SUPPORTED_MANIFEST_SCHEMA_VERSION,
 };
-use ace_engine::schema_site_packs::pack_meta;
 use diesel::prelude::*;
 use eyre::{Context, Result, eyre};
 use futures_util::StreamExt;
@@ -133,7 +133,8 @@ struct Args {
 }
 
 fn parse_args() -> Result<Args> {
-    let mut catalog = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../apps/ace-app/src/lib/data/site-packs.json");
+    let mut catalog = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../apps/ace-app/src/lib/data/site-packs.json");
     let mut out_dir = PathBuf::from("bundled-packs");
     let mut packs: Option<BTreeSet<String>> = None;
     let mut build_date: Option<String> = None;
@@ -323,7 +324,8 @@ async fn build_pack_db(
     let db = SitePackDB::from(db_path)
         .wrap_err_with(|| format!("failed to create pack database at {}", db_path.display()))?;
 
-    let site_pack_id = SitePackId::new(entry.id.clone());
+    let site_pack_id = SitePackId::try_new(entry.id.clone())
+        .map_err(|error| eyre!("Invalid catalog site-pack ID: {error}"))?;
     let import_sources: Vec<SitePackSource> = sources
         .iter()
         .map(|source| {
@@ -356,12 +358,8 @@ async fn build_pack_db(
         })
         .collect();
 
-    let mut stream = Importer::import_sources(
-        &db,
-        import_sources,
-        temp_dir.to_path_buf(),
-        site_pack_id,
-    );
+    let mut stream =
+        Importer::import_sources(&db, import_sources, temp_dir.to_path_buf(), site_pack_id);
 
     let mut failed: Option<String> = None;
     while let Some(status) = stream.next().await {

@@ -364,7 +364,8 @@ impl NetworkManager {
             return Err(NetworkManagerOpErr::ProPlanRequired);
         }
 
-        let site_pack_id = SitePackId::from(Uuid::now_v7().to_string());
+        let site_pack_id = SitePackId::try_new(Uuid::now_v7().to_string())
+            .expect("generated UUID must be a safe site pack ID");
 
         let db_path = Settings::get_site_pack_path(&site_pack_id);
 
@@ -394,7 +395,7 @@ impl NetworkManager {
             &db_path,
             Vec::new(),
             None,
-        );
+        )?;
         let site_pack_arc = Arc::new(RwLock::new(site_pack));
         self.site_packs.insert(site_pack_id, site_pack_arc.clone());
         Ok(site_pack_arc)
@@ -426,7 +427,8 @@ impl NetworkManager {
         icon: Option<String>,
         sources: Vec<SitePackSource>,
     ) -> Result<SitePackImportStream<'static>, NetworkManagerOpErr> {
-        let site_pack_id = SitePackId::from(Uuid::now_v7().to_string());
+        let site_pack_id = SitePackId::try_new(Uuid::now_v7().to_string())
+            .expect("generated UUID must be a safe site pack ID");
         // Persist generated source IDs (as in add_site_pack_source), but retain
         // the incoming source values for the import progress stream.
         let stored_sources: Vec<SitePackSource> = sources
@@ -467,7 +469,7 @@ impl NetworkManager {
             &db_path,
             stored_sources,
             None,
-        )));
+        )?));
         self.site_packs
             .insert(site_pack_id.clone(), site_pack_arc.clone());
 
@@ -783,7 +785,12 @@ impl NetworkManager {
                 message: format!("failed to get site list source {}: {}", source_id, error),
             })?;
 
-        let site_pack_id = SitePackId::from(source_model.site_pack_id.clone());
+        let site_pack_id =
+            SitePackId::try_new(source_model.site_pack_id.clone()).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid persisted site-pack ID: {error}"),
+                }
+            })?;
 
         // Refuse when the pack is locked (single source of truth: the same
         // predicate as delete_site_pack / resync_site_pack). Deleting a source
@@ -834,7 +841,8 @@ impl NetworkManager {
             });
         }
 
-        let site_pack_id = SitePackId::from(Uuid::now_v7().to_string());
+        let site_pack_id = SitePackId::try_new(Uuid::now_v7().to_string())
+            .expect("generated UUID must be a safe site pack ID");
         let db_path = Settings::get_site_pack_path(&site_pack_id);
 
         // Derive the canonical icon slug once so the in-memory pack and the
@@ -852,7 +860,7 @@ impl NetworkManager {
             &db_path,
             sources.clone(),
             None,
-        );
+        )?;
 
         self.site_packs
             .insert(site_pack_id.clone(), Arc::new(RwLock::new(site_pack)));
@@ -954,7 +962,11 @@ impl NetworkManager {
             return Ok(());
         }
 
-        let site_pack_id = SitePackId::from(existing_model.id.clone());
+        let site_pack_id = SitePackId::try_new(existing_model.id.clone()).map_err(|error| {
+            NetworkManagerOpErr::InternalError {
+                message: format!("Invalid persisted site-pack ID: {error}"),
+            }
+        })?;
         let site_pack_arc = match self.site_packs.get(&site_pack_id) {
             Some(arc) => arc.clone(),
             None => {
@@ -1150,7 +1162,8 @@ impl NetworkManager {
             return Ok(());
         }
 
-        let site_pack_id = SitePackId::from(Uuid::now_v7().to_string());
+        let site_pack_id = SitePackId::try_new(Uuid::now_v7().to_string())
+            .expect("generated UUID must be a safe site pack ID");
         let db_path = Settings::get_site_pack_path(&site_pack_id);
 
         // Derive the canonical icon slug once so the in-memory pack and the
@@ -1168,7 +1181,7 @@ impl NetworkManager {
             &db_path,
             Vec::new(), // No sources yet
             None,
-        );
+        )?;
 
         self.site_packs
             .insert(site_pack_id.clone(), Arc::new(RwLock::new(site_pack)));
@@ -1242,7 +1255,11 @@ impl NetworkManager {
 
         // Re-enable each one in DB and load into memory
         for model in &ignored_lists {
-            let site_pack_id = SitePackId::from(model.id.clone());
+            let site_pack_id = SitePackId::try_new(model.id.clone()).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid persisted site-pack ID: {error}"),
+                }
+            })?;
 
             // Set is_ignored to false in DB
             self.db
@@ -1282,7 +1299,11 @@ impl NetworkManager {
                             })?;
                         Ok(crate::core::importer::SitePackSource {
                             id: crate::core::importer::SitePackSourceId::from(source_id),
-                            site_pack_id: SitePackId::from(source_model.site_pack_id),
+                            site_pack_id: SitePackId::try_new(source_model.site_pack_id).map_err(
+                                |error| NetworkManagerOpErr::InternalError {
+                                    message: format!("Invalid persisted site-pack ID: {error}"),
+                                },
+                            )?,
                             source: source_model.source,
                             source_type,
                             format,
@@ -1321,10 +1342,10 @@ impl NetworkManager {
                     model.requires_pro,
                     version,
                     model.icon.clone(),
-                    &crate::settings::Settings::get_site_pack_path(&model.id),
+                    &crate::settings::Settings::get_site_pack_path(&site_pack_id),
                     sources,
                     last_updated_at,
-                );
+                )?;
 
                 self.site_packs
                     .insert(site_pack_id.clone(), Arc::new(RwLock::new(site_pack)));
@@ -1570,7 +1591,7 @@ mod tests {
 
         let site_pack = ctx
             .manager
-            .get_site_pack(&SitePackId::from(site_pack_uuid.clone()))
+            .get_site_pack(&SitePackId::try_new(site_pack_uuid.clone()).unwrap())
             .unwrap();
         assert_eq!(site_pack.get_id().to_string(), site_pack_uuid);
         assert_eq!(site_pack.get_name(), name);
@@ -1609,7 +1630,7 @@ mod tests {
             .batch_execute("DROP TABLE site_pack_sources")
             .unwrap();
         let source = local_source(
-            &SitePackId::from("provisional".to_string()),
+            &SitePackId::try_new("provisional".to_string()).unwrap(),
             std::path::Path::new("invalid-list.txt"),
         );
         assert!(
@@ -1671,21 +1692,21 @@ mod tests {
         assert!(
             ctx.manager
                 .site_packs
-                .contains_key(&SitePackId::from(site_pack_uuid.clone()))
+                .contains_key(&SitePackId::try_new(site_pack_uuid.clone()).unwrap())
         );
 
         // DROP the list reference so RocksDB can close the DB before we delete the directory
         drop(list);
 
         ctx.manager
-            .delete_site_pack(&SitePackId::from(site_pack_uuid.clone()))
+            .delete_site_pack(&SitePackId::try_new(site_pack_uuid.clone()).unwrap())
             .unwrap();
 
         // Verify it's gone from memory
         assert!(
             !ctx.manager
                 .site_packs
-                .contains_key(&SitePackId::from(site_pack_uuid))
+                .contains_key(&SitePackId::try_new(site_pack_uuid).unwrap())
         );
         // Verify DB directory is gone
         assert!(!db_path.exists());
@@ -1708,7 +1729,10 @@ mod tests {
             .create_network_block("Test Block".to_string())
             .unwrap();
         ctx.manager
-            .add_network_block_to_site_pack(&block_id, &SitePackId::from(site_pack_uuid.clone()))
+            .add_network_block_to_site_pack(
+                &block_id,
+                &SitePackId::try_new(site_pack_uuid.clone()).unwrap(),
+            )
             .unwrap();
 
         // Lock the block
@@ -1718,7 +1742,7 @@ mod tests {
 
         let result = ctx
             .manager
-            .delete_site_pack(&SitePackId::from(site_pack_uuid));
+            .delete_site_pack(&SitePackId::try_new(site_pack_uuid).unwrap());
         assert!(matches!(
             result,
             Err(NetworkManagerOpErr::SitePackIsLocked { .. })
@@ -1930,7 +1954,7 @@ mod tests {
 
         ctx.manager
             .add_site_pack_source(
-                &SitePackId::from(site_pack_uuid.clone()),
+                &SitePackId::try_new(site_pack_uuid.clone()).unwrap(),
                 "https://example.com/list.txt",
                 SitePackSourceType::Url,
                 SitePackFormat::Standard,
@@ -1939,7 +1963,7 @@ mod tests {
 
         let sources = ctx
             .manager
-            .get_site_pack_sources(&SitePackId::from(site_pack_uuid.clone()))
+            .get_site_pack_sources(&SitePackId::try_new(site_pack_uuid.clone()).unwrap())
             .unwrap();
         assert_eq!(sources.len(), 1);
         assert_eq!(sources[0].source, "https://example.com/list.txt");
@@ -1950,7 +1974,7 @@ mod tests {
 
         let sources_after = ctx
             .manager
-            .get_site_pack_sources(&SitePackId::from(site_pack_uuid))
+            .get_site_pack_sources(&SitePackId::try_new(site_pack_uuid).unwrap())
             .unwrap();
         assert_eq!(sources_after.len(), 0);
     }
@@ -2005,7 +2029,7 @@ mod tests {
                 "Remote Pack",
                 None,
                 false,
-                &typed_version("0.9"),
+                &typed_version("0.9.0"),
             )
             .await
             .unwrap();
@@ -2013,7 +2037,7 @@ mod tests {
             .commit_site_pack_update(make_staged_site_pack(
                 &temp,
                 "remote-1",
-                "1.0",
+                "1.0.0",
                 &["old.example.com"],
             ))
             .unwrap();
@@ -2023,7 +2047,7 @@ mod tests {
             .get_site_pack_by_remote_id("remote-1")
             .unwrap()
             .id;
-        let pack_id = SitePackId::from(pack_id);
+        let pack_id = SitePackId::try_new(pack_id).unwrap();
 
         let block_id = ctx
             .manager
@@ -2034,7 +2058,7 @@ mod tests {
             .unwrap();
 
         // Commit a staged update (as the content updater would produce it).
-        let staged = make_staged_site_pack(&temp, "remote-1", "1.1", &["new.example.com"]);
+        let staged = make_staged_site_pack(&temp, "remote-1", "1.1.0", &["new.example.com"]);
         ctx.manager.commit_site_pack_update(staged).unwrap();
 
         // The SAME pack id is still referenced by the block (MGR-01: no
@@ -2047,7 +2071,7 @@ mod tests {
         let pack = ctx.manager.get_site_pack(&pack_id).unwrap();
         assert!(pack.blocking_result("new.example.com").is_blocked());
         assert!(!pack.blocking_result("old.example.com").is_blocked());
-        assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1"));
+        assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1.0"));
 
         // The DB row is the same row, now with the new version.
         let row = ctx
@@ -2056,7 +2080,7 @@ mod tests {
             .get_site_pack_by_remote_id("remote-1")
             .unwrap();
         assert_eq!(row.id, pack_id.to_string());
-        assert_eq!(row.version.as_deref(), Some("1.1"));
+        assert_eq!(row.version.as_deref(), Some("1.1.0"));
 
         // No staging/old litter remains in the packs dir.
         let leftovers: Vec<String> = std::fs::read_dir(&temp)
@@ -2079,7 +2103,7 @@ mod tests {
                 "Remote Pack",
                 None,
                 false,
-                &typed_version("1.0"),
+                &typed_version("1.0.0"),
             )
             .await
             .unwrap();
@@ -2088,14 +2112,14 @@ mod tests {
             .commit_site_pack_update(make_staged_site_pack(
                 &temp,
                 "remote-1",
-                "1.1",
+                "1.1.0",
                 &["v1.example.com"],
             ))
             .unwrap();
 
         // A concurrent/duplicate caller staging the SAME version must be a
         // defined no-op: Ok, and nothing changes (SVC-02 requirement 3).
-        let duplicate = make_staged_site_pack(&temp, "remote-1", "1.1", &["v2.example.com"]);
+        let duplicate = make_staged_site_pack(&temp, "remote-1", "1.1.0", &["v2.example.com"]);
         ctx.manager.commit_site_pack_update(duplicate).unwrap();
 
         let pack_id = ctx
@@ -2107,7 +2131,7 @@ mod tests {
         {
             let pack = ctx
                 .manager
-                .get_site_pack(&SitePackId::from(pack_id.clone()))
+                .get_site_pack(&SitePackId::try_new(pack_id.clone()).unwrap())
                 .unwrap();
             assert!(
                 pack.blocking_result("v1.example.com").is_blocked(),
@@ -2121,16 +2145,16 @@ mod tests {
             .commit_site_pack_update(make_staged_site_pack(
                 &temp,
                 "remote-1",
-                "1.0",
+                "1.0.0",
                 &["old.example.com"],
             ))
             .unwrap();
         let pack = ctx
             .manager
-            .get_site_pack(&SitePackId::from(pack_id))
+            .get_site_pack(&SitePackId::try_new(pack_id).unwrap())
             .unwrap();
         assert!(pack.blocking_result("v1.example.com").is_blocked());
-        assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1"));
+        assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1.0"));
     }
 
     #[tokio::test]
@@ -2144,7 +2168,7 @@ mod tests {
                 "Remote Pack",
                 None,
                 false,
-                &typed_version("1.0"),
+                &typed_version("1.0.0"),
             )
             .await
             .unwrap();
@@ -2152,7 +2176,7 @@ mod tests {
             .commit_site_pack_update(make_staged_site_pack(
                 &temp,
                 "remote-1",
-                "1.1",
+                "1.1.0",
                 &["v1.example.com"],
             ))
             .unwrap();
@@ -2165,7 +2189,7 @@ mod tests {
         std::fs::write(bad_staging.join("pack.db"), "not a sqlite file").unwrap();
         let bad = StagedSitePack {
             remote_id: typed_remote_id("remote-1"),
-            new_version: typed_version("1.2"),
+            new_version: typed_version("1.2.0"),
             archive_path: temp.join("backup.zip"),
             staging_dir: bad_staging,
         };
@@ -2181,13 +2205,13 @@ mod tests {
             .id;
         let pack = ctx
             .manager
-            .get_site_pack(&SitePackId::from(pack_id))
+            .get_site_pack(&SitePackId::try_new(pack_id).unwrap())
             .unwrap();
         assert!(
             pack.blocking_result("v1.example.com").is_blocked(),
             "the previous pack must survive a failed update"
         );
-        assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1"));
+        assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1.0"));
     }
 
     #[tokio::test]
@@ -2206,7 +2230,7 @@ mod tests {
                     "Remote Pack",
                     None,
                     false,
-                    &typed_version("1.0"),
+                    &typed_version("1.0.0"),
                 )
                 .await
                 .unwrap();
@@ -2221,7 +2245,7 @@ mod tests {
                 site_packs: vec![make_staged_site_pack(
                     &temp,
                     "remote-1",
-                    "1.1",
+                    "1.1.0",
                     &["a.example.com"],
                 )],
                 resistance_scripts: None,
@@ -2241,7 +2265,7 @@ mod tests {
                 site_packs: vec![make_staged_site_pack(
                     &temp,
                     "remote-1",
-                    "1.1",
+                    "1.1.0",
                     &["b.example.com"],
                 )],
                 resistance_scripts: None,
@@ -2270,8 +2294,10 @@ mod tests {
                 .get_site_pack_by_remote_id("remote-1")
                 .unwrap()
                 .id;
-            let pack = manager.get_site_pack(&SitePackId::from(pack_id)).unwrap();
-            assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1"));
+            let pack = manager
+                .get_site_pack(&SitePackId::try_new(pack_id).unwrap())
+                .unwrap();
+            assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.1.0"));
             contains_a = pack.blocking_result("a.example.com").is_blocked();
             contains_b = pack.blocking_result("b.example.com").is_blocked();
         }

@@ -69,7 +69,8 @@ pub(super) async fn get_script(state: AppState, script_id: String) -> Result<Scr
     let manager = state.network_manager.read().await;
     let engine = manager.get_resistance_mode();
 
-    let script_id = ScriptId::from(script_id);
+    let script_id = ScriptId::try_new(script_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid script ID: {error}")))?;
 
     if let Some(entry) = engine.script_tree.get_script_by_id(&script_id) {
         Ok(ScriptInfo {
@@ -93,7 +94,8 @@ pub(super) async fn set_script_enabled(
     payload: SetEnabledRequest,
 ) -> Result<(), ApiError> {
     let mut manager = state.network_manager.write().await;
-    let script_id = ScriptId::from(script_id);
+    let script_id = ScriptId::try_new(script_id)
+        .map_err(|error| ApiError::BadRequest(format!("Invalid script ID: {error}")))?;
 
     match manager.set_script_enabled(&script_id, payload.enabled) {
         Ok(true) => Ok(()),
