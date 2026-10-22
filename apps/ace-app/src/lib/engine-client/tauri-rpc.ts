@@ -51,6 +51,7 @@ export async function rpcRequest(operation: string, options?: RequestOptions): P
 
 export async function rpcStream(operation: string, options?: RequestOptions): Promise<any> {
     const parsed: unknown[] = [];
+    let firstUnreadIndex = 0;
     let done = false;
     let streamError: unknown;
     let notify: (() => void) | undefined;
@@ -91,9 +92,18 @@ export async function rpcStream(operation: string, options?: RequestOptions): Pr
     return {
         stream: {
             async *[Symbol.asyncIterator](): AsyncGenerator<any> {
-                while (!done || parsed.length > 0) {
-                    if (parsed.length) {
-                        yield parsed.shift();
+                while (!done || firstUnreadIndex < parsed.length) {
+                    if (firstUnreadIndex < parsed.length) {
+                        const event = parsed[firstUnreadIndex++];
+                        // Keep amortized constant-time dequeue without retaining consumed events.
+                        if (firstUnreadIndex === parsed.length) {
+                            parsed.length = 0;
+                            firstUnreadIndex = 0;
+                        } else if (firstUnreadIndex >= 64 && firstUnreadIndex * 2 >= parsed.length) {
+                            parsed.splice(0, firstUnreadIndex);
+                            firstUnreadIndex = 0;
+                        }
+                        yield event;
                     } else {
                         await new Promise<void>((resolve) => {
                             notify = resolve;

@@ -23,7 +23,8 @@ This file tracks **verified, actionable maintainability work**, not a wishlist o
 | [TD-013](#td-013--network-block-mutation-lock-guard) | P2 | review | NetworkManager block mutations | Deletion, safe-search edits and renaming independently duplicate missing-block and active-lock checks | Centralize this repeated guard within the block manager; preserve error and persistence order |
 | [TD-014](#td-014--site-pack-link-persistence-consistency) | P1 | verified | NetworkManager site-pack assignments | Attach/detach mutate the live block before a fallible SQLite write | Add failure-path regressions and make DB/memory assignment changes consistent |
 | [TD-015](#td-015--allocation-free-hosts-token-scanning) | P2 | review | Domain blocklist hosts parser | Collects all whitespace tokens into a temporary `Vec` for each input line | Iterate tokens directly while retaining error order and alias validation |
-| [TD-016](#td-016--linear-time-tauri-stream-queue) | P2 | verified | Ace App Tauri RPC stream | Uses `Array.shift()` for each event in site-pack progress streams | Replace head-removal with cursor-based draining without changing event/error ordering |
+| [TD-016](#td-016--linear-time-tauri-stream-queue) | P2 | review | Ace App Tauri RPC stream | Uses `Array.shift()` for each event in site-pack progress streams | Replace head-removal with cursor-based draining without changing event/error ordering |
+| [TD-017](#td-017--sveltekit-alias-configuration-warnings) | P2 | candidate | Ace App tooling | Current SvelteKit build reports deprecated config alias and overwritten tsconfig paths | Validate and separately migrate aliases without breaking imports |
 
 For each non-placeholder item, add a detailed section below using the template. Link the queue's ID to its section. Order by expected maintenance benefit and risk, not cosmetic code metrics.
 
@@ -144,13 +145,21 @@ For each non-placeholder item, add a detailed section below using the template. 
 
 ### TD-016 — Linear-time Tauri stream queue
 
-- **Status:** verified; **priority:** P2; **owner:** unassigned until started.
+- **Status:** review; **priority:** P2; **owner:** `main`.
 - **Area / evidence:** `apps/ace-app/src/lib/engine-client/tauri-rpc.ts`, `rpcStream`: every queued event is consumed using `parsed.shift()` (array head removal). When multiple events accumulate before the UI drains them, repeated head removal moves remaining array elements. Event-stream consumers include `src/lib/stores/syncing-store.svelte.ts` and site-pack import UI.
 - **Scope / simplest improvement:** Keep the same local typed-Tauri adapter API but use an indexed queue, reclaim consumed entries without quadratic array head shifts and add asynchronous burst/error regression tests. No new third-party library or shared state.
 - **Architecture / type impact:** UI stream adapter only; `engine-client` façade, Tauri channel and remoc wire, auth, error callback and consumers remain unchanged. `unknown` event values remain opaque Tauri payloads; avoid adding a competing payload schema.
 - **Baseline (Windows, 2026-10-22):** `bun run test:unit` from `apps/ace-app`: 39 passed, including 4 existing RPC-adapter tests. `bun run check` and focused tests required after implementation.
 - **Risk / acceptance:** Low-to-moderate due to asynchronous notification. Preserve FIFO, completion, error propagation, callback behavior, no lost wakeups, and all existing response shapes. Native remoc stream integration remains a separate TD-001 obligation.
-- **Review:** Independent review not yet performed; mark `review` if implemented but not independently reviewed.
+- **Outcome (2026-10-22):** Switched event queue dequeue from repeated `Array.shift()` to an index and occasional consumed-prefix reclamation; no new module, transport or payload types. Added regression cases for 256 buffered/interleaved events, notification after asynchronous wait, and callback + error propagation. The new tests passed before the change (6/6 with the first two tests) and after it (7/7 with the wakeup test). `bun run check` passed with 0 diagnostic errors/warnings (pre-existing SvelteKit configuration notices persist); `bun run build` passed; final `bun run test:unit` passed (42/42); final `bun run check` passed (0 code diagnostics); `git diff --check` passed; `cargo check --workspace --all-targets` passed. Independently executing fresh-context code reviewer unavailable; in-session architecture pass found no cross-layer edge additions, type pass found unchanged opaque event payloads, and behavior diff pass found the existing completion/error ordering retained. Leave at `review` until independently reviewed.
+
+### TD-017 — SvelteKit alias configuration warnings
+
+- **Status:** candidate; **priority:** P2; **area:** `apps/ace-app/vite.config.js:19-23`, `apps/ace-app/tsconfig.json`, generated SvelteKit TS configuration.
+- **Evidence (Windows, 2026-10-22):** Both `bun run check` and `bun run build` succeed but report `config_option_deprecated_alias` and `tsconfig_invalid` (`paths` overwritten). The config currently passes an `alias` object to `sveltekit(...)`; the inherited TS config may override paths. `bun run check` still reports zero code diagnostics.
+- **Cost / scope:** Potential future SvelteKit upgrade breakage and confusing import resolution. Inspect current framework configuration guidance and generated TS paths, characterize `$lib` and `$engine-client` import resolution and remove obsolete aliases only after equivalent compile/build tests. Do not change app logic, remoc, or component design.
+- **Architecture / type gate:** Existing alias setup is build tooling, not a request for a new module or type. Preserve project-local source imports and build paths; migration is a separate task from TD-016. No solution assumed until current SvelteKit supported configuration is verified.
+- **Review / verification:** Candidate only; native Tauri/Windows integration tests not related. No configuration modification attempted.
 
 ## Item template
 
