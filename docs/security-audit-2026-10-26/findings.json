@@ -1,0 +1,183 @@
+[
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "ace-blocker:installer/shareddata-acl",
+    "title": "SharedData ACL may expose cloud API key, IPC capability and MITM CA signing key",
+    "description": "Installer grants inheritable read access to BUILTIN Users while the engine persists high-impact credentials and a CA private key below SharedData.",
+    "claimed_root_cause": "One shared ACL policy covers both public-readable data and privileged secret-bearing files.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "installer/installer.wxs",
+        "line": 213,
+        "scope": "C_AceProgramDataAcl",
+        "description": "BU is granted inheritable GRGX on ProgramData directory"
+      },
+      {
+        "kind": "propagation",
+        "file": "crates/ace-engine/src/settings.rs",
+        "line": 97,
+        "scope": "get_cert_dir",
+        "description": "CA material lives below SharedData"
+      },
+      {
+        "kind": "propagation",
+        "file": "crates/ace-engine/src/settings.rs",
+        "line": 93,
+        "scope": "get_main_db_path",
+        "description": "SQLite DB lives below SharedData"
+      },
+      {
+        "kind": "sink",
+        "file": "crates/mitm-proxy/src/ca.rs",
+        "line": 216,
+        "scope": "CertAuthority::load_or_generate",
+        "description": "CA private PEM is written to file"
+      },
+      {
+        "kind": "sink",
+        "file": "crates/ace-engine/src/db/account_repo.rs",
+        "line": 29,
+        "scope": "EngineDB::update_account",
+        "description": "Cloud credential written to accounts.api_key"
+      },
+      {
+        "kind": "sink",
+        "file": "crates/ace-engine/src/settings.rs",
+        "line": 183,
+        "scope": "load_or_create_capability_token",
+        "description": "Capability token written to file"
+      }
+    ],
+    "evidence": [
+      {
+        "file": "installer/installer.wxs",
+        "line": 213,
+        "description": "D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)"
+      },
+      {
+        "file": "crates/ace-engine/src/service/clients/ace_server_client.rs",
+        "line": 17,
+        "description": "Stored API key is used as x-api-key for Ace Server"
+      },
+      {
+        "file": "crates/mitm-proxy/src/ca.rs",
+        "line": 216,
+        "description": "Uses fs::write with no source-visible per-file DACL"
+      }
+    ],
+    "blockers": [
+      "No observed installed Windows ACL inheritance for actual secret files",
+      "No independent verifier or isolated Windows VM available"
+    ],
+    "validation_plan": {
+      "local": "In disposable Windows VM with synthetic secrets inspect effective ACL metadata as a standard user; do not extract real private keys.",
+      "deployment": "Release owner verifies ACL inheritance, CA private-key protection, token compatibility and key rotation design."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "ace-blocker:rpc/anonymous-backup-read",
+    "title": "Local clients without capability can request complete backup data",
+    "description": "export_backup and network-block getters pass required=false while transport grants local users client access.",
+    "claimed_root_cause": "Read authorization intentionally differs from write authorization; sensitive backup export may cross an intended privacy boundary.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "crates/ace-engine/src/service/api/transport.rs",
+        "line": 25,
+        "scope": "engine_pipe_security",
+        "description": "Authenticated local users can connect"
+      },
+      {
+        "kind": "propagation",
+        "file": "crates/ace-engine/src/service/api/rpc.rs",
+        "line": 442,
+        "scope": "EngineRpc::export_backup",
+        "description": "Does not require the capability token"
+      },
+      {
+        "kind": "sink",
+        "file": "crates/ace-engine/src/manager/network/backup.rs",
+        "line": 72,
+        "scope": "NetworkManager::export_backup",
+        "description": "Returns policy configuration and sources"
+      }
+    ],
+    "evidence": [
+      {
+        "file": "crates/ace-engine/src/service/api/transport.rs",
+        "line": 79,
+        "description": "Linux socket is chmod 0666"
+      },
+      {
+        "file": "crates/ace-engine/src/service/api/rpc.rs",
+        "line": 826,
+        "description": "get_all_network_blocks also requires no capability"
+      }
+    ],
+    "blockers": [
+      "Intended confidentiality between users of one installation not established",
+      "No isolated runtime verification of unauthenticated dummy data read"
+    ],
+    "validation_plan": {
+      "local": "In an isolated dummy installation, ask a capability-less local client to export a synthetic block and observe only synthetic output.",
+      "deployment": "Document whether block names/rules are private per user; enforce authz if privacy is required."
+    }
+  },
+  {
+    "verdict": "needs_validation",
+    "fingerprint": "ace-blocker:protocol/account-link-state",
+    "title": "Account-link callback lacks a source-visible request-bound nonce",
+    "description": "Any web-originated aceblocker account-key callback can reach the local set_api_key operation after OS/browser handoff.",
+    "claimed_root_cause": "Deep link is allowlisted by path but not visibly correlated to an app-initiated authentication request.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "crates/ace-engine/src/protocol.rs",
+        "line": 20,
+        "scope": "protocol callback surface",
+        "description": "Browser can present the scheme link"
+      },
+      {
+        "kind": "propagation",
+        "file": "crates/ace-engine/src/bin/ace_redirect.rs",
+        "line": 59,
+        "scope": "forward",
+        "description": "setApiKey is called with URL-delivered value"
+      },
+      {
+        "kind": "sink",
+        "file": "crates/ace-engine/src/service/api/operations_account.rs",
+        "line": 56,
+        "scope": "set_api_key",
+        "description": "Persists submitted key to local account"
+      }
+    ],
+    "evidence": [
+      {
+        "file": "crates/ace-engine/src/protocol.rs",
+        "line": 27,
+        "description": "Allowlist contains account/api-key only, not an app-bound state"
+      },
+      {
+        "file": "crates/ace-engine/src/bin/ace_redirect.rs",
+        "line": 47,
+        "description": "API key parsed directly from URI fragment"
+      },
+      {
+        "file": "crates/ace-engine/src/service/api/operations_account.rs",
+        "line": 56,
+        "description": "Account manager updates persisted credential"
+      }
+    ],
+    "blockers": [
+      "External website's state validation is out of this repository",
+      "Browser/OS user confirmation and concrete unauthorized result not independently demonstrated"
+    ],
+    "validation_plan": {
+      "local": "Two synthetic accounts on isolated test browser and engine; confirm whether unsolicited deep link can replace a currently linked dummy account.",
+      "deployment": "Review cross-repo login state nonce binding, callback origin, replay controls and release OS confirmation behavior."
+    }
+  }
+]

@@ -1,0 +1,49 @@
+{
+  "run_id": "ace-blocker-2026-10-26-manual-001",
+  "repo": "ace-blocker",
+  "target": "C:\\Projects\\ace-project\\ace-blocker",
+  "source_ref": {
+    "commit": "17c7e36a53374b3d07fb9eaef4f6120cdbbbe9e6",
+    "branch": "main",
+    "dirty_before": false
+  },
+  "profile": "standard",
+  "scope_paths": [
+    "."
+  ],
+  "budget": null,
+  "execution_policy": "sandboxed-source-and-local-only",
+  "actual_execution": "read-only static inspection; no target code run, no external network, no local sandbox probes",
+  "method_deviation": [
+    "no subagents by explicit user request",
+    "no independent source verifiers/coverage critics",
+    "formal validators not executed under the required isolated target-execution environment",
+    "report published in version-controlled docs because explicitly requested"
+  ],
+  "companion_files": [
+    "DESKTOP-MOBILE-AND-LOCAL-IPC.md",
+    "CLIENT-SIDE.md",
+    "MEMORY-SAFETY-AND-BINARY.md",
+    "WEB-PROTOCOL-AND-AUTH.md",
+    "PROTOCOLS-RPC-AND-MESSAGING.md",
+    "SUPPLY-CHAIN-AND-RELEASE.md",
+    "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md",
+    "DATA-ISOLATION-AND-LIFECYCLE.md"
+  ],
+  "prior_run_paths": [],
+  "shared_file_owners": {
+    "run-metadata.json": "parent",
+    "architecture.md": "parent",
+    "coverage-ledger.json": "parent",
+    "findings.json": "parent",
+    "REPORT.md": "parent",
+    "FINDINGS-DETAIL.md": "parent",
+    "NEEDS-VALIDATION.md": "parent"
+  },
+  "run_status": "incomplete",
+  "incomplete_reason": "user_prohibited_subagents_and_no_hermetic_windows_vm_or_os_enforced_test_sandbox",
+  "agent_invocations": 0,
+  "manual_static_review": true,
+  "findings_independently_verified": false,
+  "validated_schemas": false
+}

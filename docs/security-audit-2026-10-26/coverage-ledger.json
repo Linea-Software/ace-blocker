@@ -1,0 +1,366 @@
+[
+  {
+    "coverage_id": ".github%2Fworkflows%2Frelease.yml%23release::installer%2Fpackage.ps1%23package::release-and-installer::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": ".github/workflows/release.yml#release",
+      "boundary": "installer/package.ps1#package",
+      "subsystem": "release-and-installer",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "Release supply chain and installer packaging",
+    "boundary": "installer/package.ps1#package",
+    "subsystem": "release-and-installer",
+    "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "starting_paths": [
+      ".github/workflows/release.yml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "apps%2Face-app%2Fsrc-tauri%2Fsrc%2Flib.rs%23engine_call::apps%2Face-app%2Fsrc-tauri%2Fsrc%2Flib.rs%23authorize_webview_operation::apps%2Face-app::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "apps/ace-app/src-tauri/src/lib.rs#engine_call",
+      "boundary": "apps/ace-app/src-tauri/src/lib.rs#authorize_webview_operation",
+      "subsystem": "apps/ace-app",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "WebView command bridge",
+    "boundary": "apps/ace-app/src-tauri/src/lib.rs#authorize_webview_operation",
+    "subsystem": "apps/ace-app",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "apps/ace-app/src-tauri/src/lib.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "apps%2Face-app%2Fsrc%2Froutes%23frontend::apps%2Face-app%2Fsrc-tauri%2Fcapabilities%2Fdefault.json%23permissions::apps%2Face-app::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "apps/ace-app/src/routes#frontend",
+      "boundary": "apps/ace-app/src-tauri/capabilities/default.json#permissions",
+      "subsystem": "apps/ace-app",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "Frontend rendering and Tauri permission scope",
+    "boundary": "apps/ace-app/src-tauri/capabilities/default.json#permissions",
+    "subsystem": "apps/ace-app",
+    "attack_class": "ATTACK-CLASSES.md#Injection",
+    "starting_paths": [
+      "apps/ace-app/src/routes"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Face-domain-blocklist%2Fsrc%2Flib.rs%23blocklist::crates%2Face-domain-blocklist%2Fsrc%2Flib.rs%23input::crates%2Face-domain-blocklist::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "crates/ace-domain-blocklist/src/lib.rs#blocklist",
+      "boundary": "crates/ace-domain-blocklist/src/lib.rs#input",
+      "subsystem": "crates/ace-domain-blocklist",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "Domain matching and untrusted lists",
+    "boundary": "crates/ace-domain-blocklist/src/lib.rs#input",
+    "subsystem": "crates/ace-domain-blocklist",
+    "attack_class": "ATTACK-CLASSES.md#Resource and file handling",
+    "starting_paths": [
+      "crates/ace-domain-blocklist/src/lib.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Face-engine%2Fsrc%2Fbin%2Face_redirect.rs%23forward::crates%2Face-engine%2Fsrc%2Fprotocol.rs%23resolve_forward_target::crates%2Face-engine::ATTACK-CLASSES.md%23Chained%20vulnerabilities%20and%20trust%20boundaries",
+    "canonical_refs": {
+      "surface": "crates/ace-engine/src/bin/ace_redirect.rs#forward",
+      "boundary": "crates/ace-engine/src/protocol.rs#resolve_forward_target",
+      "subsystem": "crates/ace-engine",
+      "attack_class": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries"
+    },
+    "surface": "Cross-origin deep link and account authorization",
+    "boundary": "crates/ace-engine/src/protocol.rs#resolve_forward_target",
+    "subsystem": "crates/ace-engine",
+    "attack_class": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "starting_paths": [
+      "crates/ace-engine/src/bin/ace_redirect.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [
+      "ace-blocker:protocol/account-link-state"
+    ],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Face-engine%2Fsrc%2Fmanager%2Fnetwork%2Fnetwork_blocks.rs%23NetworkManager::crates%2Face-engine%2Fsrc%2Fmanager%2Fnetwork%2Fnetwork_blocks.rs%23require_unlocked_network_block::crates%2Face-engine::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "crates/ace-engine/src/manager/network/network_blocks.rs#NetworkManager",
+      "boundary": "crates/ace-engine/src/manager/network/network_blocks.rs#require_unlocked_network_block",
+      "subsystem": "crates/ace-engine",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "Lock, schedule and backup restoration",
+    "boundary": "crates/ace-engine/src/manager/network/network_blocks.rs#require_unlocked_network_block",
+    "subsystem": "crates/ace-engine",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "crates/ace-engine/src/manager/network/network_blocks.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Face-engine%2Fsrc%2Fservice%2Fapi%2Frpc.rs%23EngineControl::crates%2Face-engine%2Fsrc%2Fservice%2Fapi%2Frpc.rs%23check_capability::crates%2Face-engine::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "crates/ace-engine/src/service/api/rpc.rs#EngineControl",
+      "boundary": "crates/ace-engine/src/service/api/rpc.rs#check_capability",
+      "subsystem": "crates/ace-engine",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "RPC auth, privilege and read/write scope",
+    "boundary": "crates/ace-engine/src/service/api/rpc.rs#check_capability",
+    "subsystem": "crates/ace-engine",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "crates/ace-engine/src/service/api/rpc.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [
+      "ace-blocker:rpc/anonymous-backup-read"
+    ],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Face-engine%2Fsrc%2Fservice%2Fcontent_updater.rs%23run_update_pass::crates%2Face-engine%2Fsrc%2Fcore%2Futils%2Ffile_download.rs%23download_and_verify::crates%2Face-engine::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "crates/ace-engine/src/service/content_updater.rs#run_update_pass",
+      "boundary": "crates/ace-engine/src/core/utils/file_download.rs#download_and_verify",
+      "subsystem": "crates/ace-engine",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "Remote signed-or-hashed content ingestion",
+    "boundary": "crates/ace-engine/src/core/utils/file_download.rs#download_and_verify",
+    "subsystem": "crates/ace-engine",
+    "attack_class": "ATTACK-CLASSES.md#Resource and file handling",
+    "starting_paths": [
+      "crates/ace-engine/src/service/content_updater.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Face-tun%2Fsrc%2Fplatform%2Fwindows%2Ffirewall.rs%23rules::crates%2Face-tun%2Fsrc%2Fplatform%2Fwindows%2Fprocess.rs%23process_identity::crates%2Face-tun::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "crates/ace-tun/src/platform/windows/firewall.rs#rules",
+      "boundary": "crates/ace-tun/src/platform/windows/process.rs#process_identity",
+      "subsystem": "crates/ace-tun",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "TUN/WFP process attribution and FFI",
+    "boundary": "crates/ace-tun/src/platform/windows/process.rs#process_identity",
+    "subsystem": "crates/ace-tun",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "crates/ace-tun/src/platform/windows/firewall.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Face-watchdog%2Fsrc%2Fmain.rs%23watchdog::crates%2Face-watchdog%2Fsrc%2Fmain.rs%23watchdog_peer::crates%2Face-watchdog::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "crates/ace-watchdog/src/main.rs#watchdog",
+      "boundary": "crates/ace-watchdog/src/main.rs#watchdog_peer",
+      "subsystem": "crates/ace-watchdog",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "Service identity, recovery and maintenance",
+    "boundary": "crates/ace-watchdog/src/main.rs#watchdog_peer",
+    "subsystem": "crates/ace-watchdog",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "crates/ace-watchdog/src/main.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "crates%2Fmitm-proxy%2Fsrc%2Fhttp.rs%23serve_connection::crates%2Face-engine%2Fsrc%2Fservice%2Fproxy%2Fmod.rs%23wire_interception::crates%2Fmitm-proxy::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "crates/mitm-proxy/src/http.rs#serve_connection",
+      "boundary": "crates/ace-engine/src/service/proxy/mod.rs#wire_interception",
+      "subsystem": "crates/mitm-proxy",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "MITM TLS, CONNECT and upstream routing",
+    "boundary": "crates/ace-engine/src/service/proxy/mod.rs#wire_interception",
+    "subsystem": "crates/mitm-proxy",
+    "attack_class": "ATTACK-CLASSES.md#Resource and file handling",
+    "starting_paths": [
+      "crates/mitm-proxy/src/http.rs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  },
+  {
+    "coverage_id": "installer%2Finstaller.wxs%23C_AceProgramDataAcl::installer%2Finstaller.wxs%23PermissionEx::installer::ATTACK-CLASSES.md%23Cryptography%20and%20secrets",
+    "canonical_refs": {
+      "surface": "installer/installer.wxs#C_AceProgramDataAcl",
+      "boundary": "installer/installer.wxs#PermissionEx",
+      "subsystem": "installer",
+      "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets"
+    },
+    "surface": "SharedData ACL and secret material",
+    "boundary": "installer/installer.wxs#PermissionEx",
+    "subsystem": "installer",
+    "attack_class": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "starting_paths": [
+      "installer/installer.wxs"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "No subagent/independent verification by user request; no validated OS-enforced local runtime sandbox; manual static notes in REPORT.md"
+    ]
+  }
+]
