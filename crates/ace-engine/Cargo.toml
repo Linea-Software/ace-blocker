@@ -9,7 +9,7 @@ default = []
 # Developer-only tool binaries (not shipped): build/lint them with
 # `--features dev-tools`. `ace-redirect` and `install-cert` are product
 # binaries and are always built (the installer packages them).
-dev-tools = ["dep:crates_llms_txt"]
+dev-tools = ["dep:crates_llms_txt", "dep:openapi-to-rust", "dep:flate2"]
 # Experimental kernel anti-tampering integration. Keep disabled in normal
 # release builds until Ace Guard is ready to ship.
 experimental-ace-guard = []
@@ -83,12 +83,12 @@ futures-util = "~0.3"
 http = "~1.5"
 hyper = { version = "~1.12", features = ["full"] }
 libsqlite3-sys = { version = "~0.38", features = ["bundled"] }
-openapi-to-rust = "~0.22"
+openapi-to-rust = { version = "~0.22", optional = true }
 openport = { version = "~0.4", features = ["rand"] }
 rand = "~0.10"
 rcgen = "~0.14"
 hex = "~0.4"
-flate2 = "~1.1"
+flate2 = { version = "~1.1", optional = true }
 reqwest = { version = "~0.13", features = ["json", "stream"] }
 remoc = { version = "0.20.4", default-features = false, features = ["rch", "rtc"] }
 sha2 = "~0.11"
@@ -158,11 +158,5 @@ rustls = { version = "~0.23", default-features = false, features = ["ring", "log
 tokio-rustls = { version = "~0.26", default-features = false, features = ["ring", "logging", "tls12"] }
 rustls-pemfile = "~2.2"
 
-[build-dependencies]
-openapi-to-rust = "~0.22"
-# openapiv3 = "2.2"
-prettyplease = "~0.3"
-syn = { version = "~3.0", features = ["full"] }
-reqwest = { version = "~0.13", features = ["blocking", "json"] }
-serde_json = "~1.0"
+[target.'cfg(windows)'.build-dependencies]
 winres = "~0.1"
