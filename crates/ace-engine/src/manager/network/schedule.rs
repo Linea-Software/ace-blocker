@@ -327,7 +327,7 @@ mod tests {
         result
     }
 
-    fn setup_test_manager() -> (NetworkManager, NetworkBlockId) {
+    fn setup_test_manager() -> (tempfile::TempDir, NetworkManager, NetworkBlockId) {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test_db.sqlite");
         let sites_dir = Settings::shared_test_sites_dir();
@@ -341,12 +341,13 @@ mod tests {
 
         let list_id = manager.create_network_block("Test List".into()).unwrap();
 
-        (manager, list_id)
+        // Keep SQLite's containing directory alive for the entire test.
+        (temp_dir, manager, list_id)
     }
 
     #[test]
     fn test_merge_overlapping_intervals() {
-        let (mut manager, list_id) = setup_test_manager();
+        let (_temp_dir, mut manager, list_id) = setup_test_manager();
 
         let entries = vec![
             NetworkBlockScheduleEntryModel {
@@ -411,7 +412,7 @@ mod tests {
 
     #[test]
     fn test_merge_bridging_gap() {
-        let (mut manager, list_id) = setup_test_manager();
+        let (_temp_dir, mut manager, list_id) = setup_test_manager();
 
         // Existing: 10-11, 12-13
         let entries1 = vec![
@@ -502,7 +503,7 @@ mod tests {
 
     #[test]
     fn test_merge_adjacent() {
-        let (mut manager, list_id) = setup_test_manager();
+        let (_temp_dir, mut manager, list_id) = setup_test_manager();
 
         let entries = vec![
             NetworkBlockScheduleEntryModel {
@@ -566,7 +567,7 @@ mod tests {
 
     #[test]
     fn test_different_days_same_time() {
-        let (mut manager, list_id) = setup_test_manager();
+        let (_temp_dir, mut manager, list_id) = setup_test_manager();
 
         let entries = vec![
             NetworkBlockScheduleEntryModel {
@@ -636,7 +637,7 @@ mod tests {
 
     #[test]
     fn test_lock_constraints_on_schedule() {
-        let (mut manager, list_id) = setup_test_manager();
+        let (_temp_dir, mut manager, list_id) = setup_test_manager();
 
         // Add an initial entry
         let entry = create_entry_helper(&list_id, "10:00:00", "11:00:00", 1);
