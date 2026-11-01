@@ -61,23 +61,20 @@ these do not require a separately installed Visual C++ Redistributable.
 
 ## GitHub release candidates
 
-`.github/workflows/release.yml` is the production release assembler. It is
-manually dispatched with an immutable MSI version. The workflow builds
-the unified repository on Windows, packages the MSI, writes a provenance manifest
-and SHA-256, and uploads both as a short-lived workflow artifact.
+`.github/workflows/release.yml` is manually dispatched from `main` with a
+three-part version. It builds a **Windows x64 MSI** and a **Linux x64 tarball**
+(including engine, watchdog, Tauri app, and offline site packs), verifies
+their SHA-256/provenance, and attaches both to a **draft prerelease** on GitHub.
+No macOS builds or automatic public publishing are configured.
 
-When `stage_on_site` is enabled, the same workflow sends the MSI to the Ace
-site release-ingest endpoint. The site always stores it as **staged**; an admin
-must still publish it.
+The optional `stage_on_site` input stages **only the Windows MSI** with the
+Ace website; the site requires an administrator to publish it. Configure
+`ACE_RELEASE_INGEST_URL` (repository variable) and
+`ACE_RELEASE_INGEST_TOKEN` (repository secret) to enable that step.
 
-Repository configuration required by the workflow:
-
-- variable `ACE_RELEASE_INGEST_URL`: for example
-  `https://aceblocker.com/api/v1/releases/ingest/installer`;
-- secret `ACE_RELEASE_INGEST_TOKEN`: the same dedicated ingest secret
-  configured on the site.
-
-The release pipeline needs no cross-repository checkout credentials.
+See [Desktop CI and release candidates](../docs/RELEASING.md) for the
+build matrix, Linux manual installation caveats, and security verification
+gates that must pass before publishing a release.
 
 ## What gets installed
 

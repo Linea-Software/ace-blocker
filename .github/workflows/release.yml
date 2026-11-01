@@ -1,14 +1,14 @@
-name: Release candidate
+name: Desktop release candidates (Windows and Linux)
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: Three-part MSI version (for example 0.3.0)
+        description: Three-part release version (for example 0.3.0)
         required: true
         type: string
       stage_on_site:
-        description: Upload MSI to the site as a staged release candidate
+        description: Stage the Windows MSI on the Ace website (never publish it)
         required: true
         default: false
         type: boolean
@@ -21,51 +21,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build Windows release candidate
-    runs-on: windows-latest
-    timeout-minutes: 120
+  validate:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Validate version
-        shell: pwsh
+      - name: Validate release source and version
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          if ($env:VERSION -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Version must be X.Y.Z."
-          }
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Version must be X.Y.Z"; exit 1; }
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "Run releases from main only"; exit 1; }
 
+  windows:
+    name: Package Windows x64 MSI
+    needs: validate
+    runs-on: windows-2022
+    timeout-minutes: 120
+    steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.4.0'
-
       - uses: dtolnay/rust-toolchain@stable
-
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: . -> target
-
-      - name: Install frontend dependencies
+      - name: Install locked frontend dependencies
         working-directory: apps/ace-app
         run: bun install --frozen-lockfile
-
       - name: Build engine and watchdog
-        run: cargo build --release -p ace-engine -p ace-watchdog --bins
-
+        run: cargo build --release --locked -p ace-engine -p ace-watchdog --bins
       - name: Build desktop app
         working-directory: apps/ace-app
         run: bun run tauri build --no-bundle
-
       - name: Install WiX 4
         shell: pwsh
         run: |
           dotnet tool install -g wix --version 4.0.5
           & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.Util.wixext/4.0.5
-
       - name: Prepare MSI inputs
         shell: pwsh
         run: |
@@ -73,13 +67,12 @@ jobs:
           $app = Join-Path $PWD "release-input\app"
           New-Item -ItemType Directory -Force -Path $engine, $app | Out-Null
           foreach ($name in @("ace-engine.exe", "ace-watchdog.exe", "ace-redirect.exe", "install-cert.exe")) {
-            Copy-Item "target\release\$name" $engine
+            Copy-Item "target\release\$name" $engine -ErrorAction Stop
           }
           $wintun = "crates\ace-tun\thirdparty\wintun"
-          Copy-Item "$wintun\bin\amd64\wintun.dll" $engine
-          Copy-Item "$wintun\LICENSE.txt" (Join-Path $engine "WINTUN-LICENSE.txt")
-          Copy-Item "target\release\ace-app.exe" $app
-
+          Copy-Item "$wintun\bin\amd64\wintun.dll" $engine -ErrorAction Stop
+          Copy-Item "$wintun\LICENSE.txt" (Join-Path $engine "WINTUN-LICENSE.txt") -ErrorAction Stop
+          Copy-Item "target\release\ace-app.exe" $app -ErrorAction Stop
       - name: Package MSI
         shell: pwsh
         env:
@@ -87,8 +80,7 @@ jobs:
         run: |
           & ".\installer\package.ps1" -Version $env:VERSION -EngineArtifacts ".\release-input\engine" -AppArtifacts ".\release-input\app"
           if ($LASTEXITCODE -ne 0) { throw "MSI packaging failed" }
-
-      - name: Build provenance manifest
+      - name: Build Windows provenance manifest
         id: candidate
         shell: pwsh
         env:
@@ -108,19 +100,17 @@ jobs:
             engineCommit = "${{ github.sha }}"
             appCommit = "${{ github.sha }}"
           }
-          $manifest | ConvertTo-Json | Set-Content "installer\dist\release-candidate.json" -Encoding utf8
+          $manifest | ConvertTo-Json | Set-Content "installer\dist\release-candidate-windows.json" -Encoding utf8
           "sha256=$sha" >> $env:GITHUB_OUTPUT
-
-      - name: Upload release candidate
+      - name: Upload Windows release candidate
         uses: actions/upload-artifact@v4
         with:
-          name: AceBlocker-${{ inputs.version }}-candidate
+          name: AceBlocker-${{ inputs.version }}-windows-x64
           path: |
             installer/dist/AceBlocker-${{ inputs.version }}.msi
-            installer/dist/release-candidate.json
+            installer/dist/release-candidate-windows.json
           if-no-files-found: error
           retention-days: 14
-
       - name: Stage MSI on Ace website
         if: ${{ inputs.stage_on_site }}
         shell: pwsh
@@ -147,3 +137,154 @@ jobs:
             appCommit = "${{ github.sha }}"
           }
           Invoke-RestMethod -Uri $env:INGEST_URL -Method Post -Headers @{ Authorization = "Bearer $env:INGEST_TOKEN" } -Form $form
+
+  linux:
+    name: Package Linux x64 tarball
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Tauri Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - name: Install locked frontend dependencies
+        working-directory: apps/ace-app
+        run: bun install --frozen-lockfile
+      - name: Build Linux services and utilities
+        run: cargo build --release --locked -p ace-engine -p ace-watchdog --bins
+      - name: Build Linux desktop app
+        working-directory: apps/ace-app
+        run: bun run tauri build --no-bundle
+      - name: Package Linux candidate with offline packs
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          package="AceBlocker-${VERSION}-linux-x64"
+          mkdir -p "release-input/$package" release-dist
+          for binary in ace-engine ace-watchdog ace-redirect install-cert ace-app; do
+            install -m 0755 "target/release/$binary" "release-input/$package/$binary"
+          done
+          cp -R installer/bundled-packs "release-input/$package/bundled-packs"
+          cp docs/RELEASING.md "release-input/$package/RELEASING.md"
+          tar -C release-input -czf "release-dist/$package.tar.gz" "$package"
+      - name: Build Linux provenance manifest
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          archive = Path("release-dist") / f"AceBlocker-{version}-linux-x64.tar.gz"
+          manifest = {
+              "version": version,
+              "os": "linux",
+              "architecture": "x64",
+              "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+              "sourceRepository": os.environ["GITHUB_REPOSITORY"],
+              "sourceCommit": os.environ["GITHUB_SHA"],
+              "sourceRunId": os.environ["GITHUB_RUN_ID"],
+              "sourceRunUrl": f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+              "engineCommit": os.environ["GITHUB_SHA"],
+              "appCommit": os.environ["GITHUB_SHA"],
+          }
+          Path("release-dist/release-candidate-linux.json").write_text(
+              json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+          )
+          PY
+      - name: Upload Linux release candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: AceBlocker-${{ inputs.version }}-linux-x64
+          path: |
+            release-dist/AceBlocker-${{ inputs.version }}-linux-x64.tar.gz
+            release-dist/release-candidate-linux.json
+          if-no-files-found: error
+          retention-days: 14
+
+  draft:
+    name: Assemble draft GitHub release
+    needs: [windows, linux]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: AceBlocker-${{ inputs.version }}-windows-x64
+          path: release-assets/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: AceBlocker-${{ inputs.version }}-linux-x64
+          path: release-assets/linux
+      - name: Verify candidate manifests and prepare checksums
+        env:
+          VERSION: ${{ inputs.version }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp "release-assets/windows/AceBlocker-$VERSION.msi" dist/
+          cp "release-assets/linux/AceBlocker-$VERSION-linux-x64.tar.gz" dist/
+          cp release-assets/windows/release-candidate-windows.json dist/
+          cp release-assets/linux/release-candidate-linux.json dist/
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          expected_sha = os.environ["EXPECTED_SHA"]
+          for platform, asset in (
+              ("windows", f"AceBlocker-{version}.msi"),
+              ("linux", f"AceBlocker-{version}-linux-x64.tar.gz"),
+          ):
+              manifest = json.loads(Path(f"dist/release-candidate-{platform}.json").read_text())
+              digest = hashlib.sha256((Path("dist") / asset).read_bytes()).hexdigest()
+              if (manifest["version"], manifest["os"], manifest["sourceCommit"], manifest["sha256"]) != (
+                  version, platform, expected_sha, digest
+              ):
+                  raise SystemExit(f"Candidate provenance/hash mismatch: {platform}")
+          PY
+          (cd dist && sha256sum *.msi *.tar.gz > SHA256SUMS)
+      - name: Create or update draft release (never publish automatically)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          tag="v$VERSION"
+          if gh release view "$tag" --json isDraft --jq .isDraft > release-state.txt 2>/dev/null; then
+            if [[ "$(cat release-state.txt)" != "true" ]]; then
+              echo "Refusing to overwrite an already published release: $tag"
+              exit 1
+            fi
+            target="$(gh release view "$tag" --json targetCommitish --jq .targetCommitish)"
+            if [[ "$target" != "$GITHUB_SHA" ]]; then
+              echo "Draft release tag $tag points to a different commit: $target"
+              exit 1
+            fi
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* \
+              --draft --prerelease --target "$GITHUB_SHA" \
+              --title "Ace Blocker $tag (candidate)" \
+              --notes "Windows MSI and Linux x64 manual-install candidate. Not validated for production; see RELEASING.md inside the Linux archive and repository release documentation."
+          fi
