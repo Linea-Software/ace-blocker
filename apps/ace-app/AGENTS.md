@@ -133,7 +133,7 @@ Most tasks occur within `./src` (Frontend). The Rust backend (`src-tauri`) is pr
 - When installing packages, use `bun add <package>` or `bun add -d <package>`.
 - **Running Locally**: Both the desktop app and the website are ALWAYS running during development.
     - **App UI**: Accessible via browser at `http://localhost:1420`. You can connect through your browser to this address to access the app UI.
-    - **App (Tauri)**: Access directly via the **Tauri MCP** tools.
+    - **App (Tauri)**: Verify native behavior with a real Tauri runtime or the documented disposable VM gate; the MCP bridge plugin is no longer installed.
 - **Committing Changes**: You **MUST** perform git commits yourself. Once you have finished a task and verified it, stage only the task's reviewed files (never `git add .`) and commit with a descriptive message, following root `AGENTS.md`. Do NOT ask the user to commit for you.
 
 ## Ace Engine Access
