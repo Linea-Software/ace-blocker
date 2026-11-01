@@ -184,6 +184,12 @@ Use `bun run <script>` for these tasks:
 - `tauri`: Accesses the Tauri CLI (e.g., `bun run tauri dev`).
 - `check`: Runs Svelte-check for type safety and linting.
 
+**Current SvelteKit 3 / CI conventions:**
+- Use `$app/env` (not removed `$app/environment`) for `dev`, and import `Handle` / `Reroute` types from `@sveltejs/kit/hooks`.
+- For navigation to known routes, prefer the generated `RouteId` type from `$app/types`.
+- Keep generated `build/` output out of the root TypeScript `include`: otherwise `svelte-check --tsgo` traverses minified output and may crash with `RangeError: Invalid string length` instead of showing useful diagnostics.
+- SvelteKit 3's `RequestEvent.request` is readonly; localized request middleware must pass a new event to `resolve` rather than assigning to the original event.
+
 **Note**: ALWAYS use **TypeScript** for any new utility or maintenance scripts created in the `/scripts/` directory.
 
 ## Nomenclature & Design Patterns

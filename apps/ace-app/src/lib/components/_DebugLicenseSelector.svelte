@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { dev } from "$app/environment";
+    import { dev } from "$app/env";
     import { Bug } from "@lucide/svelte";
     import * as Sidebar from "$lib/components/ui/sidebar/index.js";
     import * as Select from "$lib/components/ui/select/index.js";

@@ -18,12 +18,15 @@ function argumentsFor(operation: RpcOperation, options?: RequestOptions): Record
     const data: Record<string, unknown> = {};
     const path = options?.path ?? {};
     for (const param of rpcParameters[operation]) {
-        if (param === "payload" || param === "entry" || param === "mode" || param === "body") {
-            data[param] = options?.body;
-        } else if (param === "query") {
-            data[param] = options?.query ?? {};
+        // The current generated RPC contract has no "body"/"query" parameters,
+        // but the adapter also supports those transport field names if added.
+        const fieldName: string = param;
+        if (fieldName === "payload" || fieldName === "entry" || fieldName === "mode" || fieldName === "body") {
+            data[fieldName] = options?.body;
+        } else if (fieldName === "query") {
+            data[fieldName] = options?.query ?? {};
         } else {
-            data[param] = path[param] ?? options?.query?.[param];
+            data[fieldName] = path[fieldName] ?? options?.query?.[fieldName];
         }
     }
     return data;

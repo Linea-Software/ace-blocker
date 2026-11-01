@@ -23,7 +23,7 @@ describe("typed desktop engine RPC adapter", () => {
             op: "createNetworkBlock",
             args: { payload: { blockName: "Work", icon: null } },
         });
-        expect(response.data.networkBlock.id).toBe("block-id");
+        expect(response).toEqual({ data: { networkBlock: { id: "block-id" } } });
     });
 
     it("sends account credentials in a single typed IPC payload, not query metadata", async () => {
@@ -85,7 +85,7 @@ describe("typed desktop engine RPC adapter", () => {
         for (let index = 128; index < 256; index++) emit(index);
         finish();
 
-        for await (const event of iterator) observed.push(event);
+        for await (const event of stream) observed.push(event);
         expect(observed).toEqual(Array.from({ length: 256 }, (_, index) => index));
     });
 

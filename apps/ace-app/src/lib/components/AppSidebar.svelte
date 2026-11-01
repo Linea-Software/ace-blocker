@@ -27,7 +27,7 @@
     import { logout as accountLogout } from "$engine-client";
     import { engineStore } from "$lib/stores/engine.svelte";
     import { userStore } from "$lib/stores/user-store.svelte";
-    import { dev } from "$app/environment";
+    import { dev } from "$app/env";
     import YinYang from "@tabler/icons-svelte/icons/yin-yang";
     import DevToolsSheet from "./DevToolsSheet.svelte";
     import { Button } from "./ui/button";

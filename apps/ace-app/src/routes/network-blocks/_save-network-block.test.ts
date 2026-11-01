@@ -31,7 +31,7 @@ function draft(override: Partial<BlockSaveDraft> = {}): BlockSaveDraft {
     return {
         block,
         name: block.name,
-        icon: block.icon,
+        icon: block.icon ?? null,
         safeSearch: block.safeSearch,
         rules: delta(),
         schedule: delta(),

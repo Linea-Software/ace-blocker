@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { dev } from "$app/environment";
+import { dev } from "$app/env";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 export function cn(...inputs: ClassValue[]) {

@@ -6,7 +6,7 @@
  * silently degrades to a centered tooltip if the element is not on screen (for
  * example the sidebar, which is collapsed on narrow windows).
  */
-import type { Pathname } from "$app/types";
+import type { RouteId } from "$app/types";
 import * as m from "$lib/paraglide/messages.js";
 
 export type TourPlacement = "top" | "right" | "bottom" | "left";
@@ -15,7 +15,7 @@ export type TourStep = {
     /** Stable key, used for `{#each}` and for debugging. */
     id: string;
     /** Route to navigate to before showing the step. */
-    route: Pathname;
+    route: RouteId;
     /** CSS selector of the element to spotlight. */
     selector: string;
     /** Preferred side of the target to place the tooltip on. */

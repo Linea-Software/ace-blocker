@@ -13,7 +13,7 @@
     import { userStore } from "$lib/stores/user-store.svelte";
     import * as m from "$lib/paraglide/messages.js";
     import { cn } from "$lib/utils.js";
-    import { dev } from "$app/environment";
+    import { dev } from "$app/env";
     import { openUrl } from "@tauri-apps/plugin-opener";
     import { engineStore } from "$lib/stores/engine.svelte";
 

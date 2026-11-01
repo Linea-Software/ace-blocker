@@ -7,7 +7,7 @@ export type RequestResult<TResponse, TError, ThrowOnError extends boolean = fals
         : { data: ResponseValue<TResponse>; error?: never } |
           { data?: undefined; error: RpcFailure & { readonly domainError?: ResponseValue<TError> } }>;
 export type RpcStreamResult<TResponse> = {
-    stream?: AsyncIterable<ResponseValue<TResponse>>;
+    stream: AsyncIterable<ResponseValue<TResponse>>;
 };
 type Field<T, K extends string> = T extends { [P in K]: infer V }
     ? { [P in K]: V } : { [P in K]?: never };
