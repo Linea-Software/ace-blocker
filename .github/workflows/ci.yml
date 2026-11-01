@@ -4,36 +4,82 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: desktop-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  check:
-    runs-on: windows-latest
-    timeout-minutes: 90
+  frontend:
+    name: Frontend checks and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - name: Install locked frontend dependencies
+        working-directory: apps/ace-app
+        run: bun install --frozen-lockfile
+      - name: Build frontend and generate Paraglide translations
+        working-directory: apps/ace-app
+        run: bun run build
+      - name: Typecheck frontend
+        working-directory: apps/ace-app
+        run: bun run check
+      - name: Run unit tests
+        working-directory: apps/ace-app
+        run: bun run test:unit
+
+  native:
+    name: Rust checks and tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Linux Tauri build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: . -> target
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.4.0'
-      - name: Install app dependencies
+      - name: Install locked Tauri frontend dependencies
         working-directory: apps/ace-app
         run: bun install --frozen-lockfile
-      - name: Verify the unified Rust workspace and Tauri application
+      - name: Generate Tauri frontend assets
+        working-directory: apps/ace-app
+        run: bun run build
+      - name: Check entire Rust workspace
         run: cargo check --locked --workspace --all-targets
-      - name: Check release-only service contracts
+      - name: Check release service binaries
         run: cargo check --release --locked -p ace-engine -p ace-watchdog
-      - name: Test watchdog contracts and engine RPC
+      - name: Test engine and watchdog protocol
+        shell: bash
         run: |
           cargo test --locked -p ace-watchdog-protocol
-          cargo test --locked -p ace-engine --lib remoc_tests
-      - name: Check app UI
-        working-directory: apps/ace-app
-        run: |
-          bun run check
-          bun run build
+          cargo test --locked -p ace-engine --lib
