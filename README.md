@@ -43,6 +43,10 @@ bun run tauri dev
 .\installer\build.ps1
 ```
 
+See [Build performance and CI strategy](docs/BUILD_PERFORMANCE.md) for
+dependency measurements, official Cargo guidance, and the proposed RPC
+client-boundary refactor.
+
 The Windows x64 CRT and linker settings are in root `.cargo/config.toml`.
 The shared Cargo build output is root `target/`. The app retains its
 own `bun.lock`; there is one root `Cargo.lock`.
