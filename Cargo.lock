@@ -4712,9 +4712,9 @@ dependencies = [
 
 [[package]]
 name = "openapi-to-rust"
-version = "0.22.0"
+version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aed99ca35987c90d047e68fb16312dc6ee24a67080699208588a35f3f1ecfeaf"
+checksum = "3bd6e71bfeb9c084586ad4daa7373a662be1f779432f263fa291460a98803d7d"
 dependencies = [
  "clap",
  "heck 0.5.0",

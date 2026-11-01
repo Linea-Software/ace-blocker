@@ -83,7 +83,7 @@ futures-util = "~0.3"
 http = "~1.5"
 hyper = { version = "~1.12", features = ["full"] }
 libsqlite3-sys = { version = "~0.38", features = ["bundled"] }
-openapi-to-rust = { version = "~0.22", optional = true }
+openapi-to-rust = { version = "~0.23", optional = true }
 openport = { version = "~0.4", features = ["rand"] }
 rand = "~0.10"
 rcgen = "~0.14"
