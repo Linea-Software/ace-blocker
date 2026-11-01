@@ -41,8 +41,8 @@ impl RpcError {
         .into()
     }
 
-    // Release-only debug-operation rejection must return a stable RPC envelope.
-    #[cfg(not(debug_assertions))]
+    // Debug operations unavailable in release builds or on unsupported
+    // platforms return the same stable RPC error envelope.
     fn internal(error: impl std::fmt::Display) -> Self {
         super::error::ApiError::Internal(error.to_string()).into()
     }
@@ -613,7 +613,7 @@ impl EngineControl for EngineRpc {
                 "developer operations are not available in release builds",
             )));
         }
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, target_os = "windows"))]
         {
             if let Err(error) = self.check_capability(capability.as_deref(), true) {
                 return Ok(Err(error));
@@ -621,6 +621,13 @@ impl EngineControl for EngineRpc {
             Ok(super::operations_dev::hide_files()
                 .await
                 .map_err(Into::into))
+        }
+        #[cfg(all(debug_assertions, not(target_os = "windows")))]
+        {
+            let _ = capability;
+            Ok(Err(RpcError::internal(
+                "file visibility controls are only available on Windows",
+            )))
         }
     }
 
@@ -632,7 +639,7 @@ impl EngineControl for EngineRpc {
                 "developer operations are not available in release builds",
             )));
         }
-        #[cfg(debug_assertions)]
+        #[cfg(all(debug_assertions, target_os = "windows"))]
         {
             if let Err(error) = self.check_capability(capability.as_deref(), true) {
                 return Ok(Err(error));
@@ -640,6 +647,13 @@ impl EngineControl for EngineRpc {
             Ok(super::operations_dev::show_files()
                 .await
                 .map_err(Into::into))
+        }
+        #[cfg(all(debug_assertions, not(target_os = "windows")))]
+        {
+            let _ = capability;
+            Ok(Err(RpcError::internal(
+                "file visibility controls are only available on Windows",
+            )))
         }
     }
 
