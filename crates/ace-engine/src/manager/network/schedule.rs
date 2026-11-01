@@ -331,8 +331,11 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let db_path = temp_dir.path().join("test_db.sqlite");
         let sites_dir = Settings::shared_test_sites_dir();
-        // Configure Settings to use our temp dir
+        // Keep *both* shared-data paths inside the stable test fixture.
+        // Linux CI cannot create the production /usr/local/share/AceBlocker
+        // directory; otherwise Settings::get_app_dir exits the test process.
         Settings::set_test_sites_dir(sites_dir.clone());
+        Settings::set_test_resistance_scripts_dir(sites_dir.join("resistance_scripts"));
 
         let db = EngineDB::from(&db_path).unwrap();
         let db_lock = Arc::new(db);
