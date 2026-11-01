@@ -142,6 +142,7 @@ dependencies = [
  "interprocess",
  "remoc",
  "serde_json",
+ "tempfile",
  "tokio",
  "uuid",
  "widestring 1.2.1",
