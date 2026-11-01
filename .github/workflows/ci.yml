@@ -114,4 +114,4 @@ jobs:
           workspaces: . -> target
           shared-key: proxy-http3
       - name: Exercise opt-in QUIC transport
-        run: cargo test --locked -p mitm-proxy --features http3 --test proxy_http3
+        run: cargo test --locked -p mitm-proxy --features proxy-cli,http3

@@ -21,8 +21,11 @@ interception or weaken enforcement.
 ## Build & test
 
 ```sh
-# Build
+# Build the library used by ACE (no standalone CLI or QUIC listener)
 cargo build
+
+# Build the standalone proxy CLI
+cargo build --features proxy-cli,http3
 
 # Full test suite (hermetic, 71 tests)
 cargo test

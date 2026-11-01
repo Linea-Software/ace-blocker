@@ -3,8 +3,11 @@
 ## Quick start
 
 ```sh
-# Run the full suite (unit + integration + CLI + doc tests)
-cargo test
+# Run default library and integration tests
+cargo test -p mitm-proxy
+
+# Full standalone proxy matrix (CLI + HTTP/3)
+cargo test -p mitm-proxy --features proxy-cli,http3
 
 # Run only unit tests (fast, no network)
 cargo test --lib
@@ -62,7 +65,8 @@ verify flags, port binding, and CA file creation. They are separate from the
 library tests and prove the compiled binary + clap wiring works.
 
 The default Cargo feature set builds only the HTTP/1.x and HTTP/2 proxy.
-Use `--features http3` when running the QUIC tests or the standalone HTTP/3 CLI.
+Use `--features http3` for the QUIC tests, and `--features proxy-cli,http3`
+for the standalone binary and its optional CLI tests.
 
 ## HTTP/3 test client
 

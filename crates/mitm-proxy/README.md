@@ -35,7 +35,9 @@ MitmProxy::new(config)
 
 HTTP/3 is **opt-in** via the Cargo feature `http3`. Ace Engine uses the default
 TCP-only configuration because protected-browser QUIC is dropped by ace-tun.
-Standalone proxy builds can enable HTTP/3 with `cargo run -p mitm-proxy --features http3 -- --http3 127.0.0.1:9443`.
+The standalone proxy executable is also opt-in via `proxy-cli`, because ACE
+ships the engine and watchdog instead. To run HTTP/3, use
+`cargo run -p mitm-proxy --features proxy-cli,http3 -- --http3 127.0.0.1:9443`.
 
 ## CLI
 
@@ -111,8 +113,11 @@ Options:
 ## Testing
 
 ```sh
-# Run the full suite (71 tests — hermetic, no network required)
-cargo test
+# Run the engine-facing library/proxy tests
+cargo test -p mitm-proxy
+
+# Include standalone CLI tests and HTTP/3 regression tests
+cargo test -p mitm-proxy --features proxy-cli,http3
 
 # Run only unit tests
 cargo test --lib
