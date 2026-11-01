@@ -107,7 +107,7 @@ mitm-proxy = { path = "../mitm-proxy" }
 ace-tun = { path = "../ace-tun" }
 sysuri = "~0.4"
 thiserror = "~2.0"
-tokio = { version = "~1.53", features = ["full"] }
+tokio = { version = "~1.54", features = ["full"] }
 tracing = "~0.1"
 tracing-appender = "~0.2"
 tracing-subscriber = { version = "~0.3", features = [
@@ -115,7 +115,7 @@ tracing-subscriber = { version = "~0.3", features = [
     "fmt",
     "registry",
 ] }
-uuid = { version = "~1.28", features = ["v7", "v5", "v4", "serde"] }
+uuid = { version = "~1.29", features = ["v7", "v5", "v4", "serde"] }
 zip = { version = "~9.0", features = ["zstd"] }
 eyre = "~0.6"
 color-eyre = "~0.6"

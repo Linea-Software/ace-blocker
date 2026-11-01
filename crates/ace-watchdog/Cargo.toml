@@ -17,8 +17,8 @@ ace-engine = { path = "../ace-engine", optional = true }
 eyre = "~0.6"
 serde_json = "~1.0"
 remoc = { version = "0.20.4", default-features = false, features = ["rch"] }
-tokio = { version = "~1.53", features = ["full"] }
-uuid = { version = "~1.28", features = ["v4", "v7", "serde"] }
+tokio = { version = "~1.54", features = ["full"] }
+uuid = { version = "~1.29", features = ["v4", "v7", "serde"] }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 tempfile = "~3.27"
