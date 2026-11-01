@@ -238,6 +238,49 @@ async fn opaque_tunnel_relays_bytes_unchanged_both_directions() {
     );
 }
 
+/// A CONNECT URI encloses an IPv6 literal in brackets; the origin socket
+/// must receive the bare address, not the bracketed HTTP authority host.
+#[tokio::test]
+async fn opaque_connect_to_bracketed_ipv6_literal_relays_bytes() {
+    init_tracing();
+
+    let origin = tokio::net::TcpListener::bind("[::1]:0").await.unwrap();
+    let origin_port = origin.local_addr().unwrap().port();
+    let upstream = tokio::spawn(async move {
+        let (mut stream, _) = origin.accept().await.unwrap();
+        stream.write_all(b"ipv6-ready").await.unwrap();
+        let mut request = [0u8; 4];
+        stream.read_exact(&mut request).await.unwrap();
+        assert_eq!(&request, b"ping");
+        stream.write_all(b"pong").await.unwrap();
+    });
+
+    let ca_dir = TempDir::new().unwrap();
+    let proxy_addr = pick_tcp_addr().await;
+    let (_, _proxy) = start_proxy_on_with_decider(
+        proxy_addr,
+        None,
+        ca_dir.path(),
+        Inspectors::default(),
+        Arc::new(TunnelAll),
+    )
+    .await;
+
+    let mut tunnel = raw_connect(proxy_addr, "[::1]", origin_port).await;
+    tokio::time::timeout(std::time::Duration::from_secs(3), async {
+        let mut banner = [0u8; 10];
+        tunnel.read_exact(&mut banner).await.unwrap();
+        assert_eq!(&banner, b"ipv6-ready");
+        tunnel.write_all(b"ping").await.unwrap();
+        let mut response = [0u8; 4];
+        tunnel.read_exact(&mut response).await.unwrap();
+        assert_eq!(&response, b"pong");
+    })
+    .await
+    .expect("IPv6 CONNECT must establish and relay an opaque connection");
+    upstream.await.unwrap();
+}
+
 // ---------------------------------------------------------------------------
 // Invariant: no leaf certificate is minted for a tunneled host
 // ---------------------------------------------------------------------------

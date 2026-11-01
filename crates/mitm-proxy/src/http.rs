@@ -391,13 +391,22 @@ async fn opaque_tunnel<I>(
 where
     I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
 {
-    let mut upstream =
-        TcpStream::connect((host, port))
-            .await
-            .map_err(|source| ProxyError::Upstream {
-                authority: authority.to_string(),
-                source: eyre::eyre!(source),
-            })?;
+    // HTTP Authority::host() retains the brackets around IPv6 literals.
+    // Passing "[::1]" as a hostname to getaddrinfo fails even when ::1 is
+    // reachable; connect to the parsed socket address instead.
+    let upstream_connection = if let Some(ipv6) = host
+        .strip_prefix('[')
+        .and_then(|value| value.strip_suffix(']'))
+        .and_then(|value| value.parse::<std::net::Ipv6Addr>().ok())
+    {
+        TcpStream::connect(SocketAddr::new(ipv6.into(), port)).await
+    } else {
+        TcpStream::connect((host, port)).await
+    };
+    let mut upstream = upstream_connection.map_err(|source| ProxyError::Upstream {
+        authority: authority.to_string(),
+        source: eyre::eyre!(source),
+    })?;
     upstream.set_nodelay(true).ok();
 
     let mut client = io;
