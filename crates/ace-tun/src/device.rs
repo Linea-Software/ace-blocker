@@ -211,7 +211,11 @@ mod imp {
         /// No reader thread is needed: `AsyncFd` polls the fd on the reactor.
         pub(crate) fn new(fd: SessionHandle) -> io::Result<(Self, ReaderHandle)> {
             let device = Self {
-                fd: AsyncFd::new(fd)?,
+                // SAFETY: SessionHandle is an owned fd, duplicated from the
+                // adapter. Its numeric fd and underlying open file description
+                // remain valid and unchanged for the lifetime of AsyncFd;
+                // ownership transfers to AsyncFd and closes on drop.
+                fd: unsafe { AsyncFd::register(fd)? },
                 packet: vec![0u8; MAX_PACKET].into_boxed_slice(),
             };
             Ok((device, ReaderHandle))
@@ -369,7 +373,11 @@ mod imp {
         /// No reader thread is needed: `AsyncFd` polls the fd on the reactor.
         pub(crate) fn new(fd: SessionHandle) -> io::Result<(Self, ReaderHandle)> {
             let device = Self {
-                fd: AsyncFd::new(fd)?,
+                // SAFETY: SessionHandle is an owned fd, duplicated from the
+                // adapter. Its numeric fd and underlying open file description
+                // remain valid and unchanged for the lifetime of AsyncFd;
+                // ownership transfers to AsyncFd and closes on drop.
+                fd: unsafe { AsyncFd::register(fd)? },
                 packet: vec![0u8; AF_HEADER_LEN + MAX_PACKET].into_boxed_slice(),
             };
             Ok((device, ReaderHandle))
