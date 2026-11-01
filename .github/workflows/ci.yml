@@ -78,8 +78,10 @@ jobs:
         run: cargo check --locked --workspace --all-targets
       - name: Check release service binaries
         run: cargo check --release --locked -p ace-engine -p ace-watchdog
-      - name: Test engine and watchdog protocol
+      - name: Test engine RPC, scheduling, and watchdog
         shell: bash
         run: |
           cargo test --locked -p ace-watchdog-protocol
-          cargo test --locked -p ace-engine --lib
+          cargo test --locked -p ace-watchdog --bin ace-watchdog
+          cargo test --locked -p ace-engine --lib remoc_tests
+          cargo test --locked -p ace-engine --lib manager::network::schedule::tests

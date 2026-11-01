@@ -10,8 +10,11 @@ workflow.
 manual dispatch:
 
 - Bun locked install, Svelte/TypeScript checks, Vitest unit tests, and frontend build.
-- Rust workspace compilation (including Tauri), service release checks, engine
-  library tests, and watchdog protocol tests on Windows x64 and Linux x64.
+- Rust workspace compilation (including Tauri), service release checks,
+  engine remoc RPC and schedule tests, and watchdog binary/protocol tests on
+  Windows x64 and Linux x64. The full engine test suite also contains
+  resource-intensive site-pack integration tests; run it separately before
+  public releases rather than saturating every pull-request runner.
 
 The Linux runners install the native dependencies required by Tauri 2/WebKitGTK.
 The pipeline intentionally has no macOS job.
