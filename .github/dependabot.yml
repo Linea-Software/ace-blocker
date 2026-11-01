@@ -22,6 +22,12 @@ updates:
         update-types:
           - minor
           - patch
+    # SvelteKit 3 currently declares a TypeScript 6 peer dependency.
+    # Coordinate TypeScript 7 separately after ecosystem compatibility is verified.
+    ignore:
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /
