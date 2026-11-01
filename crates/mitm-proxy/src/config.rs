@@ -18,6 +18,7 @@ pub struct ProxyConfig {
     /// HTTP/3 endpoint is not started. This is a *direct* interception endpoint
     /// (QUIC has no cleartext CONNECT equivalent), so it is typically only
     /// useful behind a transparent-redirect layer.
+    #[cfg(feature = "http3")]
     pub http3_addr: Option<SocketAddr>,
 
     /// Path to the CA certificate (PEM). Generated on first run if missing.
@@ -48,6 +49,7 @@ impl ProxyConfig {
         let dir = ca_dir.into();
         Self {
             listen_addr,
+            #[cfg(feature = "http3")]
             http3_addr: None,
             ca_cert_path: dir.join("mitm_ca.pem"),
             ca_key_path: dir.join("mitm_ca.key"),
@@ -58,6 +60,7 @@ impl ProxyConfig {
     }
 
     /// Enable the HTTP/3 listener on `addr`.
+    #[cfg(feature = "http3")]
     pub fn with_http3(mut self, addr: SocketAddr) -> Self {
         self.http3_addr = Some(addr);
         self
@@ -93,6 +96,7 @@ mod tests {
         let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
         let config = ProxyConfig::new(addr, "./ca");
         assert_eq!(config.listen_addr.port(), 8080);
+        #[cfg(feature = "http3")]
         assert_eq!(config.http3_addr, None);
         assert!(!config.install_ca);
         assert!(config.verify_upstream);
@@ -100,6 +104,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "http3")]
     fn builder_sets_every_field() {
         let addr: SocketAddr = "127.0.0.1:9090".parse().unwrap();
         let h3: SocketAddr = "127.0.0.1:9443".parse().unwrap();
@@ -131,6 +136,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "http3")]
     fn http3_defaults_to_none() {
         let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
         let config = ProxyConfig::new(addr, "./ca");

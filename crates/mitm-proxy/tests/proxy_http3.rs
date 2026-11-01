@@ -1,3 +1,5 @@
+#![cfg(feature = "http3")]
+
 //! Integration tests for HTTP/3 (QUIC) interception.
 //!
 //! Uses a Rust h3 client (h3 + h3-quinn + quinn) to drive our own server.

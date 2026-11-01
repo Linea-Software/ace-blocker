@@ -44,7 +44,6 @@ fn cli_help() {
     cmd.assert()
         .success()
         .stdout(predicate::str::contains("--listen"))
-        .stdout(predicate::str::contains("--http3"))
         .stdout(predicate::str::contains("--ca-dir"))
         .stdout(predicate::str::contains("--install-ca"))
         .stdout(predicate::str::contains("--insecure-upstream"));
@@ -71,6 +70,7 @@ fn cli_listen_binds_to_port() {
 }
 
 #[test]
+#[cfg(feature = "http3")]
 fn cli_http3_flag_accepted() {
     let ca_dir = TempDir::new().unwrap();
     let ca_dir_str = ca_dir.path().to_str().unwrap();

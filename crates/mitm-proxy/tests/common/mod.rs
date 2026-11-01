@@ -98,10 +98,15 @@ pub async fn start_proxy_on_with_decider(
     inspectors: Inspectors,
     decider: Arc<dyn InterceptDecider>,
 ) -> (String, tokio::task::JoinHandle<()>) {
-    let mut config = ProxyConfig::new(tcp_addr, ca_dir.to_path_buf()).verify_upstream(false);
-    if let Some(addr) = h3_addr {
-        config = config.with_http3(addr);
-    }
+    let config = ProxyConfig::new(tcp_addr, ca_dir.to_path_buf()).verify_upstream(false);
+    #[cfg(feature = "http3")]
+    let config = if let Some(addr) = h3_addr {
+        config.with_http3(addr)
+    } else {
+        config
+    };
+    #[cfg(not(feature = "http3"))]
+    assert!(h3_addr.is_none(), "enable mitm-proxy/http3 to test QUIC");
 
     let proxy = MitmProxy::new(config.clone())
         .with_inspectors(inspectors)

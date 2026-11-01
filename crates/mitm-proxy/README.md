@@ -33,6 +33,10 @@ MitmProxy::new(config)
 - **GREASE-free HTTP/3** — the h3 server explicitly disables GREASE frames
   for compatibility with strict HTTP/3 clients.
 
+HTTP/3 is **opt-in** via the Cargo feature `http3`. Ace Engine uses the default
+TCP-only configuration because protected-browser QUIC is dropped by ace-tun.
+Standalone proxy builds can enable HTTP/3 with `cargo run -p mitm-proxy --features http3 -- --http3 127.0.0.1:9443`.
+
 ## CLI
 
 ```text
@@ -42,7 +46,7 @@ Usage: mitm-proxy [OPTIONS]
 
 Options:
   -l, --listen <LISTEN>      TCP address to listen on [default: 127.0.0.1:8080]
-      --http3 <HTTP3>        Also start an HTTP/3 (QUIC) listener on this UDP address
+      --http3 <HTTP3>        Also start HTTP/3 (only with --features http3)
       --ca-dir <CA_DIR>      Directory for the generated CA [default: ./mitm-ca]
       --install-ca           Install CA into the OS trust store (requires elevation)
       --insecure-upstream    Skip upstream TLS verification (testing only)
@@ -114,7 +118,7 @@ cargo test
 cargo test --lib
 
 # Run a specific integration test binary
-cargo test --test proxy_http3
+cargo test -p mitm-proxy --features http3 --test proxy_http3
 ```
 
 See [`TESTING.md`](TESTING.md) for the full test suite breakdown and the

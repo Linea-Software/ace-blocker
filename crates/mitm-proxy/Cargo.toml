@@ -5,6 +5,11 @@ edition = "2024"
 description = "Standalone man-in-the-middle proxy terminating HTTP/1.x, HTTP/2 and HTTP/3"
 license = "MIT OR Apache-2.0"
 
+[features]
+default = []
+# Engine redirects protected-browser QUIC to TCP, so HTTP/3 is opt-in.
+http3 = ["dep:h3", "dep:h3-quinn", "dep:quinn"]
+
 [lib]
 name = "mitm_proxy"
 path = "src/lib.rs"
@@ -20,13 +25,13 @@ clap = { version = "4.6.7", features = ["derive"] }
 color-eyre = "0.6.5"
 eyre = "0.6.14"
 futures = "0.3.34"
-h3 = "0.0.8"
-h3-quinn = "0.0.10"
+h3 = { version = "0.0.8", optional = true }
+h3-quinn = { version = "0.0.10", optional = true }
 http = "1.5.0"
 http-body-util = "0.1.5"
 hyper = { version = "1", features = ["full"] }
 hyper-util = { version = "0.1.21", features = ["full"] }
-quinn = "0.11.12"
+quinn = { version = "0.11.12", optional = true }
 rcgen = { version = "0.14.10", features = ["pem", "x509-parser"] }
 rustls = { version = "0.23.45", default-features = false, features = ["ring", "logging", "std", "tls12"] }
 rustls-pemfile = "2.2.0"

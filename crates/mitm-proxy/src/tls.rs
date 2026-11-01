@@ -20,6 +20,7 @@ use crate::cert_resolver::DynamicCertResolver;
 /// ALPN identifiers advertised to *clients* over the MITM'd TCP connection.
 pub const TCP_ALPN: &[&[u8]] = &[b"h2", b"http/1.1"];
 /// ALPN identifier advertised to *clients* over QUIC.
+#[cfg(feature = "http3")]
 pub const H3_ALPN: &[&[u8]] = &[b"h3"];
 
 /// Build a server config that resolves certificates dynamically per SNI and
@@ -133,6 +134,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "http3")]
     fn server_config_sets_h3_alpn() {
         let resolver = make_resolver();
         let cfg = server_config(resolver, H3_ALPN);

@@ -19,6 +19,7 @@ struct Args {
 
     /// Also start an HTTP/3 (QUIC) listener on this UDP address.
     #[arg(long)]
+    #[cfg(feature = "http3")]
     http3: Option<SocketAddr>,
 
     /// Directory for the generated CA certificate and key.
@@ -46,12 +47,15 @@ async fn main() -> mitm_proxy::Result<()> {
 
     let args = Args::parse();
 
-    let mut config = ProxyConfig::new(args.listen, &args.ca_dir)
+    let config = ProxyConfig::new(args.listen, &args.ca_dir)
         .install_ca(args.install_ca)
         .verify_upstream(!args.insecure_upstream);
-    if let Some(addr) = args.http3 {
-        config = config.with_http3(addr);
-    }
+    #[cfg(feature = "http3")]
+    let config = if let Some(addr) = args.http3 {
+        config.with_http3(addr)
+    } else {
+        config
+    };
 
     MitmProxy::new(config)
         .with_request_inspector(Arc::new(LoggingInspector))

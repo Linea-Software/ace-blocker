@@ -45,6 +45,7 @@ pub mod intercept;
 mod cert_resolver;
 mod client_hello;
 mod http;
+#[cfg(feature = "http3")]
 mod http3;
 mod state;
 mod tls;
@@ -141,6 +142,7 @@ impl MitmProxy {
         // --- TLS configs ------------------------------------------------
         let resolver = Arc::new(DynamicCertResolver::new(ca));
         let server_tls = tls::server_config(resolver.clone(), tls::TCP_ALPN);
+        #[cfg(feature = "http3")]
         let h3_tls = tls::server_config(resolver.clone(), tls::H3_ALPN);
         let client_tls = tls::client_config(self.config.verify_upstream, tls::TCP_ALPN)?;
 
@@ -148,6 +150,7 @@ impl MitmProxy {
         let state = Arc::new(ProxyState {
             server_tls,
             cert_resolver: resolver,
+            #[cfg(feature = "http3")]
             h3_tls,
             upstream: Upstream::new(client_tls),
             inspectors: self.inspectors,
@@ -158,6 +161,10 @@ impl MitmProxy {
         // --- listeners --------------------------------------------------
         let tcp = http::serve(state.clone());
 
+        #[cfg(not(feature = "http3"))]
+        return tcp.await;
+
+        #[cfg(feature = "http3")]
         match self.config.http3_addr {
             Some(addr) => {
                 let quic = http3::serve(state, addr);

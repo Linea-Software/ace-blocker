@@ -908,6 +908,7 @@ mod tests {
         let state = Arc::new(ProxyState {
             server_tls,
             cert_resolver: resolver.clone(),
+            #[cfg(feature = "http3")]
             h3_tls: crate::tls::server_config(resolver.clone(), crate::tls::H3_ALPN),
             upstream: Upstream::new(client_tls),
             inspectors: Inspectors {
@@ -1007,6 +1008,7 @@ mod tests {
         let state = Arc::new(ProxyState {
             server_tls,
             cert_resolver: resolver.clone(),
+            #[cfg(feature = "http3")]
             h3_tls: crate::tls::server_config(resolver.clone(), crate::tls::H3_ALPN),
             upstream: Upstream::new(client_tls),
             inspectors: Inspectors::default(),

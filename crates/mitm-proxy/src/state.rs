@@ -17,6 +17,7 @@ pub struct ProxyState {
     /// Shared leaf-certificate factory used by per-CONNECT resolvers.
     pub cert_resolver: Arc<DynamicCertResolver>,
     /// TLS config for the QUIC/HTTP/3 listener (advertises h3).
+    #[cfg(feature = "http3")]
     pub h3_tls: Arc<ServerConfig>,
     /// Upstream forwarding client.
     pub upstream: Upstream,

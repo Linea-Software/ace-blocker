@@ -10,7 +10,7 @@ cargo test
 cargo test --lib
 
 # Run a specific test binary
-cargo test --test proxy_http3
+cargo test -p mitm-proxy --features http3 --test proxy_http3
 
 # Run with tracing output visible
 RUST_LOG=mitm_proxy=debug cargo test -- --nocapture
@@ -60,6 +60,9 @@ All integration tests use hermetically-bound local echo servers on
 These launch the **compiled `mitm-proxy.exe`** binary via `assert_cmd` and
 verify flags, port binding, and CA file creation. They are separate from the
 library tests and prove the compiled binary + clap wiring works.
+
+The default Cargo feature set builds only the HTTP/1.x and HTTP/2 proxy.
+Use `--features http3` when running the QUIC tests or the standalone HTTP/3 CLI.
 
 ## HTTP/3 test client
 
