@@ -49,6 +49,58 @@ impl SitePackDB {
         Ok(SitePackDB { db_pool: pool })
     }
 
+    /// Fast settings apply exclusively to disposable, newly created staging DBs.
+    /// A one-connection pool keeps connection-scoped PRAGMAs consistent.
+    pub fn from_staging(db_path: &Path) -> Result<SitePackDB, DBError> {
+        if db_path.exists() {
+            return Err(DBError::DatabaseConnectionError {
+                message: "staging database already exists".to_string(),
+            });
+        }
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent).map_err(|error| DBError::DatabaseConnectionError {
+                message: format!("failed to create staging directory: {error}"),
+            })?;
+        }
+        let db_pool = crate::db::sqlite_pool::open_pool_with_size(db_path, MIGRATIONS, Some(1))?;
+        let db = SitePackDB { db_pool };
+        let connection = &mut db.get_db_connection()?;
+        diesel::sql_query("PRAGMA journal_mode = MEMORY")
+            .execute(connection)
+            .map_err(staging_error)?;
+        diesel::sql_query("PRAGMA synchronous = OFF")
+            .execute(connection)
+            .map_err(staging_error)?;
+        Ok(db)
+    }
+
+    /// Validate the B-tree and return to ordinary journal settings before swap.
+    /// Only call this after the final metadata write has completed.
+    pub fn finish_staging(&self, db_path: &Path) -> Result<(), DBError> {
+        {
+            let connection = &mut self.get_db_connection()?;
+            let integrity: IntegrityRow = diesel::sql_query("PRAGMA quick_check")
+                .get_result(connection)
+                .map_err(staging_error)?;
+            if integrity.result != "ok" {
+                return Err(DBError::DatabaseConnectionError {
+                    message: format!("staging integrity check failed: {}", integrity.result),
+                });
+            }
+            diesel::sql_query("PRAGMA synchronous = FULL")
+                .execute(connection)
+                .map_err(staging_error)?;
+            diesel::sql_query("PRAGMA journal_mode = DELETE")
+                .execute(connection)
+                .map_err(staging_error)?;
+        }
+        std::fs::File::open(db_path)
+            .and_then(|file| file.sync_all())
+            .map_err(|error| DBError::DatabaseConnectionError {
+                message: format!("failed to sync staging database: {error}"),
+            })
+    }
+
     pub fn get_db_connection(
         &self,
     ) -> Result<PooledConnection<ConnectionManager<SqliteConnection>>, DBError> {
@@ -182,6 +234,18 @@ impl SitePackDB {
     }
 }
 
+#[derive(diesel::QueryableByName)]
+struct IntegrityRow {
+    #[diesel(sql_type = diesel::sql_types::Text, column_name = "quick_check")]
+    result: String,
+}
+
+fn staging_error(error: diesel::result::Error) -> DBError {
+    DBError::DatabaseConnectionError {
+        message: format!("staging database operation failed: {error}"),
+    }
+}
+
 fn uri_hash_to_db(uri_hash: &UriHash) -> i64 {
     *uri_hash.as_ref() as i64
 }
@@ -252,6 +316,26 @@ mod tests {
             entry_count,
             built_at: "2026-08-21T00:00:00Z".to_string(),
         }
+    }
+
+    #[test]
+    fn staging_settings_are_transient_and_database_reopens_normally() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("staged.db");
+        let db = SitePackDB::from_staging(&path).unwrap();
+        db.insert_entries(&[hash_host("example.com")]).unwrap();
+        db.insert_pack_meta(valid_pack_meta(1)).unwrap();
+        db.finish_staging(&path).unwrap();
+        drop(db);
+        let reopened = SitePackDB::from(&path).unwrap();
+        assert_eq!(reopened.get_entry_count().unwrap(), 1);
+        assert!(
+            reopened
+                .blocking_result(&hash_host("example.com"))
+                .unwrap()
+                .is_blocked()
+        );
+        assert!(SitePackDB::from_staging(&path).is_err());
     }
 
     #[test]

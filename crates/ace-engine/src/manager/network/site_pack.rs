@@ -152,7 +152,7 @@ fn run_local_import(
         ));
         let _stage_cleanup = StagedPackCleanup(stage_dir.clone());
 
-        let staged_db = match SitePackDB::from(&stage_dir.join("pack.db")) {
+        let staged_db = match SitePackDB::from_staging(&stage_dir.join("pack.db")) {
             Ok(db) => db,
             Err(error) => {
                 yield SitePackCreationStatus::Failed {
@@ -190,7 +190,9 @@ fn run_local_import(
 
         // The importer writes pack_meta last. Validate it and close every
         // staging connection before renaming the file on Windows.
-        let validation = staged_db.get_entry_count();
+        let validation = staged_db.get_entry_count().and_then(|_| {
+            staged_db.finish_staging(&stage_dir.join("pack.db"))
+        });
         drop(staged_db);
         if let Err(error) = validation {
             yield SitePackCreationStatus::Failed {

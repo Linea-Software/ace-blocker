@@ -14,18 +14,30 @@ pub(crate) fn open_pool(
     path: &Path,
     migrations: EmbeddedMigrations,
 ) -> Result<Pool<ConnectionManager<SqliteConnection>>, DBError> {
+    open_pool_with_size(path, migrations, None)
+}
+
+/// Restrict staging pools to one connection so connection-local PRAGMAs persist.
+pub(crate) fn open_pool_with_size(
+    path: &Path,
+    migrations: EmbeddedMigrations,
+    max_size: Option<u32>,
+) -> Result<Pool<ConnectionManager<SqliteConnection>>, DBError> {
     let database_path = path
         .to_str()
         .ok_or_else(|| DBError::DatabaseConnectionError {
             message: "provided database path is not a valid string".to_string(),
         })?;
     let manager = ConnectionManager::<SqliteConnection>::new(database_path);
-    let pool =
-        Pool::builder()
-            .build(manager)
-            .map_err(|error| DBError::DatabaseConnectionError {
-                message: format!("failed to establish connection pool: {error}"),
-            })?;
+    let mut builder = Pool::builder();
+    if let Some(max_size) = max_size {
+        builder = builder.max_size(max_size);
+    }
+    let pool = builder
+        .build(manager)
+        .map_err(|error| DBError::DatabaseConnectionError {
+            message: format!("failed to establish connection pool: {error}"),
+        })?;
 
     {
         let mut connection = pool
