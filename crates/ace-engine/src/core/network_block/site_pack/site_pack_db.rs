@@ -18,6 +18,7 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations_site_pa
 /// Each site pack gets its own SQLite file (replacing the per-pack RocksDB
 /// directory). `entries` stores the 64-bit XXH3 host hashes, `pack_meta` the
 /// pack metadata. This database is unrelated to the main engine database.
+#[derive(Clone)]
 pub struct SitePackDB {
     db_pool: Pool<ConnectionManager<SqliteConnection>>,
 }

@@ -19,12 +19,98 @@ use futures::StreamExt;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::sync::mpsc;
 use tracing::{info, warn};
 
 use crate::core::utils::file_download;
 
 /// Number of hashes accumulated before flushing to SQLite (which uses smaller SQL statements).
 const INSERT_BATCH_SIZE: usize = 50_000;
+
+/// A bounded producer/consumer pipeline: parsing never holds a SQLite writer
+/// connection, and the worker cannot outlive its staged database on cancellation.
+struct BatchWriter {
+    sender: Option<mpsc::Sender<Vec<UriHash>>>,
+    worker: Option<std::thread::JoinHandle<Result<WriteStats, crate::db::error::DBError>>>,
+}
+
+#[derive(Default)]
+struct WriteStats {
+    submitted: usize,
+    elapsed: Duration,
+}
+
+impl BatchWriter {
+    fn start(db: SitePackDB) -> Result<Self, SitePackImportError> {
+        const QUEUE_CAPACITY: usize = 2;
+        let (sender, mut receiver) = mpsc::channel::<Vec<UriHash>>(QUEUE_CAPACITY);
+        let worker = std::thread::Builder::new()
+            .name("ace-site-pack-writer".into())
+            .spawn(move || {
+                let mut stats = WriteStats::default();
+                while let Some(mut batch) = receiver.blocking_recv() {
+                    let started = Instant::now();
+                    stats.submitted += flush_hash_batch(&db, &mut batch)?;
+                    stats.elapsed += started.elapsed();
+                }
+                Ok(stats)
+            })
+            .map_err(|error| SitePackImportError::DatabaseFailure {
+                message: format!("failed to start site pack writer: {error}"),
+            })?;
+        Ok(Self {
+            sender: Some(sender),
+            worker: Some(worker),
+        })
+    }
+
+    async fn enqueue(&self, batch: Vec<UriHash>) -> Result<(), SitePackImportError> {
+        if let Some(sender) = &self.sender {
+            sender
+                .send(batch)
+                .await
+                .map_err(|_| SitePackImportError::DatabaseFailure {
+                    message: "site pack writer stopped before accepting a batch".to_string(),
+                })
+        } else {
+            Err(SitePackImportError::DatabaseFailure {
+                message: "site pack writer is closed".to_string(),
+            })
+        }
+    }
+
+    fn finish(mut self) -> Result<WriteStats, SitePackImportError> {
+        self.sender.take();
+        self.join_worker()
+    }
+
+    fn join_worker(&mut self) -> Result<WriteStats, SitePackImportError> {
+        let Some(worker) = self.worker.take() else {
+            return Err(SitePackImportError::DatabaseFailure {
+                message: "site pack writer already joined".to_string(),
+            });
+        };
+        worker
+            .join()
+            .map_err(|_| SitePackImportError::DatabaseFailure {
+                message: "site pack writer panicked".to_string(),
+            })?
+            .map_err(Into::into)
+    }
+}
+
+impl Drop for BatchWriter {
+    fn drop(&mut self) {
+        // Stream cancellation drops the producer. Joining here is deliberate:
+        // the staging cleanup must never remove a database with an active writer.
+        self.sender.take();
+        if self.worker.is_some() {
+            if let Err(error) = self.join_worker() {
+                warn!(%error, "site pack writer failed during cancellation");
+            }
+        }
+    }
+}
 
 pub struct Importer;
 
@@ -152,9 +238,15 @@ impl Importer {
                 let mut bad_encoding_lines: u64 = 0;
                 let mut malformed_lines: u64 = 0;
                 let mut candidate_hashes: u64 = 0;
-                let mut submitted_hashes: u64 = 0;
-                let mut batch_flush_time = Duration::ZERO;
+                let mut enqueue_time = Duration::ZERO;
                 let import_started = Instant::now();
+                let writer = match BatchWriter::start(db.clone()) {
+                    Ok(writer) => writer,
+                    Err(error) => {
+                        yield Self::failed(error, SitePackImportPhase::Importing);
+                        return;
+                    }
+                };
 
                 loop {
                     line_buffer.clear();
@@ -187,16 +279,15 @@ impl Importer {
                                 hash_batch.push(hash_host(&domain.into_inner()));
                                 candidate_hashes += 1;
                                 if hash_batch.len() >= INSERT_BATCH_SIZE {
-                                    let write_started = Instant::now();
-                                    let result = flush_hash_batch(db, &mut hash_batch);
-                                    batch_flush_time += write_started.elapsed();
-                                    match result {
-                                        Ok(count) => submitted_hashes += count as u64,
-                                        Err(error) => {
-                                            yield Self::failed(error, SitePackImportPhase::Importing);
-                                            return;
-                                        }
+                                    let enqueue_started = Instant::now();
+                                    let full_batch = std::mem::replace(
+                                        &mut hash_batch, Vec::with_capacity(INSERT_BATCH_SIZE)
+                                    );
+                                    if let Err(error) = writer.enqueue(full_batch).await {
+                                        yield Self::failed(error, SitePackImportPhase::Importing);
+                                        return;
                                     }
+                                    enqueue_time += enqueue_started.elapsed();
                                 }
                             }
                         }
@@ -228,26 +319,30 @@ impl Importer {
 
                 // Flush the remaining hashes of this source.
                 if !hash_batch.is_empty() {
-                    let write_started = Instant::now();
-                    let result = flush_hash_batch(db, &mut hash_batch);
-                    batch_flush_time += write_started.elapsed();
-                    match result {
-                        Ok(count) => submitted_hashes += count as u64,
-                        Err(error) => {
-                            yield Self::failed(error, SitePackImportPhase::Importing);
-                            return;
-                        }
+                    let final_batch = std::mem::take(&mut hash_batch);
+                    if let Err(error) = writer.enqueue(final_batch).await {
+                        yield Self::failed(error, SitePackImportPhase::Importing);
+                        return;
                     }
                 }
 
+                // The stage cannot be activated until all database writes complete.
+                let write_stats = match writer.finish() {
+                    Ok(stats) => stats,
+                    Err(error) => {
+                        yield Self::failed(error, SitePackImportPhase::Importing);
+                        return;
+                    }
+                };
                 info!(
                     site_pack_id = %site_pack_id,
                     source_id = %source.id,
                     bytes = total_bytes,
                     candidate_hashes,
-                    submitted_hashes,
+                    submitted_hashes = write_stats.submitted,
                     elapsed_ms = import_started.elapsed().as_millis(),
-                    batch_flush_ms = batch_flush_time.as_millis(),
+                    enqueue_ms = enqueue_time.as_millis(),
+                    db_write_ms = write_stats.elapsed.as_millis(),
                     "site pack source import timing"
                 );
 
@@ -567,6 +662,39 @@ mod tests {
                     .is_blocked()
             );
         }
+    }
+
+    #[tokio::test]
+    async fn writer_pipeline_handles_multiple_full_batches_and_duplicates() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("large-list.txt");
+        let mut content = String::with_capacity(3_000_000);
+        for index in 0..115_000 {
+            content.push_str(&format!("domain{index}.com\n"));
+        }
+        for index in 0..5_000 {
+            content.push_str(&format!("domain{index}.com\n"));
+        }
+        std::fs::write(&list_path, content).unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 115_000);
+        assert!(
+            db.blocking_result(&hash_host("domain114999.com"))
+                .unwrap()
+                .is_blocked()
+        );
     }
 
     #[tokio::test]
