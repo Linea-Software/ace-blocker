@@ -15,7 +15,7 @@ use crate::core::network_block::uri_hash::UriHash;
 use ace_domain_blocklist::{DomainLineParsingResult, DomainListFormatKind, detect_format};
 use async_stream::stream;
 use chrono::Utc;
-use futures::StreamExt;
+use futures::{StreamExt, stream::BoxStream};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -104,12 +104,58 @@ impl Drop for BatchWriter {
         // Stream cancellation drops the producer. Joining here is deliberate:
         // the staging cleanup must never remove a database with an active writer.
         self.sender.take();
-        if self.worker.is_some() {
-            if let Err(error) = self.join_worker() {
-                warn!(%error, "site pack writer failed during cancellation");
-            }
+        if self.worker.is_some()
+            && let Err(error) = self.join_worker()
+        {
+            warn!(%error, "site pack writer failed during cancellation");
         }
     }
+}
+
+const MAX_CONCURRENT_DOWNLOADS: usize = 3;
+const DOWNLOAD_PROGRESS_WEIGHT: f64 = 20.0;
+
+enum DownloadEvent {
+    Progress { index: usize, percent: u32 },
+    Completed { index: usize },
+    Failed(String),
+}
+
+/// Lazy streams run concurrently only while polled by the importer. Dropping
+/// the import stream cancels every request, without detached download tasks.
+fn download_source_stream(
+    index: usize,
+    source: SitePackSource,
+    path: PathBuf,
+) -> BoxStream<'static, DownloadEvent> {
+    Box::pin(stream! {
+        let started = Instant::now();
+        let download = file_download::download_large_list_with_limit(
+            &source.source,
+            path,
+            file_download::DEFAULT_MAX_DOWNLOAD_BYTES,
+        );
+        futures::pin_mut!(download);
+        let mut last_percent = 0;
+        while let Some(progress) = download.next().await {
+            match progress {
+                Ok(progress) => {
+                    let percent = (progress.into_inner().floor() as u32).min(100);
+                    if percent != last_percent {
+                        last_percent = percent;
+                        yield DownloadEvent::Progress { index, percent };
+                    }
+                }
+                Err(error) => {
+                    yield DownloadEvent::Failed(error.to_string());
+                    return;
+                }
+            }
+        }
+        info!(source_id = %source.id, elapsed_ms = started.elapsed().as_millis(),
+            "site pack source download timing");
+        yield DownloadEvent::Completed { index };
+    })
 }
 
 pub struct Importer;
@@ -141,61 +187,59 @@ impl Importer {
 
             let sources_count = sources.len().max(1) as f64;
             let mut hash_batch: Vec<UriHash> = Vec::with_capacity(INSERT_BATCH_SIZE);
-
+            // Downloads are bounded to the next small group. The following
+            // group is not fetched until the current group's files are consumed.
             for (source_index, source) in sources.iter().enumerate() {
-                let source = source.clone();
-                let source_base = (source_index as f64) / sources_count * 100.0;
-
-                // ── 1. Obtain the list file ───────────────────────────
-                let (file_path, is_temp_file) = match source.source_type {
-                    SitePackSourceType::Url => {
-                        let file_path = temp_dir.join(format!("{}.txt", source.id));
-
-                        // Reuse the engine's bounded HTTP downloader rather
-                        // than maintaining a second request/chunk/size policy.
-                        // Quantize percentage for the existing event contract.
-                        let download_started = Instant::now();
-                        let download = file_download::download_large_list_with_limit(
-                            &source.source,
-                            file_path.clone(),
-                            file_download::DEFAULT_MAX_DOWNLOAD_BYTES,
-                        );
-                        futures::pin_mut!(download);
-                        let mut last_percent: u32 = 0;
-                        while let Some(progress) = download.next().await {
-                            match progress {
-                                Ok(progress) => {
-                                    let percent = progress.into_inner().floor() as u32;
-                                    if percent != last_percent {
-                                        last_percent = percent;
-                                        yield Self::in_progress(
-                                            &site_pack_id,
-                                            Percentage::new(source_base + percent as f64 / sources_count),
-                                            SitePackImportPhase::Downloading,
-                                        );
-                                    }
-                                }
-                                Err(error) => {
-                                    let _ = tokio::fs::remove_file(&file_path).await;
-                                    yield Self::failed(
-                                        SitePackImportError::DownloadFailure {
-                                            message: error.to_string(),
-                                        },
-                                        SitePackImportPhase::Downloading,
-                                    );
-                                    return;
-                                }
+                let group_start = source_index / MAX_CONCURRENT_DOWNLOADS * MAX_CONCURRENT_DOWNLOADS;
+                let group_end = (group_start + MAX_CONCURRENT_DOWNLOADS).min(sources.len());
+                let source_group = &sources[group_start..group_end];
+                let group_base = group_start as f64 / sources_count * 100.0;
+                let group_span = source_group.len() as f64 / sources_count * 100.0;
+                let url_count = source_group.iter().filter(|source| source.source_type == SitePackSourceType::Url).count();
+                let download_weight = if url_count == 0 { 0.0 } else { DOWNLOAD_PROGRESS_WEIGHT };
+                if source_index == group_start {
+                    let mut active_downloads = futures::stream::SelectAll::new();
+                    for (index, source) in source_group.iter().enumerate() {
+                        if source.source_type == SitePackSourceType::Url {
+                            active_downloads.push(download_source_stream(index, source.clone(),
+                                temp_dir.join(format!("{}.txt", source.id))));
+                        }
+                    }
+                    let mut download_percents = vec![0_u32; source_group.len()];
+                    let mut last_download_progress = 0_u32;
+                    while let Some(event) = active_downloads.next().await {
+                        match event {
+                            DownloadEvent::Progress { index, percent } => {
+                                download_percents[index] = percent;
+                            }
+                            DownloadEvent::Completed { index } => {
+                                download_percents[index] = 100;
+                            }
+                            DownloadEvent::Failed(message) => {
+                                yield Self::failed(SitePackImportError::DownloadFailure { message },
+                                    SitePackImportPhase::Downloading);
+                                return;
                             }
                         }
-
-                        info!(
-                            site_pack_id = %site_pack_id,
-                            source_id = %source.id,
-                            elapsed_ms = download_started.elapsed().as_millis(),
-                            "site pack source download timing"
-                        );
-                        (file_path, true)
+                        let total_percent: u64 = download_percents.iter().map(|percent| u64::from(*percent)).sum();
+                        let weighted = (group_base + total_percent as f64 / (url_count.max(1) as f64 * 100.0)
+                            * download_weight / 100.0 * group_span).floor() as u32;
+                        if weighted > last_download_progress {
+                            last_download_progress = weighted;
+                            yield Self::in_progress(&site_pack_id, Percentage::new(weighted as f64),
+                                SitePackImportPhase::Downloading);
+                        }
                     }
+
+                }
+                let source_offset = source_index - group_start;
+                let source = source.clone();
+                let source_base = group_base + group_span * (download_weight / 100.0
+                    + source_offset as f64 / source_group.len() as f64 * (100.0 - download_weight) / 100.0);
+
+                // URL sources have already been downloaded concurrently.
+                let (file_path, is_temp_file) = match source.source_type {
+                    SitePackSourceType::Url => (temp_dir.join(format!("{}.txt", source.id)), true),
                     SitePackSourceType::File => (PathBuf::from(&source.source), false),
                 };
 
@@ -304,7 +348,8 @@ impl Importer {
                         last_percent = percent;
                         yield Self::in_progress(
                             &site_pack_id,
-                            Percentage::new(source_base + percent as f64 / sources_count),
+                            Percentage::new(source_base + percent as f64 / 100.0 * group_span
+                                / source_group.len() as f64 * (100.0 - download_weight) / 100.0),
                             SitePackImportPhase::Importing,
                         );
                     }
@@ -866,6 +911,113 @@ mod tests {
                 .is_blocked()
         );
     }
+    #[tokio::test]
+    async fn downloads_multiple_sources_concurrently_before_importing() {
+        let rendezvous = std::sync::Arc::new(tokio::sync::Barrier::new(2));
+        let first = rendezvous.clone();
+        let second = rendezvous.clone();
+        let router = axum::Router::new()
+            .route(
+                "/first",
+                get(move || {
+                    let rendezvous = first.clone();
+                    async move {
+                        rendezvous.wait().await;
+                        "example.com\n"
+                    }
+                }),
+            )
+            .route(
+                "/second",
+                get(move || {
+                    let rendezvous = second.clone();
+                    async move {
+                        rendezvous.wait().await;
+                        "second.example\n"
+                    }
+                }),
+            );
+        let server = axum_test::TestServer::builder()
+            .transport(axum_test::Transport::HttpRandomPort)
+            .build(router);
+        let first_url = server.server_url("/first").unwrap();
+        let second_url = server.server_url("/second").unwrap();
+        let temp = tempdir().unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = tokio::time::timeout(
+            Duration::from_secs(4),
+            run_import(
+                &db,
+                vec![
+                    url_source(first_url.to_string(), SitePackFormat::WildCardDomains),
+                    url_source(second_url.to_string(), SitePackFormat::WildCardDomains),
+                ],
+            ),
+        )
+        .await
+        .expect("downloads should overlap rather than wait for each other");
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 2);
+        let mut previous = 0.0;
+        for status in statuses {
+            if let SitePackCreationStatus::InProgress { progress, .. } = status {
+                assert!(progress.into_inner() >= previous);
+                previous = progress.into_inner();
+            }
+        }
+    }
+
+    #[tokio::test]
+    async fn downloading_many_sources_uses_bounded_groups() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let active = std::sync::Arc::new(AtomicUsize::new(0));
+        let peak = std::sync::Arc::new(AtomicUsize::new(0));
+        let requests = active.clone();
+        let maximum = peak.clone();
+        let router = axum::Router::new().route(
+            "/list",
+            get(move || {
+                let active = requests.clone();
+                let peak = maximum.clone();
+                async move {
+                    let in_flight = active.fetch_add(1, Ordering::SeqCst) + 1;
+                    peak.fetch_max(in_flight, Ordering::SeqCst);
+                    tokio::time::sleep(Duration::from_millis(80)).await;
+                    active.fetch_sub(1, Ordering::SeqCst);
+                    "example.com\n"
+                }
+            }),
+        );
+        let server = axum_test::TestServer::builder()
+            .transport(axum_test::Transport::HttpRandomPort)
+            .build(router);
+        let url = server.server_url("/list").unwrap().to_string();
+        let temp = tempdir().unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+        let sources = (0..5)
+            .map(|_| url_source(url.clone(), SitePackFormat::WildCardDomains))
+            .collect();
+        let statuses = tokio::time::timeout(Duration::from_secs(5), run_import(&db, sources))
+            .await
+            .unwrap();
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 1);
+        assert!(peak.load(Ordering::SeqCst) <= MAX_CONCURRENT_DOWNLOADS);
+        let mut previous = 0.0;
+        for status in statuses {
+            if let SitePackCreationStatus::InProgress { progress, .. } = status {
+                assert!(progress.into_inner() >= previous);
+                previous = progress.into_inner();
+            }
+        }
+    }
+
     #[tokio::test]
     async fn http_error_during_import_emits_download_failure() {
         let router = axum::Router::new().route(
