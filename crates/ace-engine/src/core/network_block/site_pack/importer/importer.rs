@@ -69,7 +69,7 @@ impl Importer {
                         // than maintaining a second request/chunk/size policy.
                         // Quantize percentage for the existing event contract.
                         let download_started = Instant::now();
-                        let download = file_download::download_file_with_limit(
+                        let download = file_download::download_large_list_with_limit(
                             &source.source,
                             file_path.clone(),
                             file_download::DEFAULT_MAX_DOWNLOAD_BYTES,

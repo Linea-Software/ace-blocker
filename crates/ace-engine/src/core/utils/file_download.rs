@@ -28,6 +28,10 @@ pub type DownloadError = Box<dyn std::error::Error + Send + Sync>;
 pub const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
 /// Total time budget for the entire request, including reading the body.
 pub const REQUEST_TIMEOUT: Duration = Duration::from_secs(60);
+/// Large text lists need a longer deadline than small configuration assets.
+pub const LARGE_LIST_TIMEOUT: Duration = Duration::from_secs(30 * 60);
+/// Stalled upstreams fail even when the large-list total deadline has not elapsed.
+pub const LARGE_LIST_READ_TIMEOUT: Duration = Duration::from_secs(30);
 /// Default cap for general-purpose downloads (site-list sources, site-pack
 /// backup archives). Generous but bounded: a hostile or broken server cannot
 /// fill the disk.
@@ -63,9 +67,33 @@ pub fn download_file_with_limit(
     path: PathBuf,
     max_bytes: u64,
 ) -> impl Stream<Item = Result<Percentage, DownloadError>> {
+    download_file_with_client(url, path, max_bytes, http_client())
+}
+
+/// Large site-list sources retain a hard total deadline and per-read idle timeout.
+/// Other engine downloads keep the regular short timeout policy.
+pub fn download_large_list_with_limit(
+    url: &str,
+    path: PathBuf,
+    max_bytes: u64,
+) -> impl Stream<Item = Result<Percentage, DownloadError>> {
+    let client = reqwest::Client::builder()
+        .connect_timeout(CONNECT_TIMEOUT)
+        .timeout(LARGE_LIST_TIMEOUT)
+        .read_timeout(LARGE_LIST_READ_TIMEOUT)
+        .build()
+        .expect("failed to build large list HTTP client");
+    download_file_with_client(url, path, max_bytes, client)
+}
+
+fn download_file_with_client(
+    url: &str,
+    path: PathBuf,
+    max_bytes: u64,
+    client: reqwest::Client,
+) -> impl Stream<Item = Result<Percentage, DownloadError>> {
     let url = url.to_owned();
     try_stream! {
-        let client = http_client();
         let response = client
             .get(&url)
             .send()
