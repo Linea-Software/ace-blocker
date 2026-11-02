@@ -65,7 +65,7 @@
                     style="width: 88px; height: 88px; border-radius: 20px;"
                 >
                     <img
-                        src="https://cdn.aceblocker.com/icon.png"
+                        src="/ace-icon-light.svg"
                         alt={m.legal_gate_logo_alt()}
                         class="h-full w-full"
                         style="border-radius: 20px;"
