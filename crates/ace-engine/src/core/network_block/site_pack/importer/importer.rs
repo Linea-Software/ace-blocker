@@ -17,12 +17,13 @@ use async_stream::stream;
 use chrono::Utc;
 use futures::StreamExt;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tracing::{info, warn};
 
 use crate::core::utils::file_download;
 
-/// Number of host hashes written to the database in a single insert.
+/// Number of hashes accumulated before flushing to SQLite (which uses smaller SQL statements).
 const INSERT_BATCH_SIZE: usize = 50_000;
 
 pub struct Importer;
@@ -67,6 +68,7 @@ impl Importer {
                         // Reuse the engine's bounded HTTP downloader rather
                         // than maintaining a second request/chunk/size policy.
                         // Quantize percentage for the existing event contract.
+                        let download_started = Instant::now();
                         let download = file_download::download_file_with_limit(
                             &source.source,
                             file_path.clone(),
@@ -100,6 +102,12 @@ impl Importer {
                             }
                         }
 
+                        info!(
+                            site_pack_id = %site_pack_id,
+                            source_id = %source.id,
+                            elapsed_ms = download_started.elapsed().as_millis(),
+                            "site pack source download timing"
+                        );
                         (file_path, true)
                     }
                     SitePackSourceType::File => (PathBuf::from(&source.source), false),
@@ -143,6 +151,10 @@ impl Importer {
                 let mut last_percent: u32 = 0;
                 let mut bad_encoding_lines: u64 = 0;
                 let mut malformed_lines: u64 = 0;
+                let mut candidate_hashes: u64 = 0;
+                let mut submitted_hashes: u64 = 0;
+                let mut batch_flush_time = Duration::ZERO;
+                let import_started = Instant::now();
 
                 loop {
                     line_buffer.clear();
@@ -173,12 +185,18 @@ impl Importer {
                         Ok(DomainLineParsingResult::Domains(domains)) => {
                             for domain in domains {
                                 hash_batch.push(hash_host(&domain.into_inner()));
+                                candidate_hashes += 1;
                                 if hash_batch.len() >= INSERT_BATCH_SIZE {
-                                    if let Err(error) = db.insert_entries(&hash_batch) {
-                                        yield Self::failed(error, SitePackImportPhase::Importing);
-                                        return;
+                                    let write_started = Instant::now();
+                                    let result = flush_hash_batch(db, &mut hash_batch);
+                                    batch_flush_time += write_started.elapsed();
+                                    match result {
+                                        Ok(count) => submitted_hashes += count as u64,
+                                        Err(error) => {
+                                            yield Self::failed(error, SitePackImportPhase::Importing);
+                                            return;
+                                        }
                                     }
-                                    hash_batch.clear();
                                 }
                             }
                         }
@@ -210,12 +228,28 @@ impl Importer {
 
                 // Flush the remaining hashes of this source.
                 if !hash_batch.is_empty() {
-                    if let Err(error) = db.insert_entries(&hash_batch) {
-                        yield Self::failed(error, SitePackImportPhase::Importing);
-                        return;
+                    let write_started = Instant::now();
+                    let result = flush_hash_batch(db, &mut hash_batch);
+                    batch_flush_time += write_started.elapsed();
+                    match result {
+                        Ok(count) => submitted_hashes += count as u64,
+                        Err(error) => {
+                            yield Self::failed(error, SitePackImportPhase::Importing);
+                            return;
+                        }
                     }
-                    hash_batch.clear();
                 }
+
+                info!(
+                    site_pack_id = %site_pack_id,
+                    source_id = %source.id,
+                    bytes = total_bytes,
+                    candidate_hashes,
+                    submitted_hashes,
+                    elapsed_ms = import_started.elapsed().as_millis(),
+                    batch_flush_ms = batch_flush_time.as_millis(),
+                    "site pack source import timing"
+                );
 
                 if is_temp_file {
                     let _ = tokio::fs::remove_file(&file_path).await;
@@ -272,6 +306,20 @@ impl Importer {
             phase: Some(phase),
         }
     }
+}
+
+/// Sort by SQLite's signed INTEGER PRIMARY KEY order, then remove duplicates
+/// before binding. This reduces random B-tree writes and repeated SQL work.
+fn flush_hash_batch(
+    db: &SitePackDB,
+    batch: &mut Vec<UriHash>,
+) -> Result<usize, crate::db::error::DBError> {
+    batch.sort_unstable_by_key(|hash| *hash.as_ref() as i64);
+    batch.dedup();
+    let count = batch.len();
+    db.insert_entries(batch)?;
+    batch.clear();
+    Ok(count)
 }
 
 fn io_error(error: std::io::Error) -> SitePackImportError {
@@ -495,6 +543,30 @@ mod tests {
                 .unwrap()
                 .is_blocked()
         );
+    }
+
+    #[test]
+    fn flush_hash_batch_sorts_and_deduplicates_signed_hashes() {
+        let temp = tempdir().unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+        let mut batch = vec![
+            UriHash::new(u64::MAX),
+            UriHash::new(1),
+            UriHash::new(u64::MAX),
+            UriHash::new(0),
+            UriHash::new(1),
+        ];
+
+        assert_eq!(flush_hash_batch(&db, &mut batch).unwrap(), 3);
+        assert!(batch.is_empty());
+        assert_eq!(db.count_entries().unwrap(), 3);
+        for hash in [0, 1, u64::MAX] {
+            assert!(
+                db.blocking_result(&UriHash::new(hash))
+                    .unwrap()
+                    .is_blocked()
+            );
+        }
     }
 
     #[tokio::test]
