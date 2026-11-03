@@ -767,6 +767,8 @@ impl AceProxy {
                 // the background so a later service restart is not required;
                 // the retry is aborted at shutdown, which drops the adapter
                 // and restores the routing table.
+                #[cfg(target_os = "linux")]
+                warn_if_running_kernel_modules_are_missing();
                 retry_task = Some(spawn_tun_retry(self.tun.clone()));
                 false
             }
@@ -797,7 +799,9 @@ impl AceProxy {
 
         // Tear the tunnel down before returning so the routing table is
         // restored even if the process lingers.
-        if intercepting {
+        // A delayed retry can start TUN even if the initial attempt failed.
+        // Inspect live state after the retry task is joined before teardown.
+        if intercepting || self.tun.is_running() {
             let stats = self.tun.stats();
             info!(
                 "ace-tun stats: {} tcp / {} udp flows, {} blocked, {} quic dropped, \
@@ -842,46 +846,74 @@ async fn wait_for_proxy_listener(addr: SocketAddr, timeout: std::time::Duration)
     }
 }
 
-/// Delay between background tunnel-start retries, in seconds. The first
-/// failures usually clear within seconds (MSI finalization, AV scans); the
-/// longer tail covers slow machines without retrying forever.
+/// Initial backoff; keep retrying every minute after these delays.
 const TUN_RETRY_DELAYS_SECS: &[u64] = &[5, 15, 30, 60, 60, 60, 60, 60, 60, 60];
 
-/// Keep trying to start the tunnel after the initial attempt failed.
-///
-/// Runs until the first success or until every delay in [`TUN_RETRY_DELAYS_SECS`]
-/// has elapsed, then gives up (the engine keeps running unfiltered).
+fn tun_retry_delay_secs(attempt_index: usize) -> u64 {
+    TUN_RETRY_DELAYS_SECS
+        .get(attempt_index)
+        .copied()
+        .unwrap_or(60)
+}
+
+/// Kernel upgrades may leave TUN temporarily unavailable. Keep retrying until
+/// it starts; the task is cancelled on proxy shutdown.
 fn spawn_tun_retry(tun: Arc<TunRedirect>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
-        for (attempt, delay_secs) in TUN_RETRY_DELAYS_SECS.iter().enumerate() {
-            tokio::time::sleep(std::time::Duration::from_secs(*delay_secs)).await;
+        for attempt in 1_u64.. {
+            let delay_secs =
+                tun_retry_delay_secs(usize::try_from(attempt - 1).unwrap_or(usize::MAX));
+            tokio::time::sleep(std::time::Duration::from_secs(delay_secs)).await;
             match tun.start().await {
                 Ok(()) => {
-                    info!(
-                        "ace-tun started after background retry (attempt {})",
-                        attempt + 1
-                    );
+                    info!("ace-tun started after background retry (attempt {attempt})");
                     return;
                 }
                 Err(ace_tun::Error::NotElevated) => {
-                    warn!("ace-tun background retry stopped: not elevated.");
+                    error!("ace-tun cannot recover without privileges; restart elevated");
                     return;
                 }
-                Err(ace_tun::Error::AlreadyRunning) => return, // started elsewhere
+                Err(ace_tun::Error::AlreadyRunning) => return,
                 Err(error) => {
-                    warn!(
-                        "ace-tun background retry {}/{} failed: {error}",
-                        attempt + 1,
-                        TUN_RETRY_DELAYS_SECS.len()
-                    );
+                    if attempt <= TUN_RETRY_DELAYS_SECS.len() as u64 || attempt.is_multiple_of(10) {
+                        warn!(
+                            "ace-tun retry {attempt} failed: {error}; enforcement is OFF; retrying after {delay_secs}s"
+                        );
+                    }
                 }
             }
         }
-        warn!(
-            "ace-tun background retries exhausted; running WITHOUT traffic interception — sites \
-             will not be blocked."
-        );
     })
+}
+
+#[cfg(target_os = "linux")]
+fn warn_if_running_kernel_modules_are_missing() {
+    let Ok(release) = std::fs::read_to_string("/proc/sys/kernel/osrelease") else {
+        return;
+    };
+    let release = release.trim();
+    let module_dir = std::path::Path::new("/lib/modules").join(release);
+    if !module_dir.is_dir() {
+        error!(
+            running_kernel = release,
+            expected_modules = %module_dir.display(),
+            "Running kernel has no matching module tree; TUN may fail after a kernel update. Reboot with a matching kernel."
+        );
+    }
+}
+
+#[cfg(test)]
+mod tun_retry_tests {
+    use super::tun_retry_delay_secs;
+    #[test]
+    fn retry_backoff_remains_periodic_after_initial_attempts() {
+        assert_eq!(tun_retry_delay_secs(0), 5);
+        assert_eq!(tun_retry_delay_secs(1), 15);
+        assert_eq!(tun_retry_delay_secs(2), 30);
+        assert_eq!(tun_retry_delay_secs(9), 60);
+        assert_eq!(tun_retry_delay_secs(10), 60);
+        assert_eq!(tun_retry_delay_secs(1_000_000), 60);
+    }
 }
 
 // ---------------------------------------------------------------------------
