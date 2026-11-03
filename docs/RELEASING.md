@@ -85,6 +85,33 @@ running kernel until reboot. `/dev/net/tun` can then exist but be unusable.
 Verify an `ace-tun started` log entry; `systemctl is-active ace-engine`
 alone does not prove traffic interception.
 
+### Migrating pre-release Linux data
+
+Some early test installations stored the active Engine database under the
+first `XDG_DATA_DIRS` entry, which can be
+`/var/lib/flatpak/exports/share/AceBlocker` rather than the new fixed
+`/usr/local/share/AceBlocker`. Those locations may contain **different**
+databases and tokens. Never upgrade by replacing the binaries alone.
+
+Determine the live data path from the Engine journal. Before changing binaries,
+obtain a successful authenticated, lock-aware shutdown and stop the Watchdog
+within its confirmed maintenance lease. **If either protected service remains
+active or maintenance fails, abort; do not force-stop it.**
+
+With both services inactive, run the included helper, specifying the actual
+old data path (the path below is an example):
+
+```sh
+sudo ./migrate-legacy-data.sh --from /var/lib/flatpak/exports/share/AceBlocker
+```
+
+The helper uses the **old XDG-aware Engine binary** to check both databases
+for locks, rejects symlinks/running services, and atomically stages the copied
+data. It keeps the legacy source and a backup of any previous canonical data.
+It also restricts access to the database and private CA key. Run it before
+replacing the Engine executable. Then complete the authorized upgrade and
+start Watchdog and Engine. Do not run `install.sh` on existing installations.
+
 ## Before publishing any draft release
 
 A successful build is **not** proof of release safety. Verify at least:
