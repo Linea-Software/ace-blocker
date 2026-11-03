@@ -177,6 +177,9 @@ jobs:
             install -m 0755 "target/release/$binary" "release-input/$package/$binary"
           done
           cp -R installer/bundled-packs "release-input/$package/bundled-packs"
+          install -m 0755 installer/linux/install.sh "release-input/$package/install.sh"
+          install -m 0644 installer/linux/ace-blocker.desktop "release-input/$package/ace-blocker.desktop"
+          install -m 0644 apps/ace-app/src-tauri/icons/128x128.png "release-input/$package/ace-blocker.png"
           cp docs/RELEASING.md "release-input/$package/RELEASING.md"
           tar -C release-input -czf "release-dist/$package.tar.gz" "$package"
       - name: Build Linux provenance manifest

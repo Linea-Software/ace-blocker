@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=ACE Blocker
+Comment=Manage network blocking and focus rules
+Exec=/opt/ace-blocker/ace-app
+Icon=ace-blocker
+Terminal=false
+Categories=Utility;
+StartupNotify=true

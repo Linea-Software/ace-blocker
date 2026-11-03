@@ -56,28 +56,27 @@ or an unattended installer. Its archive is built on Ubuntu 24.04 for x86-64,
 so other distributions and older glibc versions are not guaranteed compatible.
 The binaries depend on the system's WebKitGTK 4.1 and related desktop libraries.
 
-On a disposable system with systemd, unpack the tarball and, after reviewing
-its contents and the expected certificate/network privileges, install its
-binaries together under one root-owned path, for example:
+On a **fresh disposable** Linux system with systemd, review the certificate
+and network privileges, unpack the release tarball and run its fresh-install
+helper as root:
 
 ```sh
 tar -xzf AceBlocker-VERSION-linux-x64.tar.gz
 cd AceBlocker-VERSION-linux-x64
-sudo install -d -m 0755 /opt/ace-blocker
-sudo install -m 0755 ace-engine ace-watchdog ace-app ace-redirect install-cert /opt/ace-blocker/
-sudo cp -R bundled-packs /opt/ace-blocker/
-sudo /opt/ace-blocker/ace-engine --install
-sudo systemctl daemon-reload
-sudo systemctl start ace-watchdog.service ace-engine.service
-sudo systemctl status ace-engine.service ace-watchdog.service
+sudo ./install.sh
+systemctl status ace-engine.service ace-watchdog.service
 ```
 
-`ace-engine --install` registers/enables the engine and watchdog systemd
-units; it does **not** replace a privileged native installer or validate
-platform security on behalf of the operator. Do not delete the installed
-engine/watchdog binaries while their services are running. Removal must
-follow the authenticated engine shutdown and lock/watchdog maintenance
-rules, not a forced `systemctl stop` or process kill.
+The helper installs all binaries and bundled packs under root-owned
+`/opt/ace-blocker`, registers both systemd units, and installs the desktop
+launcher/icon under `/usr/local/share`. It **refuses existing installations**:
+never overwrite live or locked engine/watchdog binaries. Upgrades/removal
+must use authenticated engine shutdown and watchdog maintenance.
+
+After a Linux kernel upgrade, `/lib/modules/$(uname -r)` may not match the
+running kernel until reboot. `/dev/net/tun` can then exist but be unusable.
+Verify an `ace-tun started` log entry; `systemctl is-active ace-engine`
+alone does not prove traffic interception.
 
 ## Before publishing any draft release
 
