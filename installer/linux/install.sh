@@ -36,6 +36,18 @@ if [[ ! -d "$package_dir/bundled-packs" ]]; then
   exit 1
 fi
 
+# Limit shared data and the installation capability to authorized desktop users.
+if ! getent group ace-blocker >/dev/null; then
+  groupadd --system ace-blocker
+fi
+install -d -o root -g ace-blocker -m 2750 /usr/local/share/AceBlocker
+if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != root ]]; then
+  usermod -a -G ace-blocker "$SUDO_USER"
+  echo "Log out and back in to refresh ACE group membership."
+else
+  echo "Add your desktop user to the 'ace-blocker' group, then log in again." >&2
+fi
+
 install -d -m 0755 "$install_dir"
 for binary in ace-engine ace-watchdog ace-app ace-redirect install-cert; do
   install -m 0755 "$package_dir/$binary" "$install_dir/$binary"

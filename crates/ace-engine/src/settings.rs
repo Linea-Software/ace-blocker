@@ -199,6 +199,14 @@ impl Settings {
         if let Ok(existing) = std::fs::read_to_string(&path) {
             let trimmed = existing.trim();
             if !trimmed.is_empty() {
+                #[cfg(target_os = "linux")]
+                if let Err(error) = secure_capability_file(&path) {
+                    error!(
+                        "Cannot secure existing capability token at {}: {error}",
+                        path.display()
+                    );
+                    std::process::exit(1);
+                }
                 return trimmed.to_string();
             }
         }
@@ -209,10 +217,41 @@ impl Settings {
 
         if let Err(error) = std::fs::write(&path, &token) {
             error!(
-                "Failed to persist capability token at {:?}: {}",
-                path, error
+                "Failed to persist capability token at {}: {error}",
+                path.display()
             );
+            std::process::exit(1);
+        }
+        #[cfg(target_os = "linux")]
+        if let Err(error) = secure_capability_file(&path) {
+            error!(
+                "Cannot secure new capability token at {}: {error}",
+                path.display()
+            );
+            std::process::exit(1);
         }
         token
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn secure_capability_file(path: &std::path::Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o640))
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod linux_capability_permissions_tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn capability_file_is_not_world_readable() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("capability.token");
+        std::fs::write(&path, "fake-test-value").unwrap();
+        secure_capability_file(&path).unwrap();
+        let mode = std::fs::metadata(path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o640);
     }
 }

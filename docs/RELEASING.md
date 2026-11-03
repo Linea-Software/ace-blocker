@@ -69,7 +69,14 @@ systemctl status ace-engine.service ace-watchdog.service
 
 The helper installs all binaries and bundled packs under root-owned
 `/opt/ace-blocker`, registers both systemd units, and installs the desktop
-launcher/icon under `/usr/local/share`. It **refuses existing installations**:
+launcher/icon under `/usr/local/share`. It creates a dedicated `ace-blocker`
+local group with group-readable (not world-readable) capability credentials in
+the root-owned `/usr/local/share/AceBlocker` directory, and enrolls the user
+identified by `SUDO_USER`. That user must log out and back in before the App
+can authenticate; without `SUDO_USER`, enroll the intended desktop account
+in that group explicitly. Previously exposed credentials on older test
+installations require rotation during authorized maintenance.
+It **refuses existing installations**:
 never overwrite live or locked engine/watchdog binaries. Upgrades/removal
 must use authenticated engine shutdown and watchdog maintenance.
 

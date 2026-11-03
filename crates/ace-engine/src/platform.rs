@@ -687,6 +687,7 @@ ExecStart={}\n\
 Restart=on-failure\n\
 RestartSec=2s\n\
 KillMode=control-group\n\
+UMask=0027\n\
 RuntimeDirectory=ace-blocker-control\n\
 RuntimeDirectoryMode=0755\n\
 \n\
