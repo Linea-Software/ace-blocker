@@ -11,6 +11,7 @@ const managedCategories: Record<string, string> = {
     "pack-streaming-pro": "streaming",
     "pack-shopping-pro": "shopping",
     "pack-anime-manga-pro": "anime-manga",
+    "pack-anime-manga-extended": "anime-manga-extended",
     "pack-forums-pro": "forums",
     "pack-news-pro": "news",
     "pack-sports-pro": "sports",
@@ -49,6 +50,7 @@ describe("Ace-managed category catalog", () => {
     it("ships measured counts for the newly built category packs", () => {
         for (const id of [
             "pack-anime-manga-pro",
+            "pack-anime-manga-extended",
             "pack-forums-pro",
             "pack-news-pro",
             "pack-sports-pro",

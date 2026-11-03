@@ -139,9 +139,25 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 170138,
-        "compressed_size_bytes": 73565,
-        "domains_count": 6612
+        "uncompressed_size_bytes": 165577,
+        "compressed_size_bytes": 72286,
+        "domains_count": 6489
+    },
+    {
+        "id": "pack-anime-manga-extended",
+        "name": "Anime & Manga Websites — Extended",
+        "description": "Optional broader anime, manga, manhwa, manhua, webtoon and novel blocking; may affect additional reading sites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/anime-manga-extended.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 165958,
+        "compressed_size_bytes": 72432,
+        "domains_count": 6501
     },
     {
         "id": "pack-forums-pro",
