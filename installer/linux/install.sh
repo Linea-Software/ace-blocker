@@ -36,6 +36,25 @@ if [[ ! -d "$package_dir/bundled-packs" ]]; then
   exit 1
 fi
 
+# Prevent a partial install when a rolling-release system has replaced or
+# removed the Linux shared libraries expected by the packaged binaries.
+if ! command -v ldd >/dev/null 2>&1; then
+  echo "ldd is required to check Linux binary compatibility." >&2
+  exit 1
+fi
+for binary in ace-engine ace-watchdog ace-app ace-redirect install-cert; do
+  if ! dependencies="$(LC_ALL=C ldd "$package_dir/$binary" 2>&1)"; then
+    echo "Cannot load the shared libraries for $binary:" >&2
+    echo "$dependencies" >&2
+    exit 1
+  fi
+  if grep -q 'not found' <<< "$dependencies"; then
+    echo "Missing shared libraries needed by $binary:" >&2
+    grep 'not found' <<< "$dependencies" >&2
+    exit 1
+  fi
+done
+
 # Limit shared data and the installation capability to authorized desktop users.
 if ! getent group ace-blocker >/dev/null; then
   groupadd --system ace-blocker

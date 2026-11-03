@@ -150,7 +150,15 @@ jobs:
       - name: Install Tauri Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev desktop-file-utils
+      - name: Validate Linux installer and desktop metadata
+        run: |
+          bash -n installer/linux/install.sh
+          desktop-file-validate installer/linux/ace-blocker.desktop
+          if installer/linux/install.sh >/dev/null 2>&1; then
+            echo "Unprivileged install unexpectedly succeeded" >&2
+            exit 1
+          fi
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
