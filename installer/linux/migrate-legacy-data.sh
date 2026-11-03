@@ -53,5 +53,18 @@ if [[ -e "$dest" ]]; then
 fi
 mv -T -- "$staging" "$dest"
 staging=""
+desktop_user="${SUDO_USER:-}"
+if [[ -z "$desktop_user" && "${PKEXEC_UID:-}" =~ ^[0-9]+$ ]]; then
+  desktop_user="$(getent passwd "$PKEXEC_UID" | cut -d: -f1 || true)"
+fi
+if [[ -n "$desktop_user" && "$desktop_user" != root ]]; then
+  if usermod -a -G ace-blocker "$desktop_user"; then
+    echo "Log out and back in as $desktop_user to use the ACE desktop app."
+  else
+    echo "Could not enroll $desktop_user; add the user to ace-blocker manually." >&2
+  fi
+else
+  echo "Enroll the desktop user in ace-blocker, then log in again." >&2
+fi
 echo "Migrated: $dest. Source preserved: $source. Previous canonical backup: ${backup:-none}"
 echo "Install new Engine binaries and units before restarting services."

@@ -82,11 +82,15 @@ for private_file in "$data_dir/engine_db.sql" "$data_dir/certs/mitm_ca.key"; do
     chmod 0600 "$private_file"
   fi
 done
-if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != root ]]; then
-  usermod -a -G ace-blocker "$SUDO_USER"
-  echo "Log out and back in to refresh ACE group membership."
+desktop_user="${SUDO_USER:-}"
+if [[ -z "$desktop_user" && "${PKEXEC_UID:-}" =~ ^[0-9]+$ ]]; then
+  desktop_user="$(getent passwd "$PKEXEC_UID" | cut -d: -f1 || true)"
+fi
+if [[ -n "$desktop_user" && "$desktop_user" != root ]]; then
+  usermod -a -G ace-blocker "$desktop_user"
+  echo "Log out and back in as $desktop_user to refresh ACE group membership."
 else
-  echo "Add your desktop user to the 'ace-blocker' group, then log in again." >&2
+  echo "Add the intended desktop user to the 'ace-blocker' group, then log in again." >&2
 fi
 
 install -d -m 0755 "$install_dir"
