@@ -20,7 +20,7 @@
 use crate::{
     ace_server_api::GetLatestReleasesVersionDataResponse,
     core::{
-        ApiKey, RemoteSitePackId, Sha256Digest, SitePackVersion,
+        ApiKey, RemoteSitePackId, Sha256Digest, SitePackId, SitePackVersion,
         network_block::site_pack::{site_pack_db::SitePackDB, stage_backup_archive},
         utils::file_download,
     },
@@ -32,6 +32,7 @@ use crate::{
 use chrono::{DateTime, Utc};
 use eyre::Result;
 use futures::StreamExt;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -429,6 +430,21 @@ impl ContentUpdateService {
             SitePackUpdateError::FetchError(format!("Failed to fetch site-pack metadata: {error}"))
         })?;
 
+        // A restored or seeded block can reference a remote pack with version
+        // metadata but no local data. Consider every network block, even
+        // disabled ones, and de-duplicate packs shared by multiple blocks.
+        let attached_pack_ids: HashSet<String> = self
+            .db
+            .get_network_blocks_to_site_packs()
+            .map_err(|error| {
+                SitePackUpdateError::FetchError(format!(
+                    "Failed to load network-block site-pack assignments: {error}"
+                ))
+            })?
+            .into_values()
+            .flatten()
+            .collect();
+
         let mut updates_needed = Vec::new();
         for remote_list in latest.site_packs {
             let remote_id = RemoteSitePackId::try_new(remote_list.id).map_err(|error| {
@@ -451,6 +467,16 @@ impl ContentUpdateService {
                 })?;
             match local_pack {
                 Some(local_model) => {
+                    let local_id =
+                        SitePackId::try_new(local_model.id.clone()).map_err(|error| {
+                            SitePackUpdateError::UpdateError(format!(
+                                "invalid persisted site-pack ID for {remote_id}: {error}"
+                            ))
+                        })?;
+                    let attached_but_missing = attached_pack_ids.contains(&local_model.id)
+                        && !Settings::get_site_pack_path(&local_id)
+                            .join("pack.db")
+                            .is_file();
                     let current_version = local_model
                         .version
                         .map(SitePackVersion::try_new)
@@ -460,14 +486,16 @@ impl ContentUpdateService {
                                 "invalid persisted site-pack version for {remote_id}: {error}"
                             ))
                         })?;
-                    let needs_update = current_version
-                        .as_ref()
-                        .map(|current| version_is_newer(&candidate_version, current))
-                        .unwrap_or(true);
+                    let needs_update = attached_but_missing
+                        || current_version
+                            .as_ref()
+                            .map(|current| version_is_newer(&candidate_version, current))
+                            .unwrap_or(true);
                     if needs_update {
                         info!(
-                            "Site list {} needs update: {} -> {}",
+                            "Site list {} needs update (attached but missing: {}): {} -> {}",
                             remote_id,
+                            attached_but_missing,
                             current_version
                                 .as_ref()
                                 .map(ToString::to_string)
@@ -746,6 +774,63 @@ pub async fn run_background_update_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn connected_missing_pack_is_selected_once_even_when_version_matches() {
+        Settings::set_test_sites_dir(Settings::shared_test_sites_dir());
+        let temp = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&temp.path().join("updates.sqlite")).unwrap());
+        let connected_id = format!("connected-{}", uuid::Uuid::new_v4());
+        let unconnected_id = format!("unconnected-{}", uuid::Uuid::new_v4());
+        for remote_id in [&connected_id, &unconnected_id] {
+            db.add_default_site_pack(remote_id, remote_id, "Test", None, false, "1.0.0")
+                .unwrap();
+        }
+        let block = db.add_network_block("First".to_string()).unwrap();
+        let block_id = uuid::Uuid::parse_str(&block.id).unwrap();
+        db.add_network_block_to_site_pack(&block_id, &connected_id)
+            .unwrap();
+        let other_block = db.add_network_block("Disabled".to_string()).unwrap();
+        let other_block_id = uuid::Uuid::parse_str(&other_block.id).unwrap();
+        db.set_network_block_enabled(&other_block_id, false)
+            .unwrap();
+        db.add_network_block_to_site_pack(&other_block_id, &connected_id)
+            .unwrap();
+
+        // Use local release metadata; the regression must not contact the server.
+        let remote_packs: Vec<_> = [&connected_id, &unconnected_id]
+            .iter()
+            .map(|id| {
+                serde_json::json!({
+                    "id": id, "name": "Test", "description": "",
+                    "requiresPro": false, "size": 1, "updatedAt": null,
+                    "version": "1.0.0"
+                })
+            })
+            .collect();
+        let release = serde_json::from_value(serde_json::json!({
+            "installer": null,
+            "resistance": null,
+            "sitePacks": remote_packs
+        }))
+        .unwrap();
+        db.update_latest_update_check_at(Utc::now().to_rfc3339())
+            .unwrap();
+        let mut service = ContentUpdateService::from(db);
+        service.latest_releases_info = Some(release);
+
+        let connected_pack_id = SitePackId::try_new(connected_id.clone()).unwrap();
+        let path = Settings::get_site_pack_path(&connected_pack_id);
+        std::fs::create_dir_all(&path).unwrap();
+        // The directory alone must not count as a completed download.
+        let pending = service.get_site_packs_to_update().await.unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].0.as_ref(), connected_id);
+
+        // Once the database exists, a same-version pass should not re-download.
+        SitePackDB::from(&path.join("pack.db")).unwrap();
+        assert!(service.get_site_packs_to_update().await.unwrap().is_empty());
+    }
 
     #[tokio::test]
     async fn content_update_gate_serializes_passes_without_locking_shared_metadata() {

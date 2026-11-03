@@ -952,18 +952,6 @@ impl NetworkManager {
             .map_err(|error| NetworkManagerOpErr::InternalError {
                 message: format!("invalid persisted site-pack version: {error}"),
             })?;
-        if let Some(current_version) = current_version.as_ref()
-            && !staged.new_version.is_newer_than(current_version)
-        {
-            tracing::info!(
-                "Site list {} is up to date (current: {}, latest: {})",
-                staged.remote_id,
-                current_version,
-                staged.new_version
-            );
-            return Ok(());
-        }
-
         let site_pack_id = SitePackId::try_new(existing_model.id.clone()).map_err(|error| {
             NetworkManagerOpErr::InternalError {
                 message: format!("Invalid persisted site-pack ID: {error}"),
@@ -979,6 +967,29 @@ impl NetworkManager {
                 return Ok(());
             }
         };
+
+        // A persisted version can match the latest release even if the pack
+        // was never downloaded (e.g. following backup restore). Only a pack
+        // with actual local data can skip a same-version update.
+        let has_local_data = {
+            let pack = site_pack_arc
+                .read()
+                .map_err(|_| NetworkManagerOpErr::RwLockPoison)?;
+            pack.is_synced() && pack.get_db_path().join("pack.db").is_file()
+        };
+        if has_local_data
+            && current_version
+                .as_ref()
+                .is_some_and(|current| !staged.new_version.is_newer_than(current))
+        {
+            tracing::info!(
+                "Site list {} is up to date (current: {:?}, latest: {})",
+                staged.remote_id,
+                current_version,
+                staged.new_version
+            );
+            return Ok(());
+        }
 
         // 2. Validate the staged database once more (cheap; it was already
         // validated at staging time).
@@ -2092,6 +2103,46 @@ mod tests {
             .filter(|name| name.contains("staging") || name.contains(".old-"))
             .collect();
         assert!(leftovers.is_empty(), "staging/old dirs must be cleaned up");
+    }
+
+    #[tokio::test]
+    async fn commit_site_pack_update_recovers_missing_data_at_same_version() {
+        let mut ctx = setup_test_manager();
+        let temp = ctx._temp_dir.path().to_path_buf();
+
+        ctx.manager
+            .add_remote_site_pack_from_updater(
+                &typed_remote_id("remote-missing"),
+                "Remote Pack",
+                None,
+                false,
+                &typed_version("1.0.0"),
+            )
+            .await
+            .unwrap();
+        let pack_id = SitePackId::try_new(
+            ctx.manager
+                .db
+                .get_site_pack_by_remote_id("remote-missing")
+                .unwrap()
+                .id,
+        )
+        .unwrap();
+        assert!(!ctx.manager.get_site_pack(&pack_id).unwrap().is_synced());
+
+        ctx.manager
+            .commit_site_pack_update(make_staged_site_pack(
+                &temp,
+                "remote-missing",
+                "1.0.0",
+                &["restored.example.com"],
+            ))
+            .unwrap();
+
+        let pack = ctx.manager.get_site_pack(&pack_id).unwrap();
+        assert!(pack.is_synced());
+        assert!(pack.blocking_result("restored.example.com").is_blocked());
+        assert_eq!(pack.get_version().map(AsRef::as_ref), Some("1.0.0"));
     }
 
     #[tokio::test]

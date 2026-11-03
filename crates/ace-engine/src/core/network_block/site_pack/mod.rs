@@ -106,7 +106,9 @@ impl SitePack {
         // Local packs get an empty database created eagerly. Remote packs
         // only get one once they have been downloaded for the first time, so
         // they stay unsynced until then (see `is_synced`).
-        let db = if db_path.exists() || remote_id.is_none() {
+        // A leftover directory without pack.db is not a downloaded pack.
+        // Opening it would create an empty database and mark it as synced.
+        let db = if db_path.join(PACK_DB_FILE).is_file() || remote_id.is_none() {
             Some(SitePackDB::from(&db_path.join(PACK_DB_FILE))?)
         } else {
             None
@@ -461,6 +463,27 @@ mod tests {
             None,
         )
         .unwrap()
+    }
+
+    #[test]
+    fn remote_pack_with_leftover_directory_is_not_considered_downloaded() {
+        let dir = tempfile::tempdir().unwrap();
+        let pack = SitePack::from(
+            SitePackId::try_new("remote-missing").unwrap(),
+            Some(RemoteSitePackId::try_new("remote-missing").unwrap()),
+            "Remote".to_string(),
+            None,
+            false,
+            None,
+            None,
+            dir.path(),
+            vec![],
+            None,
+        )
+        .unwrap();
+
+        assert!(!pack.is_synced());
+        assert!(!dir.path().join("pack.db").exists());
     }
 
     #[test]

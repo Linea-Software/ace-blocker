@@ -3,6 +3,27 @@ use crate::service::{
     clients::AceServerClient,
 };
 
+/// A restored block can reference a remote pack whose data is not present.
+/// Recover it promptly without holding the policy lock or blocking the API.
+/// The release-only guard matches the normal background update loop.
+#[cfg(not(debug_assertions))]
+fn schedule_restored_site_pack_recovery(state: &AppState) {
+    let content_service = state.content_update_service.clone();
+    let network_manager = state.network_manager.clone();
+    let account_manager = state.account_manager.clone();
+    tokio::spawn(async move {
+        if let Err(error) = crate::service::content_updater::run_update_pass(
+            &content_service,
+            &network_manager,
+            &account_manager,
+        )
+        .await
+        {
+            tracing::warn!(%error, "Content recovery after backup import failed");
+        }
+    });
+}
+
 pub(super) async fn export_backup(
     state: AppState,
 ) -> Result<crate::manager::network::backup::EngineBackup, ApiError> {
@@ -211,7 +232,10 @@ pub(super) async fn import_backup_from_cloud(state: AppState) -> Result<(), ApiE
 
     let mut manager = state.network_manager.write().await;
     manager.import_backup(internal_backup).await?;
+    drop(manager);
 
+    #[cfg(not(debug_assertions))]
+    schedule_restored_site_pack_recovery(&state);
     Ok(())
 }
 
@@ -222,6 +246,9 @@ pub(super) async fn import_backup(
     let mut manager = state.network_manager.write().await;
 
     manager.import_backup(payload).await?;
+    drop(manager);
 
+    #[cfg(not(debug_assertions))]
+    schedule_restored_site_pack_recovery(&state);
     Ok(())
 }
