@@ -139,9 +139,9 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 170158,
-        "compressed_size_bytes": 73551,
-        "domains_count": 6613
+        "uncompressed_size_bytes": 170138,
+        "compressed_size_bytes": 73565,
+        "domains_count": 6612
     },
     {
         "id": "pack-forums-pro",
