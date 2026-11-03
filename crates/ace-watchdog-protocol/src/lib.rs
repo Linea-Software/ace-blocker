@@ -10,11 +10,35 @@ use std::time::Duration;
 use uuid::Uuid;
 
 /// Uniquely identifies one engine process lifetime, not an installation.
-#[nutype(derive(Debug, Clone, Copy, PartialEq, Eq, Hash, From, Into, Display, Serialize, Deserialize))]
+#[nutype(derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    From,
+    Into,
+    Display,
+    Serialize,
+    Deserialize
+))]
 pub struct EngineInstanceId(Uuid);
 
 /// Per-ping challenge echoed by the engine to bind each pong to its ping.
-#[nutype(derive(Debug, Clone, Copy, PartialEq, Eq, Hash, From, Into, Display, Serialize, Deserialize))]
+#[nutype(derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    From,
+    Into,
+    Display,
+    Serialize,
+    Deserialize
+))]
 pub struct WatchdogNonce(Uuid);
 
 pub const ENGINE_SERVICE_NAME: &str = "AceEngine";
@@ -45,7 +69,8 @@ pub enum MaintenanceReason {
 /// Maintenance is requested only after the authorized shutdown lock checks;
 /// the watchdog does not independently evaluate the blocking policy.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+// Remoc binary codecs cannot decode internally tagged enums (deserialize_any).
+#[serde(rename_all = "snake_case")]
 pub enum EngineToWatchdog {
     Hello {
         engine_instance_id: EngineInstanceId,
@@ -64,7 +89,8 @@ pub enum EngineToWatchdog {
 
 /// Watchdog challenges and responses to maintenance requests.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+// Remoc binary codecs cannot decode internally tagged enums (deserialize_any).
+#[serde(rename_all = "snake_case")]
 pub enum WatchdogToEngine {
     Ping { sequence: u64, nonce: WatchdogNonce },
     MaintenanceAccepted { ttl_ms: u64 },
@@ -117,6 +143,67 @@ mod tests {
         assert_eq!(recovery_delay(1), Duration::from_secs(1));
         assert_eq!(recovery_delay(3), Duration::from_secs(5));
         assert_eq!(recovery_delay(100), Duration::from_secs(60));
+    }
+
+    #[tokio::test]
+    async fn heartbeat_messages_round_trip_on_real_remoc_session() {
+        use remoc::rch::base::{Receiver, Sender};
+
+        let (client_stream, server_stream) = tokio::io::duplex(65_536);
+        let (client_rx, client_tx) = tokio::io::split(client_stream);
+        let (server_rx, server_tx) = tokio::io::split(server_stream);
+
+        let (client, server) = tokio::join!(
+            remoc::Connect::io(remoc::Cfg::default(), client_rx, client_tx),
+            remoc::Connect::io(remoc::Cfg::default(), server_rx, server_tx)
+        );
+        let (client_connection, mut to_watchdog, mut from_watchdog): (
+            _,
+            Sender<EngineToWatchdog>,
+            Receiver<WatchdogToEngine>,
+        ) = client.unwrap();
+        let (server_connection, mut to_engine, mut from_engine): (
+            _,
+            Sender<WatchdogToEngine>,
+            Receiver<EngineToWatchdog>,
+        ) = server.unwrap();
+        let client_task = tokio::spawn(client_connection);
+        let server_task = tokio::spawn(server_connection);
+
+        let instance = EngineInstanceId::from(Uuid::new_v4());
+        let nonce = WatchdogNonce::from(Uuid::new_v4());
+        let messages = [
+            EngineToWatchdog::Hello {
+                engine_instance_id: instance,
+            },
+            EngineToWatchdog::Pong {
+                sequence: 42,
+                nonce,
+                engine_instance_id: instance,
+            },
+            EngineToWatchdog::BeginMaintenance {
+                engine_instance_id: instance,
+                ttl_ms: 120_000,
+                reason: MaintenanceReason::UnlockedShutdown,
+            },
+        ];
+        for message in messages {
+            to_watchdog.send(message.clone()).await.unwrap();
+            assert_eq!(from_engine.recv().await.unwrap(), Some(message));
+        }
+        let replies = [
+            WatchdogToEngine::Ping { sequence: 8, nonce },
+            WatchdogToEngine::MaintenanceAccepted { ttl_ms: 120_000 },
+            WatchdogToEngine::MaintenanceRejected {
+                reason: "locked".to_string(),
+            },
+        ];
+        for reply in replies {
+            to_engine.send(reply.clone()).await.unwrap();
+            assert_eq!(from_watchdog.recv().await.unwrap(), Some(reply));
+        }
+        client_task.abort();
+        server_task.abort();
     }
 
     #[test]
