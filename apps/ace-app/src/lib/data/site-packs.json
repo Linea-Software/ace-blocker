@@ -27,9 +27,9 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 1816019,
-        "compressed_size_bytes": 1816987,
-        "domains_count": 82655
+        "uncompressed_size_bytes": 1435028,
+        "compressed_size_bytes": 394930,
+        "domains_count": 37537
     },
     {
         "id": "pack-gaming-free",
@@ -43,9 +43,9 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 2550770,
-        "compressed_size_bytes": 2551738,
-        "domains_count": 83637
+        "uncompressed_size_bytes": 898305,
+        "compressed_size_bytes": 356405,
+        "domains_count": 33841
     },
     {
         "id": "pack-adult-pro",
@@ -75,9 +75,9 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 5886414,
-        "compressed_size_bytes": 5887382,
-        "domains_count": 310484
+        "uncompressed_size_bytes": 12288473,
+        "compressed_size_bytes": 4524466,
+        "domains_count": 454801
     },
     {
         "id": "pack-messaging-pro",
@@ -86,39 +86,14 @@
         "requires_pro": true,
         "sources": [
             {
-                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-discord.txt",
-                "source_type": "url",
-                "format": "standard"
-            },
-            {
-                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-messenger.txt",
-                "source_type": "url",
-                "format": "standard"
-            },
-            {
-                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-signal.txt",
-                "source_type": "url",
-                "format": "standard"
-            },
-            {
-                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-telegram.txt",
-                "source_type": "url",
-                "format": "standard"
-            },
-            {
-                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-viber.txt",
-                "source_type": "url",
-                "format": "standard"
-            },
-            {
-                "source": "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-snapchat.txt",
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/messaging.txt",
                 "source_type": "url",
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 99733,
-        "compressed_size_bytes": 100701,
-        "domains_count": 2916
+        "uncompressed_size_bytes": 124583,
+        "compressed_size_bytes": 37496,
+        "domains_count": 3245
     },
     {
         "id": "pack-streaming-pro",
@@ -132,9 +107,9 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 36389,
-        "compressed_size_bytes": 37357,
-        "domains_count": 612
+        "uncompressed_size_bytes": 1203218,
+        "compressed_size_bytes": 300518,
+        "domains_count": 28324
     },
     {
         "id": "pack-shopping-pro",
@@ -148,9 +123,105 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 8042,
-        "compressed_size_bytes": 9010,
-        "domains_count": 0
+        "uncompressed_size_bytes": 1015249,
+        "compressed_size_bytes": 393589,
+        "domains_count": 37463
+    },
+    {
+        "id": "pack-anime-manga-pro",
+        "name": "Anime & Manga Websites — Pro",
+        "description": "Blocks anime, manga, manhwa, manhua, webtoons and related novel sites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/anime-manga.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 170158,
+        "compressed_size_bytes": 73551,
+        "domains_count": 6613
+    },
+    {
+        "id": "pack-forums-pro",
+        "name": "Forums & Communities — Pro",
+        "description": "Blocks discussion forums and community websites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/forums.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 5352,
+        "compressed_size_bytes": 3216,
+        "domains_count": 197
+    },
+    {
+        "id": "pack-news-pro",
+        "name": "News Websites — Pro",
+        "description": "Blocks news and online press websites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/news.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 129782,
+        "compressed_size_bytes": 52473,
+        "domains_count": 4644
+    },
+    {
+        "id": "pack-sports-pro",
+        "name": "Sports Websites — Pro",
+        "description": "Blocks sports portals and result websites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/sports.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 62109,
+        "compressed_size_bytes": 27789,
+        "domains_count": 2362
+    },
+    {
+        "id": "pack-dating-pro",
+        "name": "Dating Websites — Pro",
+        "description": "Blocks dating and matchmaking websites.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/dating.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 315459,
+        "compressed_size_bytes": 120001,
+        "domains_count": 10941
+    },
+    {
+        "id": "pack-ai-tools-pro",
+        "name": "AI Tools Websites — Pro",
+        "description": "Blocks AI chatbots and generative AI services.",
+        "requires_pro": true,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/ai-tools.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 5449,
+        "compressed_size_bytes": 3499,
+        "domains_count": 221
     },
     {
         "id": "pack-phishing-pro",
