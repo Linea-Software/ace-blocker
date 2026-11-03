@@ -12,6 +12,9 @@ pub const APP_INFO: AppInfo = AppInfo {
     name: "AceBlocker",
     author: "LineaSoftware",
 };
+#[cfg(target_os = "linux")]
+pub const LINUX_SHARED_DATA_DIR: &str = "/usr/local/share/AceBlocker";
+
 pub struct Settings {}
 
 impl Settings {
@@ -65,14 +68,31 @@ impl Settings {
     }
 
     pub fn get_app_dir() -> PathBuf {
-        match app_dir(AppDataType::SharedData, &APP_INFO, "") {
-            Ok(dir) => dir,
-            Err(error) => {
+        #[cfg(target_os = "linux")]
+        {
+            // A systemd root service and a desktop session can have different
+            // XDG_DATA_DIRS: never let them load separate databases or tokens.
+            let dir = PathBuf::from(LINUX_SHARED_DATA_DIR);
+            if let Err(error) = std::fs::create_dir_all(&dir) {
                 error!(
-                    "CRITICAL ERROR: Failed to access/create sites list directory: {}",
-                    error
+                    "Failed preparing ACE shared data directory {}: {error}",
+                    dir.display()
                 );
                 std::process::exit(1);
+            }
+            dir
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            match app_dir(AppDataType::SharedData, &APP_INFO, "") {
+                Ok(dir) => dir,
+                Err(error) => {
+                    error!(
+                        "CRITICAL ERROR: Failed to access/create sites list directory: {}",
+                        error
+                    );
+                    std::process::exit(1);
+                }
             }
         }
     }
@@ -142,14 +162,21 @@ impl Settings {
     }
 
     pub fn get_app_data_dir() -> PathBuf {
-        match app_dir(AppDataType::SharedData, &APP_INFO, "") {
-            Ok(d) => d,
-            Err(error) => {
-                error!(
-                    "CRITICAL ERROR: Failed to access/create app data directory: {}",
-                    error
-                );
-                std::process::exit(1);
+        #[cfg(target_os = "linux")]
+        {
+            Self::get_app_dir()
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            match app_dir(AppDataType::SharedData, &APP_INFO, "") {
+                Ok(d) => d,
+                Err(error) => {
+                    error!(
+                        "CRITICAL ERROR: Failed to access/create app data directory: {}",
+                        error
+                    );
+                    std::process::exit(1);
+                }
             }
         }
     }

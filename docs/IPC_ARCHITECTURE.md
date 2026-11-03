@@ -41,6 +41,12 @@ but it does **not** cryptographically attest executable identity: another
 user-session process that obtains that token could impersonate the application.
 Do not advertise executable attestation as an existing protection.
 
+On Linux both Engine and App resolve shared data and the capability token from
+the canonical `/usr/local/share/AceBlocker` path, ignoring differences in
+XDG_DATA_DIRS between systemd and the user desktop session. Pre-existing
+alternate XDG paths require explicit maintenance to migrate, not silent data
+replacement.
+
 On Linux the root-owned control directory is traversable (0755), its socket
 accepts local clients (0666), and privileged operations still require the
 installation capability. It is intentionally distinct from the watchdog

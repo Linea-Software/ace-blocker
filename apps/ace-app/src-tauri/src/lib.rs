@@ -6,7 +6,9 @@ use tauri::ipc::Channel;
 
 //mod api;
 //use api::ace_engine::*;
+#[cfg(not(target_os = "linux"))]
 use app_dirs2::*;
+#[cfg(not(target_os = "linux"))]
 pub const APP_INFO: AppInfo = AppInfo {
     name: "AceBlocker",
     author: "LineaSoftware",
@@ -23,10 +25,18 @@ fn app_version() -> &'static str {
 }
 
 pub fn get_capability_token_path() -> Result<PathBuf, String> {
-    let mut path =
-        get_app_dir(AppDataType::SharedData, &APP_INFO, "").map_err(|error| error.to_string())?;
-    path.push("capability.token");
-    Ok(path)
+    #[cfg(target_os = "linux")]
+    {
+        // The service must not disagree with this normal user's XDG_DATA_DIRS.
+        Ok(PathBuf::from(ace_engine::settings::LINUX_SHARED_DATA_DIR).join("capability.token"))
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let mut path = get_app_dir(AppDataType::SharedData, &APP_INFO, "")
+            .map_err(|error| error.to_string())?;
+        path.push("capability.token");
+        Ok(path)
+    }
 }
 
 // Never send the per-install capability back to the WebView. Credentials
@@ -124,5 +134,16 @@ mod tests {
         assert!(authorize_webview_operation("createNetworkBlock").is_ok());
         assert!(authorize_webview_operation("createSitePack").is_ok());
         assert!(authorize_webview_operation("resyncSitePack").is_ok());
+    }
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod linux_shared_data_tests {
+    #[test]
+    fn app_and_engine_use_the_same_capability_file() {
+        assert_eq!(
+            super::get_capability_token_path().unwrap(),
+            ace_engine::settings::Settings::get_capability_token_path()
+        );
     }
 }
