@@ -55,17 +55,21 @@ async fn main() {
     if _args.len() > 1 {
         match _args[1].as_str() {
             "--install" => {
-                match ace_engine::platform::install_service() {
-                    Ok(()) => log_to_file("Service installed successfully."),
-                    Err(error) => log_to_file(&format!("Install failed: {error}")),
+                if let Err(error) = ace_engine::platform::install_service() {
+                    log_to_file(&format!("Install failed: {error}"));
+                    eprintln!("Install failed: {error}");
+                    std::process::exit(1);
                 }
+                log_to_file("Service installed successfully.");
                 return;
             }
             "--uninstall" => {
-                match ace_engine::platform::uninstall_service() {
-                    Ok(()) => log_to_file("Service uninstalled successfully."),
-                    Err(error) => log_to_file(&format!("Uninstall failed: {error}")),
+                if let Err(error) = ace_engine::platform::uninstall_service() {
+                    log_to_file(&format!("Uninstall failed: {error}"));
+                    eprintln!("Uninstall failed: {error}");
+                    std::process::exit(1);
                 }
+                log_to_file("Service uninstalled successfully.");
                 return;
             }
             _ => {}
