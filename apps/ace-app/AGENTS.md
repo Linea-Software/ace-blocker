@@ -79,7 +79,7 @@ a real invariant/trust boundary. Verify relevant `bun run check` and
 
 ## Brand assets
 
-The official artwork lives in the sibling `ace-blocker-logo` repository. Use the exported **transparent** `ace-icon-light-transparent.svg` / `ace-icon-dark-transparent.svg` in the UI, switching via CSS `.dark`, instead of placing a solid-background icon on a themed surface. `src-tauri/icons` is generated from `PNG/ace-icon-light-transparent.png` using `bun run tauri icon ... --ios-color '#FAF7F1'`; keep required solid platform icon backgrounds only where the operating system needs them. The app shell navigation rail displays the official transparent icon, not a placeholder letter. Never modify the logo source repository when consuming its files.
+The official artwork lives in the sibling `ace-blocker-logo` repository. Use the exported **transparent** `ace-icon-light-transparent.svg` / `ace-icon-dark-transparent.svg` in the UI, switching via CSS `.dark`, instead of placing a solid-background icon on a themed surface. `src-tauri/icons` is generated from `PNG/ace-icon-light-transparent.png` using `bun run tauri icon ... --ios-color '#FAF7F1'`; after generation, flatten only `src-tauri/icons/ios/*.png` onto `#FAF7F1` using ImageMagick (`magick "$f" -background '#FAF7F1' -alpha remove -alpha off -strip "PNG24:$f"`) because App Store icons must be fully opaque and the Tauri CLI can retain tiny residual alpha. Keep web, Windows, macOS and Android foreground artwork transparent; keep required solid platform icon backgrounds only where the operating system needs them. The app shell navigation rail displays the official transparent icon, not a placeholder letter. Never modify the logo source repository when consuming its files.
 
 ## UI Identity / Rebuild Direction
 
