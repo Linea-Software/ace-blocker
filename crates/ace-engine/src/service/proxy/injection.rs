@@ -134,6 +134,31 @@ mod tests {
     }
 
     #[test]
+    fn shared_bootstrap_and_chunks_precede_their_entry_script() {
+        let html = "<!doctype html><html><head></head><body></body></html>";
+        let scripts = vec![
+            "window.__ACE_RUNTIME_MARKER__ = true;".to_string(),
+            "window.__ACE_CHUNK_MARKER__ = true;".to_string(),
+            "window.__ACE_ENTRY_MARKER__ = true;".to_string(),
+        ];
+        let output = inject_scripts_with_nonce(
+            "example.com",
+            html.to_string(),
+            true,
+            &scripts,
+            "test-nonce",
+            "medium",
+        );
+        let setup = output.find("window.__BOREDOM_INTENSITY__").unwrap();
+        let bootstrap = output.find("window.__ACE_RUNTIME_MARKER__").unwrap();
+        let chunk = output.find("window.__ACE_CHUNK_MARKER__").unwrap();
+        let entry = output.find("window.__ACE_ENTRY_MARKER__").unwrap();
+        assert!(setup < bootstrap && bootstrap < chunk && chunk < entry);
+        assert_eq!(output.matches("data-ace-resistance=").count(), 4);
+        assert_eq!(output.matches("nonce=\"test-nonce\"").count(), 4);
+    }
+
+    #[test]
     fn test_inject_scripts_rewrites_meta_csp_with_same_nonce() {
         let html = r#"<!DOCTYPE html><html><head>
             <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; script-src-elem 'self'">
