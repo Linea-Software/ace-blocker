@@ -112,4 +112,4 @@ if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database /usr/local/share/applications
 fi
 
-echo "ACE installed: services enabled and started; ACE Blocker launcher registered."
+echo "ACE installed: services enabled and started; Ace Blocker launcher registered."
