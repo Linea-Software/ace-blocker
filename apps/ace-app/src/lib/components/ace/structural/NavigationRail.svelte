@@ -33,7 +33,8 @@
 
 <nav class="rail" aria-label={m.navigation()}>
     <a class="brand" href={resolve("/")} aria-label={m.app_name()} title={m.app_name()}>
-        <span aria-hidden="true">A</span>
+        <img src="/ace-icon-light-transparent.svg" alt="" class="brand-icon dark:hidden" />
+        <img src="/ace-icon-dark-transparent.svg" alt="" class="brand-icon hidden dark:block" />
     </a>
 
     <div class="rail-group">
@@ -92,17 +93,10 @@
         text-decoration: none;
     }
 
-    .brand span {
-        width: 34px;
-        height: 34px;
-        display: grid;
-        place-items: center;
-        background: var(--foreground);
-        color: var(--background);
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 22px;
-        font-weight: 700;
-        clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+    .brand-icon {
+        width: 46px;
+        height: 46px;
+        object-fit: contain;
     }
 
     .rail-group {

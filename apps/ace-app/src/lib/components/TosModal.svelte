@@ -65,10 +65,14 @@
                     style="width: 88px; height: 88px; border-radius: 20px;"
                 >
                     <img
-                        src="/ace-icon-light.svg"
+                        src="/ace-icon-light-transparent.svg"
                         alt={m.legal_gate_logo_alt()}
-                        class="h-full w-full"
-                        style="border-radius: 20px;"
+                        class="h-full w-full dark:hidden"
+                    />
+                    <img
+                        src="/ace-icon-dark-transparent.svg"
+                        alt={m.legal_gate_logo_alt()}
+                        class="hidden h-full w-full dark:block"
                     />
                 </div>
                 <div>

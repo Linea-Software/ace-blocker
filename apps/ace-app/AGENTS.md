@@ -77,6 +77,10 @@ validated domain values; do not create branded types or Zod schemas without
 a real invariant/trust boundary. Verify relevant `bun run check` and
 `bun run test:unit` from this directory; native IPC needs separate tests.
 
+## Brand assets
+
+The official artwork lives in the sibling `ace-blocker-logo` repository. Use the exported **transparent** `ace-icon-light-transparent.svg` / `ace-icon-dark-transparent.svg` in the UI, switching via CSS `.dark`, instead of placing a solid-background icon on a themed surface. `src-tauri/icons` is generated from `PNG/ace-icon-light-transparent.png` using `bun run tauri icon ... --ios-color '#FAF7F1'`; keep required solid platform icon backgrounds only where the operating system needs them. The app shell navigation rail displays the official transparent icon, not a placeholder letter. Never modify the logo source repository when consuming its files.
+
 ## UI Identity / Rebuild Direction
 
 **Before any task that creates, redesigns, or materially alters visible UI, read `docs/ui-identity.md`.** It is the local source of truth for the approved Ace App redesign.
