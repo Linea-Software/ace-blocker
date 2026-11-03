@@ -687,6 +687,8 @@ ExecStart={}\n\
 Restart=on-failure\n\
 RestartSec=2s\n\
 KillMode=control-group\n\
+RuntimeDirectory=ace-blocker-control\n\
+RuntimeDirectoryMode=0755\n\
 \n\
 [Install]\n\
 WantedBy=multi-user.target\n",
@@ -852,6 +854,8 @@ WantedBy=multi-user.target\n",
             assert!(engine.contains("ExecStart=\"/opt/Ace Blocker/ace-engine\""));
             assert!(engine.contains("RefuseManualStop=yes"));
             assert!(engine.contains("Restart=on-failure"));
+            assert!(engine.contains("RuntimeDirectory=ace-blocker-control"));
+            assert!(engine.contains("RuntimeDirectoryMode=0755"));
 
             let watchdog = watchdog_unit_contents(Path::new("/opt/Ace Blocker/ace-watchdog"));
             assert!(watchdog.contains("ExecStart=\"/opt/Ace Blocker/ace-watchdog\""));

@@ -8,7 +8,7 @@ services; the Tauri frontend runs as an unprivileged user-session process.
 ## Control plane
 
 - Engine listener: `\\.\pipe\AceBlockerEngineControlV1` on Windows;
-  `/run/ace-blocker/engine-control.sock` on Linux.
+  `/run/ace-blocker-control/engine-control.sock` on Linux.
 - `crates/ace-engine/src/service/api/rpc.rs` declares the 63 typed remoc RPC
   operations. They call transport-independent `operations_*.rs` modules,
   preserving lock checks, cloud authorization, shutdown and backup.
@@ -40,6 +40,11 @@ The current install-level token defends against arbitrary WebView requests,
 but it does **not** cryptographically attest executable identity: another
 user-session process that obtains that token could impersonate the application.
 Do not advertise executable attestation as an existing protection.
+
+On Linux the root-owned control directory is traversable (0755), its socket
+accepts local clients (0666), and privileged operations still require the
+installation capability. It is intentionally distinct from the watchdog
+runtime directory (0700) and root-only watchdog socket (0600).
 
 ### Watchdog
 

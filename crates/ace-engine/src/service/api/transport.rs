@@ -11,7 +11,7 @@ use std::sync::Arc;
 #[cfg(windows)]
 pub const ENGINE_PIPE_PATH: &str = r"\\.\pipe\AceBlockerEngineControlV1";
 #[cfg(target_os = "linux")]
-pub const ENGINE_SOCKET_PATH: &str = "/run/ace-blocker/engine-control.sock";
+pub const ENGINE_SOCKET_PATH: &str = "/run/ace-blocker-control/engine-control.sock";
 
 #[cfg(windows)]
 fn engine_pipe_security()
@@ -68,7 +68,12 @@ pub async fn serve(state: AppState) -> Result<()> {
     use std::os::unix::fs::PermissionsExt;
     use tokio::net::{UnixListener, UnixStream};
     let path = std::path::Path::new(ENGINE_SOCKET_PATH);
-    std::fs::create_dir_all(path.parent().unwrap())?;
+    // Never share the root-only watchdog directory with unprivileged clients.
+    // /run is root-owned; the control directory is traversable but not writable
+    // by regular users. The socket still relies on per-operation capability auth.
+    let runtime_dir = path.parent().unwrap();
+    std::fs::create_dir_all(runtime_dir)?;
+    std::fs::set_permissions(runtime_dir, std::fs::Permissions::from_mode(0o755))?;
     if path.exists() {
         if UnixStream::connect(path).await.is_ok() {
             eyre::bail!("engine control socket is already in use");
@@ -157,5 +162,18 @@ mod windows_tests {
         let server = tokio::time::timeout(Duration::from_secs(5), listener.accept()).await??;
         drop((client, server));
         Ok(())
+    }
+}
+
+#[cfg(all(target_os = "linux", test))]
+mod linux_tests {
+    use super::ENGINE_SOCKET_PATH;
+    use ace_watchdog_protocol::LINUX_WATCHDOG_RUNTIME_DIR;
+    use std::path::Path;
+
+    #[test]
+    fn standard_user_control_socket_is_outside_private_watchdog_directory() {
+        assert!(!Path::new(ENGINE_SOCKET_PATH).starts_with(LINUX_WATCHDOG_RUNTIME_DIR));
+        assert!(ENGINE_SOCKET_PATH.starts_with("/run/ace-blocker-control/"));
     }
 }
