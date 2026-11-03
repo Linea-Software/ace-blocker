@@ -27,6 +27,8 @@ pub struct DefaultSitePacksSource {
     pub format: SitePackFormat,
 }
 
+// Keep this developer-only generator aligned with the Ace App catalog.
+// The production offline exporter reads site-packs.json directly.
 pub const DEFAULT_PACKS: &[DefaultSitePacks] = &[
     DefaultSitePacks {
         id: "pack-adult-free",
@@ -91,38 +93,11 @@ pub const DEFAULT_PACKS: &[DefaultSitePacks] = &[
         name: "Messaging Websites — Pro",
         description: "Blocks popular messaging applications.",
         requires_pro: true,
-        sources: &[
-            DefaultSitePacksSource {
-                source: "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-discord.txt",
-                source_type: SitePackSourceType::Url,
-                format: SitePackFormat::Standard,
-            },
-            DefaultSitePacksSource {
-                source: "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-messenger.txt",
-                source_type: SitePackSourceType::Url,
-                format: SitePackFormat::Standard,
-            },
-            DefaultSitePacksSource {
-                source: "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-signal.txt",
-                source_type: SitePackSourceType::Url,
-                format: SitePackFormat::Standard,
-            },
-            DefaultSitePacksSource {
-                source: "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-telegram.txt",
-                source_type: SitePackSourceType::Url,
-                format: SitePackFormat::Standard,
-            },
-            DefaultSitePacksSource {
-                source: "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-viber.txt",
-                source_type: SitePackSourceType::Url,
-                format: SitePackFormat::Standard,
-            },
-            DefaultSitePacksSource {
-                source: "https://raw.githubusercontent.com/nickoppen/pihole-blocklists/master/blocklist-snapchat.txt",
-                source_type: SitePackSourceType::Url,
-                format: SitePackFormat::Standard,
-            },
-        ],
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/messaging.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
     },
     DefaultSitePacks {
         id: "pack-streaming-pro",
@@ -142,6 +117,72 @@ pub const DEFAULT_PACKS: &[DefaultSitePacks] = &[
         requires_pro: true,
         sources: &[DefaultSitePacksSource {
             source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/shopping.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
+    DefaultSitePacks {
+        id: "pack-anime-manga-pro",
+        name: "Anime & Manga Websites — Pro",
+        description: "Blocks anime, manga, manhwa, manhua, webtoons and related novel sites.",
+        requires_pro: true,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/anime-manga.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
+    DefaultSitePacks {
+        id: "pack-forums-pro",
+        name: "Forums & Communities — Pro",
+        description: "Blocks discussion forums and community websites.",
+        requires_pro: true,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/forums.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
+    DefaultSitePacks {
+        id: "pack-news-pro",
+        name: "News Websites — Pro",
+        description: "Blocks news and online press websites.",
+        requires_pro: true,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/news.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
+    DefaultSitePacks {
+        id: "pack-sports-pro",
+        name: "Sports Websites — Pro",
+        description: "Blocks sports portals and result websites.",
+        requires_pro: true,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/sports.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
+    DefaultSitePacks {
+        id: "pack-dating-pro",
+        name: "Dating Websites — Pro",
+        description: "Blocks dating and matchmaking websites.",
+        requires_pro: true,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/dating.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
+    DefaultSitePacks {
+        id: "pack-ai-tools-pro",
+        name: "AI Tools Websites — Pro",
+        description: "Blocks AI chatbots and generative AI services.",
+        requires_pro: true,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/ai-tools.txt",
             source_type: SitePackSourceType::Url,
             format: SitePackFormat::Standard,
         }],
