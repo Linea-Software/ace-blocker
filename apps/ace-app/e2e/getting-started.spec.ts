@@ -49,6 +49,8 @@ test.describe("Getting Started", () => {
                 exact: true,
             }),
         });
+        // Concepts are reference material, collapsed behind a disclosure by default.
+        await conceptsSection.locator("summary").click();
         for (const concept of [
             "Network Blocks",
             "Categories",

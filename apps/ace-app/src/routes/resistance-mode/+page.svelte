@@ -22,11 +22,14 @@
     import TimeLockDialog from "./_components/TimeLockDialog.svelte";
     import PageLayout from "$lib/components/PageLayout.svelte";
     import PageHeader from "$lib/components/PageHeader.svelte";
-    import { onMount } from "svelte";
+    import { onMount, untrack } from "svelte";
 
     // ─── State ───────────────────────────────────────────────────────
     let settings = $state<ResistanceModeSettings | null>(null);
     let scripts = $state<ScriptInfo[]>([]);
+    let loading = $state(true);
+    let loadError = $state(false);
+    let mounted = $state(false);
     let isMutating = $state(false);
     let isSyncing = $state(false);
     let lockDialogOpen = $state(false);
@@ -47,36 +50,63 @@
     // ─── Data loading ────────────────────────────────────────────────
     async function refresh() {
         const seq = ++refreshSeq;
-        const [scriptsRes, settingsRes] = await Promise.all([
-            getAllScripts(),
-            getResistanceModeSettings(),
-        ]);
-        if (seq !== refreshSeq) return; // superseded by a newer refresh
-
-        if (scriptsRes.error || settingsRes.error) {
-            // The engine may be down; the status card reflects engineStore.
-            return;
+        if (!engineOnline || !mounted) return;
+        // Polling an already-loaded view should not flash a loading state.
+        if (!settings) loading = true;
+        loadError = false;
+        try {
+            const [scriptsRes, settingsRes] = await Promise.all([
+                getAllScripts(),
+                getResistanceModeSettings(),
+            ]);
+            if (seq !== refreshSeq) return;
+            if (scriptsRes.error || settingsRes.error || !scriptsRes.data || !settingsRes.data) {
+                throw new Error("Resistance data unavailable");
+            }
+            scripts = scriptsRes.data.scripts;
+            settings = settingsRes.data;
+        } catch {
+            if (seq !== refreshSeq) return;
+            scripts = [];
+            settings = null;
+            loadError = true;
+        } finally {
+            if (seq === refreshSeq) loading = false;
         }
-        scripts = scriptsRes.data?.scripts ?? [];
-        settings = settingsRes.data ?? null;
     }
+
+    // Reachability changes invalidate pending reads and reload on reconnect.
+    $effect(() => {
+        if (!mounted) return;
+        if (engineOnline) {
+            untrack(() => void refresh());
+        } else {
+            ++refreshSeq;
+            loading = false;
+            loadError = false;
+            settings = null;
+            scripts = [];
+        }
+    });
 
     // Poll while visible. The engine store owns reachability detection, so the
     // interval simply skips work while offline and resumes automatically.
     onMount(() => {
+        mounted = true;
         pageVisible = document.visibilityState === "visible";
         const onVisibility = () => {
             pageVisible = document.visibilityState === "visible";
-            if (pageVisible && engineStore.isAlive) void refresh();
+            if (pageVisible && engineStore.isAlive && !loadError) void refresh();
         };
         document.addEventListener("visibilitychange", onVisibility);
-        if (engineStore.isAlive) void refresh();
 
         const id = setInterval(() => {
-            if (pageVisible && engineStore.isAlive) void refresh();
+            if (pageVisible && engineStore.isAlive && !loading && !loadError) void refresh();
         }, 5000);
 
         return () => {
+            mounted = false;
+            ++refreshSeq;
             document.removeEventListener("visibilitychange", onVisibility);
             clearInterval(id);
         };
@@ -259,7 +289,7 @@
             <span data-testid="rm-beta-badge" class="beta-note">
                 {m.beta_badge()}
             </span>
-            {#if engineOnline && isPro && settings?.enabled && !isLocked}
+            {#if engineOnline && !loadError && isPro && settings?.enabled && !isLocked}
                 <button
                     type="button"
                     class="lock-action"
@@ -287,8 +317,25 @@
                 onToggle={handleToggleEnabled}
             />
         </div>
+    {:else if loadError || !settings}
+        <section class="load-state" aria-busy={loading} data-testid="rm-load-state">
+            <div role="status" aria-live="polite">
+                <h2>{loadError ? m.resistance_load_error_title() : m.resistance_loading()}</h2>
+                {#if loadError}
+                    <p>{m.resistance_load_error_description()}</p>
+                {/if}
+            </div>
+            {#if loadError}
+                <button type="button" class="retry-action" onclick={() => void refresh()} disabled={loading}>
+                    {m.retry()}
+                </button>
+            {/if}
+        </section>
     {:else}
-        <div class="resistance-stack">
+        <div class="resistance-stack" aria-busy={loading}>
+            {#if loading}
+                <p class="refresh-status" role="status">{m.resistance_loading()}</p>
+            {/if}
             {#if !isPro}
                 <div class="pro-gate" data-testid="rm-pro-gate">
                     <div class="pro-gate-copy">
@@ -354,13 +401,60 @@
         bind:open={lockDialogOpen}
         isLocked={isLocked}
         lockEndRaw={settings?.lockEnd ?? null}
-        disabled={!engineOnline}
+        disabled={!engineOnline || loadError || !settings}
         committing={isMutating}
         onCommit={handleCommitLock}
     />
 </PageLayout>
 
 <style>
+    .load-state {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--card);
+    }
+
+    .load-state h2 {
+        margin: 0;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 19px;
+        font-weight: 600;
+    }
+
+    .load-state p,
+    .refresh-status {
+        margin: 5px 0 0;
+        color: var(--muted-foreground);
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .retry-action {
+        min-height: 40px;
+        padding: 0 14px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--background);
+        color: var(--foreground);
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .retry-action:hover:not(:disabled) {
+        background: var(--muted);
+    }
+
+    .retry-action:focus-visible {
+        outline: 2px solid var(--foreground);
+        outline-offset: 3px;
+    }
+
     .beta-note {
         color: var(--muted-foreground);
         font-family: "IBM Plex Sans Condensed", sans-serif;

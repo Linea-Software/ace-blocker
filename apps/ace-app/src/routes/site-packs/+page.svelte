@@ -8,6 +8,8 @@
         Search,
         Plus,
         TriangleAlert,
+        X,
+        ArrowRight,
     } from "@lucide/svelte";
     import { SvelteDate } from "svelte/reactivity";
     import ImportPackModal from "./_ImportPackModal.svelte";
@@ -25,6 +27,7 @@
     import { syncStore } from "$lib/stores/syncing-store.svelte";
     import { userStore } from "$lib/stores/user-store.svelte";
     import { page } from "$app/state";
+    import { resolve } from "$app/paths";
     import { onMount } from "svelte";
     import { toast } from "svelte-sonner";
     import { getLocale } from "$lib/paraglide/runtime";
@@ -55,7 +58,8 @@
 
         if (error) {
             loadError = true;
-            toast.error(m.failed_to_sync());
+            // The inline error already explains an initial failure. Avoid a duplicate toast.
+            if (packs.length > 0) toast.error(m.failed_to_sync());
         } else if (data) {
             packs = data.sitePacks ?? [];
             if (selectedId) {
@@ -95,10 +99,11 @@
 
     function matchesSearch(pack: SitePackSchema): boolean {
         if (!searchQuery.trim()) return true;
-        const query = searchQuery.toLowerCase();
+        const query = searchQuery.trim().toLocaleLowerCase(getLocale());
         return (
-            pack.name.toLowerCase().includes(query) ||
-            (pack.description ?? "").toLowerCase().includes(query)
+            getBlockingListDisplayName(pack).toLocaleLowerCase(getLocale()).includes(query) ||
+            pack.name.toLocaleLowerCase(getLocale()).includes(query) ||
+            getSubtitle(pack).toLocaleLowerCase(getLocale()).includes(query)
         );
     }
 
@@ -247,15 +252,27 @@
     {/snippet}
 
     <div class="catalog-toolbar">
-        <label class="search-field">
+        <div class="search-field">
             <Search size={15} aria-hidden="true" />
-            <span class="sr-only">{m.search_packs_placeholder()}</span>
+            <label class="sr-only" for="catalog-search">{m.search_packs_placeholder()}</label>
             <input
+                id="catalog-search"
                 type="search"
                 placeholder={m.search_packs_placeholder()}
                 bind:value={searchQuery}
             />
-        </label>
+            {#if searchQuery}
+                <button
+                    type="button"
+                    class="search-clear"
+                    aria-label={m.clear_search()}
+                    title={m.clear_search()}
+                    onclick={() => (searchQuery = "")}
+                >
+                    <X size={14} aria-hidden="true" />
+                </button>
+            {/if}
+        </div>
     </div>
 
     {#if isLoading && packs.length === 0}
@@ -277,10 +294,18 @@
             </div>
         </div>
     {:else if categories.length === 0 && customLists.length === 0}
-        <div class="empty-inventory">
+        <div class="empty-inventory" role="status">
             <Search size={20} aria-hidden="true" />
-            <h2>{m.no_site_packs_title()}</h2>
-            <p>{m.no_site_packs_description()}</p>
+            {#if searchQuery.trim()}
+                <h2>{m.site_packs_no_search_results()}</h2>
+                <p>{m.site_packs_no_search_results_detail({ query: searchQuery.trim() })}</p>
+                <button type="button" class="clear-query-action" onclick={() => (searchQuery = "")}>
+                    {m.clear_search()}
+                </button>
+            {:else}
+                <h2>{m.no_site_packs_title()}</h2>
+                <p>{m.no_site_packs_description()}</p>
+            {/if}
         </div>
     {:else}
         <div class="catalog">
@@ -355,6 +380,14 @@
             {#if getSubtitle(inspectorPack)}
                 <p class="pack-description">{getSubtitle(inspectorPack)}</p>
             {/if}
+
+            <div class="pack-application">
+                <p>{m.category_apply_note()}</p>
+                <a href={resolve("/network-blocks")}>
+                    {m.category_use_in_block()}
+                    <ArrowRight size={14} aria-hidden="true" />
+                </a>
+            </div>
 
             <dl class="pack-facts">
                 <div>
@@ -820,5 +853,64 @@
         .spinner {
             animation: none;
         }
+    }
+
+    .search-field input::-webkit-search-cancel-button {
+        appearance: none;
+    }
+
+    .search-clear {
+        width: 27px;
+        height: 27px;
+        flex: 0 0 27px;
+        display: grid;
+        place-items: center;
+        border: 0;
+        border-radius: 3px;
+        background: transparent;
+        color: var(--muted-foreground);
+        cursor: pointer;
+    }
+
+    .search-clear:hover {
+        background: var(--muted);
+        color: var(--foreground);
+    }
+
+    .clear-query-action {
+        margin-top: 8px;
+        min-height: 36px;
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--foreground);
+        color: var(--background);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .pack-application {
+        padding: 12px 14px;
+        border-left: 3px solid var(--ace-signal);
+        background: color-mix(in srgb, var(--muted) 54%, transparent);
+    }
+
+    .pack-application p {
+        margin: 0;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .pack-application a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 9px;
+        color: var(--foreground);
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 3px;
     }
 </style>

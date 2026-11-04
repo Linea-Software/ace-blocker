@@ -107,6 +107,9 @@ Key rules:
 - `PageLayout` establishes the named CSS container `page`; page-owned components should prefer `@container page (...)` for responsive composition.
 - The shell workspace establishes `ace-workspace`, and `Inspector` establishes `inspector`; use those named containers when responsiveness depends on those surfaces rather than on the browser viewport.
 - Keep primary facts visible at the default desktop window size; only collapse secondary columns when the actual page container becomes narrow.
+- Keep the navigation rail scrollable at short/zoomed window heights; do not hide its bottom links or focus ring.
+- Gated action buttons must retain intrinsic visible content and readable entitlements at all viewport widths; never rely on an absolutely positioned, hover-only label.
+- A downloaded Category/Custom List is coverage data, not an active block. User-facing instructions should make clear that it must be attached to a Network Block to enforce it.
 
 ### UI skill references (when available)
 

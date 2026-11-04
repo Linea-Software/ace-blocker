@@ -8,6 +8,8 @@
         Lock,
         CalendarClock,
         RotateCcw,
+        ArrowRight,
+        ChevronDown,
     } from "@lucide/svelte";
     import { resolve } from "$app/paths";
     import * as m from "$lib/paraglide/messages.js";
@@ -128,26 +130,29 @@
     {/snippet}
 
     <div class="guide-workspace">
-        <section class="guide-section" aria-labelledby="guide-concepts-title">
-            <div class="section-heading">
-                <h2 id="guide-concepts-title">{m.guide_concepts_title()}</h2>
-                <p>{m.guide_concepts_description()}</p>
+        <section class="guide-section" aria-labelledby="guide-setup-title">
+            <div class="section-heading setup-heading">
+                <div>
+                    <h2 id="guide-setup-title">{m.guide_setup_title()}</h2>
+                    <p>{m.guide_setup_description()}</p>
+                </div>
+                <a class="start-action" href={resolve("/network-blocks")}>
+                    {m.guide_open_blocks()}
+                    <ArrowRight size={15} aria-hidden="true" />
+                </a>
             </div>
 
-            <div class="concept-ledger">
-                {#each concepts as concept (concept.id)}
-                    <a class="concept-row" href={resolve(concept.href)}>
-                        <span class="concept-mark" aria-hidden="true">
-                            <concept.icon size={17} strokeWidth={1.8} />
-                        </span>
-                        <span class="concept-copy">
-                            <strong>{concept.title}</strong>
-                            <span>{concept.body}</span>
-                        </span>
-                        <span class="open-label">{concept.action}</span>
-                    </a>
+            <ol class="setup-line">
+                {#each setupSteps as setupStep, index (setupStep.id)}
+                    <li>
+                        <span class="step-index">{index + 1}</span>
+                        <div>
+                            <h3>{setupStep.title}</h3>
+                            <p>{setupStep.body}</p>
+                        </div>
+                    </li>
                 {/each}
-            </div>
+            </ol>
         </section>
 
         <section class="replay-strip">
@@ -167,23 +172,30 @@
             </div>
         </section>
 
-        <section class="guide-section" aria-labelledby="guide-setup-title">
-            <div class="section-heading">
-                <h2 id="guide-setup-title">{m.guide_setup_title()}</h2>
-                <p>{m.guide_setup_description()}</p>
-            </div>
-
-            <ol class="setup-line">
-                {#each setupSteps as setupStep, index (setupStep.id)}
-                    <li>
-                        <span class="step-index">{index + 1}</span>
-                        <div>
-                            <h3>{setupStep.title}</h3>
-                            <p>{setupStep.body}</p>
-                        </div>
-                    </li>
+        <section class="guide-section" aria-labelledby="guide-concepts-title">
+            <details class="concept-disclosure">
+                <summary>
+                    <span>
+                        <h2 id="guide-concepts-title">{m.guide_concepts_title()}</h2>
+                        <small>{m.guide_concepts_description()}</small>
+                    </span>
+                    <ChevronDown size={19} aria-hidden="true" />
+                </summary>
+                <div class="concept-ledger">
+                {#each concepts as concept (concept.id)}
+                    <a class="concept-row" href={resolve(concept.href)}>
+                        <span class="concept-mark" aria-hidden="true">
+                            <concept.icon size={17} strokeWidth={1.8} />
+                        </span>
+                        <span class="concept-copy">
+                            <strong>{concept.title}</strong>
+                            <span>{concept.body}</span>
+                        </span>
+                        <span class="open-label">{concept.action}</span>
+                    </a>
                 {/each}
-            </ol>
+                </div>
+            </details>
         </section>
 
         <section class="guide-section" aria-labelledby="guide-faq-title">
@@ -401,7 +413,7 @@
     .setup-line p {
         margin: 4px 0 0;
         color: var(--muted-foreground);
-        font-size: 12px;
+        font-size: 13px;
         line-height: 1.5;
     }
 
@@ -433,6 +445,95 @@
 
         .open-label {
             grid-column: 2;
+        }
+    }
+
+    .setup-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .start-action {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        flex-shrink: 0;
+        padding: 0 13px;
+        border-radius: 4px;
+        background: var(--foreground);
+        color: var(--background);
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .start-action:hover {
+        opacity: 0.86;
+    }
+
+    .concept-disclosure {
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--card);
+    }
+
+    .concept-disclosure summary {
+        min-height: 76px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 15px 18px;
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .concept-disclosure summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .concept-disclosure summary:hover {
+        background: var(--muted);
+    }
+
+    .concept-disclosure summary small {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .concept-disclosure summary :global(svg) {
+        flex: 0 0 auto;
+        transition: transform 150ms ease;
+    }
+
+    .concept-disclosure[open] summary :global(svg) {
+        transform: rotate(180deg);
+    }
+
+    .concept-disclosure .concept-ledger {
+        border: 0;
+        border-top: 1px solid var(--border);
+        border-radius: 0;
+    }
+
+    @container page (max-width: 560px) {
+        .setup-heading {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .concept-disclosure summary :global(svg) {
+            transition: none;
         }
     }
 </style>

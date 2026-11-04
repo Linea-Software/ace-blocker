@@ -158,6 +158,8 @@
                 class="create-action"
                 type="button"
                 data-tour="create-block"
+                disabled={data.engineOffline}
+                title={data.engineOffline ? m.status_engine_offline_description() : undefined}
                 onclick={handleCreate}
             >
                 <Plus size={17} strokeWidth={2} aria-hidden="true" />
@@ -172,6 +174,7 @@
             <div>
                 <strong>{m.status_engine_offline()}</strong>
                 <p>{m.status_engine_offline_description()}</p>
+                <a href={resolve("/getting-started")}>{m.getting_started()}</a>
             </div>
         </div>
     {:else if data.loadError}
@@ -313,8 +316,13 @@
             transform 140ms ease;
     }
 
-    .create-action:hover {
+    .create-action:hover:not(:disabled) {
         opacity: 0.86;
+    }
+
+    .create-action:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
     }
 
     .create-action:active {
@@ -345,6 +353,15 @@
         margin: 3px 0 0;
         color: var(--muted-foreground);
         font-size: 13px;
+    }
+
+    .engine-offline a {
+        display: inline-block;
+        margin-top: 12px;
+        color: var(--foreground);
+        font-size: 12px;
+        font-weight: 600;
+        text-underline-offset: 3px;
     }
 
     .empty-policy {

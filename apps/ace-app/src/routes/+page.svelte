@@ -111,6 +111,10 @@
             <div>
                 <strong>{m.status_engine_offline()}</strong>
                 <p>{m.status_engine_offline_description()}</p>
+                <a class="offline-guide-link" href={resolve("/getting-started")}>
+                    {m.getting_started()}
+                    <ArrowUpRight size={14} aria-hidden="true" />
+                </a>
             </div>
         </div>
     {:else if dashboardStore.loadError}
@@ -377,7 +381,7 @@
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        color: var(--ace-signal-deep);
+        color: var(--foreground);
         font-family: "IBM Plex Sans Condensed", sans-serif;
         font-size: 12px;
         font-weight: 600;
@@ -417,7 +421,7 @@
 
     .change-readout time,
     .quiet-time {
-        color: var(--ace-signal-deep);
+        color: var(--foreground);
         font-family: "IBM Plex Mono", monospace;
         font-size: 11px;
         font-weight: 600;
@@ -546,6 +550,18 @@
         background: var(--muted);
     }
 
+    .offline-guide-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 13px;
+        color: var(--foreground);
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
     @container page (max-width: 760px) {
         .state-board {
             grid-template-columns: 1fr;
@@ -563,7 +579,7 @@
         }
 
         .sealed-note {
-            display: none;
+            font-size: 11px;
         }
 
         .activity-strip {
