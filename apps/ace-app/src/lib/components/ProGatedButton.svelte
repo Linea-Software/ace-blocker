@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { openProPage } from "$engine-client";
+    import { openAccountPage } from "$lib/utils/account-browser";
     import { Crown, ExternalLink } from "@lucide/svelte";
     import { cn } from "$lib/utils";
     import * as m from "$lib/paraglide/messages.js";
@@ -24,7 +24,7 @@
     type="button"
     onclick={() => {
         if (!isPro) {
-            void openProPage();
+            void openAccountPage("pro");
             return;
         }
         onclick?.();

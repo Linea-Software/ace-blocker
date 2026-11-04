@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { openProPage } from "$engine-client";
+    import { openAccountPage } from "$lib/utils/account-browser";
     import { ArrowUpRight, Crown } from "@lucide/svelte";
     import { cn } from "$lib/utils";
     import * as m from "$lib/paraglide/messages.js";
@@ -20,7 +20,7 @@
         if (opening) return;
         opening = true;
         try {
-            await openProPage();
+            await openAccountPage("pro");
         } finally {
             opening = false;
         }

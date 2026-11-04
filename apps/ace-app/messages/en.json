@@ -426,6 +426,8 @@
     "pro_feature_premium_lists": "All Pro Categories",
     "pro_feature_advanced_friction": "Advanced Friction",
     "already_purchased": "Already purchased? Sign in to activate.",
+    "account_browser_open_failed": "Could not open your browser",
+    "account_browser_open_failed_detail": "Open this address manually: {url}",
     "help_title": "Help & Support",
     "help_subtitle": "Get in touch or read our policies.",
     "lock_notice_title": "Important Notice Regarding Locks",

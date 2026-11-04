@@ -3,8 +3,20 @@
     import { userStore } from "$lib/stores/user-store.svelte";
     import { KeyRound, CircleCheck, Crown } from "@lucide/svelte";
     import UpgradeToProButton from "$lib/components/UpgradeToProButton.svelte";
+    import { openAccountPage } from "$lib/utils/account-browser";
 
     const isPro = $derived(userStore.isPro);
+    let openingSignIn = $state(false);
+
+    async function signIn() {
+        if (openingSignIn) return;
+        openingSignIn = true;
+        try {
+            await openAccountPage("sign-in");
+        } finally {
+            openingSignIn = false;
+        }
+    }
 </script>
 
 <section class="settings-section">
@@ -36,7 +48,17 @@
         </div>
 
         {#if !isPro}
-            <UpgradeToProButton text={m.settings_license_upgrade_btn()} />
+            <div class="license-actions">
+                <UpgradeToProButton text={m.settings_license_upgrade_btn()} />
+                <button
+                    type="button"
+                    class="sign-in-action"
+                    disabled={openingSignIn}
+                    onclick={signIn}
+                >
+                    {m.already_purchased()}
+                </button>
+            </div>
         {/if}
     </div>
 </section>
@@ -131,14 +153,41 @@
         line-height: 1.4;
     }
 
-    @container page (max-width: 560px) {
+    .license-actions {
+        min-width: 0;
+        display: grid;
+        justify-items: start;
+        gap: 7px;
+    }
+
+    .sign-in-action {
+        padding: 4px 0;
+        border: 0;
+        background: transparent;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        text-align: left;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+    }
+
+    .sign-in-action:hover {
+        color: var(--foreground);
+    }
+
+    .sign-in-action:disabled {
+        opacity: 0.5;
+        cursor: wait;
+    }
+
+    @container page (max-width: 700px) {
         .license-row {
             grid-template-columns: 38px minmax(0, 1fr);
         }
 
-        .license-row :global(button) {
+        .license-actions {
             grid-column: 2;
-            justify-self: start;
         }
     }
 </style>

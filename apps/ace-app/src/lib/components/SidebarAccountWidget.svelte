@@ -13,8 +13,7 @@
     import { userStore } from "$lib/stores/user-store.svelte";
     import * as m from "$lib/paraglide/messages.js";
     import { cn } from "$lib/utils.js";
-    import { dev } from "$app/env";
-    import { openUrl } from "@tauri-apps/plugin-opener";
+    import { openAccountPage } from "$lib/utils/account-browser";
     import { engineStore } from "$lib/stores/engine.svelte";
 
     let { isLogoutConfirmOpen = $bindable(false) } = $props();
@@ -24,21 +23,15 @@
     let isActivationModalOpen = $state(false);
 
     async function handleSignIn() {
-        const baseUrl = dev
-            ? "http://localhost:5173"
-            : "https://aceblocker.com";
-        const url = `${baseUrl}/signin?origin=ace-engine`;
-        await openUrl(url);
-        isActivationModalOpen = false;
+        if (await openAccountPage("sign-in")) {
+            isActivationModalOpen = false;
+        }
     }
 
     async function handleUpgrade() {
-        const baseUrl = dev
-            ? "http://localhost:5173"
-            : "https://aceblocker.com";
-        const url = `${baseUrl}/get-pro`;
-        await openUrl(url);
-        isActivationModalOpen = false;
+        if (await openAccountPage("pro")) {
+            isActivationModalOpen = false;
+        }
     }
 
     const proFeatures = [
