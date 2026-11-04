@@ -39,4 +39,62 @@ test.describe("Desktop UI friction", () => {
         await expect(page.getByRole("button", { name: "Create Block" })).toBeDisabled();
         await expect(page.getByRole("link", { name: "Getting Started" })).toBeVisible();
     });
+
+    test("Control keeps its divider full height without stretching full width", async ({ page }) => {
+        await page.setViewportSize({ width: 1200, height: 800 });
+        await page.goto("/");
+        await expect(page.getByRole("heading", { name: "Control" })).toBeVisible({
+            timeout: 15_000,
+        });
+
+        // Browser-only layout fixture: never calls/mutates the real engine.
+        await page.evaluate(async () => {
+            const storeModules = [
+                "/src/lib/stores/engine.svelte.ts",
+                "/src/lib/stores/dashboard.svelte.ts",
+                "/src/lib/stores/user-store.svelte.ts",
+            ];
+            const [{ engineStore }, { dashboardStore }, { userStore }] = await Promise.all(
+                storeModules.map((modulePath) => import(/* @vite-ignore */ modulePath)),
+            );
+            userStore.accountInfoLoaded = true;
+            userStore.tosAccepted = true;
+            dashboardStore.loadError = false;
+            dashboardStore.isLoading = false;
+            dashboardStore.activeBlocksCount = 5;
+            dashboardStore.totalBlocksCount = 5;
+            dashboardStore.networkBlockSnapshots = Array.from({ length: 5 }, (_, index) => ({
+                block: {
+                    id: `test-${index}`,
+                    name: `Policy ${index}`,
+                    isActive: true,
+                    lockState: { state: "inactive" },
+                },
+                scheduleEntries: [],
+                sitePackConnectionCount: 1,
+                userRulesCount: 2,
+            })) as typeof dashboardStore.networkBlockSnapshots;
+            engineStore.isAlive = true;
+        });
+
+        const board = page.locator(".state-board");
+        await expect(board).toBeVisible();
+
+        for (const width of [1200, 800]) {
+            await page.setViewportSize({ width, height: 800 });
+            const measurements = await board.evaluate((element) => {
+                const left = element.querySelector(".now-board")!;
+                const right = element.querySelector(".change-board")!;
+                return {
+                    boardWidth: element.getBoundingClientRect().width,
+                    leftHeight: left.getBoundingClientRect().height,
+                    rightHeight: right.getBoundingClientRect().height,
+                    borderWidth: getComputedStyle(right).borderLeftWidth,
+                };
+            });
+            expect(measurements.boardWidth).toBeLessThanOrEqual(920);
+            expect(Math.abs(measurements.leftHeight - measurements.rightHeight)).toBeLessThan(1);
+            expect(measurements.borderWidth).toBe("1px");
+        }
+    });
 });

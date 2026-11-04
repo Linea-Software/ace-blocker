@@ -97,7 +97,7 @@
     <title>{m.control_title()} · {m.app_name()}</title>
 </svelte:head>
 
-<PageLayout>
+<PageLayout width="narrow">
     {#snippet header()}
         <PageHeader
             title={m.control_title()}
@@ -275,8 +275,8 @@
 
     .state-board {
         display: grid;
-        grid-template-columns: minmax(0, 1.65fr) minmax(300px, 0.8fr);
-        align-items: start;
+        grid-template-columns: minmax(0, 1.25fr) minmax(260px, 1fr);
+        align-items: stretch;
         background: var(--card);
     }
 
@@ -286,7 +286,8 @@
     }
 
     .now-board {
-        align-self: start;
+        display: flex;
+        flex-direction: column;
     }
 
     .change-board {
@@ -299,8 +300,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        padding: 9px 16px;
+        gap: 12px;
+        padding: 12px 18px;
         border-bottom: 1px solid var(--border);
     }
 
@@ -311,6 +312,7 @@
     }
 
     .count-readout {
+        text-align: right;
         color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
         font-size: 11px;
@@ -328,7 +330,7 @@
         grid-template-columns: 6px minmax(0, 1fr) auto auto;
         align-items: center;
         gap: 13px;
-        padding: 0 16px 0 0;
+        padding: 10px 18px 10px 0;
         border-bottom: 1px solid var(--border);
         color: var(--foreground);
         text-decoration: none;
@@ -344,11 +346,14 @@
     }
 
     .policy-rail {
-        align-self: stretch;
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 6px;
         background: var(--ace-signal);
     }
 
     .policy-copy {
+        grid-column: 2;
         min-width: 0;
     }
 
@@ -388,7 +393,8 @@
     }
 
     .empty-enforcement {
-        min-height: 190px;
+        flex: 1;
+        min-height: 210px;
         display: grid;
         place-items: center;
         align-content: center;
@@ -414,8 +420,8 @@
     .change-readout {
         display: grid;
         align-content: start;
-        gap: 4px;
-        padding: 10px 16px 11px;
+        gap: 8px;
+        padding: 18px;
         border-bottom: 1px solid var(--border);
     }
 
@@ -431,20 +437,19 @@
         font-family: "IBM Plex Sans Condensed", sans-serif;
         font-size: 19px;
         font-weight: 600;
-        line-height: 1.1;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
     }
 
     .resistance-readout {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: start;
-        gap: 3px 14px;
-        padding: 9px 16px 10px;
+        gap: 8px;
+        padding: 16px 18px 18px;
     }
 
     .resistance-readout > div {
-        grid-column: 1 / -1;
         display: flex;
+        flex-wrap: wrap;
         align-items: baseline;
         justify-content: space-between;
         gap: 16px;
@@ -468,23 +473,22 @@
         gap: 6px;
         margin: 0;
         color: var(--muted-foreground);
-        font-size: 10px;
-        line-height: 1.35;
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
     }
 
     .resistance-readout > a {
-        grid-column: 2;
-        grid-row: 2;
-        align-self: start;
-        white-space: nowrap;
+        justify-self: start;
+        padding-block: 3px;
     }
 
     .activity-strip {
         display: grid;
         grid-template-columns: minmax(220px, auto) minmax(0, 1fr);
         align-items: center;
-        gap: 22px;
-        padding: 12px 16px;
+        gap: 18px;
+        padding: 14px 18px;
         border-top: 1px solid var(--border);
         background: var(--background);
     }
@@ -492,7 +496,8 @@
     .activity-strip > div {
         display: flex;
         align-items: baseline;
-        gap: 10px;
+        flex-wrap: wrap;
+        gap: 4px 10px;
     }
 
     .activity-strip span {
@@ -516,7 +521,7 @@
     .offline-board {
         display: flex;
         gap: 13px;
-        margin-top: 22px;
+        margin-top: 0;
         padding: 18px;
         border: 1px solid color-mix(in srgb, var(--ace-danger) 38%, var(--border));
         border-left: 6px solid var(--ace-danger);
@@ -562,7 +567,7 @@
         text-underline-offset: 3px;
     }
 
-    @container page (max-width: 760px) {
+    @container page (max-width: 620px) {
         .state-board {
             grid-template-columns: 1fr;
         }
@@ -573,9 +578,22 @@
         }
     }
 
+    .control-surface :is(a, button):focus-visible,
+    .offline-board :is(a, button):focus-visible {
+        outline: 2px solid var(--foreground);
+        outline-offset: -3px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .enforcement-row {
+            transition: none;
+        }
+    }
+
     @container page (max-width: 560px) {
         .enforcement-row {
-            grid-template-columns: 6px minmax(0, 1fr) auto;
+            gap: 9px;
+            padding-right: 12px;
         }
 
         .sealed-note {
