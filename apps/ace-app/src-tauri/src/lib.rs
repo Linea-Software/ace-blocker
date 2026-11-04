@@ -97,7 +97,7 @@ async fn engine_stream(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(
@@ -106,7 +106,22 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_opener::init());
+
+    // The existing log plugin must initialize first. Release builds never
+    // register WDIO. The embedded server starts only for an automation
+    // session launched by WebdriverIO (which supplies its port automatically),
+    // not for an ordinary debug app window.
+    #[cfg(debug_assertions)]
+    let builder = builder.plugin(tauri_plugin_wdio::init());
+    #[cfg(debug_assertions)]
+    let builder = if std::env::var_os(tauri_plugin_wdio_webdriver::PORT_ENV_VAR).is_some() {
+        builder.plugin(tauri_plugin_wdio_webdriver::init())
+    } else {
+        builder
+    };
+
+    builder
         .invoke_handler(tauri::generate_handler![
             is_debug_mode,
             engine_call,

@@ -2,7 +2,9 @@
     "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "default",
     "description": "Capability for the main window",
-    "windows": ["main"],
+    "windows": [
+        "main"
+    ],
     "permissions": [
         "core:default",
         "opener:default",
@@ -11,7 +13,10 @@
         "fs:allow-write-text-file",
         {
             "identifier": "fs:scope",
-            "allow": ["$APPLOCALDATA", "$APPLOCALDATA/**"]
+            "allow": [
+                "$APPLOCALDATA",
+                "$APPLOCALDATA/**"
+            ]
         },
         "log:default",
         "store:default",
@@ -26,6 +31,8 @@
                     "url": "https://*"
                 }
             ]
-        }
+        },
+        "wdio:default",
+        "wdio-webdriver:default"
     ]
 }

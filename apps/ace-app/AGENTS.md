@@ -142,6 +142,16 @@ Most tasks occur within `./src` (Frontend). The Rust backend (`src-tauri`) is pr
     - **App (Tauri)**: Verify native behavior with a real Tauri runtime or the documented disposable VM gate; the MCP bridge plugin is no longer installed.
 - **Committing Changes**: You **MUST** perform git commits yourself. Once you have finished a task and verified it, stage only the task's reviewed files (never `git add .`) and commit with a descriptive message, following root `AGENTS.md`. Do NOT ask the user to commit for you.
 
+### Native WebdriverIO automation (debug builds only)
+
+ACE integrates WebdriverIO's Tauri service for testing the **real native WebView** with DOM interactions, navigation, and screenshots connected to the real engine. Details: `docs/DEV_AUTOMATION.md`.
+
+- The Rust plugins `tauri-plugin-wdio` and `tauri-plugin-wdio-webdriver` register only under `#[cfg(debug_assertions)]`, never in release builds. No extra feature flag, mode flag, or special Tauri config is required.
+- The guest JS plugin in `src/hooks.client.ts` loads only in Vite dev mode and only within Tauri; release bundles exclude it.
+- To use: `bun run tauri dev` builds the debug binary, then `bun run test:native` launches a second native instance through the embedded WebDriver server. See `e2e/native/read-only.smoke.spec.ts`.
+- Browser-only `http://localhost:1420` has no native IPC, so use native WDIO for engine-connected flows.
+- WDIO can execute JavaScript inside the WebView. Keep automation local and run state-mutating tests only with disposable test data. Do not bypass locks, change the engine RPC boundary, or add a privileged HTTP endpoint.
+
 ## Ace Engine Access
 
 The frontend uses src/lib/engine-client as its stable interface. Its Tauri
