@@ -156,6 +156,7 @@ jobs:
           bash -n installer/linux/install.sh
           bash -n installer/linux/migrate-legacy-data.sh
           desktop-file-validate installer/linux/ace-blocker.desktop
+          desktop-file-validate installer/linux/ace-blocker-handler.desktop
           if installer/linux/install.sh >/dev/null 2>&1; then
             echo "Unprivileged install unexpectedly succeeded" >&2
             exit 1
@@ -189,6 +190,7 @@ jobs:
           install -m 0755 installer/linux/install.sh "release-input/$package/install.sh"
           install -m 0755 installer/linux/migrate-legacy-data.sh "release-input/$package/migrate-legacy-data.sh"
           install -m 0644 installer/linux/ace-blocker.desktop "release-input/$package/ace-blocker.desktop"
+          install -m 0644 installer/linux/ace-blocker-handler.desktop "release-input/$package/ace-blocker-handler.desktop"
           install -m 0644 apps/ace-app/src-tauri/icons/128x128.png "release-input/$package/ace-blocker.png"
           cp docs/RELEASING.md "release-input/$package/RELEASING.md"
           tar -C release-input -czf "release-dist/$package.tar.gz" "$package"

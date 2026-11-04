@@ -74,7 +74,14 @@ local group with group-readable (not world-readable) capability credentials in
 the root-owned `/usr/local/share/AceBlocker` directory, and enrolls the user
 identified by `SUDO_USER`. That user must log out and back in before the App
 can authenticate; without `SUDO_USER`, enroll the intended desktop account
-in that group explicitly. Previously exposed credentials on older test
+in that group explicitly. The installer also installs the allowlisted
+`ace-redirect` desktop callback handler and attempts to make it the default
+`aceblocker://` handler for `SUDO_USER`. Verify in the *desktop user's*
+session with `xdg-mime query default x-scheme-handler/aceblocker` (expected:
+`ace-blocker-handler.desktop`). If the installer could not set the association,
+run `xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker`
+as that user. Never test a live callback using an invented API key on a machine
+with real account data. Previously exposed credentials on older test
 installations require rotation during authorized maintenance.
 It **refuses existing installations**:
 never overwrite live or locked engine/watchdog binaries. Upgrades/removal

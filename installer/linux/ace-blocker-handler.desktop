@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Ace Blocker account callback
+Comment=Receive the account sign-in callback for Ace Blocker
+Exec=/opt/ace-blocker/ace-redirect %u
+Icon=ace-blocker
+Terminal=false
+NoDisplay=true
+MimeType=x-scheme-handler/aceblocker;
+Categories=Utility;

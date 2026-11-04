@@ -2,22 +2,54 @@
 //! Deep links are parsed through a strict allowlist and forwarded via typed RPC;
 //! no local HTTP listener, port discovery, or TLS bypass is involved.
 use std::env;
+use std::path::PathBuf;
+#[cfg(windows)]
 use std::time::Duration;
 
 use ace_engine::service::api::bridge;
+#[cfg(not(target_os = "linux"))]
 use app_dirs2::*;
 use serde_json::json;
 
+#[cfg(not(target_os = "linux"))]
 const APP_INFO: AppInfo = AppInfo {
     name: "AceBlocker",
     author: "LineaSoftware",
 };
 
+fn capability_token_path() -> Option<PathBuf> {
+    #[cfg(target_os = "linux")]
+    {
+        // Match the systemd Engine and the unprivileged Tauri app. Using
+        // XDG_DATA_DIRS here could select a different token for the browser
+        // session and make an otherwise valid login callback fail.
+        Some(PathBuf::from(ace_engine::settings::LINUX_SHARED_DATA_DIR).join("capability.token"))
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        get_app_dir(AppDataType::SharedData, &APP_INFO, "capability.token").ok()
+    }
+}
+
 fn capability_token() -> Option<String> {
-    let path = get_app_dir(AppDataType::SharedData, &APP_INFO, "capability.token").ok()?;
-    std::fs::read_to_string(path)
+    std::fs::read_to_string(capability_token_path()?)
         .ok()
         .map(|s| s.trim().to_string())
+}
+
+#[cfg(all(test, target_os = "linux"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn browser_callback_reads_the_canonical_linux_capability_path() {
+        assert_eq!(
+            capability_token_path(),
+            Some(PathBuf::from(
+                "/usr/local/share/AceBlocker/capability.token"
+            ))
+        );
+    }
 }
 
 #[tokio::main]

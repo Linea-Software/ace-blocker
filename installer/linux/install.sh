@@ -25,7 +25,7 @@ for binary in ace-engine ace-watchdog ace-app ace-redirect install-cert; do
     exit 1
   fi
 done
-for asset in ace-blocker.desktop ace-blocker.png; do
+for asset in ace-blocker.desktop ace-blocker-handler.desktop ace-blocker.png; do
   if [[ ! -f "$package_dir/$asset" ]]; then
     echo "Missing release asset: $asset" >&2
     exit 1
@@ -99,6 +99,7 @@ for binary in ace-engine ace-watchdog ace-app ace-redirect install-cert; do
 done
 cp -R "$package_dir/bundled-packs" "$install_dir/"
 install -D -m 0644 "$package_dir/ace-blocker.desktop" /usr/local/share/applications/ace-blocker.desktop
+install -D -m 0644 "$package_dir/ace-blocker-handler.desktop" /usr/local/share/applications/ace-blocker-handler.desktop
 install -D -m 0644 "$package_dir/ace-blocker.png" /usr/local/share/icons/hicolor/128x128/apps/ace-blocker.png
 
 "$install_dir/ace-engine" --install
@@ -112,4 +113,21 @@ if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database /usr/local/share/applications
 fi
 
-echo "ACE installed: services enabled and started; Ace Blocker launcher registered."
+# The engine runs as a system service and cannot register a desktop URL handler
+# for the interactive user's session. The browser callback must start the
+# tightly allowlisted ace-redirect binary, never the privileged engine service.
+if [[ -n "$desktop_user" && "$desktop_user" != root ]] &&
+   command -v xdg-mime >/dev/null 2>&1 &&
+   command -v runuser >/dev/null 2>&1; then
+  desktop_home="$(getent passwd "$desktop_user" | cut -d: -f6)"
+  if ! runuser -u "$desktop_user" -- env HOME="$desktop_home" XDG_CONFIG_HOME="$desktop_home/.config" \
+    xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker; then
+    echo "Warning: Could not set the desktop user's Ace account URL handler." >&2
+    echo "As $desktop_user run: xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker" >&2
+  fi
+else
+  echo "For browser login callbacks, the desktop user must run:" >&2
+  echo "  xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker" >&2
+fi
+
+echo "ACE installed: services enabled and started; desktop launcher and account callback registered."

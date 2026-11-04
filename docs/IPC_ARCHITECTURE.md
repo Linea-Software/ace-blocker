@@ -21,9 +21,13 @@ services; the Tauri frontend runs as an unprivileged user-session process.
 - `apps/ace-app/src/lib/engine-client/` is a stable Svelte facade. Site pack
   progress uses typed Rust events over remoc and Tauri Channels, with no SSE
   framing or bytes-to-JSON decoder.
-- `ace-redirect` accepts only the allowlisted account API-key callback.
-  Uninstall/upgrade uses `ace-engine --request-shutdown`, which invokes the
-  same policy-enforcing RPC and fails closed when the engine refuses.
+- The unprivileged Tauri UI opens public Pro/sign-in URLs in the desktop user's
+  browser session. No UI entry point relies on the privileged Engine to launch a browser.
+  The installed Linux `ace-blocker-handler.desktop` dispatches only the
+  `aceblocker://` callback to `ace-redirect`, which reads the same canonical
+  Linux capability path as Tauri and the Engine and accepts only the allowlisted
+  account API-key callback. Uninstall/upgrade uses `ace-engine --request-shutdown`,
+  which invokes the same policy-enforcing RPC and fails closed when the engine refuses.
 
 ### Authorization
 
