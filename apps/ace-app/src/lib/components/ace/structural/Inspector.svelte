@@ -1,6 +1,7 @@
 <script lang="ts">
     import type { Snippet } from "svelte";
     import { X } from "@lucide/svelte";
+    import { onMount } from "svelte";
 
     let {
         title,
@@ -21,7 +22,31 @@
     } = $props();
 
     const uid = $props.id();
+    let closeButton: HTMLButtonElement;
+
+    onMount(() => {
+        const previousFocus =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        closeButton?.focus();
+
+        return () => {
+            if (previousFocus?.isConnected) previousFocus.focus();
+        };
+    });
+
+    function handleEscape(event: KeyboardEvent) {
+        if (
+            event.key === "Escape" &&
+            !event.defaultPrevented &&
+            document.activeElement?.closest(".inspector")
+        ) {
+            event.preventDefault();
+            onClose();
+        }
+    }
 </script>
+
+<svelte:window onkeydown={handleEscape} />
 
 <aside class="inspector" role="region" aria-labelledby={uid + "-title"}>
     <header class="inspector-header">
@@ -34,6 +59,7 @@
         <button
             type="button"
             class="close-button"
+            bind:this={closeButton}
             onclick={onClose}
             aria-label={closeLabel}
             title={closeLabel}

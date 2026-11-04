@@ -81,11 +81,13 @@
         border-right: 1px solid var(--border);
         background: var(--sidebar);
         color: var(--sidebar-foreground);
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
 
     .brand {
         height: 62px;
+        flex-shrink: 0;
         display: grid;
         place-items: center;
         border-bottom: 1px solid var(--sidebar-border);
@@ -100,6 +102,7 @@
     }
 
     .rail-group {
+        flex-shrink: 0;
         display: flex;
         flex-direction: column;
         gap: 2px;

@@ -94,7 +94,7 @@
         gap: 8px;
     }
 
-    @container page (max-width: 620px) {
+    @container page (max-width: 740px) {
         .page-header {
             align-items: stretch;
             flex-direction: column;

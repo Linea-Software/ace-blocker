@@ -66,13 +66,13 @@
 
     async function handleImportLocal() {
         isImporting = true;
-        const path = await open({
-            multiple: false,
-            filters: [{ name: "Ace Backup", extensions: ["json"] }],
-        });
+        try {
+            const path = await open({
+                multiple: false,
+                filters: [{ name: "Ace Backup", extensions: ["json"] }],
+            });
 
-        if (path && typeof path === "string") {
-            try {
+            if (path && typeof path === "string") {
                 const content = await readTextFile(path);
                 const data = JSON.parse(content);
                 const { error } = await importBackup({ body: data });
@@ -83,14 +83,14 @@
                 } else {
                     toast.success(m.backup_import_success());
                 }
-            } catch (error) {
-                console.error(error);
-                toast.error(m.backup_import_failed());
             }
+        } catch (error) {
+            console.error(error);
+            toast.error(m.backup_import_failed());
+        } finally {
+            isImporting = false;
+            isImportConfirmOpen = false;
         }
-
-        isImporting = false;
-        isImportConfirmOpen = false;
     }
 
     async function handleSyncCloud() {

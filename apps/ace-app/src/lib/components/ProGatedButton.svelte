@@ -18,8 +18,6 @@
         class?: string;
         onclick?: () => void;
     } = $props();
-
-    let hover = $state(false);
 </script>
 
 <button
@@ -31,36 +29,20 @@
         }
         onclick?.();
     }}
-    onmouseenter={() => {
-        if (!isPro) hover = true;
-    }}
-    onmouseleave={() => {
-        if (!isPro) hover = false;
-    }}
     class={cn(
-        "relative h-9 min-w-[200px] w-fit overflow-hidden rounded-sm border border-border bg-transparent text-sm font-medium text-foreground transition-colors hover:bg-muted",
+        "inline-flex min-h-9 min-w-[200px] w-fit flex-wrap items-center justify-center gap-2 rounded-sm border border-border bg-transparent px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:transition-none",
         !isPro && "cursor-pointer",
         className,
     )}
 >
-    <span
-        class={cn(
-            "absolute inset-0 flex items-center justify-center gap-2 px-4 whitespace-nowrap transition-opacity duration-150",
-            !isPro && hover && "pointer-events-none opacity-0",
-        )}
-    >
-        {#if Icon}<Icon class="h-4 w-4" aria-hidden="true" />{/if}
+    <span class="inline-flex items-center justify-center gap-2">
+        {#if Icon}<Icon class="h-4 w-4 shrink-0" aria-hidden="true" />{/if}
         {label}
     </span>
 
     {#if !isPro}
-        <span
-            class={cn(
-                "absolute inset-0 flex items-center justify-center gap-2 bg-foreground px-4 font-semibold text-background whitespace-nowrap transition-opacity duration-150",
-                !hover && "pointer-events-none opacity-0",
-            )}
-        >
-            <Crown class="h-4 w-4" aria-hidden="true" />
+        <span class="inline-flex items-center gap-1.5 border-l border-border pl-2 text-xs text-muted-foreground">
+            <Crown class="h-4 w-4 shrink-0" aria-hidden="true" />
             {m.get_pro()}
             <ExternalLink class="h-3.5 w-3.5 opacity-60" aria-hidden="true" />
         </span>
