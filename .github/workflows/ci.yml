@@ -81,6 +81,8 @@ jobs:
       # validate it on main and on demand instead of repeating it on every PR.
       - name: Check release service binaries
         if: github.event_name != 'pull_request'
+        env:
+          ACE_ENTITLEMENT_PUBLIC_KEY_BASE64: ${{ vars.ACE_ENTITLEMENT_PUBLIC_KEY_BASE64 }}
         run: cargo check --release --locked -p ace-engine -p ace-watchdog --timings
       - name: Test engine RPC, scheduling, and watchdog
         shell: bash
