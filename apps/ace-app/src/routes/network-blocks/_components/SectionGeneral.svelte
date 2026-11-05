@@ -4,43 +4,27 @@
     import { Switch } from "$lib/components/ui/switch/index.js";
     import * as m from "$lib/paraglide/messages.js";
     import { Shield } from "@lucide/svelte";
-    import { setNetworkBlockSafeSearch } from "$engine-client";
-    import { toast } from "svelte-sonner";
     import IconPicker from "$lib/components/IconPicker.svelte";
 
     let {
         name = $bindable(),
         icon = $bindable(null),
         isSafeSearch = $bindable(false),
-        blockId = null,
         disabled = false,
         isLocked = false,
     }: {
         name: string;
         icon: string | null;
         isSafeSearch: boolean;
-        blockId?: string | null;
         disabled?: boolean;
         isLocked?: boolean;
     } = $props();
 
     let showIconPicker = $state(false);
 
-    async function handleSafeSearchChange(checked: boolean) {
-        if (isLocked) return;
-        const previous = isSafeSearch;
-        isSafeSearch = checked;
-        if (blockId) {
-            const { error } = await setNetworkBlockSafeSearch({
-                path: { network_block_id: blockId },
-                body: { enabled: checked },
-            });
-            if (error) {
-                isSafeSearch = previous;
-                console.error("Failed to update safe search:", error);
-                toast.error(m.failed_to_sync());
-            }
-        }
+    // Stage changes in the editor. Only the parent Save action writes to the engine.
+    function handleSafeSearchChange(checked: boolean) {
+        if (!isLocked && !disabled) isSafeSearch = checked;
     }
 </script>
 

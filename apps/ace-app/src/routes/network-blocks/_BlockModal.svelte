@@ -298,7 +298,6 @@
                 bind:name
                 bind:icon={blockIcon}
                 bind:isSafeSearch
-                blockId={block?.id}
                 disabled={isSubmitting}
                 isLocked={block ? block.lockState.state !== "inactive" : false}
             />
