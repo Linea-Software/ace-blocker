@@ -89,7 +89,7 @@
     .inspector {
         position: fixed;
         z-index: 40;
-        top: 36px;
+        top: 0;
         right: 0;
         bottom: 0;
         width: min(560px, calc(100vw - 72px));

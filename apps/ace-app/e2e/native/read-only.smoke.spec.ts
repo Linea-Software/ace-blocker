@@ -32,4 +32,20 @@ describe("ACE native UI (read-only)", () => {
         await heading.waitForDisplayed();
         await expect(heading).toHaveText("Network Blocks");
     });
+
+    it("keeps the Create Block inspector flush with the window top", async () => {
+        const create = await $('button*=Create Block');
+        await create.click();
+        const inspector = await $(".inspector");
+        await inspector.waitForDisplayed();
+        const geometry = await browser.execute(() => {
+            const rect = document.querySelector(".inspector")!.getBoundingClientRect();
+            return { top: rect.top, bottom: rect.bottom, height: window.innerHeight };
+        });
+        expect(geometry.top).toBe(0);
+        expect(geometry.bottom).toBe(geometry.height);
+        await browser.saveScreenshot(join(tmpdir(), "ace-native-block-inspector.png"));
+        await $(".inspector .close-button").click();
+        await expect(inspector).not.toExist();
+    });
 });
