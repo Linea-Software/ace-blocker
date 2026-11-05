@@ -136,3 +136,24 @@ A successful build is **not** proof of release safety. Verify at least:
 
 Do **not** publish the draft to end users solely because CI passes. Native
 Windows/Linux integration and security tests are separate release gates.
+
+## Signed Pro entitlement key for release builds
+
+Ace Engine pins the Ed25519 **public** verification key at compile time. Before
+release builds and release-profile CI checks, configure the GitHub Actions
+repository variable `ACE_ENTITLEMENT_PUBLIC_KEY_BASE64` (base64-encoded **raw
+32-byte** public key). The private signing key must never enter this repository
+or its release workflow. Release builds fail when the public key is missing.
+
+The backend uses the matching private key in the secret
+`ACE_ENTITLEMENT_SIGNING_KEY_BASE64` and checks the match against its own
+`ACE_ENTITLEMENT_PUBLIC_KEY_BASE64`. Generate a pair using the website utility
+`bun scripts/generate-entitlement-keys.ts <secure-directory-outside-repo>`.
+Rebuild and redeploy the engine in coordination with server key rotation.
+
+Pro leases expire after at most 24 hours, with another 72 hours allowed for
+intermittent offline use. Previously active blocking protections remain enabled
+when a subscription expires; new Pro operations need valid entitlements.
+
+DodoPayments intentionally remains in **test_mode** for release builds until a
+future explicit product decision changes the billing environment.
