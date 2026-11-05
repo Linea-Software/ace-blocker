@@ -146,6 +146,7 @@ pub struct TunRedirectBuilder {
     proxy_configs: Vec<ProxyConfig>,
     quic_port: u16,
     quic_policy: QuicPolicy,
+    quic_proxy_addr: Option<SocketAddr>,
     ipv6: bool,
     localhost_via_proxy: bool,
     log_cb: Option<LogCallback>,
@@ -161,6 +162,7 @@ impl TunRedirectBuilder {
             proxy_configs: Vec::new(),
             quic_port: DEFAULT_QUIC_PORT,
             quic_policy: QuicPolicy::Drop,
+            quic_proxy_addr: None,
             ipv6: true,
             localhost_via_proxy: false,
             log_cb: None,
@@ -221,6 +223,12 @@ impl TunRedirectBuilder {
         self
     }
 
+    /// Set the local HTTP/3 proxy endpoint. `build` rejects non-loopback addresses.
+    pub fn quic_proxy_addr(mut self, addr: SocketAddr) -> Self {
+        self.quic_proxy_addr = Some(addr);
+        self
+    }
+
     /// Enable or disable IPv6 interception (default enabled).
     ///
     /// When disabled, the adapter carries no IPv6 address or routes, so IPv6
@@ -258,6 +266,12 @@ impl TunRedirectBuilder {
 
     /// Validate the configuration and build a ready-to-start [`TunRedirect`].
     pub fn build(self) -> Result<TunRedirect> {
+        if self
+            .quic_proxy_addr
+            .is_some_and(|addr| !addr.ip().is_loopback())
+        {
+            return Err(Error::config("QUIC proxy address must be loopback"));
+        }
         // Synthesize a default HTTP proxy from the builder address if the caller
         // registered none.
         let mut proxy_configs = self.proxy_configs;
@@ -281,6 +295,7 @@ impl TunRedirectBuilder {
             localhost_via_proxy: self.localhost_via_proxy,
             quic_port: self.quic_port,
             quic_policy: self.quic_policy,
+            quic_proxy_addr: self.quic_proxy_addr,
             current_pid: std::process::id(),
             // Refreshed at start(), before the adapter exists.
             iface: std::sync::RwLock::new(PhysicalInterface::default()),

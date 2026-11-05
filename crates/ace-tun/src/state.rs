@@ -1,5 +1,6 @@
 //! Shared engine state and diagnostics.
 
+use std::net::SocketAddr;
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
@@ -18,6 +19,8 @@ pub enum QuicPolicy {
     /// Let QUIC through untouched. Only sensible if you have accepted that
     /// HTTP/3 traffic is not inspected.
     Allow,
+    /// Relay protected-browser QUIC to the configured local HTTP/3 proxy.
+    Intercept,
 }
 
 /// Counters for diagnostics. Cheap enough to update on every flow.
@@ -63,6 +66,7 @@ pub(crate) struct Shared {
     /// UDP port treated as QUIC, normally 443.
     pub(crate) quic_port: u16,
     pub(crate) quic_policy: QuicPolicy,
+    pub(crate) quic_proxy_addr: Option<SocketAddr>,
     /// Our own PID. Flows owned by it always go direct, which is what keeps the
     /// engine's upstream traffic from re-entering the tunnel.
     pub(crate) current_pid: u32,
@@ -162,6 +166,7 @@ impl Shared {
             localhost_via_proxy: false,
             quic_port: 443,
             quic_policy: QuicPolicy::Drop,
+            quic_proxy_addr: None,
             current_pid: std::process::id(),
             iface: RwLock::new(PhysicalInterface::default()),
             stats: Stats::default(),

@@ -44,6 +44,8 @@ pub(crate) enum Decision {
     Direct,
     /// Relay through the upstream proxy identified by this config id.
     Proxy(u32),
+    /// Relay datagrams exclusively to the local HTTP/3 proxy.
+    QuicProxy,
     /// Drop the flow.
     Block,
 }
@@ -146,6 +148,165 @@ pub(crate) fn decide(shared: &Shared, facts: &FlowFacts<'_>) -> Decision {
     }
 }
 
+/// Recognize a client Initial long header without treating arbitrary UDP as QUIC.
+/// Initial datagrams are at least 1200 bytes; version negotiation (zero) and
+/// non-Initial long-header types are deliberately excluded. Connection IDs
+/// have the invariant-header maximum length of 20 bytes.
+fn is_quic_initial(packet: &[u8]) -> bool {
+    if packet.len() < 1200 || packet[0] & 0xc0 != 0xc0 {
+        return false;
+    }
+    let version = u32::from_be_bytes(packet[1..5].try_into().unwrap());
+    let initial_type = if version == 0x6b3343cf { 0x10 } else { 0x00 };
+    if version == 0 || packet[0] & 0x30 != initial_type {
+        return false;
+    }
+    let dcid_len = packet[5] as usize;
+    if dcid_len > 20 {
+        return false;
+    }
+    let scid_offset = 6 + dcid_len;
+    let Some(&scid_len) = packet.get(scid_offset) else {
+        return false;
+    };
+    scid_len <= 20 && scid_offset + 1 + usize::from(scid_len) < packet.len()
+}
+
+/// Check whether a datagram is a conventional DNS query. DNS transaction IDs
+/// are random, so looking at the first byte alone can falsely label DNS as
+/// migrated QUIC. This parser validates the query header and first question
+/// without trusting an arbitrary prefix as proof that the flow is DNS.
+fn is_dns_query(packet: &[u8]) -> bool {
+    if packet.len() < 17 {
+        return false;
+    }
+    let flags = u16::from_be_bytes([packet[2], packet[3]]);
+    let questions = u16::from_be_bytes([packet[4], packet[5]]);
+    let answers = u16::from_be_bytes([packet[6], packet[7]]);
+    let authorities = u16::from_be_bytes([packet[8], packet[9]]);
+    let additionals = u16::from_be_bytes([packet[10], packet[11]]);
+    if flags & 0xf800 != 0 || questions != 1 || answers != 0 || authorities != 0 || additionals > 4
+    {
+        return false;
+    }
+    let mut position = 12;
+    let mut name_length = 0_usize;
+    loop {
+        let Some(&label_length) = packet.get(position) else {
+            return false;
+        };
+        position += 1;
+        if label_length == 0 {
+            break;
+        }
+        let length = label_length as usize;
+        if length > 63 || position + length > packet.len() {
+            return false;
+        }
+        name_length += 1 + length;
+        if name_length > 253 {
+            return false;
+        }
+        position += length;
+    }
+    position + 4 <= packet.len()
+}
+
+/// Recognize plausible QUIC packets that lack an Initial (including migrated
+/// connections). The fixed bit is only a heuristic; unlike actual Initials it
+/// cannot prove protocol identity without the QUIC connection's secrets.
+fn is_possible_quic_non_initial(packet: &[u8]) -> bool {
+    packet.len() >= 22
+        && packet.first().is_some_and(|first| {
+            let is_short = first & 0xc0 == 0x40;
+            let nonzero_long_version = first & 0xc0 == 0xc0 && packet[1..5] != [0, 0, 0, 0];
+            is_short || nonzero_long_version
+        })
+}
+
+/// Security boundary for *every* subsequent datagram on a browser-owned
+/// Direct UDP flow. A harmless first packet cannot authorize a later QUIC
+/// handshake on the same tuple. Unrelated applications keep opaque UDP.
+fn allow_direct_udp_followup(packet: &[u8], is_dns: bool, guard: bool) -> bool {
+    if !guard {
+        return true;
+    }
+    if is_dns {
+        return is_dns_query(packet) && !is_quic_initial(packet);
+    }
+    !is_quic_initial(packet) && !is_possible_quic_non_initial(packet)
+}
+
+pub(crate) fn decide_udp_packet(
+    shared: &Shared,
+    facts: &FlowFacts<'_>,
+    first_packet: &[u8],
+) -> Decision {
+    let base = decide(shared, facts);
+    // Preserve loop guards, local/multicast routing and explicit Block rules.
+    if !facts.is_udp
+        || facts.pid == Some(shared.current_pid)
+        || (facts.dest.ip().is_loopback() && !shared.localhost_via_proxy)
+        || is_group_address(facts.dest.ip())
+        || base == Decision::Block
+    {
+        return base;
+    }
+
+    // HTTP CONNECT cannot transport UDP; a rule asking for Proxy must never
+    // silently open a direct socket to the origin (regardless of QUIC policy).
+    if matches!(base, Decision::Proxy(_)) {
+        return Decision::Block;
+    }
+
+    let initial = is_quic_initial(first_packet);
+    // The QUIC invariant fixed bit can also occur in a random DNS transaction
+    // ID. Legitimate browser DNS must remain usable; all following datagrams
+    // on a protected DNS flow are validated as DNS by the UDP relay.
+    if facts.dest.port() == 53 && !initial && is_dns_query(first_packet) {
+        return base;
+    }
+    // A connection migrating into a fresh TUN tuple can start with a short
+    // header OR a non-Initial long header. QUIC's fixed bit is visible in
+    // either case. Only classify these as suspicious for protected/unknown
+    // flows: UDP owned by unrelated programs stays opaque and unmodified.
+    let possible_quic_non_initial = is_possible_quic_non_initial(first_packet);
+    let configured_quic_port = facts.dest.port() == shared.quic_port;
+    if !initial && !possible_quic_non_initial && !configured_quic_port {
+        return base;
+    }
+    if shared.quic_policy == QuicPolicy::Allow {
+        return base;
+    }
+
+    if facts.pid.is_none() || facts.process_name.is_empty() {
+        return Decision::Block;
+    }
+    if !shared
+        .protected_processes
+        .iter()
+        .any(|name| process_names_match(name, facts.process_name))
+    {
+        return base;
+    }
+    // Only a fresh Initial can be safely forwarded to the local H3 listener.
+    // Short/malformed/unknown-version flows cannot rejoin an established
+    // direct connection and may not bypass the enforcement boundary.
+    if !initial {
+        return Decision::Block;
+    }
+    match shared.quic_policy {
+        QuicPolicy::Intercept
+            if shared
+                .quic_proxy_addr
+                .is_some_and(|addr| addr.ip().is_loopback()) =>
+        {
+            Decision::QuicProxy
+        }
+        _ => Decision::Block,
+    }
+}
+
 /// Whether `ip` is a multicast or broadcast address — i.e. addressed to a group
 /// rather than to one host.
 ///
@@ -160,9 +321,7 @@ fn is_group_address(ip: IpAddr) -> bool {
 }
 
 fn process_names_match(configured: &str, observed: &str) -> bool {
-    let configured = configured
-        .strip_suffix(".exe")
-        .unwrap_or(configured);
+    let configured = configured.strip_suffix(".exe").unwrap_or(configured);
     let observed = observed.strip_suffix(".exe").unwrap_or(observed);
     configured.eq_ignore_ascii_case(observed)
 }
@@ -286,6 +445,7 @@ async fn handle_tcp(mut stream: ipstack::IpStackTcpStream, shared: &Shared) -> s
     );
 
     match decision {
+        Decision::QuicProxy => unreachable!("TCP cannot select the QUIC proxy"),
         Decision::Block => {
             shared.stats.blocked.fetch_add(1, Ordering::Relaxed);
             // Dropping the stream sends a reset, which surfaces to the app as a
@@ -398,6 +558,13 @@ async fn handle_udp(mut stream: ipstack::IpStackUdpStream, shared: &Shared) -> s
     let src = stream.local_addr();
     let dest = stream.peer_addr();
 
+    let mut first_packet = vec![0u8; UDP_BUFFER];
+    let first_len =
+        match tokio::time::timeout(UDP_IDLE_TIMEOUT, stream.read(&mut first_packet)).await {
+            Ok(result) => result?,
+            Err(_) => return Ok(()),
+        };
+
     let (pid, process_name) = attribute(src, dest, true);
     let domain = domain_for(shared, dest.ip());
     let facts = FlowFacts {
@@ -407,12 +574,12 @@ async fn handle_udp(mut stream: ipstack::IpStackUdpStream, shared: &Shared) -> s
         process_name: &process_name,
         domain: domain.as_deref(),
     };
-    let decision = decide(shared, &facts);
+    let decision = decide_udp_packet(shared, &facts, &first_packet[..first_len]);
     report(shared, &facts, decision);
 
     match decision {
         Decision::Block => {
-            if dest.port() == shared.quic_port {
+            if dest.port() == shared.quic_port || is_quic_initial(&first_packet[..first_len]) {
                 shared.stats.quic_dropped.fetch_add(1, Ordering::Relaxed);
             } else if is_group_address(dest.ip()) {
                 shared.stats.group_dropped.fetch_add(1, Ordering::Relaxed);
@@ -422,13 +589,79 @@ async fn handle_udp(mut stream: ipstack::IpStackUdpStream, shared: &Shared) -> s
             drop(stream);
             return Ok(());
         }
-        // UDP is never tunnelled through an HTTP CONNECT proxy; a `Proxy` rule
-        // on a UDP flow degrades to a direct relay so the flow still works.
-        Decision::Direct | Decision::Proxy(_) => {}
+        Decision::Direct | Decision::QuicProxy => {}
+        // `decide_udp_packet` rejects UDP Proxy selections before relaying.
+        Decision::Proxy(_) => unreachable!("UDP Proxy decisions must fail closed"),
     }
 
-    let socket = dial::udp(dest, &shared.iface()).await?;
-    let is_dns = dest.port() == 53;
+    let socket = if decision == Decision::QuicProxy {
+        // Do not use the physical-interface dialer for the local proxy, and
+        // never retry this flow against its original destination.
+        let addr = shared
+            .quic_proxy_addr
+            .filter(|addr| addr.ip().is_loopback())
+            .ok_or_else(|| std::io::Error::other("local QUIC proxy unavailable"))?;
+        let bind_addr: SocketAddr = if addr.is_ipv4() {
+            "127.0.0.1:0"
+        } else {
+            "[::1]:0"
+        }
+        .parse()
+        .unwrap();
+        let socket = tokio::net::UdpSocket::bind(bind_addr).await?;
+        socket.connect(addr).await?;
+        socket
+    } else {
+        dial::udp(dest, &shared.iface()).await?
+    };
+    let is_dns = dest.port() == 53 && decision != Decision::QuicProxy;
+    let guard_direct_udp = decision == Decision::Direct
+        && !dest.ip().is_loopback()
+        && shared.quic_policy != QuicPolicy::Allow
+        && (process_name.is_empty()
+            || shared
+                .protected_processes
+                .iter()
+                .any(|name| process_names_match(name, &process_name)));
+    relay_udp_datagrams(
+        stream,
+        socket,
+        &first_packet[..first_len],
+        shared,
+        is_dns,
+        guard_direct_udp,
+    )
+    .await
+}
+
+/// Carry an already-decided UDP flow bidirectionally without opening any
+/// other egress socket. The first payload was consumed to classify QUIC, so
+/// forward it once, then relay subsequent datagrams and replies as usual.
+async fn relay_udp_datagrams(
+    mut stream: ipstack::IpStackUdpStream,
+    socket: tokio::net::UdpSocket,
+    first_packet: &[u8],
+    shared: &Shared,
+    is_dns: bool,
+    guard_direct_udp: bool,
+) -> std::io::Result<()> {
+    let dest = stream.peer_addr();
+    // A protected browser's direct flow must retain its original non-QUIC
+    // protocol for its entire lifetime. Never use a single benign datagram
+    // as permanent authorization to send QUIC to the origin.
+    if !allow_direct_udp_followup(first_packet, is_dns, guard_direct_udp) {
+        return Ok(());
+    }
+    // A redirected browser packet must never fall back to the origin if the
+    // local QUIC proxy becomes unavailable. Direct UDP retains the existing
+    // best-effort first-datagram semantics.
+    let must_reach_local_proxy = socket.peer_addr()?.ip().is_loopback() && !dest.ip().is_loopback();
+    if let Err(error) = socket.send(first_packet).await {
+        shared.stats.udp_send_errors.fetch_add(1, Ordering::Relaxed);
+        if must_reach_local_proxy {
+            return Err(error);
+        }
+    }
 
     let mut from_client = vec![0u8; UDP_BUFFER];
     let mut from_server = vec![0u8; UDP_BUFFER];
@@ -440,6 +673,15 @@ async fn handle_udp(mut stream: ipstack::IpStackUdpStream, shared: &Shared) -> s
                     Err(_) => break,                       // idle timeout
                     Ok(Ok(0)) | Ok(Err(_)) => break,       // client closed
                     Ok(Ok(n)) => {
+                        if !allow_direct_udp_followup(&from_client[..n], is_dns, guard_direct_udp) {
+                            if is_dns {
+                                shared.stats.blocked.fetch_add(1, Ordering::Relaxed);
+                            } else {
+                                shared.stats.quic_dropped.fetch_add(1, Ordering::Relaxed);
+                            }
+                            tracing::debug!("closing protected direct UDP flow after unexpected QUIC or invalid DNS");
+                            break;
+                        }
                         // A failed send loses one datagram; it must not end the
                         // flow. UDP is unreliable by contract, so the sender
                         // already has to cope with loss — whereas tearing the
@@ -486,6 +728,10 @@ fn report(shared: &Shared, facts: &FlowFacts<'_>, decision: Decision) {
         return;
     }
     let (action, proxy_info) = match decision {
+        Decision::QuicProxy => (
+            RuleAction::Proxy,
+            format!("QUIC proxy {:?}", shared.quic_proxy_addr),
+        ),
         Decision::Direct => (RuleAction::Direct, "Direct".to_string()),
         Decision::Block => (RuleAction::Block, "Blocked".to_string()),
         Decision::Proxy(id) => {
@@ -535,6 +781,77 @@ mod tests {
 
         let mut byte = [0_u8; 1];
         assert_eq!(browser.read(&mut byte).await.unwrap(), 0);
+    }
+
+    /// QUIC relay must preserve the first datagram exactly once, and carry the
+    /// proxy's response back to the original TUN-side client tuple. This test
+    /// uses an in-memory ipstack UDP stream and a loopback echo endpoint; it
+    /// never requires a physical adapter or reaches a remote network.
+    #[tokio::test]
+    async fn quic_udp_bridge_preserves_first_datagram_and_returns_response() {
+        use tokio::net::UdpSocket;
+        use tokio::sync::mpsc;
+        let first = quic_initial(1);
+        let udp_server = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let relay_socket = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        relay_socket
+            .connect(udp_server.local_addr().unwrap())
+            .await
+            .unwrap();
+
+        let (from_tun, mut back_to_tun) = mpsc::unbounded_channel();
+        let mut tun_flow = ipstack::IpStackUdpStream::new(
+            "10.63.7.1:55123".parse().unwrap(),
+            "203.0.113.17:8443".parse().unwrap(),
+            first.clone(),
+            from_tun,
+            1500,
+            Duration::from_secs(10),
+            None,
+        );
+        let mut first_read = vec![0; UDP_BUFFER];
+        let len = tun_flow.read(&mut first_read).await.unwrap();
+        assert_eq!(&first_read[..len], first);
+
+        let shared = Shared::new_for_test(&[], vec![]);
+        let task = tokio::spawn(async move {
+            relay_udp_datagrams(
+                tun_flow,
+                relay_socket,
+                &first_read[..len],
+                &shared,
+                false,
+                false,
+            )
+            .await
+        });
+
+        let mut received = vec![0; UDP_BUFFER];
+        let (length, peer) =
+            tokio::time::timeout(Duration::from_secs(2), udp_server.recv_from(&mut received))
+                .await
+                .unwrap()
+                .unwrap();
+        assert_eq!(&received[..length], first);
+        assert!(
+            tokio::time::timeout(
+                Duration::from_millis(80),
+                udp_server.recv_from(&mut received)
+            )
+            .await
+            .is_err(),
+            "the first QUIC Initial was replayed more than once",
+        );
+
+        udp_server.send_to(b"quic response", peer).await.unwrap();
+        assert!(
+            tokio::time::timeout(Duration::from_secs(2), back_to_tun.recv())
+                .await
+                .unwrap()
+                .is_some(),
+            "local H3 server reply was not returned into the TUN UDP stream",
+        );
+        task.abort();
     }
 
     /// Browser TCP 443 must reach the proxy — the core happy path.
@@ -676,7 +993,11 @@ mod tests {
         let shared = protected_quic_shared();
         let d = dest("203.0.113.17", 8443);
         assert_eq!(
-            decide_udp_packet(&shared, &facts(d, true, Some(71), "brave"), &quic_initial(1)),
+            decide_udp_packet(
+                &shared,
+                &facts(d, true, Some(71), "brave"),
+                &quic_initial(1)
+            ),
             Decision::Block
         );
     }
@@ -692,6 +1013,24 @@ mod tests {
             ),
             Decision::Direct,
         );
+    }
+
+    // DNS transaction IDs are random and may begin with QUIC's fixed bit.
+    // Normal DNS/53 (including EDNS) must never be classified as migrated QUIC.
+    #[test]
+    fn dns_query_with_quic_like_transaction_id_remains_direct() {
+        let shared = protected_quic_shared();
+        let mut dns = vec![0x43, 0x01, 0x01, 0x00, 0, 1, 0, 0, 0, 0, 0, 1];
+        dns.extend_from_slice(b"\x07example\x03com\x00");
+        dns.extend_from_slice(&[0, 1, 0, 1]);
+        dns.extend_from_slice(&[0, 0, 41, 16, 0, 0, 0, 0, 0, 0, 0]);
+        for (pid, name) in [(Some(71), "brave"), (None, "")] {
+            assert_eq!(
+                decide_udp_packet(&shared, &facts(dest("1.1.1.1", 53), true, pid, name), &dns,),
+                Decision::Direct,
+                "DNS query with a QUIC-like transaction ID must not be blocked",
+            );
+        }
     }
 
     #[test]
@@ -732,7 +1071,11 @@ mod tests {
             dest("[2001:db8::123]", 8443),
         ] {
             assert_eq!(
-                decide_udp_packet(&shared, &facts(d, true, Some(71), "brave"), &quic_initial(1)),
+                decide_udp_packet(
+                    &shared,
+                    &facts(d, true, Some(71), "brave"),
+                    &quic_initial(1)
+                ),
                 Decision::QuicProxy,
                 "protected QUIC to {d} must use the in-process MITM endpoint"
             );
@@ -771,8 +1114,13 @@ mod tests {
 
     #[test]
     fn explicit_block_rules_override_h3_interception() {
-        let rules = [Rule::new("brave.exe").ports("8443").protocol(RuleProtocol::Udp).action(RuleAction::Block),
-            Rule::new("*").action(RuleAction::Direct)];
+        let rules = [
+            Rule::new("brave.exe")
+                .ports("8443")
+                .protocol(RuleProtocol::Udp)
+                .action(RuleAction::Block),
+            Rule::new("*").action(RuleAction::Direct),
+        ];
         let mut shared = Shared::new_for_test(&rules, vec![]);
         shared.protected_processes = vec!["brave.exe".into()];
         shared.quic_policy = QuicPolicy::Intercept;
@@ -784,6 +1132,111 @@ mod tests {
                 &quic_initial(1)
             ),
             Decision::Block,
+        );
+    }
+
+    // Independent-security-review regression: an already-opened or migrated
+    // QUIC flow can begin with a short header, not a new Initial. It must not
+    // be relayed to the origin when browser H3 interception is enabled.
+    #[test]
+    fn h3_intercept_rejects_non_initial_udp443_from_a_browser() {
+        let mut shared = protected_quic_shared();
+        shared.quic_policy = QuicPolicy::Intercept;
+        shared.quic_proxy_addr = Some("127.0.0.1:9443".parse().unwrap());
+        let short_header = [0x43_u8; 64];
+        for process in ["brave", ""] {
+            assert_eq!(
+                decide_udp_packet(
+                    &shared,
+                    &facts(dest("203.0.113.17", 443), true, Some(71), process),
+                    &short_header
+                ),
+                Decision::Block,
+                "{process:?} must not use origin-direct UDP on port 443",
+            );
+        }
+    }
+
+    #[test]
+    fn migrated_quic_short_header_on_alternative_port_cannot_escape() {
+        let mut shared = protected_quic_shared();
+        shared.quic_policy = QuicPolicy::Intercept;
+        shared.quic_proxy_addr = Some("127.0.0.1:9443".parse().unwrap());
+        let short_header = [0x43_u8; 64];
+        for process in ["brave", ""] {
+            assert_eq!(
+                decide_udp_packet(
+                    &shared,
+                    &facts(dest("203.0.113.17", 8443), true, Some(71), process),
+                    &short_header
+                ),
+                Decision::Block,
+                "{process:?} must not relay a migrated connection directly",
+            );
+        }
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 8443), true, Some(99), "wireguard"),
+                &short_header
+            ),
+            Decision::Direct,
+            "unprotected applications retain opaque UDP",
+        );
+    }
+
+    #[test]
+    fn migrated_quic_non_initial_long_header_on_an_alternative_port_is_not_direct() {
+        let mut shared = protected_quic_shared();
+        shared.quic_policy = QuicPolicy::Intercept;
+        shared.quic_proxy_addr = Some("127.0.0.1:9443".parse().unwrap());
+        // QUIC v1 0-RTT or Handshake packets carry a long header with a
+        // nonzero version, and can arrive before the first captured Initial.
+        let mut packet = quic_initial(1);
+        packet[0] = 0xd0;
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 8443), true, Some(71), "brave"),
+                &packet
+            ),
+            Decision::Block,
+        );
+    }
+
+    #[test]
+    fn protected_direct_udp_flow_rejects_later_quic_without_a_new_flow_decision() {
+        let initial = quic_initial(1);
+        let mut short_header = vec![0x43_u8; 64];
+        let normal_udp = b"ordinary UDP datagram";
+        assert!(allow_direct_udp_followup(normal_udp, false, true));
+        assert!(!allow_direct_udp_followup(&initial, false, true));
+        assert!(!allow_direct_udp_followup(&short_header, false, true));
+        // Non-protected programs retain their own opaque UDP.
+        assert!(allow_direct_udp_followup(&initial, false, false));
+        short_header[0] = 0xd0;
+        short_header[1..5].copy_from_slice(&1_u32.to_be_bytes());
+        assert!(!allow_direct_udp_followup(&short_header, false, true));
+    }
+
+    #[test]
+    fn explicit_udp_proxy_rule_fails_closed_if_no_udp_capable_proxy_selected() {
+        let rules = [
+            Rule::new("brave.exe")
+                .ports("5354")
+                .protocol(RuleProtocol::Udp)
+                .action(RuleAction::Proxy),
+            Rule::new("*").action(RuleAction::Direct),
+        ];
+        let shared = Shared::new_for_test(&rules, vec![]);
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 5354), true, Some(71), "brave"),
+                b"udp protocol data"
+            ),
+            Decision::Block,
+            "an unsupported UDP Proxy rule may not silently relay to the origin",
         );
     }
 

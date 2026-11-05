@@ -25,14 +25,14 @@ use std::os::fd::AsRawFd;
 use std::sync::{LazyLock, Mutex};
 use std::time::{Duration, Instant};
 
-use netlink_packet_core::{NetlinkHeader, NetlinkMessage, NetlinkPayload, NLM_F_REQUEST};
+use netlink_packet_core::{NLM_F_REQUEST, NetlinkHeader, NetlinkMessage, NetlinkPayload};
 use netlink_packet_sock_diag::{
+    SockDiagMessage,
     constants::{AF_INET, AF_INET6, IPPROTO_TCP, IPPROTO_UDP},
     inet::{InetRequest, InetResponse, SocketId, StateFlags},
-    SockDiagMessage,
 };
-use netlink_sys::protocols::NETLINK_SOCK_DIAG;
 use netlink_sys::Socket;
+use netlink_sys::protocols::NETLINK_SOCK_DIAG;
 
 /// How long endpoint→PID results are trusted before re-querying.
 const CACHE_TTL: Duration = Duration::from_millis(250);
@@ -122,7 +122,9 @@ pub(crate) fn resolve_pid(local: SocketAddr, remote: SocketAddr, is_udp: bool) -
     };
 
     {
-        let cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let cache = CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some((pid, cached_at)) = cache.endpoints.get(&key)
             && now.duration_since(*cached_at) < CACHE_TTL
         {
@@ -134,7 +136,9 @@ pub(crate) fn resolve_pid(local: SocketAddr, remote: SocketAddr, is_udp: bool) -
     let pid = inode_to_pid(inode);
 
     if let Some(pid) = pid {
-        let mut cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut cache = CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         cache.endpoints.insert(key, (pid, now));
         Some(pid)
     } else {
@@ -142,18 +146,30 @@ pub(crate) fn resolve_pid(local: SocketAddr, remote: SocketAddr, is_udp: bool) -
     }
 }
 
+/// Prefer the complete executable basename: Linux task `comm` is capped at
+/// 15 bytes, which truncates protected browsers such as google-chrome-stable.
+fn choose_process_name(comm: &str, executable: Option<&str>) -> Option<String> {
+    let executable = executable
+        // The kernel adds this suffix to /proc/PID/exe when a running
+        // executable is replaced by a browser update. It is not part of the
+        // process identity and must not cause our browser rules to miss it.
+        .map(|name| name.strip_suffix(" (deleted)").unwrap_or(name));
+    executable
+        .filter(|name| !name.is_empty())
+        .or_else(|| (!comm.is_empty()).then_some(comm))
+        .map(str::to_string)
+}
+
 /// Resolve the executable *file name* for a PID, e.g. `chrome`.
 pub(crate) fn process_name(pid: u32) -> Option<String> {
-    let comm = std::fs::read_to_string(format!("/proc/{pid}/comm")).ok()?;
-    let name = comm.trim();
-    if !name.is_empty() {
-        return Some(name.to_string());
-    }
-    // Fall back to the executable basename for processes whose comm is empty
-    // or unreadable.
-    let exe = std::fs::read_link(format!("/proc/{pid}/exe")).ok()?;
-    exe.file_name()
-        .map(|name| name.to_string_lossy().into_owned())
+    let executable = std::fs::read_link(format!("/proc/{pid}/exe"))
+        .ok()
+        .and_then(|path| {
+            path.file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+        });
+    let comm = std::fs::read_to_string(format!("/proc/{pid}/comm")).unwrap_or_default();
+    choose_process_name(comm.trim(), executable.as_deref())
 }
 
 /// Ask the kernel for the socket inode behind the flow's endpoints.
@@ -321,11 +337,7 @@ fn query_one(family: u8, protocol: u8, socket_id: SocketId) -> Option<u64> {
 /// Pull the inode out of a sock_diag response, skipping zero inodes.
 fn inode_of(response: Box<InetResponse>) -> Option<u64> {
     let inode = u64::from(response.header.inode);
-    if inode == 0 {
-        None
-    } else {
-        Some(inode)
-    }
+    if inode == 0 { None } else { Some(inode) }
 }
 
 /// Map a socket inode to a PID by scanning `/proc/<pid>/fd` symlinks.
@@ -335,7 +347,9 @@ fn inode_of(response: Box<InetResponse>) -> Option<u64> {
 /// moment, so a miss-and-rescan always terminates correctly — the cache only
 /// ever makes the common case cheaper, never less accurate.
 fn inode_to_pid(inode: u64) -> Option<u32> {
-    let mut cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     if let Some(pid) = cache
         .inodes
         .as_ref()
@@ -439,8 +453,7 @@ struct ProcessCache {
     inodes: Option<HashMap<u64, u32>>,
 }
 
-static CACHE: LazyLock<Mutex<ProcessCache>> =
-    LazyLock::new(|| Mutex::new(ProcessCache::default()));
+static CACHE: LazyLock<Mutex<ProcessCache>> = LazyLock::new(|| Mutex::new(ProcessCache::default()));
 
 #[cfg(test)]
 mod tests {
@@ -457,6 +470,18 @@ mod tests {
         );
         assert_eq!(
             choose_process_name("brave", Some("brave")),
+            Some("brave".to_string()),
+        );
+    }
+
+    #[test]
+    fn browser_executable_deleted_by_upgrade_keeps_its_protected_identity() {
+        assert_eq!(
+            choose_process_name("google-chrome-st", Some("google-chrome-stable (deleted)")),
+            Some("google-chrome-stable".to_string()),
+        );
+        assert_eq!(
+            choose_process_name("brave", Some("brave (deleted)")),
             Some("brave".to_string()),
         );
     }

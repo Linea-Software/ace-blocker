@@ -21,7 +21,7 @@ structural rather than incidental:
 
 | Problem | Why it happened | How this crate avoids it |
 |---|---|---|
-| **HTTP/3 leaked past blocking.** Instagram and YouTube loaded despite matching block rules. | The per-packet `GetExtendedUdpTable` lookup raced UDP socket setup. On a miss the flow was passed through *uninspected*. | Attribution happens once per **flow**, at open. The SYN could not exist unless the socket already did, so there is nothing to race. And QUIC is dropped regardless of attribution — see below. |
+| **HTTP/3 leaked past blocking.** Instagram and YouTube loaded despite matching block rules. | The per-packet `GetExtendedUdpTable` lookup raced UDP socket setup. On a miss the flow was passed through *uninspected*. | Attribution happens once per **flow**, at open. The SYN could not exist unless the socket already did, so there is nothing to race. Browser QUIC is now conservatively intercepted through the local H3 endpoint or dropped, and unknown QUIC never goes direct — see below. |
 | **NAT bookkeeping.** Destination rewriting needed a table mapping ephemeral ports back to real destinations, plus checksum fixups. | Packet-level redirection destroys the original destination. | Under a TUN the destination is simply in the IP header. No rewriting, no table. |
 | **IPv6 bypassed everything.** | The capture filter was `ip and (...)`, which never matched IPv6. | The netstack handles both families identically; IPv6 addressing and routes are installed by default. |
 
@@ -96,10 +96,19 @@ If the platform capture layer itself cannot start, `ace-engine` currently keeps
 running and reports interception as unavailable rather than taking networking
 down. The service layer is responsible for surfacing that degraded state.
 
-The one deliberate exception is **browser QUIC**. UDP/443 from protected
-browsers is dropped to force inspected TCP fallback; unattributed UDP/443 is also
-dropped to avoid an attribution-race bypass. Known non-protected applications keep
-their normal UDP/443 path because not every protocol on that port has a TCP fallback.
+**Browser QUIC (HTTP/3)** is selected per flow after reading the first UDP
+datagram. The `ace-tun` library defaults to `QuicPolicy::Drop`; `ace-engine`
+configures `QuicPolicy::Intercept` with an explicit loopback HTTP/3 endpoint.
+Protected-browser QUIC Initials on UDP/443 **or alternative ports** are sent only
+to that endpoint, never directly to the original server. Missing listeners,
+unattributed QUIC and recognized short/non-Initial packets are dropped. Known
+non-browser UDP remains opaque, and ordinary non-QUIC UDP on other ports keeps
+its existing behavior. Direct UDP flows from protected/unattributed processes are also rechecked on
+**every subsequent datagram**, preventing a benign first packet from opening
+an uninspected QUIC tunnel. DNS/53 queries are checked as DNS instead of being
+misidentified by their random transaction IDs. The classifier remains a
+conservative QUIC header heuristic, not a QUIC/TLS identity verifier; native
+Windows/browser/VPN validation is still required before production deployment.
 
 ### Teardown
 
