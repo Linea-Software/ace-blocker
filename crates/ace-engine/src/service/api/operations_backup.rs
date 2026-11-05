@@ -1,3 +1,4 @@
+use crate::core::SitePackId;
 use crate::service::{
     api::{AppState, error::ApiError},
     clients::AceServerClient,
@@ -243,14 +244,32 @@ pub(super) async fn import_backup(
     state: AppState,
     payload: crate::manager::network::backup::EngineBackup,
 ) -> Result<(), ApiError> {
-    // Backups are untrusted: do not restore new paid packs without entitlement.
-    let has_premium_content = payload
-        .custom_site_packs
-        .iter()
-        .any(|pack| pack.remote_id.is_none() || pack.requires_pro);
-    if has_premium_content && !state.is_pro_account_entitled().await {
+    // Local backups are untrusted: `remote_id` and `requires_pro` come from
+    // user-controlled JSON, so neither field proves an official Free catalog
+    // entry. Only the *already loaded, canonical* Free remote packs are safe
+    // to restore without Pro. Unknown IDs and premium references are gated,
+    // including references embedded in the restored network blocks.
+    let needs_pro = {
+        let manager = state.network_manager.read().await;
+        let is_known_free_pack = |raw_id: &str| -> bool {
+            SitePackId::try_new(raw_id.to_owned())
+                .ok()
+                .and_then(|id| manager.get_site_pack(&id).ok())
+                .is_some_and(|pack| pack.is_remote() && !pack.requires_pro())
+        };
+        payload
+            .custom_site_packs
+            .iter()
+            .any(|pack| !is_known_free_pack(&pack.id))
+            || payload
+                .network_blocks
+                .iter()
+                .flat_map(|block| &block.connected_site_packs)
+                .any(|pack_id| !is_known_free_pack(pack_id))
+    };
+    if needs_pro && !state.is_pro_account_entitled().await {
         return Err(ApiError::Forbidden(
-            "Pro required to restore custom or premium site lists".into(),
+            "Pro required to restore or connect custom or premium site lists".into(),
         ));
     }
     let mut manager = state.network_manager.write().await;
