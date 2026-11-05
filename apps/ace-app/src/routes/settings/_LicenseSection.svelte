@@ -49,7 +49,7 @@
 
         {#if !isPro}
             <div class="license-actions">
-                <UpgradeToProButton text={m.settings_license_upgrade_btn()} />
+                <UpgradeToProButton text={m.pro_status_inactive()} />
                 <button
                     type="button"
                     class="sign-in-action"

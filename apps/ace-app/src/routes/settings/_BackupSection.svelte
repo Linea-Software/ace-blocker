@@ -229,7 +229,7 @@
                         {m.restore_from_cloud()}
                     </button>
                 {:else}
-                    <UpgradeToProButton text={m.settings_license_upgrade_btn()} />
+                    <UpgradeToProButton text={m.cloud_backup()} />
                 {/if}
             </div>
         </div>

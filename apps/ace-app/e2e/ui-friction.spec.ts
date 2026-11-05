@@ -12,6 +12,19 @@ test.describe("Desktop UI friction", () => {
         expect(bounds!.width).toBeGreaterThan(200);
         expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(800);
 
+        // Gated features remain identifiable until hover/focus, without layout shifts.
+        const defaultLabel = importAction.locator(".current-label");
+        const upgradeLabel = importAction.locator(".upgrade-label");
+        await expect(defaultLabel).toHaveCSS("opacity", "1");
+        await expect(upgradeLabel).toHaveCSS("opacity", "0");
+        const initialWidth = (await importAction.boundingBox())!.width;
+        await importAction.hover();
+        await expect(upgradeLabel).toHaveCSS("opacity", "1");
+        await expect(defaultLabel).toHaveCSS("opacity", "0");
+        expect((await importAction.boundingBox())!.width).toBe(initialWidth);
+        await importAction.focus();
+        await expect(upgradeLabel).toHaveCSS("opacity", "1");
+
         const search = page.getByRole("searchbox", {
             name: "Search categories and Custom Lists...",
         });

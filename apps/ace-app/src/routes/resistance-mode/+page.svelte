@@ -345,7 +345,7 @@
                         </h2>
                         <p>{m.resistance_pro_preview_description()}</p>
                     </div>
-                    <UpgradeToProButton showIcon={false} />
+                    <UpgradeToProButton text={m.resistance_mode()} />
                 </div>
             {/if}
 
