@@ -220,6 +220,42 @@ async fn h3_post(
     (status, String::from_utf8_lossy(&body).to_string())
 }
 
+// Security contract written before engine HTTP/3 integration: a transparent
+// QUIC listener must not mint certificates for unrelated browser origins.
+#[tokio::test]
+async fn http3_selective_interception_accepts_policy_host_and_rejects_other_sni() {
+    init_tracing();
+    let (origin_addr, _cert) = spawn_https_origin().await;
+    let ca_dir = TempDir::new().unwrap();
+    let tcp_addr = pick_tcp_addr().await;
+    let h3_addr = pick_udp_addr();
+    let cfg = ProxyConfig::new(tcp_addr, ca_dir.path())
+        .verify_upstream(false)
+        .with_http3(h3_addr);
+    let proxy = MitmProxy::new(cfg.clone())
+        .with_http3_sni_policy(Arc::new(|host: &str| host == "localhost"));
+    let handle = tokio::spawn(async move { proxy.run().await });
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    let ca_pem = std::fs::read_to_string(&cfg.ca_cert_path).unwrap();
+
+    let (status, body) = h3_get(h3_addr, &ca_pem, "localhost", origin_addr.port(), "/echo").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("GET"));
+
+    let tls_cfg = h3_client_config(&ca_pem);
+    let quic_crypto = quinn::crypto::rustls::QuicClientConfig::try_from(Arc::new(tls_cfg)).unwrap();
+    let mut endpoint = quinn::Endpoint::client("127.0.0.1:0".parse().unwrap()).unwrap();
+    endpoint.set_default_client_config(quinn::ClientConfig::new(Arc::new(quic_crypto)));
+    let denied = tokio::time::timeout(
+        std::time::Duration::from_secs(3),
+        endpoint.connect(h3_addr, "unrelated.example").unwrap(),
+    )
+    .await
+    .expect("handshake should be rejected promptly");
+    assert!(denied.is_err(), "unapproved SNI must not get a proxy certificate");
+    handle.abort();
+}
+
 #[tokio::test]
 async fn http3_get_body() {
     init_tracing();

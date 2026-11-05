@@ -641,6 +641,152 @@ mod tests {
         );
     }
 
+    // HTTP/3 security contract. These tests are intentionally added BEFORE the
+    // QUIC router/bridge, so they fail against the original direct-UDP fallback.
+    fn quic_initial(version: u32) -> Vec<u8> {
+        let mut payload = vec![0_u8; 1200];
+        payload[0] = 0xc0; // long header + fixed bit + v1 Initial type
+        payload[1..5].copy_from_slice(&version.to_be_bytes());
+        payload[5] = 8; // destination connection ID length
+        payload[6..14].copy_from_slice(b"initial1");
+        payload
+    }
+
+    fn protected_quic_shared() -> Shared {
+        let rules = [Rule::new("*").action(RuleAction::Direct)];
+        let mut shared = Shared::new_for_test(&rules, vec![]);
+        shared.protected_processes = vec!["brave.exe".into()];
+        shared
+    }
+
+    #[test]
+    fn quic_on_alternative_ports_must_not_escape_even_when_unattributed() {
+        let shared = protected_quic_shared();
+        for d in [dest("203.0.113.17", 8443), dest("[2001:db8::123]", 10443)] {
+            assert_eq!(
+                decide_udp_packet(&shared, &facts(d, true, None, ""), &quic_initial(1)),
+                Decision::Block,
+                "unattributed QUIC on {d} cannot escape through the direct UDP fallback"
+            );
+        }
+    }
+
+    #[test]
+    fn protected_browser_quic_on_an_alternative_port_must_not_go_direct() {
+        let shared = protected_quic_shared();
+        let d = dest("203.0.113.17", 8443);
+        assert_eq!(
+            decide_udp_packet(&shared, &facts(d, true, Some(71), "brave"), &quic_initial(1)),
+            Decision::Block
+        );
+    }
+
+    #[test]
+    fn short_non_quic_udp_remains_compatible_on_other_ports() {
+        let shared = protected_quic_shared();
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 8443), true, Some(71), "brave"),
+                b"ordinary UDP"
+            ),
+            Decision::Direct,
+        );
+    }
+
+    #[test]
+    fn quic_version_negotiation_must_not_be_mistaken_for_a_client_initial() {
+        let shared = protected_quic_shared();
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 8443), true, Some(71), "brave"),
+                &quic_initial(0)
+            ),
+            Decision::Direct,
+        );
+    }
+
+    #[test]
+    fn known_non_browser_quic_is_not_intercepted() {
+        let shared = protected_quic_shared();
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 8443), true, Some(100), "wireguard"),
+                &quic_initial(1)
+            ),
+            Decision::Direct,
+        );
+    }
+
+    #[test]
+    fn enabled_h3_routing_targets_the_local_proxy_for_ipv4_and_ipv6() {
+        let mut shared = protected_quic_shared();
+        shared.quic_policy = QuicPolicy::Intercept;
+        shared.quic_proxy_addr = Some("127.0.0.1:9443".parse().unwrap());
+        for d in [
+            dest("203.0.113.17", 443),
+            dest("203.0.113.17", 8443),
+            dest("[2001:db8::123]", 443),
+            dest("[2001:db8::123]", 8443),
+        ] {
+            assert_eq!(
+                decide_udp_packet(&shared, &facts(d, true, Some(71), "brave"), &quic_initial(1)),
+                Decision::QuicProxy,
+                "protected QUIC to {d} must use the in-process MITM endpoint"
+            );
+        }
+    }
+
+    #[test]
+    fn interception_without_a_local_h3_listener_fails_closed() {
+        let mut shared = protected_quic_shared();
+        shared.quic_policy = QuicPolicy::Intercept;
+        shared.quic_proxy_addr = None;
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 443), true, Some(71), "brave"),
+                &quic_initial(1)
+            ),
+            Decision::Block,
+        );
+    }
+
+    #[test]
+    fn unattributed_quic_stays_blocked_even_with_h3_interception_enabled() {
+        let mut shared = protected_quic_shared();
+        shared.quic_policy = QuicPolicy::Intercept;
+        shared.quic_proxy_addr = Some("127.0.0.1:9443".parse().unwrap());
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 8443), true, None, ""),
+                &quic_initial(1)
+            ),
+            Decision::Block,
+        );
+    }
+
+    #[test]
+    fn explicit_block_rules_override_h3_interception() {
+        let rules = [Rule::new("brave.exe").ports("8443").protocol(RuleProtocol::Udp).action(RuleAction::Block),
+            Rule::new("*").action(RuleAction::Direct)];
+        let mut shared = Shared::new_for_test(&rules, vec![]);
+        shared.protected_processes = vec!["brave.exe".into()];
+        shared.quic_policy = QuicPolicy::Intercept;
+        shared.quic_proxy_addr = Some("127.0.0.1:9443".parse().unwrap());
+        assert_eq!(
+            decide_udp_packet(
+                &shared,
+                &facts(dest("203.0.113.17", 8443), true, Some(71), "brave"),
+                &quic_initial(1)
+            ),
+            Decision::Block,
+        );
+    }
+
     #[test]
     fn known_non_protected_process_can_use_udp_443() {
         let rules = [Rule::new("*").action(RuleAction::Direct)];
