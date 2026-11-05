@@ -447,6 +447,30 @@ mod tests {
     use super::*;
 
     #[test]
+    fn full_executable_name_wins_over_truncated_proc_comm() {
+        // Linux task comm is capped at TASK_COMM_LEN (15 usable bytes).
+        // A binary named google-chrome-stable must still match the protected
+        // browser list even though /proc/PID/comm says google-chrome-st.
+        assert_eq!(
+            choose_process_name("google-chrome-st", Some("google-chrome-stable")),
+            Some("google-chrome-stable".to_string()),
+        );
+        assert_eq!(
+            choose_process_name("brave", Some("brave")),
+            Some("brave".to_string()),
+        );
+    }
+
+    #[test]
+    fn process_name_falls_back_to_comm_when_exe_is_unavailable() {
+        assert_eq!(
+            choose_process_name("firefox", None),
+            Some("firefox".to_string()),
+        );
+        assert_eq!(choose_process_name("", None), None);
+    }
+
+    #[test]
     fn parses_socket_symlink_targets() {
         assert_eq!(socket_inode_of("socket:[123456]"), Some(123456));
         assert_eq!(socket_inode_of("socket:[0]"), Some(0));
