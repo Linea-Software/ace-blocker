@@ -1619,8 +1619,8 @@ mod tests {
     use http_body_util::BodyExt;
 
     /// Builds a ProxyAdapter whose network manager has a resistance script for
-    /// `example.com` and whose account is Pro (api key + fresh check + is_pro
-    /// settings flag, so `AccountManager::is_pro()` never hits the network).
+    /// `example.com` and whose account has a test-only verified Pro lease.
+    /// No network calls or unsigned production entitlement flags are used.
     async fn adapter_with_resistance(
         resistance_enabled: bool,
     ) -> (Arc<RwLock<NetworkManager>>, ProxyAdapter) {
@@ -1641,6 +1641,7 @@ mod tests {
         account_manager
             .update_is_pro_status(true)
             .expect("failed to set pro status");
+        account_manager.grant_test_pro_entitlement();
 
         let mut manager = NetworkManager::new_empty(db.clone(), account_manager.clone());
         manager.get_resistance_mode_mut().enabled = resistance_enabled;

@@ -204,6 +204,15 @@ impl AccountManager {
             && now + 300 >= self.clock_high_watermark.load(Ordering::Acquire)
     }
 
+    /// Unit-test fixture only: emulate a validated lease without contacting
+    /// the website. This method is not compiled into production binaries.
+    #[cfg(test)]
+    pub(crate) fn grant_test_pro_entitlement(&self) {
+        self.cached_until
+            .store(Utc::now().timestamp() + 3600, Ordering::Release);
+        self.cached_pro.store(true, Ordering::Release);
+    }
+
     /// Fast, offline-safe entitlement snapshot for the initial UI state.
     /// This never verifies remotely or holds the network-manager lock. A
     /// logged-out account is never shown as Pro, even if its settings row
