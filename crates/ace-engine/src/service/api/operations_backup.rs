@@ -243,8 +243,17 @@ pub(super) async fn import_backup(
     state: AppState,
     payload: crate::manager::network::backup::EngineBackup,
 ) -> Result<(), ApiError> {
+    // Backups are untrusted: do not restore new paid packs without entitlement.
+    let has_premium_content = payload
+        .custom_site_packs
+        .iter()
+        .any(|pack| pack.remote_id.is_none() || pack.requires_pro);
+    if has_premium_content && !state.is_pro_account_entitled().await {
+        return Err(ApiError::Forbidden(
+            "Pro required to restore custom or premium site lists".into(),
+        ));
+    }
     let mut manager = state.network_manager.write().await;
-
     manager.import_backup(payload).await?;
     drop(manager);
 

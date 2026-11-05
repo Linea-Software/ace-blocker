@@ -131,6 +131,17 @@ pub(super) async fn resync_site_pack(
 ) -> Result<impl Stream<Item = SitePackCreationStatus>, ApiError> {
     let site_pack_id = SitePackId::try_new(site_pack_id)
         .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
+    // Remote Free packs can resync normally; Pro/local imports must be licensed.
+    let requires_pro = {
+        let manager = state.network_manager.read().await;
+        let pack = manager.get_site_pack(&site_pack_id)?;
+        !pack.is_remote() || pack.requires_pro()
+    };
+    if requires_pro && !state.is_pro_account_entitled().await {
+        return Err(ApiError::Forbidden(
+            "Pro required to resync this site list".into(),
+        ));
+    }
     let stream = {
         let mut manager = state.network_manager.write().await;
         manager.resync_site_pack(&site_pack_id).await?
@@ -189,7 +200,8 @@ pub(super) async fn delete_site_pack_source(
 }
 
 pub(super) async fn re_enable_remote_site_packs(state: AppState) -> Result<(), ApiError> {
+    let allow_pro = state.is_pro_account_entitled().await;
     let mut manager = state.network_manager.write().await;
-    manager.re_enable_all_remote_site_packs().await?;
+    manager.re_enable_all_remote_site_packs(allow_pro).await?;
     Ok(())
 }

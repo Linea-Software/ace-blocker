@@ -1256,7 +1256,10 @@ impl NetworkManager {
     }
 
     /// Re-enables all ignored remote site lists and re-fetches their metadata.
-    pub async fn re_enable_all_remote_site_packs(&mut self) -> Result<(), NetworkManagerOpErr> {
+    pub async fn re_enable_all_remote_site_packs(
+        &mut self,
+        allow_pro: bool,
+    ) -> Result<(), NetworkManagerOpErr> {
         info!("Re-enabling all ignored remote site lists...");
 
         // Get all ignored remote site lists
@@ -1268,6 +1271,9 @@ impl NetworkManager {
 
         // Re-enable each one in DB and load into memory
         for model in &ignored_lists {
+            if model.requires_pro && !allow_pro {
+                continue;
+            }
             let site_pack_id = SitePackId::try_new(model.id.clone()).map_err(|error| {
                 NetworkManagerOpErr::InternalError {
                     message: format!("Invalid persisted site-pack ID: {error}"),

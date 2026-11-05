@@ -26,11 +26,21 @@ pub(super) async fn add_net_block_to_site_pack_connection(
     network_block_id: uuid::Uuid,
     payload: AddNetListToSitePackRequest,
 ) -> Result<AddNetListToSitePackResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
     let list_id = NetworkBlockId::from(network_block_id);
     let site_pack_id = SitePackId::try_new(payload.sites_list_id)
         .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
     let site_pack_id_str = site_pack_id.to_string();
+    let requires_pro = {
+        let manager = state.network_manager.read().await;
+        let pack = manager.get_site_pack(&site_pack_id)?;
+        !pack.is_remote() || pack.requires_pro()
+    };
+    if requires_pro && !state.is_pro_account_entitled().await {
+        return Err(ApiError::Forbidden(
+            "Pro required to attach this site list".into(),
+        ));
+    }
+    let mut manager = state.network_manager.write().await;
     manager.add_network_block_to_site_pack(&list_id, &site_pack_id)?;
 
     Ok(AddNetListToSitePackResponse {
