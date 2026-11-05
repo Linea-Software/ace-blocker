@@ -202,7 +202,9 @@ Use `bun run <script>` for these tasks:
 - dev: Starts Vite; actual engine RPC requires Tauri.
 - `clear-cache`: Runs a utility script to clear application/build cache.
 - `tauri`: Accesses the Tauri CLI (e.g., `bun run tauri dev`).
-- `check`: Runs Svelte-check for type safety and linting.
+- `i18n:compile`: Rebuilds generated Paraglide messages after editing `messages/en.json`.
+- `i18n:audit`: Checks all English keys against static Paraglide references in app source (including message function references, not just calls); fails for stale, missing, dynamic, or unused keys.
+- `check`: Recompiles Paraglide, then runs Svelte-check for type safety and linting.
 
 **Current SvelteKit 3 / CI conventions:**
 - Use `$app/env` (not removed `$app/environment`) for `dev`, and import `Handle` / `Reroute` types from `@sveltejs/kit/hooks`.
