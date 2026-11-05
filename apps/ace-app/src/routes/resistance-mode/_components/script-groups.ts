@@ -19,9 +19,12 @@ const iconMap: Record<string, { svg: string; hex: string } | undefined> = {
 };
 
 export function getSiteIcon(domain: string): { svg: string; hex: string } | null {
-    const key = domain.toLowerCase();
-    for (const [k, v] of Object.entries(iconMap)) {
-        if (key.includes(k)) return v ?? null;
+    const hostname = domain.toLowerCase().replace(/\.$/, "");
+    for (const [siteDomain, icon] of Object.entries(iconMap)) {
+        // Exact host or real subdomain, never a lookalike (e.g. notyoutube.com).
+        if (hostname === siteDomain || hostname.endsWith("." + siteDomain)) {
+            return icon ?? null;
+        }
     }
     return null;
 }

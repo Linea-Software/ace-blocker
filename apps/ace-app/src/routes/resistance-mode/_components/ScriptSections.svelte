@@ -141,7 +141,13 @@
                         <div
                             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border bg-muted"
                         >
-                            <Globe class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                            {#if group.icon}
+                                <span class="text-foreground [&>svg]:h-5 [&>svg]:w-5 [&>svg]:fill-current" aria-hidden="true">
+                                    {@html group.icon.svg}
+                                </span>
+                            {:else}
+                                <Globe class="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+                            {/if}
                         </div>
                         <button
                             type="button"
