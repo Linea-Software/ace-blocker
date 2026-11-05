@@ -339,15 +339,15 @@ fn inode_to_pid(inode: u64) -> Option<u32> {
     if let Some(pid) = cache
         .inodes
         .as_ref()
-        .and_then(|(map, _)| map.get(&inode).copied())
+        .and_then(|map| map.get(&inode).copied())
     {
         return Some(pid);
     }
-    cache.inodes = Some((scan_socket_inodes(), Instant::now()));
+    cache.inodes = Some(scan_socket_inodes());
     cache
         .inodes
         .as_ref()
-        .and_then(|(map, _)| map.get(&inode).copied())
+        .and_then(|map| map.get(&inode).copied())
 }
 
 /// Build a socket-inode → PID map by walking every process's fd table.
@@ -436,7 +436,7 @@ struct ProcessCache {
     /// live flow never touch the kernel twice.
     endpoints: HashMap<EndpointKey, (u32, Instant)>,
     /// Socket inode → PID map from the last `/proc` walk. Rebuilt on miss.
-    inodes: Option<(HashMap<u64, u32>, Instant)>,
+    inodes: Option<HashMap<u64, u32>>,
 }
 
 static CACHE: LazyLock<Mutex<ProcessCache>> =

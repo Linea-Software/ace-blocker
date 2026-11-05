@@ -25,6 +25,7 @@ This file tracks **verified, actionable maintainability work**, not a wishlist o
 | [TD-015](#td-015--allocation-free-hosts-token-scanning) | P2 | review | Domain blocklist hosts parser | Collects all whitespace tokens into a temporary `Vec` for each input line | Iterate tokens directly while retaining error order and alias validation |
 | [TD-016](#td-016--linear-time-tauri-stream-queue) | P2 | review | Ace App Tauri RPC stream | Uses `Array.shift()` for each event in site-pack progress streams | Replace head-removal with cursor-based draining without changing event/error ordering |
 | [TD-017](#td-017--sveltekit-alias-configuration-warnings) | P2 | candidate | Ace App tooling | Current SvelteKit build reports deprecated config alias and overwritten tsconfig paths | Validate and separately migrate aliases without breaking imports |
+| [TD-018](#td-018--linux-inode-attribution-cache-metadata) | P3 | done | ace-tun Linux process attribution | An inode→PID cache stores a timestamp that no reader uses | Remove unused metadata without touching endpoint TTL, rescan or routing behavior |
 
 For each non-placeholder item, add a detailed section below using the template. Link the queue's ID to its section. Order by expected maintenance benefit and risk, not cosmetic code metrics.
 
@@ -162,6 +163,14 @@ For each non-placeholder item, add a detailed section below using the template. 
 - **Cost / scope:** Potential future SvelteKit upgrade breakage and confusing import resolution. Inspect current framework configuration guidance and generated TS paths, characterize `$lib` and `$engine-client` import resolution and remove obsolete aliases only after equivalent compile/build tests. Do not change app logic, remoc, or component design.
 - **Architecture / type gate:** Existing alias setup is build tooling, not a request for a new module or type. Preserve project-local source imports and build paths; migration is a separate task from TD-016. No solution assumed until current SvelteKit supported configuration is verified.
 - **Review / verification:** Candidate only; native Tauri/Windows integration tests not related. No configuration modification attempted.
+
+### TD-018 — Linux inode attribution cache metadata
+
+- **Status:** done; **priority:** P3; **scope:** `crates/ace-tun/src/platform/linux/process.rs`, `ProcessCache::inodes` and `inode_to_pid`. Linux-only; no engine, proxy policy, rule matcher or Windows/macOS code changes.
+- **Evidence / maintenance cost:** The cached inode→PID map was stored as `Option<(HashMap<u64, u32>, Instant)>`, but both readers destructured and ignored the timestamp. This misleadingly suggested a time-based expiry that the code does not implement.
+- **Change:** Retain only `Option<HashMap<u64, u32>>`. The cache still returns hits, rescans `/proc` on misses, and holds the same mutex through the same operations. The distinct endpoint→PID cache retains its 250 ms TTL. No new abstractions, dependencies, types, changed OS calls or wire/privilege boundaries.
+- **Behavior and verification (2026-11-05):** Before and after, `cargo test -p ace-tun --lib --locked` passed **119/119**, including Linux live TCP/UDP socket attribution and browser/QUIC routing tests. `cargo check --locked -p ace-tun --all-targets` passed. Browser-process list tests passed **4/4**, and `mitm-proxy` library tests passed **61/61**, unchanged. `git diff --check` passed. The focused Rustfmt check reports pre-existing formatting differences outside the touched lines; no whole-file formatting was applied.
+- **Architecture/type/independent review:** The Linux attribution module retains full ownership; no new import edge, public interface, IPC model or validation occurs. Separate read-only audits identified the unused field. Independent diff review found no introduced defect and confirmed the same cache lookup/refresh paths. This does **not** prove Windows/macOS, installed Engine, traffic interception or any specific third-party browser is "undetectable"; those paths were not modified or tested.
 
 ## Item template
 
