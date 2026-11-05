@@ -75,6 +75,8 @@ diesel = { version = "~2.3", features = [
     "numeric",
 ] }
 
+ed25519-dalek = "3.0.0"
+
 diesel_migrations = { version = "~2.3", features = ["sqlite"] }
 dom_query = "~0.29"
 futures = "~0.3"
