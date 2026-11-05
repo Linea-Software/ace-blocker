@@ -17,6 +17,29 @@ describe("category presentation", () => {
         expect(getBlockingListDisplayName(item)).toBe("Social Media");
     });
 
+    it("treats server-managed Pro packs with generated local IDs as categories", () => {
+        const official = {
+            id: "019bd28a-9417-7aef-a30e-44a95a7e7e2c",
+            name: "Gaming Websites — Pro",
+            isRemote: true,
+            requiresPro: true,
+        };
+        expect(getBlockingListKind(official)).toBe("category");
+        expect(getBlockingListDisplayName(official)).toBe("Gaming");
+        expect(isAceCategory(official)).toBe(true);
+    });
+
+    it("keeps user-created lists out of official categories even when Pro-only", () => {
+        const custom = {
+            id: "019bd28a-9417-7aef-a30e-44a95a7e7e2d",
+            name: "My Pro Collection",
+            isRemote: false,
+            requiresPro: true,
+        };
+        expect(getBlockingListKind(custom)).toBe("custom-list");
+        expect(getBlockingListDisplayName(custom)).toBe(custom.name);
+    });
+
     it("normalizes the adult category to product language", () => {
         expect(
             getBlockingListDisplayName({

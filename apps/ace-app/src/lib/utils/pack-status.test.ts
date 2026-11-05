@@ -13,6 +13,7 @@ function pack(overrides: Partial<SitePackSchema>): SitePackSchema {
         description: "Blocks known adult content websites.",
         icon: null,
         isSynced: false,
+        isRemote: true,
         isBundled: false,
         isLocked: false,
         entriesCount: 0,

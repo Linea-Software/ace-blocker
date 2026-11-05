@@ -16,6 +16,7 @@
         pack,
         subtitle,
         selected = false,
+        isPro,
         status,
         progress = 0,
         phase,
@@ -24,6 +25,7 @@
         pack: SitePackSchema;
         subtitle: string;
         selected?: boolean;
+        isPro: boolean;
         status?: "queued" | "downloading" | "completed" | "failed";
         progress?: number;
         phase?: string | null;
@@ -31,8 +33,10 @@
     } = $props();
 
     const displayName = $derived(getBlockingListDisplayName(pack));
+    const proRequired = $derived(pack.requiresPro && !isPro);
 
     const stateLabel = $derived.by(() => {
+        if (proRequired) return m.status_pro_required();
         if (pack.isLocked) return m.locked();
         if (status === "failed") return m.pack_sync_failed_title();
         if (status === "completed") return m.pack_sync_completed();
@@ -46,6 +50,7 @@
     type="button"
     class:selected
     class:locked={pack.isLocked}
+    class:pro-required={proRequired}
     class:failed={status === "failed"}
     class:syncing={status === "queued" || status === "downloading"}
     class="site-pack-row"
@@ -95,7 +100,7 @@
     </span>
 
     <span class="state">
-        {#if pack.isLocked}
+        {#if proRequired || pack.isLocked}
             <LockKeyhole size={14} aria-hidden="true" />
         {:else if status === "failed"}
             <CircleAlert size={14} aria-hidden="true" />
@@ -240,7 +245,8 @@
         font-size: 11px;
     }
 
-    .locked .state {
+    .locked .state,
+    .pro-required .state {
         color: var(--ace-signal-deep);
     }
 

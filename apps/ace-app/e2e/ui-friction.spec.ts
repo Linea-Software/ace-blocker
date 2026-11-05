@@ -68,7 +68,15 @@ test.describe("Desktop UI friction", () => {
                 "/src/lib/stores/user-store.svelte.ts",
             ];
             const [{ engineStore }, { dashboardStore }, { userStore }] = await Promise.all(
-                storeModules.map((modulePath) => import(/* @vite-ignore */ modulePath)),
+                storeModules.map((modulePath) => {
+                    // HMR appends ?t=...; a bare import would create a second
+                    // store instance and leave the actual Control view offline.
+                    const loaded = performance.getEntriesByType("resource")
+                        .map((entry) => new URL(entry.name))
+                        .filter((url) => url.pathname === modulePath)
+                        .at(-1);
+                    return import(/* @vite-ignore */ (loaded ? loaded.pathname + loaded.search : modulePath));
+                }),
             );
             userStore.accountInfoLoaded = true;
             userStore.tosAccepted = true;
@@ -110,4 +118,56 @@ test.describe("Desktop UI friction", () => {
             expect(measurements.borderWidth).toBe("1px");
         }
     });
+});
+
+test("official Pro packs remain identifiable for Free and Pro accounts", async ({
+    page,
+}) => {
+    await page.goto("/site-packs");
+    await page.evaluate(async () => {
+        const svelteModule = new URL(
+            "/node_modules/.vite/deps/svelte.js",
+            location.origin,
+        ).pathname;
+        const [{ mount }, { default: SitePackRow }] = await Promise.all([
+            import(/* @vite-ignore */ svelteModule),
+            import(
+                /* @vite-ignore */ "/src/lib/components/ace/domain/SitePackRow.svelte"
+            ),
+        ]);
+        const row = {
+            id: "server-managed-uuid",
+            name: "Gaming Websites — Pro",
+            description: "Official gaming category",
+            icon: "gaming",
+            isRemote: true,
+            isSynced: true,
+            isBundled: false,
+            isLocked: false,
+            entriesCount: 2345,
+            requiresPro: true,
+            lastUpdatedAt: null,
+            version: "2026.11.1",
+        };
+        for (const isPro of [false, true]) {
+            const fixture = document.createElement("div");
+            fixture.dataset.testid = isPro ? "pro-pack" : "free-pack";
+            document.body.append(fixture);
+            mount(SitePackRow, {
+                target: fixture,
+                props: {
+                    pack: row,
+                    isPro,
+                    subtitle: "Curated by Ace",
+                    onSelect: () => {},
+                },
+            });
+        }
+    });
+    await expect(page.locator('[data-testid="free-pack"]')).toContainText(
+        "Pro required",
+    );
+    await expect(page.locator('[data-testid="pro-pack"]')).toContainText(
+        "Downloaded",
+    );
 });

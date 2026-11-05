@@ -66,6 +66,8 @@ pub struct SitePackSchema {
     pub is_bundled: bool,
     pub entries_count: u64,
     pub requires_pro: bool,
+    /// Whether Ace's release catalogue owns this pack (as opposed to a user import).
+    pub is_remote: bool,
     pub last_updated_at: Option<String>,
     /// Content version of the local pack data (`site_packs.version`): the
     /// server release version when downloaded/updated, or the bundle content
@@ -556,6 +558,7 @@ impl TryFrom<&crate::core::network_block::site_pack::SitePack> for SitePackSchem
             is_bundled,
             entries_count: pack.get_entry_count()?,
             requires_pro: pack.requires_pro(),
+            is_remote: pack.is_remote(),
             last_updated_at: pack.get_last_updated_at().map(|dt| dt.to_rfc3339()),
             version: pack.get_version().map(|v| v.to_string()),
             // Default false; the route enriches it with the manager's lock
@@ -706,4 +709,36 @@ pub struct DashboardSnapshotResponse {
 pub struct TooEarlyResponse {
     pub error: String,
     pub retry_after_seconds: i64,
+}
+
+#[cfg(test)]
+mod site_pack_origin_tests {
+    use super::*;
+    use crate::core::{RemoteSitePackId, SitePack, SitePackId};
+
+    #[test]
+    fn exposes_remote_origin_in_the_pack_schema_independently_of_local_id() {
+        let directory = tempfile::tempdir().unwrap();
+        let local_id = SitePackId::try_new(uuid::Uuid::now_v7().to_string()).unwrap();
+        let remote_id = RemoteSitePackId::try_new("pack-gaming-pro".to_owned()).unwrap();
+        let pack = SitePack::from(
+            local_id,
+            Some(remote_id),
+            "Gaming Websites — Pro".into(),
+            None,
+            true,
+            None,
+            None,
+            directory.path(),
+            vec![],
+            None,
+        )
+        .unwrap();
+        let schema = SitePackSchema::try_from(&pack).unwrap();
+        assert!(schema.is_remote);
+        assert!(schema.requires_pro);
+        assert!(schema.id.parse::<uuid::Uuid>().is_ok());
+        let json = serde_json::to_value(schema).unwrap();
+        assert_eq!(json["isRemote"], true);
+    }
 }

@@ -7,13 +7,18 @@ const ACE_CATEGORY_IDS = new Set(
 
 export type BlockingListKind = "category" | "custom-list";
 
-export function getBlockingListKind(
-    pack: Pick<SitePackSchema, "id">,
-): BlockingListKind {
-    return ACE_CATEGORY_IDS.has(pack.id) ? "category" : "custom-list";
+/** Remote packs are curated by Ace, even if their local ID is a UUID.
+ * User-imported packs have no remote origin. Bundled canonical IDs remain
+ * categories while older or offline engine snapshots are being loaded. */
+type PackOrigin = Pick<SitePackSchema, "id"> & { isRemote?: boolean };
+
+export function getBlockingListKind(pack: PackOrigin): BlockingListKind {
+    return pack.isRemote || ACE_CATEGORY_IDS.has(pack.id)
+        ? "category"
+        : "custom-list";
 }
 
-export function isAceCategory(pack: Pick<SitePackSchema, "id">): boolean {
+export function isAceCategory(pack: PackOrigin): boolean {
     return getBlockingListKind(pack) === "category";
 }
 

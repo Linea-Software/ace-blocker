@@ -411,6 +411,8 @@ export type SitePackSchema = {
      */
     isLocked: boolean;
     isSynced: boolean;
+    /** True for site packs managed by Ace's remote release catalogue. */
+    isRemote: boolean;
     lastUpdatedAt?: string | null;
     name: string;
     requiresPro: boolean;

@@ -28,7 +28,7 @@
     import { userStore } from "$lib/stores/user-store.svelte";
     import { page } from "$app/state";
     import { resolve } from "$app/paths";
-    import { onMount } from "svelte";
+    import { onMount, untrack } from "svelte";
     import { toast } from "svelte-sonner";
     import { getLocale } from "$lib/paraglide/runtime";
     import PageLayout from "$lib/components/PageLayout.svelte";
@@ -77,6 +77,16 @@
         if (page.url.searchParams.get("import") === "1" && userStore.isPro) {
             isImportModalOpen = true;
         }
+    });
+
+    // Newly available Pro packs are registered by the engine after checkout.
+    // Refresh this open view as soon as that persistent catalogue is updated.
+    let lastProContentRevision = userStore.proContentRevision;
+    $effect(() => {
+        const revision = userStore.proContentRevision;
+        if (revision <= lastProContentRevision) return;
+        lastProContentRevision = revision;
+        untrack(() => void fetchPacks());
     });
 
     const categories = $derived(
@@ -322,6 +332,7 @@
                         {#each categories as pack (pack.id)}
                             <SitePackRow
                                 {pack}
+                                isPro={userStore.isPro}
                                 subtitle={getSubtitle(pack)}
                                 selected={selectedPack?.id === pack.id}
                                 status={syncStore.statusOf(pack.id)}
@@ -347,6 +358,7 @@
                         {#each customLists as pack (pack.id)}
                             <SitePackRow
                                 {pack}
+                                isPro={userStore.isPro}
                                 subtitle={getSubtitle(pack)}
                                 selected={selectedPack?.id === pack.id}
                                 status={syncStore.statusOf(pack.id)}
@@ -457,6 +469,12 @@
                         <span class="spinner"><RefreshCw size={15} aria-hidden="true" /></span>
                         {m.syncing()}
                     </button>
+                {:else if inspectorPack.requiresPro && !userStore.isPro}
+                    <ProGatedButton
+                        isPro={false}
+                        label={inspectorPack.isSynced ? m.resync() : m.download()}
+                        icon={Download}
+                    />
                 {:else if inspectorPack.isSynced}
                     <button
                         type="button"
@@ -469,13 +487,6 @@
                         <RefreshCw size={15} aria-hidden="true" />
                         {selectedStatus === "failed" ? m.retry() : m.resync()}
                     </button>
-                {:else if inspectorPack.requiresPro && !userStore.isPro}
-                    <ProGatedButton
-                        isPro={false}
-                        label={m.download()}
-                        icon={Download}
-                        onclick={() => handleResync(inspectorPack)}
-                    />
                 {:else}
                     <button
                         type="button"
