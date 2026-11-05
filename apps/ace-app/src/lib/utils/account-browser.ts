@@ -5,11 +5,21 @@ import * as m from "$lib/paraglide/messages.js";
 
 type AccountPage = "pro" | "sign-in";
 
-// These are public website URLs only. Credentials never travel through this
-// browser-opening helper; login handoff remains the engine's allowlisted callback.
+// Account pages open in the user's browser, never through the privileged Engine.
+// Development points to the local Ace website; release builds use the public
+// origin. Credentials still use the Engine's allowlisted login callback.
+export function getAccountPageUrl(
+    page: AccountPage,
+    debug = import.meta.env.DEV,
+): string {
+    const origin = debug ? "http://localhost:5173" : "https://aceblocker.com";
+    const pathname = page === "pro" ? "/get-pro" : "/signin";
+    return `${origin}${pathname}?origin=aceblocker`;
+}
+
 export const ACCOUNT_PAGE_URLS: Record<AccountPage, string> = {
-    pro: "https://aceblocker.com/get-pro?origin=aceblocker",
-    "sign-in": "https://aceblocker.com/signin?origin=aceblocker",
+    pro: getAccountPageUrl("pro"),
+    "sign-in": getAccountPageUrl("sign-in"),
 };
 
 /**
@@ -22,7 +32,7 @@ export async function openAccountPage(page: AccountPage): Promise<boolean> {
         if (isTauri()) {
             await openUrl(url);
         } else {
-            // Browser-only development: retain the same explicit public URL.
+            // Browser-only development uses the same local account site.
             window.open(url, "_blank", "noopener,noreferrer");
         }
         return true;

@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isTauri } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { toast } from "svelte-sonner";
-import { ACCOUNT_PAGE_URLS, openAccountPage } from "./account-browser";
+import {
+    ACCOUNT_PAGE_URLS,
+    getAccountPageUrl,
+    openAccountPage,
+} from "./account-browser";
 
 vi.mock("@tauri-apps/api/core", () => ({ isTauri: vi.fn() }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn() }));
@@ -16,6 +20,22 @@ describe("account browser handoff", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(openUrl).mockResolvedValue(undefined);
+    });
+
+    it("uses the local website in debug and the public website in release builds", () => {
+        expect(getAccountPageUrl("pro", true)).toBe(
+            "http://localhost:5173/get-pro?origin=aceblocker",
+        );
+        expect(getAccountPageUrl("sign-in", true)).toBe(
+            "http://localhost:5173/signin?origin=aceblocker",
+        );
+        expect(getAccountPageUrl("pro", false)).toBe(
+            "https://aceblocker.com/get-pro?origin=aceblocker",
+        );
+        expect(getAccountPageUrl("sign-in", false)).toBe(
+            "https://aceblocker.com/signin?origin=aceblocker",
+        );
+        expect(ACCOUNT_PAGE_URLS.pro).toBe(getAccountPageUrl("pro"));
     });
 
     it("opens Get Pro from the desktop session without calling the engine", async () => {
