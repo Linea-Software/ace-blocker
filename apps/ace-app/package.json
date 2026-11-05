@@ -14,7 +14,8 @@
         "test:e2e": "playwright test",
         "test:unit": "vitest run",
         "test": "bun run test:e2e",
-        "test:native": "wdio run wdio.conf.ts"
+        "test:native": "wdio run wdio.conf.ts",
+        "auth:register-linux": "bash ../../installer/linux/register-dev-handler.sh"
     },
     "license": "MIT",
     "dependencies": {

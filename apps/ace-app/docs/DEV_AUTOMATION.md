@@ -13,6 +13,66 @@ From `ace-blocker/apps/ace-app`:
 
 The wiring lives in `wdio.conf.ts`, `src/hooks.client.ts`, `src-tauri/src/lib.rs` and `src-tauri/capabilities/default.json`.
 
+## Linux browser login callback during development
+
+The public website returns sign-in to ACE with an `aceblocker://account/api-key`
+URL. The Linux release installer registers a handler under `/opt/ace-blocker`,
+but `tauri dev` does **not** install it. Without a user-session handler the
+website's **Open Ace Blocker** link fails with an `xdg-open` error.
+
+For a developer checkout, run these commands as the **desktop user**, not
+as root:
+
+```sh
+# From the ace-blocker repository root:
+cargo build --locked -p ace-engine --bin ace-redirect
+cd apps/ace-app
+bun run auth:register-linux
+xdg-mime query default x-scheme-handler/aceblocker
+# Expected: ace-blocker-dev-handler.desktop
+```
+
+The helper registers a user-scoped `.desktop` entry that invokes the debug
+`ace-redirect` binary. It intentionally uses an **unquoted, safe absolute
+path** so that both GIO and the generic `xdg-open` fallback used by
+Niri/Wayland resolve it correctly. It never overwrites a working production
+handler, starts/stops services, or edits the engine database.
+
+For a callback dispatch smoke test (safe: no key and no account mutation):
+
+```sh
+xdg-open 'aceblocker://account/invalid-test-route'
+```
+
+An exit status of 0 with a message that the route is *not in the forward
+allowlist* is expected: the launcher was found and the engine callback
+receiver correctly rejected an unsafe URL. Do **not** test with a made-up
+`apiKey`; using the allowed endpoint with a key can change the actual
+account.
+
+**Separate authorization requirement:** the unprivileged callback receiver
+must be allowed to read the installation capability from
+`/usr/local/share/AceBlocker/capability.token`. If the helper warns that
+this file is unreadable, apply the same restricted `ace-blocker` group
+ownership/membership model as the release installer (with administrator
+approval); do **not** make the token world-readable. The following is the
+intended group setup for a disposable development host:
+
+```sh
+sudo groupadd --system --force ace-blocker
+sudo chgrp ace-blocker /usr/local/share/AceBlocker /usr/local/share/AceBlocker/capability.token
+sudo chmod 2750 /usr/local/share/AceBlocker
+sudo chmod 0640 /usr/local/share/AceBlocker/capability.token
+sudo usermod -aG ace-blocker "$USER"
+# Log out of your desktop session and back in, then verify:
+test -r /usr/local/share/AceBlocker/capability.token && echo 'ACE callback access OK'
+```
+
+Changing protected installation permissions must be a deliberate
+administrator action; the registration helper will only diagnose this
+condition. An auth callback still requires a running Engine and its existing
+capability enforcement; registration alone does not prove a full login.
+
 ## Debug and release isolation
 
 Rust registers `tauri-plugin-wdio` and `tauri-plugin-wdio-webdriver` only under `#[cfg(debug_assertions)]`; no release binary registers them. The guest JS adapter is imported only under Vite's `import.meta.env.DEV` and the Tauri environment, so a production bundle does not include it. No additional Cargo features, environment flags, Tauri configurations or HTTP engine interfaces are introduced.

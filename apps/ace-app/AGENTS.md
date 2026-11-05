@@ -108,7 +108,7 @@ Key rules:
 - The shell workspace establishes `ace-workspace`, and `Inspector` establishes `inspector`; use those named containers when responsiveness depends on those surfaces rather than on the browser viewport.
 - Keep primary facts visible at the default desktop window size; only collapse secondary columns when the actual page container becomes narrow.
 - Keep the navigation rail scrollable at short/zoomed window heights; do not hide its bottom links or focus ring.
-- Open account/Pro browser pages from Tauri's *user-session* opener (`src/lib/utils/account-browser.ts`), never via an Engine-side `webbrowser::open` call; use the existing `aceblocker://` allowlisted callback and refresh cached account state on focus return. Linux installation registers `ace-blocker-handler.desktop` for the interactive user.
+- Open account/Pro browser pages from Tauri's *user-session* opener (`src/lib/utils/account-browser.ts`), never via an Engine-side `webbrowser::open` call; use the existing `aceblocker://` allowlisted callback and refresh cached account state on focus return. Linux installation registers `ace-blocker-handler.desktop` for the interactive user. During Linux `tauri dev`, compile `ace-redirect` and run `bun run auth:register-linux` to install the user-scoped `ace-blocker-dev-handler.desktop`; see `docs/DEV_AUTOMATION.md`. Registration must not broaden Engine permissions.
 - Gated action buttons must retain intrinsic visible content and readable entitlements at all viewport widths; never rely on an absolutely positioned, hover-only label.
 - A downloaded Category/Custom List is coverage data, not an active block. User-facing instructions should make clear that it must be attached to a Network Block to enforce it.
 
