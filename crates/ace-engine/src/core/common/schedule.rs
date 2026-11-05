@@ -230,31 +230,46 @@ impl Schedule {
     }
 
     pub fn is_strictier_than(&self, other: &ScheduleEntry) -> bool {
+        // End at midnight means 24:00 of the selected day, not 00:00 at
+        // its beginning. Compare numeric offsets to prevent a locked
+        // 22:00–00:00 window from being shortened unnoticed.
+        let end_of_day = |time: chrono::NaiveTime| {
+            if time == chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap() {
+                24 * 60 * 60
+            } else {
+                time.num_seconds_from_midnight()
+            }
+        };
+
         for weekday in other.get_weekday_set().iter(Weekday::Mon) {
             let mut intervals: Vec<_> = self
                 .entries
                 .iter()
                 .filter(|entry| entry.has_weekday(weekday))
-                .map(|entry| (entry.get_start(), entry.get_end()))
+                .map(|entry| {
+                    (
+                        entry.get_start().num_seconds_from_midnight(),
+                        end_of_day(entry.get_end()),
+                    )
+                })
                 .collect();
 
             intervals.sort_by_key(|interval| interval.0);
 
-            let mut current_pos = other.get_start();
+            let mut current_pos = other.get_start().num_seconds_from_midnight();
+            let required_end = end_of_day(other.get_end());
             for (start, end) in intervals {
                 if start <= current_pos {
-                    if end > current_pos {
-                        current_pos = end;
-                    }
+                    current_pos = current_pos.max(end);
                 } else {
                     break;
                 }
-                if current_pos >= other.get_end() {
+                if current_pos >= required_end {
                     break;
                 }
             }
 
-            if current_pos < other.get_end() {
+            if current_pos < required_end {
                 return false;
             }
         }
@@ -457,6 +472,21 @@ mod tests {
         assert!(entry.contains(NaiveTime::from_hms_opt(0, 0, 0).unwrap()));
         assert!(!entry.contains(NaiveTime::from_hms_opt(21, 59, 59).unwrap()));
         assert!(!entry.contains(NaiveTime::from_hms_opt(12, 0, 0).unwrap()));
+    }
+
+    #[test]
+    fn locked_midnight_windows_cannot_be_shortened() {
+        let protected = create_entry("22:00:00", "00:00:00", 1);
+        let shortened = Schedule::from(vec![create_entry("22:00:00", "23:00:00", 1)]);
+        let unchanged = Schedule::from(vec![create_entry("22:00:00", "00:00:00", 1)]);
+        let extended = Schedule::from(vec![create_entry("21:00:00", "00:00:00", 1)]);
+        assert!(!shortened.is_strictier_than(&protected));
+        assert!(unchanged.is_strictier_than(&protected));
+        assert!(extended.is_strictier_than(&protected));
+
+        let full_day = create_entry("00:00:00", "00:00:00", 1);
+        assert!(!shortened.is_strictier_than(&full_day));
+        assert!(Schedule::from(vec![full_day.clone()]).is_strictier_than(&full_day));
     }
 
     #[test]
