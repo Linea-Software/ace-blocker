@@ -51,6 +51,20 @@ pub struct AppState {
 }
 
 impl AppState {
+    /// Initial account reads must never wait for the Ace server: legal
+    /// acceptance and the desktop shell are local state. Background/explicit
+    /// refresh remains responsible for remote entitlement validation.
+    async fn cached_pro_account_entitled(&self) -> bool {
+        #[cfg(debug_assertions)]
+        match self.network_manager.read().await.get_debug_pro_policy() {
+            DebugProPolicy::Pro => return true,
+            DebugProPolicy::Free => return false,
+            DebugProPolicy::Default => {}
+        }
+
+        self.account_manager.get_cached_pro_entitlement().await
+    }
+
     /// Verify Pro entitlement without holding the policy lock across remote I/O.
     /// Debug overrides are read before and after verification so concurrent
     /// changes to an override cannot return an outdated effective policy.

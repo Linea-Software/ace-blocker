@@ -169,6 +169,14 @@ impl AccountManager {
         self.cached_pro.load(Ordering::Acquire)
     }
 
+    /// Fast, offline-safe entitlement snapshot for the initial UI state.
+    /// This never verifies remotely or holds the network-manager lock. A
+    /// logged-out account is never shown as Pro, even if its settings row
+    /// still contains a cached entitlement from an earlier session.
+    pub async fn get_cached_pro_entitlement(&self) -> bool {
+        matches!(self.get_api_key().await, Ok(Some(_))) && self.get_cached_pro_status()
+    }
+
     async fn verify_pro_status_remote(&self, api_key: &ApiKey) -> Result<bool, String> {
         let client = crate::service::clients::AceServerClient::new_http_client(Some(api_key));
 
@@ -291,6 +299,26 @@ mod cached_pro_tests {
             now,
         ));
         assert!(pro_check_is_stale(None, chrono::Duration::seconds(30), now,));
+    }
+
+    #[tokio::test]
+    async fn initial_account_snapshot_uses_local_entitlement_and_requires_a_saved_key() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&dir.path().join("snapshot.sqlite")).unwrap());
+        let manager = AccountManager::from(db).unwrap();
+        manager.update_is_pro_status(true).unwrap();
+
+        assert!(!manager.get_cached_pro_entitlement().await);
+        manager
+            .update_account(
+                Some(ApiKey::try_new("local-key".to_string()).unwrap()),
+                None,
+            )
+            .await
+            .unwrap();
+        assert!(manager.get_cached_pro_entitlement().await);
+        manager.update_account(None, None).await.unwrap();
+        assert!(!manager.get_cached_pro_entitlement().await);
     }
 
     #[test]

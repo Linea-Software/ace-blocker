@@ -7,7 +7,15 @@ use crate::service::api::{
 };
 
 pub(super) async fn get_account_info(state: AppState) -> AccountInfoResponse {
-    account_info(&state).await
+    // This first paint also gates legal acceptance. Use the local persisted
+    // snapshot: a slow/offline Pro verification must not indefinitely block
+    // the rest of the desktop UI behind the legal-loading dialog.
+    let is_pro = state.cached_pro_account_entitled().await;
+    let tos_accepted = state.account_manager.has_accepted_tos().await;
+    AccountInfoResponse {
+        is_pro,
+        tos_accepted,
+    }
 }
 
 /// Re-read the account's Pro status after an event that may have changed it
@@ -18,15 +26,6 @@ pub(super) async fn get_account_info(state: AppState) -> AccountInfoResponse {
 /// lazy cache. Concurrent refreshes are coalesced by the AccountManager.
 pub(super) async fn refresh_account(state: AppState) -> AccountInfoResponse {
     let is_pro = state.refresh_pro_account_entitled().await;
-    let tos_accepted = state.account_manager.has_accepted_tos().await;
-    AccountInfoResponse {
-        is_pro,
-        tos_accepted,
-    }
-}
-
-async fn account_info(state: &AppState) -> AccountInfoResponse {
-    let is_pro = state.is_pro_account_entitled().await;
     let tos_accepted = state.account_manager.has_accepted_tos().await;
     AccountInfoResponse {
         is_pro,
