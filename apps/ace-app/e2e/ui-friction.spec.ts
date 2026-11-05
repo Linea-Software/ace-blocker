@@ -292,3 +292,75 @@ test("Custom List icon picker stays inside the window and above dialog footer", 
     expect(compact.bottom).toBeLessThanOrEqual(compact.height - 10);
     await page.screenshot({ path: "test-results/ui-audit/33-picker-fixed-compact.png" });
 });
+
+test("Lock setup explains each mode and rejects an unscheduled or undated hard lock", async ({ page }) => {
+    await page.setViewportSize({ width: 840, height: 720 });
+    await page.goto("/network-blocks");
+    // A local Svelte component fixture; no privileged engine request is sent.
+    await page.evaluate(async () => {
+        const [{ mount }, { default: LockModal }] = await Promise.all([
+            import(/* @vite-ignore */ "/node_modules/.vite/deps/svelte.js"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+        ]);
+        const fixture = document.createElement("div");
+        document.body.append(fixture);
+        mount(LockModal, {
+            target: fixture,
+            props: {
+                open: true,
+                block: {
+                    id: "lock-fixture",
+                    name: "Focus",
+                    enabled: true,
+                    isActive: true,
+                    isLocked: false,
+                    lockState: { state: "inactive" },
+                    schedules: [],
+                },
+            },
+        });
+    });
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Protect this Network Block" })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: /Reflection lock/ })).toHaveAttribute("aria-pressed", "true");
+    await dialog.getByRole("button", { name: /During scheduled hours/ }).click();
+    await expect(dialog.getByRole("alert")).toContainText("Add a schedule");
+    await expect(dialog.getByRole("button", { name: "Review lock" })).toBeDisabled();
+    await dialog.getByRole("button", { name: /Until a date and time/ }).click();
+    await expect(dialog.getByRole("alert")).toContainText("Choose a date and time");
+    await expect(dialog.getByRole("button", { name: "Review lock" })).toBeDisabled();
+    await dialog.getByRole("button", { name: /Reflection lock/ }).click();
+    await expect(dialog.getByRole("button", { name: "Enable reflection lock" })).toBeEnabled();
+});
+
+test("Reviewing a scheduled lock only offers removal outside active hours", async ({ page }) => {
+    await page.goto("/network-blocks");
+    await page.evaluate(async () => {
+        const [{ mount }, { default: LockModal }] = await Promise.all([
+            import(/* @vite-ignore */ "/node_modules/.vite/deps/svelte.js"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+        ]);
+        mount(LockModal, {
+            target: document.body,
+            props: {
+                open: true,
+                block: {
+                    id: "lock-fixture",
+                    name: "Work hours",
+                    enabled: true,
+                    isActive: false,
+                    isLocked: false,
+                    lockState: { state: "active_during_schedule" },
+                    schedules: [{ monday: true, startTime: "09:00", endTime: "17:00" }],
+                },
+            },
+        });
+    });
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Review protection" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove scheduled lock" }).click();
+    await expect(dialog.getByText("The scheduled lock will be removed.", { exact: false })).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove scheduled lock" }).last().click();
+    await expect(dialog.getByText("Remove the scheduled lock?", { exact: false })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Confirm removal" })).toBeVisible();
+});

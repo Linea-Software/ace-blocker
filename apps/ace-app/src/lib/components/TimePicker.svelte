@@ -7,10 +7,12 @@
     let {
         value = $bindable("09:00"),
         disabled = false,
+        ariaLabel,
         class: className = "",
     }: {
         value?: string;
         disabled?: boolean;
+        ariaLabel?: string;
         class?: string;
     } = $props();
 
@@ -130,6 +132,7 @@
                     }}
                     class="flex-1 h-full bg-transparent px-3 outline-none tabular-nums text-foreground placeholder-muted-foreground disabled:cursor-not-allowed"
                     placeholder="00:00"
+                    aria-label={ariaLabel}
                     autocomplete="off"
                     maxlength="5"
                     {disabled}

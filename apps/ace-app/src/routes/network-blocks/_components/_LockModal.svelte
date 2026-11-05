@@ -3,235 +3,194 @@
     import * as Dialog from "$lib/components/ui/dialog";
     import { Button } from "$lib/components/ui/button";
     import { Label } from "$lib/components/ui/label";
-    import { Switch } from "$lib/components/ui/switch";
-    import * as Select from "$lib/components/ui/select";
-    import TimePicker from "$lib/components/TimePicker.svelte";
-
-    import * as m from "$lib/paraglide/messages.js";
-    import { Lock, Calendar as CalendarIcon } from "@lucide/svelte";
-    
     import * as Popover from "$lib/components/ui/popover";
     import { Calendar } from "$lib/components/ui/calendar";
-    import { cn } from "$lib/utils";
-    import { toast } from "svelte-sonner";
-    import { setLock, type LockState } from "$engine-client";
-    import { buildLockPayload, isUnchangedLock, validateLockDraft } from "./lock-form";
-    import { getLocale } from "$lib/paraglide/runtime";
+    import TimePicker from "$lib/components/TimePicker.svelte";
     import {
         CalendarDate,
-        CalendarDateTime,
         DateFormatter,
         getLocalTimeZone,
         parseDateTime,
         today,
-        now,
     } from "@internationalized/date";
+    import {
+        CalendarClock,
+        CalendarDays,
+        Check,
+        ChevronRight,
+        Clock3,
+        Hourglass,
+        LockKeyhole,
+        ShieldCheck,
+        TriangleAlert,
+    } from "@lucide/svelte";
+    import { toast } from "svelte-sonner";
+    import { setLock, type LockState, type NetworkBlockSchema, type ScheduleEntrySchema } from "$engine-client";
+    import * as m from "$lib/paraglide/messages.js";
+    import { getLocale } from "$lib/paraglide/runtime";
+    import {
+        buildLockPayload,
+        isUnchangedLock,
+        parseLockEnd,
+        validateLockDraft,
+        type LockDraft,
+        type LockError,
+        type LockKind,
+    } from "./lock-form";
+
+    type LockableBlock = NetworkBlockSchema & { schedules?: ScheduleEntrySchema[] };
 
     let {
         open = $bindable(false),
-        block = $bindable<any>(null),
+        block = null,
         onSave,
-    }: { open: boolean; block: any; onSave?: () => void } = $props();
+    }: {
+        open: boolean;
+        block: LockableBlock | null;
+        onSave?: () => Promise<void> | void;
+    } = $props();
 
-    let isActive = $state(false);
-    let lockType = $state<LockState["state"]>("soft_unlockable");
-    let lockEnd = $state("");
-    let isSubmitting = $state(false);
-
+    const options: LockKind[] = [
+        "soft_unlockable",
+        "active_during_schedule",
+        "active_until_lock_end",
+    ];
+    let selectedKind = $state<LockKind>("soft_unlockable");
+    let original = $state<LockState | null>(null);
     let calendarValue = $state<CalendarDate | undefined>();
     let timeValue = $state("12:00");
+    let editingExisting = $state(false);
+    let removingScheduledLock = $state(false);
+    let confirmationRequested = $state(false);
+    let isSubmitting = $state(false);
+    let requestError = $state(false);
 
-    // The original lock state from the block when the modal opened.
-    // null before init / after close; an object once the effect runs.
-    let originalLockState: LockState | null = $state(null);
-
-    // Date formatter follows the active app locale (Paraglide), falling
-    // back to the system default when no locale is resolved yet.
-    const df = $derived(
-        new DateFormatter(getLocale(), { dateStyle: "long" }),
+    const df = $derived(new DateFormatter(getLocale(), { dateStyle: "long" }));
+    const timezone = getLocalTimeZone();
+    const maxDate = $derived(today(timezone).add({ days: 90 }));
+    const configured = $derived(original?.state !== "inactive" && original !== null);
+    const editing = $derived(!configured || editingExisting);
+    const proposedEnd = $derived.by(() => {
+        if (!calendarValue || !/^\d{2}:\d{2}$/.test(timeValue)) return "";
+        const [hour, minute] = timeValue.split(":").map(Number);
+        if (hour > 23 || minute > 59) return "";
+        const p = (n: number) => String(n).padStart(2, "0");
+        return `${calendarValue.year}-${p(calendarValue.month)}-${p(calendarValue.day)}T${timeValue}:00`;
+    });
+    const draft = $derived<LockDraft>({
+        enabled: !removingScheduledLock,
+        type: selectedKind,
+        end: proposedEnd,
+        original: original ?? { state: "inactive" },
+        scheduleCount: block?.schedules?.length ?? 0,
+        isCurrentlyLocked: block?.isLocked ?? false,
+        now: new Date(),
+    });
+    const validationError = $derived(editing ? validateLockDraft(draft) : null);
+    const payload = $derived(editing ? buildLockPayload(draft) : null);
+    const unchanged = $derived(
+        !!original && !!payload && isUnchangedLock(original, payload),
     );
+    const canApply = $derived(editing && !validationError && !unchanged && !isSubmitting);
 
-    // Init: runs whenever the modal opens.
     $effect(() => {
-        if (!block || !open) {
-            originalLockState = null;
+        if (!open || !block) {
+            original = null;
             return;
         }
-
-        const rawLockState: LockState = {
-            state: block.lockState.state,
-            end: (block.lockState as any).end ?? undefined,
-        };
-
-        originalLockState = rawLockState;
-        isActive = rawLockState.state !== "inactive";
-
-        if (rawLockState.state !== "inactive") {
-            lockType = rawLockState.state;
-            const currentLockEnd = (block.lockState as any).end ?? "";
-            untrack(() => {
-                lockEnd = currentLockEnd;
-                if (currentLockEnd) {
-                    try {
-                        const dt = parseDateTime(currentLockEnd.slice(0, 16));
-                        calendarValue = new CalendarDate(
-                            dt.year,
-                            dt.month,
-                            dt.day,
-                        );
-                        timeValue = `${dt.hour.toString().padStart(2, "0")}:${dt.minute.toString().padStart(2, "0")}`;
-                    } catch {
-                        // fallback
-                    }
-                }
-            });
+        // Opening another block must never retain the previous block's draft.
+        const saved = block.lockState;
+        original = { state: saved.state, end: saved.end };
+        selectedKind = saved.state === "inactive" ? "soft_unlockable" : saved.state;
+        editingExisting = false;
+        removingScheduledLock = false;
+        confirmationRequested = false;
+        requestError = false;
+        if (saved.end) {
+            try {
+                const end = parseDateTime(saved.end.slice(0, 16));
+                calendarValue = new CalendarDate(end.year, end.month, end.day);
+                timeValue = `${String(end.hour).padStart(2, "0")}:${String(end.minute).padStart(2, "0")}`;
+            } catch {
+                calendarValue = undefined;
+                timeValue = "12:00";
+            }
         } else {
-            lockType = "soft_unlockable";
-            lockEnd = "";
             calendarValue = undefined;
             timeValue = "12:00";
         }
     });
 
-    // Calendar/time → lockEnd sync.
+    // A changed choice or deadline invalidates the previous confirmation.
     $effect(() => {
-        if (calendarValue && timeValue) {
-            untrack(() => {
-                try {
-                    const [h, min] = timeValue.split(":").map(Number);
-                    const dt = new CalendarDateTime(
-                        calendarValue!.year,
-                        calendarValue!.month,
-                        calendarValue!.day,
-                        isNaN(h) ? 12 : h,
-                        isNaN(min) ? 0 : min,
-                    );
-                    const p = (n: number) => n.toString().padStart(2, "0");
-                    const newLockEnd = `${dt.year}-${p(dt.month)}-${p(dt.day)}T${p(dt.hour)}:${p(dt.minute)}:00`;
-                    if (newLockEnd !== lockEnd) lockEnd = newLockEnd;
-                } catch {
-                    // ignore
-                }
-            });
-        }
-    });
-
-    const lockTypes = [
-        { value: "soft_unlockable", label: m.soft_unlock() },
-        {
-            value: "active_during_schedule",
-            label: m.lock_active_during_schedule(),
-        },
-        { value: "active_until_lock_end", label: m.lock_until_specific_date() },
-    ];
-
-    let selectedTypeLabel = $derived(
-        lockTypes.find((t) => t.value === lockType)?.label ?? "",
-    );
-
-    let isTimeInvalid = $derived.by(() => {
-        if (
-            !isActive ||
-            lockType !== "active_until_lock_end" ||
-            !calendarValue ||
-            !timeValue
-        )
-            return false;
-        try {
-            const [h, min] = timeValue.split(":").map(Number);
-            const selectedEnd = new CalendarDateTime(
-                calendarValue.year,
-                calendarValue.month,
-                calendarValue.day,
-                h,
-                min,
-            );
-            const currentLockEnd = (block.lockState as any).end;
-            if (
-                block.lockState.state === "active_until_lock_end" &&
-                currentLockEnd
-            ) {
-                const currentEnd = parseDateTime(currentLockEnd.slice(0, 16));
-                return selectedEnd.compare(currentEnd) < 0;
-            } else {
-                const dtNow = now(getLocalTimeZone());
-                const currentNowCDT = new CalendarDateTime(
-                    dtNow.year,
-                    dtNow.month,
-                    dtNow.day,
-                    dtNow.hour,
-                    dtNow.minute,
-                );
-                return selectedEnd.compare(currentNowCDT) <= 0;
-            }
-        } catch {
-            return false;
-        }
-    });
-
-    let lockErrorMessage = $derived.by(() => {
-        if (!isTimeInvalid) return "";
-        if (
-            block?.lockState?.state === "active_until_lock_end" &&
-            (block.lockState as any).end
-        )
-            return m.lock_error_extension();
-        return m.lock_error_future();
-    });
-
-    const isHardLock = $derived(
-        lockType === "active_during_schedule" ||
-            lockType === "active_until_lock_end",
-    );
-
-    const warningStyles = $derived(
-        isHardLock
-            ? {
-                  bg: "bg-destructive/5",
-                  border: "border-destructive/30",
-                  iconBg: "bg-destructive/8 text-destructive",
-
-                  switchClass: "data-[state=checked]:bg-destructive",
-
-
-
-              }
-            : {
-                  bg: "bg-[color:color-mix(in_srgb,var(--ace-signal)_7%,transparent)]",
-                  border: "border-[color:color-mix(in_srgb,var(--ace-signal)_38%,var(--border))]",
-                  iconBg: "bg-[color:color-mix(in_srgb,var(--ace-signal)_10%,transparent)] text-[var(--ace-signal-deep)]",
-
-                  switchClass: "data-[state=checked]:bg-[var(--ace-signal)]",
-
-
-
-              },
-    );
-
-    async function handleSave() {
-        if (!block || isSubmitting) return;
-
-        // No RPC unless the selected state is valid. In particular, the
-        // switch being off must never send the selected (hidden) lock type.
-        const body = buildLockPayload({
-            enabled: isActive,
-            type: lockType as Exclude<LockState["state"], "inactive">,
-            end: lockEnd,
-            original: originalLockState ?? { state: "inactive" },
-            scheduleCount: block.schedules?.length ?? 0,
-            isCurrentlyLocked: !!block.isLocked,
-            now: new Date(),
+        void selectedKind;
+        void calendarValue;
+        void timeValue;
+        void removingScheduledLock;
+        untrack(() => {
+            confirmationRequested = false;
+            requestError = false;
         });
-        if (!body) return;
+    });
 
-        // No-op if nothing changed
-        if (
-            originalLockState &&
-            isUnchangedLock(originalLockState, body)
-        ) {
-            // Nothing changed — close without calling the API
-            onSave?.();
-            open = false;
+    function optionTitle(kind: LockKind): string {
+        if (kind === "soft_unlockable") return m.lock_option_reflection();
+        if (kind === "active_during_schedule") return m.lock_option_schedule();
+        return m.lock_option_until();
+    }
+
+    function optionDescription(kind: LockKind): string {
+        if (kind === "soft_unlockable") return m.lock_option_reflection_description();
+        if (kind === "active_during_schedule") return m.lock_option_schedule_description();
+        return m.lock_option_until_description();
+    }
+
+    function errorText(error: LockError): string {
+        switch (error) {
+            case "schedule_required": return m.lock_error_schedule_required();
+            case "date_required": return m.lock_error_date_required();
+            case "date_invalid": return m.lock_error_date_invalid();
+            case "date_future": return m.lock_error_future();
+            case "date_extension": return m.lock_error_extension();
+            case "date_limit": return m.lock_error_date_limit();
+            case "lock_cannot_be_removed": return m.lock_error_cannot_remove();
+        }
+    }
+
+    function displayEnd(value: string | null | undefined): string {
+        const end = parseLockEnd(value ?? "");
+        if (!end) return value ?? "—";
+        return end.toLocaleString(getLocale(), {
+            dateStyle: "medium",
+            timeStyle: "short",
+        });
+    }
+
+    function choose(kind: LockKind) {
+        if (isSubmitting) return;
+        selectedKind = kind;
+        confirmationRequested = false;
+    }
+
+    function startExtension() {
+        if (isSubmitting) return;
+        editingExisting = true;
+        removingScheduledLock = false;
+        selectedKind = "active_until_lock_end";
+    }
+
+    function startRemoval() {
+        if (isSubmitting || block?.isLocked) return;
+        editingExisting = true;
+        removingScheduledLock = true;
+        confirmationRequested = false;
+    }
+
+    async function handlePrimary() {
+        if (!block || !canApply || !payload || isSubmitting) return;
+        const needsConfirmation = removingScheduledLock || selectedKind !== "soft_unlockable";
+        if (needsConfirmation && !confirmationRequested) {
+            confirmationRequested = true;
             return;
         }
 
@@ -239,314 +198,249 @@
         try {
             const { error } = await setLock({
                 path: { network_block_id: block.id },
-                body,
+                body: payload,
             });
             if (error) {
-                // Surface the refusal — a race can make a lock
-                // non-weakenable between the modal opening and the save.
-                const code =
-                    error && typeof error === "object"
-                        ? (error as Record<string, unknown>).code
-                        : undefined;
-                if (code === "forbidden" || code === "locked") {
-                    toast.error(m.block_locked_tooltip());
-                } else {
-                    toast.error(m.failed_to_sync());
-                }
+                requestError = true;
+                toast.error(error.code === "forbidden" || error.code === "locked"
+                    ? m.block_locked_tooltip()
+                    : m.failed_to_sync());
                 return;
             }
-            onSave?.();
+            await onSave?.();
             open = false;
-        } catch (err) {
-            console.error("Failed to save lock:", err);
+        } catch (error) {
+            console.error("Failed to update network block lock:", error);
+            requestError = true;
             toast.error(m.failed_to_sync());
         } finally {
             isSubmitting = false;
         }
     }
-
-    function resetForm() {
-        isActive = false;
-        lockType = "soft_unlockable";
-        lockEnd = "";
-        calendarValue = undefined;
-        timeValue = "12:00";
-        originalLockState = null;
-    }
 </script>
 
-<Dialog.Root
-    bind:open
-    onOpenChange={(val) => {
-        if (!val) resetForm();
-    }}
->
+<Dialog.Root bind:open>
     <Dialog.Content
-        class="w-full sm:max-w-lg p-0 overflow-hidden flex flex-col max-h-[90dvh] rounded-md border-border bg-background shadow-none"
+        class="flex max-h-[90dvh] w-full flex-col gap-0 overflow-hidden rounded-md border-border bg-background p-0 shadow-xl sm:max-w-2xl"
+        showCloseButton={!isSubmitting}
     >
-        <Dialog.Header class="border-b border-border bg-card p-5 pb-4">
-            <Dialog.Title class="flex items-center gap-2 font-condensed text-2xl font-semibold">
-                <Lock class="w-5 h-5" />
-                {m.lock_block()}
+        <Dialog.Header class="border-b border-border bg-card px-5 py-5 text-left sm:px-6">
+            <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <ShieldCheck class="size-4" aria-hidden="true" />
+                {m.lock_protection_label()}
+            </div>
+            <Dialog.Title class="font-condensed text-[28px] font-semibold leading-tight">
+                {configured ? m.lock_review_title() : m.lock_protect_title()}
             </Dialog.Title>
-            <Dialog.Description class="text-sm text-muted-foreground mt-1">
-                {m.lock_block_description()}
+            <Dialog.Description class="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                {m.lock_explanation()}
             </Dialog.Description>
+            {#if block}
+                <p class="mt-3 text-xs font-medium text-foreground">
+                    {m.lock_for_block({ name: block.name })}
+                </p>
+            {/if}
         </Dialog.Header>
 
-        <div
-            class="flex-1 overflow-y-auto px-6 pb-6 space-y-6 scroll-smooth custom-scrollbar"
-        >
-            {#if block && originalLockState}
-                <div
-                    class={cn(
-                        "border-y border-border bg-background px-5 py-5 space-y-5",
-                        warningStyles.border,
-                        warningStyles.bg,
-                    )}
-                >
-                    <!-- Active switch + security icon -->
-                    <div class="flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-4">
-                            <div
-                                class={cn(
-                                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border",
-                                    warningStyles.iconBg,
-                                    warningStyles.border,
-                                )}
-                            >
-                                <Lock class="h-5 w-5" aria-hidden="true" />
-                            </div>
-                            <div class="space-y-0.5">
-                                <h4 class="font-bold text-base text-foreground">
-                                    {m.security_overwrite()}
-                                </h4>
-                                <p
-                                    class="text-xs text-muted-foreground max-w-[240px] leading-relaxed"
-                                >
-                                    {m.section_lock_warning()}
+        <div class="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+            {#if block && original}
+                {#if configured && !editing}
+                    <section class="rounded-md border border-border bg-card p-4" aria-label={m.lock_current_state()}>
+                        <div class="flex items-start gap-3">
+                            <span class="grid size-10 shrink-0 place-items-center rounded-md bg-[var(--ace-signal)]/15 text-[var(--ace-signal-deep)]">
+                                <LockKeyhole class="size-5" aria-hidden="true" />
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <h3 class="font-condensed text-xl font-semibold">{optionTitle(selectedKind)}</h3>
+                                <p class="mt-1 text-sm leading-relaxed text-muted-foreground">
+                                    {optionDescription(selectedKind)}
                                 </p>
+                                {#if selectedKind === "active_until_lock_end"}
+                                    <p class="mt-3 font-mono text-sm font-semibold">{m.lock_current_end({ date: displayEnd(original.end) })}</p>
+                                {:else if selectedKind === "active_during_schedule"}
+                                    <p class="mt-3 text-sm font-medium">
+                                        {block.isLocked ? m.lock_schedule_active_now() : m.lock_schedule_outside_now()}
+                                    </p>
+                                {/if}
                             </div>
                         </div>
-                        <Switch
-                            bind:checked={isActive}
-                            disabled={block.lockState.state !== "inactive"}
-                            class={warningStyles.switchClass}
-                        />
-                    </div>
+                    </section>
 
-                    {#if isActive}
-                        <div
-                            class="space-y-4 rounded-md border border-border bg-card p-4"
-                        >
-                            <!-- Lock mode selector -->
-                            <div class="space-y-2">
-                                <Label
-                                    class="text-xs font-semibold text-muted-foreground"
-                                >
-                                    {m.lock_mode()}
-                                </Label>
-                                <Select.Root
-                                    type="single"
-                                    value={lockType}
-                                    onValueChange={(v) =>
-                                        (lockType = v as LockState["state"])}
-                                    disabled={block.lockState.state !==
-                                        "inactive"}
-                                >
-                                    <Select.Trigger
-                                        class="w-full bg-card border-input"
-                                    >
-                                        {selectedTypeLabel}
-                                    </Select.Trigger>
-                                    <Select.Content>
-                                        {#each lockTypes as type (type.value)}
-                                            <Select.Item value={type.value}>
-                                                {type.label}
-                                            </Select.Item>
-                                        {/each}
-                                    </Select.Content>
-                                </Select.Root>
-                            </div>
-
-                            <!-- Date/time picker (only for active_until_lock_end) -->
-                            {#if lockType === "active_until_lock_end"}
-                                <div class="grid gap-2 pt-2">
-                                    <Label
-                                        class="text-xs font-semibold text-muted-foreground"
-                                    >
-                                        {m.lock_expiration_datetime()}
-                                    </Label>
-                                    <div class="flex gap-2">
-                                        <Popover.Root>
-                                            <Popover.Trigger
-                                                disabled={block.lockState
-                                                    .state !== "inactive" &&
-                                                    block.lockState.state !==
-                                                        "active_until_lock_end"}
-                                            >
-                                                {#snippet child({ props })}
-                                                    <Button
-                                                        variant="outline"
-                                                        class={cn(
-                                                            "flex-1 justify-start text-left font-normal transition-colors",
-                                                            !calendarValue &&
-                                                                "text-muted-foreground",
-                                                            isTimeInvalid &&
-                                                                "border-destructive text-destructive bg-destructive/5 hover:bg-destructive/10 hover:text-destructive",
-                                                        )}
-                                                        {...props}
-                                                        disabled={block
-                                                            .lockState.state !==
-                                                            "inactive" &&
-                                                            block.lockState
-                                                                .state !==
-                                                                "active_until_lock_end"}
-                                                    >
-                                                        <CalendarIcon
-                                                            class="mr-2 h-4 w-4"
-                                                        />
-                                                        {calendarValue
-                                                            ? df.format(
-                                                                  calendarValue.toDate(
-                                                                      getLocalTimeZone(),
-                                                                  ),
-                                                              )
-                                                            : m.pick_date()}
-                                                    </Button>
-                                                {/snippet}
-                                            </Popover.Trigger>
-                                            <Popover.Content class="w-auto p-0">
-                                                <Calendar
-                                                    type="single"
-                                                    bind:value={calendarValue}
-                                                    initialFocus
-                                                    minValue={block.lockState
-                                                        .state ===
-                                                        "active_until_lock_end" &&
-                                                    (block.lockState as any).end
-                                                        ? (() => {
-                                                              try {
-                                                                  const dt =
-                                                                      parseDateTime(
-                                                                          (
-                                                                              block.lockState as any
-                                                                          ).end.slice(
-                                                                              0,
-                                                                              16,
-                                                                          ),
-                                                                      );
-                                                                  return new CalendarDate(
-                                                                      dt.year,
-                                                                      dt.month,
-                                                                      dt.day,
-                                                                  );
-                                                              } catch {
-                                                                  return today(
-                                                                      getLocalTimeZone(),
-                                                                  );
-                                                              }
-                                                          })()
-                                                        : today(
-                                                              getLocalTimeZone(),
-                                                          )}
-                                                />
-                                            </Popover.Content>
-                                        </Popover.Root>
-                                        <div class="w-32">
-                                            <TimePicker
-                                                bind:value={timeValue}
-                                                disabled={block.lockState
-                                                    .state !== "inactive" &&
-                                                    block.lockState.state !==
-                                                        "active_until_lock_end"}
-                                                class={isTimeInvalid
-                                                    ? "border-destructive text-destructive bg-destructive/5"
-                                                    : ""}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {#if isTimeInvalid}
-                                        <p
-                                            class="text-xs font-medium text-destructive mt-1 animate-in fade-in slide-in-from-top-1"
-                                        >
-                                            {lockErrorMessage}
-                                        </p>
-                                    {/if}
-                                </div>
-                            {/if}
-
-                            <!-- Mode description -->
-                            {#if lockType === "soft_unlockable"}
-                                <div
-                                    class="rounded-sm border border-[color:color-mix(in_srgb,var(--ace-signal)_38%,var(--border))] bg-[color:color-mix(in_srgb,var(--ace-signal)_7%,transparent)] p-3 text-xs leading-relaxed text-foreground"
-                                >
-                                    <p class="mb-1 font-condensed font-semibold">
-                                        {m.lock_reflection_pause()}
-                                    </p>
-                                    <p>
-                                        {m.lock_reflection_pause_description()}
-                                    </p>
-                                </div>
-                            {:else if lockType === "active_during_schedule"}
-                                <div
-                                    class="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-destructive"
-                                >
-                                    <p class="mb-1 font-condensed font-semibold">
-                                        {m.lock_schedule_bound()}
-                                    </p>
-                                    <p>
-                                        {m.lock_schedule_bound_description()}
-                                    </p>
-                                </div>
-                            {:else if lockType === "active_until_lock_end"}
-                                <div
-                                    class="rounded-sm border border-destructive/30 bg-destructive/5 p-3 text-xs leading-relaxed text-destructive"
-                                >
-                                    <p class="mb-1 font-condensed font-semibold">
-                                        {m.lock_time_bound()}
-                                    </p>
-                                    <p>
-                                        {m.lock_time_bound_description()}
-                                    </p>
-                                </div>
+                    {#if selectedKind === "active_until_lock_end"}
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <p class="max-w-sm text-xs leading-relaxed text-muted-foreground">{m.lock_extension_only()}</p>
+                            <Button variant="outline" onclick={startExtension} disabled={isSubmitting}>
+                                <CalendarClock class="mr-2 size-4" aria-hidden="true" />
+                                {m.lock_extend_action()}
+                            </Button>
+                        </div>
+                    {:else if selectedKind === "active_during_schedule"}
+                        <div class="space-y-3 rounded-md border border-border p-4">
+                            <p class="text-sm text-muted-foreground">{m.lock_schedule_review_hint()}</p>
+                            {#if !block.isLocked}
+                                <Button variant="outline" onclick={startRemoval} disabled={isSubmitting}>
+                                    {m.lock_remove_scheduled_action()}
+                                </Button>
                             {/if}
                         </div>
                     {/if}
-                </div>
+                {:else}
+                    {#if !configured}
+                        <fieldset class="space-y-2">
+                            <legend class="mb-3 font-condensed text-lg font-semibold">{m.lock_choose_mode()}</legend>
+                            {#each options as kind (kind)}
+                                <button
+                                    type="button"
+                                    class={`flex w-full items-start gap-3 rounded-md border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selectedKind === kind
+                                        ? "border-[var(--ace-signal-deep)] bg-[var(--ace-signal)]/8"
+                                        : "border-border hover:bg-muted/40"}`}
+                                    aria-pressed={selectedKind === kind}
+                                    disabled={isSubmitting}
+                                    onclick={() => choose(kind)}
+                                >
+                                    <span class="mt-0.5 grid size-9 shrink-0 place-items-center rounded-md border border-border bg-card">
+                                        {#if kind === "soft_unlockable"}
+                                            <Hourglass class="size-4" aria-hidden="true" />
+                                        {:else if kind === "active_during_schedule"}
+                                            <CalendarClock class="size-4" aria-hidden="true" />
+                                        {:else}
+                                            <LockKeyhole class="size-4" aria-hidden="true" />
+                                        {/if}
+                                    </span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="block text-sm font-semibold">{optionTitle(kind)}</span>
+                                        <span class="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                                            {optionDescription(kind)}
+                                        </span>
+                                    </span>
+                                    {#if selectedKind === kind}
+                                        <Check class="mt-1 size-4 shrink-0 text-[var(--ace-signal-deep)]" aria-hidden="true" />
+                                    {/if}
+                                </button>
+                            {/each}
+                        </fieldset>
+                    {/if}
+
+                    {#if selectedKind === "active_until_lock_end" && !removingScheduledLock}
+                        <div class="rounded-md border border-border bg-card p-4">
+                            <Label class="mb-3 block text-sm font-semibold">{m.lock_expiration_datetime()}</Label>
+                            {#if configured}
+                                <p class="mb-3 text-xs text-muted-foreground">{m.lock_current_end({ date: displayEnd(original.end) })}</p>
+                            {/if}
+                            <div class="flex flex-wrap gap-2">
+                                <Popover.Root>
+                                    <Popover.Trigger>
+                                        {#snippet child({ props })}
+                                            <Button
+                                                {...props}
+                                                variant="outline"
+                                                class="min-w-0 flex-1 justify-start gap-2 font-normal"
+                                                aria-label={m.lock_choose_end_date()}
+                                                disabled={isSubmitting}
+                                            >
+                                                <CalendarDays class="size-4 shrink-0" aria-hidden="true" />
+                                                {calendarValue
+                                                    ? df.format(calendarValue.toDate(timezone))
+                                                    : m.pick_date()}
+                                            </Button>
+                                        {/snippet}
+                                    </Popover.Trigger>
+                                    <Popover.Content class="w-auto p-0" align="start">
+                                        <Calendar
+                                            type="single"
+                                            bind:value={calendarValue}
+                                            locale={getLocale()}
+                                            minValue={today(timezone)}
+                                            maxValue={maxDate}
+                                            initialFocus
+                                        />
+                                    </Popover.Content>
+                                </Popover.Root>
+                                <div class="w-32" aria-label={m.lock_choose_end_time()}>
+                                    <TimePicker bind:value={timeValue} ariaLabel={m.lock_choose_end_time()} disabled={isSubmitting} />
+                                </div>
+                            </div>
+                            <p class="mt-2 text-xs text-muted-foreground">{m.lock_max_duration_hint()}</p>
+                        </div>
+                    {/if}
+                    {#if validationError}
+                        <p class="flex items-start gap-2 text-sm text-destructive" role="alert">
+                            <TriangleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                            {errorText(validationError)}
+                        </p>
+                    {/if}
+                    <section class="rounded-md border border-border bg-muted/35 p-4" aria-labelledby="lock-preview-title">
+                        <h3 id="lock-preview-title" class="font-condensed text-lg font-semibold">{m.lock_preview_title()}</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
+                            {#if removingScheduledLock}
+                                {m.lock_preview_remove()}
+                            {:else if selectedKind === "soft_unlockable"}
+                                {m.lock_preview_reflection()}
+                            {:else if selectedKind === "active_during_schedule"}
+                                {m.lock_preview_schedule()}
+                            {:else}
+                                {m.lock_preview_until()}
+                                {#if proposedEnd}
+                                    <strong class="mt-2 block font-medium text-foreground">
+                                        {m.lock_preview_deadline({ date: displayEnd(proposedEnd) })}
+                                    </strong>
+                                {/if}
+                            {/if}
+                        </p>
+                    </section>
+
+                    {#if confirmationRequested && canApply}
+                        <section class="rounded-md border border-[var(--ace-signal-deep)] bg-card p-4" role="group" aria-label={m.lock_confirmation_title()}>
+                            <div class="flex items-start gap-2">
+                                <TriangleAlert class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+                                <div>
+                                    <h3 class="font-semibold">{m.lock_confirmation_title()}</h3>
+                                    <p class="mt-1 text-sm leading-relaxed text-muted-foreground">
+                                        {removingScheduledLock
+                                            ? m.lock_confirmation_remove()
+                                            : selectedKind === "active_until_lock_end"
+                                                ? m.lock_confirmation_until({ date: displayEnd(proposedEnd) })
+                                                : m.lock_confirmation_schedule()}
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+                    {/if}
+                {/if}
+            {/if}
+            {#if requestError}
+                <p class="text-sm text-destructive" role="alert">{m.lock_save_failed()}</p>
             {/if}
         </div>
 
-        <Dialog.Footer
-            class="flex w-full items-center justify-end gap-2 border-t border-border bg-card p-4"
-        >
-            <Button
-                variant="ghost"
-                onclick={() => (open = false)}
-                class="h-10 rounded-sm px-5 font-medium"
-            >
-                {m.cancel()}
+        <Dialog.Footer class="flex flex-row flex-wrap items-center justify-end gap-2 border-t border-border bg-card px-5 py-4 sm:px-6">
+            <Button variant="ghost" disabled={isSubmitting} onclick={() => (open = false)}>
+                {configured && !editing ? m.close() : m.cancel()}
             </Button>
-            <Button
-                class="h-10 rounded-sm border border-[var(--ace-signal-deep)] bg-[var(--ace-signal)] px-6 font-semibold text-[var(--ace-ink)] hover:bg-[var(--ace-signal-bright)]"
-                onclick={handleSave}
-                disabled={isSubmitting || isTimeInvalid || (isActive && !!validateLockDraft({
-                    enabled: isActive,
-                    type: lockType as Exclude<LockState["state"], "inactive">,
-                    end: lockEnd,
-                    original: originalLockState ?? { state: "inactive" },
-                    scheduleCount: block?.schedules?.length ?? 0,
-                    isCurrentlyLocked: !!block?.isLocked,
-                    now: new Date(),
-                }))}
-            >
-                {#if isSubmitting}
-                    {m.saving()}
-                {:else}
-                    {m.save()}
-                {/if}
-            </Button>
+            {#if editing}
+                <Button
+                    onclick={handlePrimary}
+                    disabled={!canApply}
+                    class="min-h-10 bg-[var(--ace-signal)] font-semibold text-[var(--ace-ink)] hover:bg-[var(--ace-signal-bright)]"
+                >
+                    {#if isSubmitting}
+                        {m.saving()}
+                    {:else if confirmationRequested}
+                        {removingScheduledLock
+                            ? m.lock_confirm_remove_action()
+                            : selectedKind === "active_until_lock_end"
+                                ? m.lock_confirm_until_action()
+                                : m.lock_confirm_schedule_action()}
+                    {:else if removingScheduledLock}
+                        {m.lock_remove_scheduled_action()}
+                    {:else if selectedKind === "soft_unlockable"}
+                        {m.lock_enable_reflection_action()}
+                    {:else}
+                        {m.lock_continue_action()}
+                        <ChevronRight class="ml-1 size-4" aria-hidden="true" />
+                    {/if}
+                </Button>
+            {/if}
         </Dialog.Footer>
     </Dialog.Content>
 </Dialog.Root>
