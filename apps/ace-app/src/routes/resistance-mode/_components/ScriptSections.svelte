@@ -142,7 +142,14 @@
                             class="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border border-border bg-muted"
                         >
                             {#if group.icon}
-                                <span class="text-foreground [&>svg]:h-5 [&>svg]:w-5 [&>svg]:fill-current" aria-hidden="true">
+                                <span
+                                    class="[&>svg]:h-5 [&>svg]:w-5 [&>svg]:fill-current"
+                                    style:color={group.icon.hex.toUpperCase() === "000000"
+                                        ? "var(--foreground)"
+                                        : `#${group.icon.hex}`}
+                                    data-site-brand-icon={group.icon.hex}
+                                    aria-hidden="true"
+                                >
                                     {@html group.icon.svg}
                                 </span>
                             {:else}

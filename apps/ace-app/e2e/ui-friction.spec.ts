@@ -171,3 +171,60 @@ test("official Pro packs remain identifiable for Free and Pro accounts", async (
         "Downloaded",
     );
 });
+
+test("Resistance logos use the bundled brand colors", async ({ page }) => {
+    await page.goto("/getting-started");
+    await page.evaluate(async () => {
+        const svelteModule = new URL(
+            "/node_modules/.vite/deps/svelte.js",
+            location.origin,
+        ).pathname;
+        const [{ mount }, { default: ScriptSections }] = await Promise.all([
+            import(/* @vite-ignore */ svelteModule),
+            import(
+                /* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.svelte"
+            ),
+        ]);
+        const fixture = document.createElement("div");
+        fixture.dataset.testid = "script-brands";
+        document.body.append(fixture);
+        mount(ScriptSections, {
+            target: fixture,
+            props: {
+                scripts: [
+                    {
+                        id: "1",
+                        name: "Reduce shorts",
+                        domain: "youtube.com",
+                        description: "",
+                        isEnabled: true,
+                    },
+                    {
+                        id: "2",
+                        name: "Quiet feed",
+                        domain: "reddit.com",
+                        description: "",
+                        isEnabled: true,
+                    },
+                ],
+                settings: null,
+                engineOnline: true,
+                isPro: true,
+                locked: false,
+                onToggleScript: () => {},
+                onToggleDomain: () => {},
+                onSync: () => {},
+            },
+        });
+    });
+    await expect(page.locator('[data-site-brand-icon="FF0000"]')).toBeVisible();
+    await expect(page.locator('[data-site-brand-icon="FF4500"]')).toBeVisible();
+    await expect(page.locator('[data-site-brand-icon="FF0000"]')).toHaveCSS(
+        "color",
+        "rgb(255, 0, 0)",
+    );
+    await expect(page.locator('[data-site-brand-icon="FF0000"] svg')).toHaveCSS(
+        "fill",
+        "rgb(255, 0, 0)",
+    );
+});
