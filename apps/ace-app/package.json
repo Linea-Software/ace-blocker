@@ -4,7 +4,7 @@
     "description": "",
     "type": "module",
     "scripts": {
-        "dev": "vite dev",
+        "dev": "bun scripts/prepare-linux-auth.ts && vite dev",
         "build": "vite build",
         "preview": "vite preview",
         "check": "svelte-kit sync && svelte-check --tsgo --tsconfig ./tsconfig.json",

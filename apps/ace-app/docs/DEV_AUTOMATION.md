@@ -7,7 +7,7 @@ ACE uses the WebdriverIO Tauri service to interact with its real desktop WebView
 From `ace-blocker/apps/ace-app`:
 
 1. Install dependencies with `bun install --frozen-lockfile`.
-2. Launch the usual debug app with `bun run tauri dev`. This also builds `target/debug/ace-app` and starts Vite on port 1420.
+2. Launch the usual debug app with `bun run tauri dev`. On Linux it also builds and registers the account callback receiver before starting Vite on port 1420. This builds `target/debug/ace-app` as usual.
 3. In another terminal, run `bun run test:native`. WDIO launches a **second** copy of the debug binary using its embedded WebDriver driver.
 4. Review the smoke test in `e2e/native/read-only.smoke.spec.ts`. It navigates between screens and saves a screenshot as `ace-native-ui-smoke.png` in the system temp directory.
 
@@ -17,11 +17,13 @@ The wiring lives in `wdio.conf.ts`, `src/hooks.client.ts`, `src-tauri/src/lib.rs
 
 The public website returns sign-in to ACE with an `aceblocker://account/api-key`
 URL. The Linux release installer registers a handler under `/opt/ace-blocker`,
-but `tauri dev` does **not** install it. Without a user-session handler the
-website's **Open Ace Blocker** link fails with an `xdg-open` error.
+but the development Vite startup now builds the debug receiver and registers
+it automatically as the **desktop user** when started via `bun run tauri dev`.
+If registration fails, Vite stops with an explicit error instead of leaving the
+browser sign-in callback broken. No root privileges are requested.
 
-For a developer checkout, run these commands as the **desktop user**, not
-as root:
+To re-register a checkout manually, run these commands as the **desktop user**,
+not as root:
 
 ```sh
 # From the ace-blocker repository root:
