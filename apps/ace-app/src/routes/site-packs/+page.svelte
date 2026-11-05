@@ -264,11 +264,11 @@
     <div class="catalog-toolbar">
         <div class="search-field">
             <Search size={15} aria-hidden="true" />
-            <label class="sr-only" for="catalog-search">{m.search_packs_placeholder()}</label>
+            <label class="sr-only" for="catalog-search">{m.search_lists_placeholder()}</label>
             <input
                 id="catalog-search"
                 type="search"
-                placeholder={m.search_packs_placeholder()}
+                placeholder={m.search_lists_placeholder()}
                 bind:value={searchQuery}
             />
             {#if searchQuery}
@@ -323,7 +323,7 @@
                 <section class="inventory-group" aria-labelledby="categories-title">
                     <header>
                         <div>
-                            <h2 id="categories-title">{m.free_packs()}</h2>
+                            <h2 id="categories-title">{m.site_packs()}</h2>
                             <p>{m.category_group_description()}</p>
                         </div>
                         <span>{categories.length}</span>
@@ -349,7 +349,7 @@
                 <section class="inventory-group" aria-labelledby="custom-lists-title">
                     <header>
                         <div>
-                            <h2 id="custom-lists-title">{m.pro_packs()}</h2>
+                            <h2 id="custom-lists-title">{m.custom_lists()}</h2>
                             <p>{m.custom_lists_group_description()}</p>
                         </div>
                         <span>{customLists.length}</span>
@@ -427,7 +427,7 @@
                     <dd>
                         {inspectorPack.requiresPro
                             ? m.pro_badge()
-                            : m.plan_free()}
+                            : m.pack_access_free()}
                     </dd>
                 </div>
             </dl>

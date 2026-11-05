@@ -68,7 +68,7 @@
             {#if pack.requiresPro}
                 <span>{m.pro_badge()}</span>
             {:else}
-                <span>{m.plan_free()}</span>
+                <span>{m.pack_access_free()}</span>
             {/if}
             {#if pack.isBundled}
                 <span aria-hidden="true">·</span>

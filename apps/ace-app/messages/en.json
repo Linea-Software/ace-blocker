@@ -76,6 +76,8 @@
     "edit_block": "Edit Block",
     "block_name": "Block name",
     "save": "Save",
+    "deleting": "Deleting...",
+    "pack_access_free": "Free",
     "cancel": "Cancel",
     "export": "Export",
     "import": "Import",

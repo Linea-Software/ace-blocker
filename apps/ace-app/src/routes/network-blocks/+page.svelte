@@ -286,7 +286,7 @@
                 onclick={confirmDelete}
                 disabled={isDeleting}
             >
-                {isDeleting ? m.saving() : m.confirm()}
+                {isDeleting ? m.deleting() : m.confirm()}
             </AlertDialog.Action>
         </AlertDialog.Footer>
     </AlertDialog.Content>
