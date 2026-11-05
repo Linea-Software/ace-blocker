@@ -414,7 +414,9 @@ mod migration_seed_tests {
             GAMBLING_RULE_COUNT
         );
 
-        // 0023 adds the Network Block enabled flag, so revert it first and then 0022.
+        // Revert the new entitlement migration (0024), then the enabled
+        // flag (0023) before reverting the packs migration (0022).
+        conn.revert_last_migration(MIGRATIONS).unwrap();
         conn.revert_last_migration(MIGRATIONS).unwrap();
         conn.revert_last_migration(MIGRATIONS).unwrap();
 

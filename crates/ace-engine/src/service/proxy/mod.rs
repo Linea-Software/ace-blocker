@@ -346,7 +346,7 @@ impl ResponseInspector for ProxyAdapter {
                     let manager = self.network_manager.read().await;
                     manager.is_resistance_mode_enabled() && manager.has_scripts_of(host)
                 };
-                if eligible && self.account_manager.is_pro().await {
+                if eligible && self.account_manager.get_cached_pro_status() {
                     res.extensions_mut().insert(NeedsScriptInjection);
                 }
             }
@@ -399,7 +399,7 @@ impl ResponseInspector for ProxyAdapter {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("");
 
-        let is_pro = self.account_manager.is_pro().await;
+        let is_pro = self.account_manager.get_cached_pro_status();
 
         if content_type.contains("text/html")
             && is_pro

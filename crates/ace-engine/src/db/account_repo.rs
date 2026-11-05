@@ -28,6 +28,7 @@ impl EngineDB {
             .set((
                 api_key.eq(api_key_val),
                 last_pro_check.eq(last_pro_check_val),
+                entitlement_token.eq(None::<String>),
             ))
             .get_result(conn)
             .map_err(|error| DBError::UpdateError {
@@ -41,7 +42,30 @@ impl EngineDB {
         let conn = &mut self.get_db_connection()?;
 
         diesel::update(accounts.filter(table_lock.eq("0")))
-            .set(api_key.eq(api_key_val))
+            .set((
+                api_key.eq(api_key_val),
+                entitlement_token.eq(None::<String>),
+            ))
+            .get_result(conn)
+            .map_err(|error| DBError::UpdateError {
+                table: "accounts".to_string(),
+                message: error.to_string(),
+            })
+    }
+
+    /// Persist only server-signed credentials, never an unsigned Pro boolean.
+    pub fn update_entitlement_token(
+        &self,
+        token: Option<String>,
+        observed_at: String,
+    ) -> Result<AccountModel, DBError> {
+        use crate::schema_main_db::accounts::dsl::*;
+        let conn = &mut self.get_db_connection()?;
+        diesel::update(accounts.filter(table_lock.eq("0")))
+            .set((
+                entitlement_token.eq(token),
+                clock_high_watermark.eq(Some(observed_at)),
+            ))
             .get_result(conn)
             .map_err(|error| DBError::UpdateError {
                 table: "accounts".to_string(),

@@ -1,8 +1,11 @@
+use super::signed_entitlement;
 use crate::{
     core::ApiKey,
     db::{EngineDB, models::AccountModel},
 };
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
+use serde::Deserialize;
+use std::sync::atomic::AtomicI64;
 use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
@@ -39,6 +42,8 @@ pub struct AccountManager {
     /// Shared with every clone; the database is authoritative on writes, but
     /// traffic decisions read only this atomic snapshot.
     cached_pro: Arc<AtomicBool>,
+    cached_until: Arc<AtomicI64>,
+    clock_high_watermark: Arc<AtomicI64>,
     /// Serializes remote Pro-status verifications so concurrent callers (proxy
     /// hot path, content updater, API routes, periodic loop) never fire
     /// overlapping requests against the Ace server.
@@ -48,14 +53,28 @@ pub struct AccountManager {
 impl AccountManager {
     pub fn from(db: Arc<EngineDB>) -> Result<AccountManager, String> {
         let account = db.get_account().map_err(|error| error.to_string())?;
-        let cached_pro = db
-            .get_settings()
-            .map(|settings| settings.is_pro)
-            .unwrap_or(false);
+        // An old SQLite is_pro flag is never proof of payment. Only a
+        // verified, API-key-bound, non-expired server signature grants Pro.
+        let now = Utc::now().timestamp();
+        let clock_high_watermark = account
+            .clock_high_watermark
+            .as_deref()
+            .and_then(|raw| DateTime::parse_from_rfc3339(raw).ok())
+            .map(|value| value.timestamp())
+            .unwrap_or(0);
+        let cached_until = account
+            .entitlement_token
+            .as_deref()
+            .zip(account.api_key.as_deref())
+            .and_then(|(token, key)| signed_entitlement::verify_lease(token, key, now).ok())
+            .unwrap_or(0);
+        let cached_pro = cached_until >= now && now + 300 >= clock_high_watermark;
         Ok(AccountManager {
             account: Arc::new(RwLock::new(account)),
             db,
             cached_pro: Arc::new(AtomicBool::new(cached_pro)),
+            cached_until: Arc::new(AtomicI64::new(cached_until)),
+            clock_high_watermark: Arc::new(AtomicI64::new(clock_high_watermark)),
             verify_lock: Arc::new(tokio::sync::Mutex::new(())),
         })
     }
@@ -131,10 +150,23 @@ impl AccountManager {
 
                 // If it's an unauthorized error, we should clear the API key
                 // and definitely stop checking for a while.
-                if error_msg.contains("401") || error_msg.contains("Unauthorized") {
+                if error_msg.contains("401")
+                    || error_msg.contains("403")
+                    || error_msg.contains("Unauthorized")
+                {
                     warn!("[ACCOUNT MANAGER] API key is unauthorized. Clearing it.");
                     let _ = self.set_api_key(None).await;
                     let _ = self.update_is_pro_status(false);
+                    return false;
+                }
+
+                // A malformed signed entitlement is not a transient outage.
+                if error_msg.contains("invalid entitlement") {
+                    let _ = self
+                        .db
+                        .update_entitlement_token(None, Utc::now().to_rfc3339());
+                    self.cached_pro.store(false, Ordering::Release);
+                    self.cached_until.store(0, Ordering::Release);
                     return false;
                 }
 
@@ -166,7 +198,10 @@ impl AccountManager {
     }
 
     pub fn get_cached_pro_status(&self) -> bool {
+        let now = Utc::now().timestamp();
         self.cached_pro.load(Ordering::Acquire)
+            && now <= self.cached_until.load(Ordering::Acquire)
+            && now + 300 >= self.clock_high_watermark.load(Ordering::Acquire)
     }
 
     /// Fast, offline-safe entitlement snapshot for the initial UI state.
@@ -178,57 +213,70 @@ impl AccountManager {
     }
 
     async fn verify_pro_status_remote(&self, api_key: &ApiKey) -> Result<bool, String> {
-        let client = crate::service::clients::AceServerClient::new_http_client(Some(api_key));
+        #[cfg(debug_assertions)]
+        let base_url = "http://localhost:5173";
+        #[cfg(not(debug_assertions))]
+        let base_url = "https://aceblocker.com";
 
-        info!(
-            "[ACCOUNT MANAGER] trying to verify pro status against ace server (key length: {})",
-            api_key.as_ref().len()
-        );
-
-        match client.get_pro_details().await {
-            Ok(details) => {
-                let is_pro = details.is_pro;
-                let now = Local::now().to_rfc3339();
-
-                // A valid Free account must remain signed in. Clearing its
-                // credential here would prevent detecting an upgrade made in
-                // the browser. Only an explicit logout or unauthorized API
-                // response revokes the locally stored key.
-                match self
-                    .db
-                    .update_account(Some(api_key.as_ref().to_owned()), Some(now.clone()))
-                {
-                    Ok(updated_account) => {
-                        // Update local cache
-                        *self.account.write().await = updated_account;
-                    }
-                    Err(error) => {
-                        error!(
-                            "[ACCOUNT MANAGER] Failed to update account in DB: {}",
-                            error
-                        );
-                    }
-                }
-
-                // Update settings table (the source of truth for is_pro)
-                if let Err(error) = self.update_is_pro_status(is_pro) {
-                    error!(
-                        "[ACCOUNT MANAGER] Failed to update pro status in settings: {}",
-                        error
-                    );
-                }
-
-                Ok(is_pro)
-            }
-            Err(error) => Err(error.to_string()),
+        #[derive(Deserialize)]
+        struct Reply {
+            token: Option<String>,
         }
+        let response = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .map_err(|error| error.to_string())?
+            .get(format!("{base_url}/api/v1/account/entitlement"))
+            .header("x-api-key", api_key.as_ref())
+            .send()
+            .await
+            .map_err(|error| error.to_string())?;
+        if !response.status().is_success() {
+            return Err(format!(
+                "Pro entitlement endpoint returned HTTP {}",
+                response.status()
+            ));
+        }
+        let reply: Reply = response.json().await.map_err(|error| error.to_string())?;
+        let now = Utc::now();
+        // Verify the server signature BEFORE persisting anything as Pro.
+        let until = match reply.token.as_deref() {
+            Some(token) => {
+                signed_entitlement::verify_lease(token, api_key.as_ref(), now.timestamp())
+                    .map_err(|error| format!("invalid entitlement: {error}"))?
+            }
+            None => 0,
+        };
+        // Authentication and signing happen at the server. Local entitlement
+        // can only change after both signature and durable writes succeed.
+        let mut account = self.account.write().await;
+        if account.api_key.as_deref() != Some(api_key.as_ref()) {
+            return Err("API key changed while refreshing entitlement".to_owned());
+        }
+        self.db
+            .update_account(Some(api_key.as_ref().to_owned()), Some(now.to_rfc3339()))
+            .map_err(|error| error.to_string())?;
+        let updated = self
+            .db
+            .update_entitlement_token(reply.token, now.to_rfc3339())
+            .map_err(|error| error.to_string())?;
+        *account = updated;
+        self.cached_until.store(until, Ordering::Release);
+        self.clock_high_watermark
+            .fetch_max(now.timestamp(), Ordering::AcqRel);
+        let active = until >= now.timestamp();
+        self.update_is_pro_status(active)?;
+        Ok(active)
     }
 
     pub(crate) fn update_is_pro_status(&self, is_pro: bool) -> Result<(), String> {
         self.db
             .update_pro_status(is_pro)
             .map_err(|error| error.to_string())?;
-        self.cached_pro.store(is_pro, Ordering::Release);
+        self.cached_pro.store(
+            is_pro && self.cached_until.load(Ordering::Acquire) >= Utc::now().timestamp(),
+            Ordering::Release,
+        );
         Ok(())
     }
 
@@ -238,21 +286,27 @@ impl AccountManager {
         last_pro_check: Option<String>,
     ) -> Result<(), String> {
         let api_key = api_key.map(|key| key.into_inner());
+        let mut account = self.account.write().await;
         let updated = self
             .db
             .update_account(api_key, last_pro_check)
             .map_err(|error| error.to_string())?;
-        *self.account.write().await = updated;
+        *account = updated;
+        self.cached_pro.store(false, Ordering::Release);
+        self.cached_until.store(0, Ordering::Release);
         Ok(())
     }
 
     pub async fn set_api_key(&self, api_key: Option<ApiKey>) -> Result<(), String> {
         let api_key = api_key.map(|key| key.into_inner());
+        let mut account = self.account.write().await;
         let updated = self
             .db
             .set_api_key(api_key)
             .map_err(|error| error.to_string())?;
-        *self.account.write().await = updated;
+        *account = updated;
+        self.cached_pro.store(false, Ordering::Release);
+        self.cached_until.store(0, Ordering::Release);
         Ok(())
     }
 
@@ -316,7 +370,7 @@ mod cached_pro_tests {
             )
             .await
             .unwrap();
-        assert!(manager.get_cached_pro_entitlement().await);
+        assert!(!manager.get_cached_pro_entitlement().await);
         manager.update_account(None, None).await.unwrap();
         assert!(!manager.get_cached_pro_entitlement().await);
     }
@@ -330,9 +384,10 @@ mod cached_pro_tests {
         assert!(!clone.get_cached_pro_status());
 
         manager.update_is_pro_status(true).unwrap();
-        assert!(clone.get_cached_pro_status());
+        assert!(!clone.get_cached_pro_status());
+        // A legacy settings.is_pro flag is not valid proof of entitlement.
         assert!(
-            AccountManager::from(db.clone())
+            !AccountManager::from(db.clone())
                 .unwrap()
                 .get_cached_pro_status()
         );

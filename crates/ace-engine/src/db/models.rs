@@ -148,6 +148,8 @@ pub struct AccountModel {
     pub api_key: Option<String>,
     pub last_pro_check: Option<String>,
     pub tos_accepted_at: Option<String>,
+    pub entitlement_token: Option<String>,
+    pub clock_high_watermark: Option<String>,
 }
 
 #[derive(Queryable, Selectable, Insertable)]
