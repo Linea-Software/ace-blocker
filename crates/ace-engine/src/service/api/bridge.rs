@@ -584,7 +584,7 @@ mod tests {
                     .map(|(operation, _)| operation.to_string())
             })
             .collect();
-        assert_eq!(expected.len(), 63, "remoc operation inventory changed");
+        assert_eq!(expected.len(), 64, "remoc operation inventory changed");
         assert_eq!(
             expected, declared,
             "bridge operation inventory drifted from the typed remoc trait"
