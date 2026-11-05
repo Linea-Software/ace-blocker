@@ -225,6 +225,7 @@
                                         bind:selectedIcon
                                         bind:open={showIconPicker}
                                         label={m.choose_icon()}
+                                        side="left"
                                     />
                                     <span
                                         class="text-muted-foreground truncate text-sm"

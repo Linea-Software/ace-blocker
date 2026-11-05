@@ -228,3 +228,49 @@ test("Resistance logos use the bundled brand colors", async ({ page }) => {
         "rgb(255, 0, 0)",
     );
 });
+
+test("Custom List icon picker stays inside the window and above dialog footer", async ({ page }) => {
+    await page.setViewportSize({ width: 880, height: 720 });
+    await page.goto("/site-packs");
+    await page.evaluate(async () => {
+        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const [{ mount }, { default: ImportPackModal }] = await Promise.all([
+            import(/* @vite-ignore */ runtime),
+            import(/* @vite-ignore */ "/src/routes/site-packs/_ImportPackModal.svelte"),
+        ]);
+        const host = document.createElement("div");
+        document.body.append(host);
+        mount(ImportPackModal, { target: host, props: { open: true } });
+    });
+    const dialog = page.getByRole("dialog").first();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Choose icon" }).click();
+    const iconPanel = page.locator('[data-slot="popover-content"]');
+    await expect(iconPanel).toBeVisible();
+
+    const desktop = await iconPanel.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const trigger = document.querySelector('button[aria-label="Choose icon"]')!.getBoundingClientRect();
+        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom,
+            triggerLeft: trigger.left, width: innerWidth, height: innerHeight };
+    });
+    expect(desktop.left).toBeGreaterThanOrEqual(10);
+    expect(desktop.right).toBeLessThanOrEqual(desktop.width - 10);
+    expect(desktop.top).toBeGreaterThanOrEqual(10);
+    expect(desktop.bottom).toBeLessThanOrEqual(desktop.height - 10);
+    expect(desktop.right).toBeLessThan(desktop.triggerLeft);
+    await page.screenshot({ path: "test-results/ui-audit/32-picker-fixed-desktop.png" });
+
+    await page.setViewportSize({ width: 430, height: 680 });
+    await expect(iconPanel).toBeVisible();
+    const compact = await iconPanel.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom,
+            width: innerWidth, height: innerHeight };
+    });
+    expect(compact.left).toBeGreaterThanOrEqual(10);
+    expect(compact.right).toBeLessThanOrEqual(compact.width - 10);
+    expect(compact.top).toBeGreaterThanOrEqual(10);
+    expect(compact.bottom).toBeLessThanOrEqual(compact.height - 10);
+    await page.screenshot({ path: "test-results/ui-audit/33-picker-fixed-compact.png" });
+});

@@ -14,12 +14,14 @@
         fallbackIcon = FALLBACK_ICON,
         label = "",
         size = "md",
+        side = "bottom",
     }: {
         selectedIcon: string | null;
         open: boolean;
         fallbackIcon?: typeof FALLBACK_ICON;
         label?: string;
         size?: "sm" | "md";
+        side?: "bottom" | "left";
     } = $props();
 
     let searchQuery = $state("");
@@ -40,7 +42,7 @@
 
 <Popover.Root bind:open>
     <Popover.Trigger
-        class="{triggerSize} shrink-0 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-muted/50 transition-colors"
+        class="{triggerSize} shrink-0 rounded-sm border border-border bg-card flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-muted/50 transition-colors"
         aria-label={label || m.choose_icon()}
     >
         {@const PreviewIcon = selectedIcon
@@ -50,10 +52,11 @@
     </Popover.Trigger>
     <Popover.Portal>
         <Popover.Content
-            side="bottom"
+            {side}
             align="start"
-            sideOffset={8}
-            class="w-72 max-h-80 overflow-y-auto p-3"
+            sideOffset={10}
+            collisionPadding={12}
+            class="z-[80] w-72 max-h-[min(320px,calc(100dvh-32px))] overflow-y-auto rounded-sm border-border bg-card p-3 shadow-none"
         >
             <div class="mb-3">
                 <input
@@ -105,7 +108,7 @@
                     {#each LIST_ICONS_GROUPED as group (group.category)}
                         <div>
                             <p
-                                class="text-xs uppercase font-bold text-muted-foreground mb-1.5 tracking-wider"
+                                class="text-xs font-semibold text-muted-foreground mb-1.5"
                             >
                                 {group.category}
                             </p>
