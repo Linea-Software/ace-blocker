@@ -705,11 +705,18 @@ pub(crate) async fn run_update_pass(
     content_service.lock().await.publish_metadata_from(&service);
 
     // 2. Stage all pending downloads/extractions — no manager lock.
-    let api_key = account_manager
-        .get_api_key()
-        .await
-        .map_err(SitePackUpdateError::FetchError)?;
-    let is_pro = account_manager.is_pro().await;
+    // Free simulation must also strip the real Pro API key from requests to
+    // Ace Server. The persisted account and credential remain unchanged.
+    let send_credentials = network_manager.read().await.sends_registered_credentials();
+    let api_key = if send_credentials {
+        account_manager
+            .get_api_key()
+            .await
+            .map_err(SitePackUpdateError::FetchError)?
+    } else {
+        None
+    };
+    let is_pro = send_credentials && account_manager.is_pro().await;
     let staged = service
         .stage_pending_updates(api_key.as_ref(), is_pro)
         .await?;

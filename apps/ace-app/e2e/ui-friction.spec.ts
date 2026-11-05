@@ -1,6 +1,24 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Desktop UI friction", () => {
+    test("Developer settings expose local license and consent controls in dev", async ({ page }) => {
+        await page.setViewportSize({ width: 800, height: 600 });
+        await page.goto("/settings");
+
+        // Browser-only smoke: controls are rendered, but no privileged RPC is
+        // called because the real engine is only available inside Tauri.
+        await expect(page.getByText("Developer diagnostics", { exact: true })).toBeAttached();
+        await expect(page.locator("#debug-license-policy option")).toHaveText([
+            "Default (saved license)",
+            "Free (simulated)",
+            "Pro (simulated)",
+        ]);
+        await expect(page.getByRole("button", {
+            name: "Replay consent dialog",
+            includeHidden: true,
+        })).toHaveCount(1);
+    });
+
     test("Categories keeps its primary action visible in a small window", async ({ page }) => {
         await page.setViewportSize({ width: 800, height: 600 });
         await page.goto("/site-packs");

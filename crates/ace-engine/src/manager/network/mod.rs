@@ -169,6 +169,20 @@ impl NetworkManager {
         self.debug_pro_policy
     }
 
+    /// Debug Free must behave as a signed-out client for outbound content
+    /// requests, even when a genuine Pro API key is saved locally. Never
+    /// modify or remove the saved credential for a simulation.
+    pub(crate) fn sends_registered_credentials(&self) -> bool {
+        #[cfg(debug_assertions)]
+        {
+            !matches!(self.debug_pro_policy, DebugProPolicy::Free)
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            true
+        }
+    }
+
     #[cfg(debug_assertions)]
     pub fn set_debug_resistance_level(&mut self, level: DebugResistanceLevel) {
         self.debug_resistance_level = level;
@@ -698,6 +712,19 @@ mod tests {
             _temp_dir: temp_dir,
         }
     }
+    #[test]
+    fn debug_free_suppresses_saved_credentials_but_default_restores_them() {
+        let mut ctx = setup_test_manager();
+
+        assert!(ctx.manager.sends_registered_credentials());
+        ctx.manager.set_debug_pro_policy(DebugProPolicy::Free);
+        assert!(!ctx.manager.sends_registered_credentials());
+        ctx.manager.set_debug_pro_policy(DebugProPolicy::Pro);
+        assert!(ctx.manager.sends_registered_credentials());
+        ctx.manager.set_debug_pro_policy(DebugProPolicy::Default);
+        assert!(ctx.manager.sends_registered_credentials());
+    }
+
     #[test]
     fn persisted_resistance_errors_are_not_silently_replaced_by_inactive_settings() {
         use diesel::connection::SimpleConnection;

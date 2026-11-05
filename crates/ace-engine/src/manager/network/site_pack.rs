@@ -582,11 +582,16 @@ impl NetworkManager {
         };
 
         if let Some(remote_id) = remote_id {
-            let api_key = self
-                .account_manager
-                .get_api_key()
-                .await
-                .map_err(|message| NetworkManagerOpErr::InternalError { message })?;
+            // A debug Free override must never attach a saved Pro credential
+            // when resolving a remote site list's download URL.
+            let api_key = if self.sends_registered_credentials() {
+                self.account_manager
+                    .get_api_key()
+                    .await
+                    .map_err(|message| NetworkManagerOpErr::InternalError { message })?
+            } else {
+                None
+            };
 
             // Unique temp file per attempt: two sequential resyncs of the same
             // pack (or a retry while a previous attempt still cleans up) must

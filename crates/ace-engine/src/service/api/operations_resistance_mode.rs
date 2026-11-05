@@ -111,11 +111,22 @@ pub(super) async fn download_resistance_scripts(state: AppState) -> Result<(), A
     // Download, verify, and extract OUTSIDE the manager write lock (SVC-02);
     // only the commit — local disk swap + reload + version persist — happens
     // under it.
-    let api_key = state
-        .account_manager
-        .get_api_key()
+    // Download requests must honor the local Free simulation even if a real
+    // Pro account is registered on this machine.
+    let api_key = if state
+        .network_manager
+        .read()
         .await
-        .map_err(ApiError::Internal)?;
+        .sends_registered_credentials()
+    {
+        state
+            .account_manager
+            .get_api_key()
+            .await
+            .map_err(ApiError::Internal)?
+    } else {
+        None
+    };
     let (content_service, gate) = state.content_update_service.lock().await.detached();
     let _single_flight = gate.lock().await;
     let staged = content_service
