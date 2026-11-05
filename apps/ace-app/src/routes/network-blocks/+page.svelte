@@ -16,6 +16,7 @@
     import { invalidateAll } from "$app/navigation";
     import { resolve } from "$app/paths";
     import type { NetworkBlockSchema } from "$engine-client";
+    import type { NetworkBlockWithLock } from "./+page";
     import { deleteNetworkBlock, setNetworkBlockEnabled } from "$engine-client";
     import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import { toast } from "svelte-sonner";
@@ -26,6 +27,7 @@
     let { data }: { data: PageData } = $props();
 
     let isEditorOpen = $state(false);
+    let editorInitialSection = $state<"blocking" | "schedule">("blocking");
     let selectedBlock = $state<NetworkBlockSchema | null>(null);
 
     function blockPriority(block: (typeof data.blocks)[number]): number {
@@ -53,7 +55,7 @@
     });
 
     let isLockModalOpen = $state(false);
-    let selectedBlockForLock = $state<NetworkBlockSchema | null>(null);
+    let selectedBlockForLock = $state<NetworkBlockWithLock | null>(null);
 
     let softUnlockOpen = $state(false);
     let selectedBlockForSoftUnlock = $state<NetworkBlockSchema | null>(null);
@@ -64,11 +66,20 @@
 
     function handleCreate() {
         selectedBlock = null;
+        editorInitialSection = "blocking";
         isEditorOpen = true;
     }
 
     function handleEdit(block: NetworkBlockSchema) {
         selectedBlock = block;
+        editorInitialSection = "blocking";
+        isEditorOpen = true;
+    }
+
+    function handleEditSchedule(block: NetworkBlockWithLock) {
+        isLockModalOpen = false;
+        selectedBlock = block;
+        editorInitialSection = "schedule";
         isEditorOpen = true;
     }
 
@@ -102,7 +113,7 @@
         }
     }
 
-    function handleLock(block: NetworkBlockSchema) {
+    function handleLock(block: NetworkBlockWithLock) {
         if (block.lockState.state === "soft_unlockable") {
             selectedBlockForSoftUnlock = block;
             softUnlockOpen = true;
@@ -118,7 +129,7 @@
     }
 
     function requestDelete(block: NetworkBlockSchema) {
-        if (block.lockState.state !== "inactive" || block.isLocked) return;
+        if (block.isLocked) return;
         blockToDelete = block;
         isDeleteDialogOpen = true;
     }
@@ -250,6 +261,7 @@
     <BlockModal
         bind:open={isEditorOpen}
         block={selectedBlock}
+        initialSection={editorInitialSection}
         onSave={handleEditorSave}
     />
 {/if}
@@ -258,6 +270,7 @@
     bind:open={isLockModalOpen}
     block={selectedBlockForLock}
     onSave={handleLockModalSave}
+    onEditSchedule={handleEditSchedule}
 />
 
 {#if selectedBlockForSoftUnlock}

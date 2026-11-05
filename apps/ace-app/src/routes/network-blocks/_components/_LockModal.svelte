@@ -44,10 +44,12 @@
         open = $bindable(false),
         block = null,
         onSave,
+        onEditSchedule,
     }: {
         open: boolean;
         block: LockableBlock | null;
         onSave?: () => Promise<void> | void;
+        onEditSchedule?: (block: LockableBlock) => void;
     } = $props();
 
     const options: LockKind[] = [
@@ -60,7 +62,7 @@
     let calendarValue = $state<CalendarDate | undefined>();
     let timeValue = $state("12:00");
     let editingExisting = $state(false);
-    let removingScheduledLock = $state(false);
+    let removingLock = $state(false);
     let confirmationRequested = $state(false);
     let isSubmitting = $state(false);
     let requestError = $state(false);
@@ -78,7 +80,7 @@
         return `${calendarValue.year}-${p(calendarValue.month)}-${p(calendarValue.day)}T${timeValue}:00`;
     });
     const draft = $derived<LockDraft>({
-        enabled: !removingScheduledLock,
+        enabled: !removingLock,
         type: selectedKind,
         end: proposedEnd,
         original: original ?? { state: "inactive" },
@@ -103,7 +105,7 @@
         original = { state: saved.state, end: saved.end };
         selectedKind = saved.state === "inactive" ? "soft_unlockable" : saved.state;
         editingExisting = false;
-        removingScheduledLock = false;
+        removingLock = false;
         confirmationRequested = false;
         requestError = false;
         if (saved.end) {
@@ -126,7 +128,7 @@
         void selectedKind;
         void calendarValue;
         void timeValue;
-        void removingScheduledLock;
+        void removingLock;
         untrack(() => {
             confirmationRequested = false;
             requestError = false;
@@ -175,20 +177,23 @@
     function startExtension() {
         if (isSubmitting) return;
         editingExisting = true;
-        removingScheduledLock = false;
+        removingLock = false;
         selectedKind = "active_until_lock_end";
     }
 
     function startRemoval() {
         if (isSubmitting || block?.isLocked) return;
         editingExisting = true;
-        removingScheduledLock = true;
+        removingLock = true;
         confirmationRequested = false;
     }
 
     async function handlePrimary() {
         if (!block || !canApply || !payload || isSubmitting) return;
-        const needsConfirmation = removingScheduledLock || selectedKind !== "soft_unlockable";
+        // Recheck against wall-clock time at submission, even if the dialog
+        // was left open long enough for a previously valid deadline to expire.
+        if (validateLockDraft({ ...draft, now: new Date() })) return;
+        const needsConfirmation = removingLock || selectedKind !== "soft_unlockable";
         if (needsConfirmation && !confirmationRequested) {
             confirmationRequested = true;
             return;
@@ -256,7 +261,11 @@
                                     {optionDescription(selectedKind)}
                                 </p>
                                 {#if selectedKind === "active_until_lock_end"}
-                                    <p class="mt-3 font-mono text-sm font-semibold">{m.lock_current_end({ date: displayEnd(original.end) })}</p>
+                                    <p class="mt-3 font-mono text-sm font-semibold">
+                                        {block.isLocked
+                                            ? m.lock_current_end({ date: displayEnd(original.end) })
+                                            : m.lock_expired_on({ date: displayEnd(original.end) })}
+                                    </p>
                                 {:else if selectedKind === "active_during_schedule"}
                                     <p class="mt-3 text-sm font-medium">
                                         {block.isLocked ? m.lock_schedule_active_now() : m.lock_schedule_outside_now()}
@@ -268,11 +277,20 @@
 
                     {#if selectedKind === "active_until_lock_end"}
                         <div class="flex flex-wrap items-center justify-between gap-3">
-                            <p class="max-w-sm text-xs leading-relaxed text-muted-foreground">{m.lock_extension_only()}</p>
-                            <Button variant="outline" onclick={startExtension} disabled={isSubmitting}>
-                                <CalendarClock class="mr-2 size-4" aria-hidden="true" />
-                                {m.lock_extend_action()}
-                            </Button>
+                            <p class="max-w-sm text-xs leading-relaxed text-muted-foreground">
+                                {block.isLocked ? m.lock_extension_only() : m.lock_expired_hint()}
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                {#if !block.isLocked}
+                                    <Button variant="outline" onclick={startRemoval} disabled={isSubmitting}>
+                                        {m.lock_remove_expired_action()}
+                                    </Button>
+                                {/if}
+                                <Button variant="outline" onclick={startExtension} disabled={isSubmitting}>
+                                    <CalendarClock class="mr-2 size-4" aria-hidden="true" />
+                                    {m.lock_extend_action()}
+                                </Button>
+                            </div>
                         </div>
                     {:else if selectedKind === "active_during_schedule"}
                         <div class="space-y-3 rounded-md border border-border p-4">
@@ -321,11 +339,15 @@
                         </fieldset>
                     {/if}
 
-                    {#if selectedKind === "active_until_lock_end" && !removingScheduledLock}
+                    {#if selectedKind === "active_until_lock_end" && !removingLock}
                         <div class="rounded-md border border-border bg-card p-4">
                             <Label class="mb-3 block text-sm font-semibold">{m.lock_expiration_datetime()}</Label>
                             {#if configured}
-                                <p class="mb-3 text-xs text-muted-foreground">{m.lock_current_end({ date: displayEnd(original.end) })}</p>
+                                <p class="mb-3 text-xs text-muted-foreground">
+                                    {block.isLocked
+                                        ? m.lock_current_end({ date: displayEnd(original.end) })
+                                        : m.lock_expired_on({ date: displayEnd(original.end) })}
+                                </p>
                             {/if}
                             <div class="flex flex-wrap gap-2">
                                 <Popover.Root>
@@ -364,16 +386,32 @@
                         </div>
                     {/if}
                     {#if validationError}
-                        <p class="flex items-start gap-2 text-sm text-destructive" role="alert">
-                            <TriangleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                            {errorText(validationError)}
-                        </p>
+                        <div class="space-y-2">
+                            <p class="flex items-start gap-2 text-sm text-destructive" role="alert">
+                                <TriangleAlert class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                                {errorText(validationError)}
+                            </p>
+                            {#if validationError === "schedule_required" && onEditSchedule}
+                                <Button
+                                    variant="outline"
+                                    class="w-full sm:w-auto"
+                                    disabled={isSubmitting}
+                                    onclick={() => onEditSchedule?.(block)}
+                                >
+                                    <CalendarClock class="mr-2 size-4" aria-hidden="true" />
+                                    {m.lock_edit_schedule_action()}
+                                    <ChevronRight class="ml-1 size-4" aria-hidden="true" />
+                                </Button>
+                            {/if}
+                        </div>
                     {/if}
                     <section class="rounded-md border border-border bg-muted/35 p-4" aria-labelledby="lock-preview-title">
                         <h3 id="lock-preview-title" class="font-condensed text-lg font-semibold">{m.lock_preview_title()}</h3>
                         <p class="mt-2 text-sm leading-relaxed text-muted-foreground">
-                            {#if removingScheduledLock}
-                                {m.lock_preview_remove()}
+                            {#if removingLock}
+                                {original.state === "active_until_lock_end"
+                                    ? m.lock_preview_expired_remove()
+                                    : m.lock_preview_remove()}
                             {:else if selectedKind === "soft_unlockable"}
                                 {m.lock_preview_reflection()}
                             {:else if selectedKind === "active_during_schedule"}
@@ -390,14 +428,16 @@
                     </section>
 
                     {#if confirmationRequested && canApply}
-                        <section class="rounded-md border border-[var(--ace-signal-deep)] bg-card p-4" role="group" aria-label={m.lock_confirmation_title()}>
+                        <section class="rounded-md border border-[var(--ace-signal-deep)] bg-card p-4" role="status" aria-live="polite" aria-label={m.lock_confirmation_title()}>
                             <div class="flex items-start gap-2">
                                 <TriangleAlert class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
                                 <div>
                                     <h3 class="font-semibold">{m.lock_confirmation_title()}</h3>
                                     <p class="mt-1 text-sm leading-relaxed text-muted-foreground">
-                                        {removingScheduledLock
-                                            ? m.lock_confirmation_remove()
+                                        {removingLock
+                                            ? original.state === "active_until_lock_end"
+                                                ? m.lock_confirmation_expired_remove()
+                                                : m.lock_confirmation_remove()
                                             : selectedKind === "active_until_lock_end"
                                                 ? m.lock_confirmation_until({ date: displayEnd(proposedEnd) })
                                                 : m.lock_confirmation_schedule()}
@@ -426,13 +466,15 @@
                     {#if isSubmitting}
                         {m.saving()}
                     {:else if confirmationRequested}
-                        {removingScheduledLock
+                        {removingLock
                             ? m.lock_confirm_remove_action()
                             : selectedKind === "active_until_lock_end"
                                 ? m.lock_confirm_until_action()
                                 : m.lock_confirm_schedule_action()}
-                    {:else if removingScheduledLock}
-                        {m.lock_remove_scheduled_action()}
+                    {:else if removingLock}
+                        {original?.state === "active_until_lock_end"
+                            ? m.lock_remove_expired_action()
+                            : m.lock_remove_scheduled_action()}
                     {:else if selectedKind === "soft_unlockable"}
                         {m.lock_enable_reflection_action()}
                     {:else}

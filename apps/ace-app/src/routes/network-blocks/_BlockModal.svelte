@@ -38,10 +38,12 @@
         open = $bindable(false),
         block = $bindable(null),
         onSave,
+        initialSection = "blocking",
     }: {
         open: boolean;
         block: NetworkBlockSchema | null;
         onSave: (block: NetworkBlockSchema) => void;
+        initialSection?: "blocking" | "schedule";
     } = $props();
 
     let name = $state(block?.name ?? "");
@@ -63,6 +65,11 @@
 
     // UI State
     let activeSection = $state<"blocking" | "schedule">("blocking");
+    // Navigation can open directly on Schedule from the lock setup.
+    // Keep it reactive without overwriting manual tab changes.
+    $effect.pre(() => {
+        activeSection = initialSection;
+    });
     let scheduleEditorOpen = $state(false);
     // Set when an existing block's editor data failed to load: saving against
     // empty rules/schedule/connections would clobber the server state.
@@ -76,7 +83,7 @@
 
     const showBlockingError = $derived(!name || name.trim() === "");
     const isScheduleViolation = $derived(
-        block?.lockState.state !== "inactive" &&
+        block?.isLocked &&
             !scheduleDelta.isValidForLockedBlock(),
     );
 
@@ -110,7 +117,7 @@
         existingEntries = scheduleRes.data?.scheduleEntries ?? [];
         scheduleDelta = new ScheduleChanges(
             $state.snapshot(existingEntries),
-            block ? block.lockState.state !== "inactive" : false,
+            block?.isLocked ?? false,
         );
 
         if (connectionsRes.error)
@@ -289,7 +296,7 @@
                 bind:icon={blockIcon}
                 bind:isSafeSearch
                 disabled={isSubmitting}
-                isLocked={block ? block.lockState.state !== "inactive" : false}
+                isLocked={block?.isLocked ?? false}
             />
 
             <div class="border-border border-t"></div>
@@ -297,7 +304,7 @@
             <SectionSites
                 delta={sitePacksDelta}
                 bind:availableLists
-                isLocked={block ? block.lockState.state !== "inactive" : false}
+                isLocked={block?.isLocked ?? false}
             />
 
             <div class="border-border border-t"></div>
@@ -305,13 +312,13 @@
             <SectionRules
                 delta={rulesDelta}
                 disabled={isSubmitting}
-                isLocked={block ? block.lockState.state !== "inactive" : false}
+                isLocked={block?.isLocked ?? false}
             />
         </div>
     {:else}
         <SectionSchedule
             delta={scheduleDelta}
-            isLocked={block ? block.lockState.state !== "inactive" : false}
+            isLocked={block?.isLocked ?? false}
             bind:hasOpenEditor={scheduleEditorOpen}
         />
     {/if}

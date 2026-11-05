@@ -51,7 +51,10 @@
         localizationStore.detectSystemTimeFormat();
     });
 
+    // A scheduled lock can be configured while its protected hours are
+    // inactive. Only the engine's isLocked flag should disable editing.
     const locked = $derived(policy.lockState.state !== "inactive");
+    const lockedNow = $derived(policy.isLocked);
     const hasSchedule = $derived((policy.schedules?.length ?? 0) > 0);
 
     const stateLabel = $derived.by(() => {
@@ -65,11 +68,15 @@
         if (policy.lockState.state === "soft_unlockable") {
             return m.lock_soft_active_tooltip();
         }
-        if (
-            policy.lockState.state === "active_during_schedule" ||
-            policy.lockState.state === "active_until_lock_end"
-        ) {
-            return m.lock_hard_active_tooltip();
+        if (policy.lockState.state === "active_during_schedule") {
+            return lockedNow
+                ? m.lock_schedule_active_tooltip()
+                : m.lock_schedule_configured_tooltip();
+        }
+        if (policy.lockState.state === "active_until_lock_end") {
+            return lockedNow
+                ? m.lock_time_active_tooltip()
+                : m.lock_time_expired_tooltip();
         }
         return m.lock_this_block_tooltip();
     });
@@ -77,7 +84,7 @@
     const lockActionLabel = $derived.by(() => {
         if (policy.lockState.state === "soft_unlockable") return m.unlock_block();
         if (locked) return m.review_lock();
-        return m.lock();
+        return m.lock_protect_action();
     });
 
     const lockActionAria = $derived.by(() => {
@@ -86,11 +93,18 @@
         return m.lock_this_block_tooltip();
     });
 
-    const lockDescription = $derived.by(() =>
-        policy.lockState.state === "soft_unlockable"
-            ? m.lock_soft_active_description()
-            : m.lock_hard_active_description(),
-    );
+    const lockDescription = $derived.by(() => {
+        if (policy.lockState.state === "soft_unlockable") {
+            return m.lock_soft_active_description();
+        }
+        if (policy.lockState.state === "active_during_schedule" && !lockedNow) {
+            return m.lock_schedule_configured_description();
+        }
+        if (policy.lockState.state === "active_until_lock_end" && !lockedNow) {
+            return m.lock_time_expired_description();
+        }
+        return m.lock_hard_active_description();
+    });
 
     const scheduleText = $derived.by(() => {
         if (!policy.schedules || policy.schedules.length === 0) {
@@ -240,7 +254,7 @@
                     class="quiet-action"
                     onclick={() => onEdit(policy)}
                 >
-                    {#if locked}
+                    {#if lockedNow}
                         <Eye size={15} aria-hidden="true" />
                         <span>{m.view()}</span>
                     {:else}
@@ -274,9 +288,9 @@
                     <DropdownMenu.Content align="end" class="min-w-36 rounded-sm shadow-none">
                         <DropdownMenu.Item
                             variant="destructive"
-                            disabled={locked}
+                            disabled={lockedNow}
                             onclick={() => onDelete(policy)}
-                            title={locked ? m.block_locked_tooltip() : m.delete()}
+                            title={lockedNow ? m.block_locked_tooltip() : m.delete()}
                         >
                             <Trash2 size={15} aria-hidden="true" />
                             <span>{m.delete()}</span>

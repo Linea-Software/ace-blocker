@@ -312,6 +312,9 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
             target: fixture,
             props: {
                 open: true,
+                onEditSchedule: (selected: { name: string }) => {
+                    document.documentElement.dataset.lockScheduleRequested = selected.name;
+                },
                 block: {
                     id: "lock-fixture",
                     name: "Focus",
@@ -330,6 +333,8 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
     await dialog.getByRole("button", { name: /During scheduled hours/ }).click();
     await expect(dialog.getByRole("alert")).toContainText("Add a schedule");
     await expect(dialog.getByRole("button", { name: "Review lock" })).toBeDisabled();
+    await dialog.getByRole("button", { name: "Edit block schedule" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-lock-schedule-requested", "Focus");
     await dialog.getByRole("button", { name: /Until a date and time/ }).click();
     await expect(dialog.getByRole("alert")).toContainText("Choose a date and time");
     await expect(dialog.getByRole("button", { name: "Review lock" })).toBeDisabled();
@@ -368,4 +373,67 @@ test("Reviewing a scheduled lock only offers removal outside active hours", asyn
     await dialog.getByRole("button", { name: "Remove scheduled lock" }).last().click();
     await expect(dialog.getByText("Remove the scheduled lock?", { exact: false })).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Confirm removal" })).toBeVisible();
+});
+
+test("An expired time lock offers explicit removal", async ({ page }) => {
+    await page.goto("/network-blocks");
+    await page.evaluate(async () => {
+        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const [{ mount }, { default: LockModal }] = await Promise.all([
+            import(/* @vite-ignore */ runtime),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+        ]);
+        mount(LockModal, {
+            target: document.body,
+            props: {
+                open: true,
+                block: {
+                    id: "expired-lock-fixture",
+                    name: "Focus",
+                    enabled: true,
+                    isActive: false,
+                    isLocked: false,
+                    lockState: { state: "active_until_lock_end", end: "2025-01-01T12:00:00" },
+                    schedules: [],
+                },
+            },
+        });
+    });
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText(/Expired on/)).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove expired lock" }).click();
+    await expect(dialog.getByText(/expired time lock will be removed/)).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove expired lock" }).last().click();
+    await expect(dialog.getByRole("button", { name: "Confirm removal" })).toBeVisible();
+});
+
+test("An active scheduled lock cannot be removed from its review modal", async ({ page }) => {
+    await page.goto("/network-blocks");
+    await page.evaluate(async () => {
+        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const [{ mount }, { default: LockModal }] = await Promise.all([
+            import(/* @vite-ignore */ runtime),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+        ]);
+        mount(LockModal, {
+            target: document.body,
+            props: {
+                open: true,
+                block: {
+                    id: "active-lock-fixture",
+                    name: "Work hours",
+                    enabled: true,
+                    isActive: true,
+                    isLocked: true,
+                    lockState: { state: "active_during_schedule" },
+                    schedules: [{ monday: true, startTime: "09:00", endTime: "17:00" }],
+                },
+            },
+        });
+    });
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Review protection" })).toBeVisible();
+    await expect(dialog.getByText("Changes are restricted during the current scheduled period.")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Remove scheduled lock" })).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Close" }).first()).toBeVisible();
 });
