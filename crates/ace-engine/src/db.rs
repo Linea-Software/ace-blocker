@@ -188,7 +188,12 @@ mod migration_seed_tests {
     /// (TESTINFRA-01); point the process-global override at the shared test
     /// dir like the other manager unit tests do.
     fn set_test_sites_dir() {
-        Settings::set_test_sites_dir(Settings::shared_test_sites_dir());
+        let sandbox = Settings::shared_test_sites_dir();
+        Settings::set_test_sites_dir(sandbox.clone());
+        // A manager opened by a migration test also checks the crash-recovery
+        // journal. Never read the root-owned live installation on Linux: that
+        // would make this hermetic test depend on production permissions.
+        Settings::set_test_resistance_scripts_dir(sandbox.join("resistance_scripts"));
     }
 
     fn block_id(block_id: &str) -> NetworkBlockId {

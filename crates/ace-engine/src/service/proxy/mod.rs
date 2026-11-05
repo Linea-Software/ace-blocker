@@ -546,6 +546,22 @@ impl InterceptDecider for ProxyInterceptDecider {
     }
 }
 
+/// Selective HTTP/3 admission while preserving client-certificate sites.
+///
+/// Hostname-level blocks can be enforced without an origin request; even a
+/// client-certificate site receives a block response before the proxy dials
+/// upstream. Request/response inspection for otherwise allowed origins still
+/// uses TCP CONNECT, which has an asynchronous client-certificate probe before
+/// the browser's TLS session is terminated. A QUIC certificate resolver is
+/// synchronous and cannot safely perform that probe during the handshake.
+/// Those origins are therefore denied H3 so browsers can retry over TCP.
+fn http3_host_policy_admits(
+    blocking_result: crate::core::BlockingResult,
+    _requires_request_inspection: bool,
+) -> bool {
+    blocking_result.is_blocked()
+}
+
 /// Wire the engine's inspection hooks and interception contract onto a
 /// [`MitmProxy`].
 fn wire_interception(
@@ -569,6 +585,7 @@ fn wire_interception(
 pub struct AceProxy {
     adapter: Arc<ProxyAdapter>,
     listen_addr: SocketAddr,
+    http3_addr: SocketAddr,
     /// Shared with the background start-retry task (see [`AceProxy::start`]).
     tun: Arc<TunRedirect>,
 }
@@ -589,12 +606,21 @@ impl AceProxy {
             std::fs::create_dir_all(&cert_dir)?;
         }
 
+        // Select the actual loopback UDP destination before configuring TUN.
+        // A later bind race is fatal to proxy startup, never a direct-UDP fallback.
+        let http3_socket = std::net::UdpSocket::bind("127.0.0.1:0")
+            .wrap_err("Failed to select the HTTP/3 proxy port")?;
+        let http3_addr = http3_socket.local_addr()?;
+        drop(http3_socket);
+
         // ── ace-tun: build and configure, but defer start ──────────────
         // The adapter must not exist before the proxy has bound its port, or
         // the first browser connections arrive with nowhere to go.
         let protected_browsers = browser_processes();
         let tun = TunRedirect::builder(format!("127.0.0.1:{}", listen_port))
             .wrap_err("Failed to create ace-tun builder")?
+            .quic_policy(ace_tun::QuicPolicy::Intercept)
+            .quic_proxy_addr(http3_addr)
             .protect_processes(&protected_browsers)
             // 1. Exempt ace-engine + ace-app from ALL interception
             .add_rule(Rule::new(EXEMPT_PROCESSES.join(";")).action(RuleAction::Direct))
@@ -625,8 +651,8 @@ impl AceProxy {
                     .protocol(RuleProtocol::Tcp)
                     .action(RuleAction::Proxy),
             )
-            // QUIC is suppressed for protected browsers (and unattributed
-            // flows) so known non-browser UDP/443 applications remain compatible.
+            // Browser QUIC goes only to the local HTTP/3 listener; unsupported
+            // or denied handshakes fall back to inspected TCP, never direct UDP.
             // 6. Catch-all: allow remaining traffic directly. On Linux the
             //    relay is SO_MARKed and returns to the normal RPDB (including a
             //    user VPN); on Windows WFP ensures protected applications cannot
@@ -650,7 +676,7 @@ impl AceProxy {
 
         info!(
             "ace-tun configured with 6 rules (platform route guard enabled; protected-browser \
-             QUIC dropped; IPv4 + available IPv6), forwarding to 127.0.0.1:{} (deferred start)",
+             QUIC selectively blocked through H3; IPv4 + available IPv6), forwarding to 127.0.0.1:{} (deferred start)",
             listen_port
         );
 
@@ -669,6 +695,7 @@ impl AceProxy {
         Ok(Self {
             adapter,
             listen_addr,
+            http3_addr,
             tun: Arc::new(tun),
         })
     }
@@ -677,14 +704,13 @@ impl AceProxy {
     pub async fn start(&self) -> Result<()> {
         let cert_dir = Settings::get_cert_dir();
 
-        // No HTTP/3 listener: ace-tun drops QUIC so clients fall back to TCP,
-        // which leaves nothing for an h3 listener to serve.
         #[allow(unused_mut)]
         // `run()` provisions both Ace certificates, including Firefox-specific
         // Linux trust policy, before starting either service. Avoid repeating
         // trust-store mutations here after the listener task has been spawned.
         let mut config = ProxyConfig::new(self.listen_addr, cert_dir)
             .install_ca(false)
+            .with_http3(self.http3_addr)
             .preserve_client_cert_auth(true);
 
         // Disable upstream verification in dev (managed certificates may be
@@ -700,21 +726,37 @@ impl AceProxy {
             adapter.clone() as Arc<dyn RequestInspector>,
             adapter.clone() as Arc<dyn ResponseInspector>,
             adapter.interception_hosts.clone(),
-        );
+        )
+        .with_http3_sni_policy(Arc::new(move |host| {
+            if ProxyAdapter::is_local_host(host) {
+                return false;
+            }
+            // TLS certificate resolution is synchronous. Never block a runtime
+            // worker or reuse a stale CONNECT decision for QUIC admission.
+            let Ok(manager) = adapter.network_manager.try_read() else {
+                return false;
+            };
+            let (blocking_result, requires_inspection) = manager.connect_host_policy(host);
+            http3_host_policy_admits(blocking_result, requires_inspection)
+        }));
 
         // Spawn the proxy first so it binds the port before ace-tun starts
         // diverting traffic. Starting in the other order would send the first
         // browser connections to a port nobody is listening on.
         let mut proxy_handle = tokio::spawn(async move { proxy.run().await });
 
-        // Do not enable interception until the proxy accepts TCP connections.
-        // This replaces the previous timing assumption with an observable
-        // readiness condition.
+        // Both listeners must be live before any browser traffic is redirected.
         tokio::select! {
-            readiness = wait_for_proxy_listener(
-                self.listen_addr,
-                std::time::Duration::from_secs(10),
-            ) => readiness?,
+            readiness = async {
+                wait_for_proxy_listener(self.listen_addr, std::time::Duration::from_secs(10)).await?;
+                wait_for_http3_listener(self.http3_addr, std::time::Duration::from_secs(10)).await
+            } => {
+                if let Err(error) = readiness {
+                    proxy_handle.abort();
+                    let _ = proxy_handle.await;
+                    return Err(error);
+                }
+            },
             result = &mut proxy_handle => {
                 let error = match result {
                     Ok(Ok(())) => eyre::eyre!("mitm-proxy stopped before becoming ready"),
@@ -739,7 +781,7 @@ impl AceProxy {
             Ok(()) => {
                 info!(
                     "ace-tun started — intercepting browser traffic \
-                     (IPv4 + available IPv6, QUIC dropped)"
+                     (IPv4 + available IPv6, QUIC selectively admitted)"
                 );
                 true
             }
@@ -827,6 +869,48 @@ impl AceProxy {
     }
 }
 
+/// Verify the UDP endpoint responds as QUIC without admitting an SNI or
+/// minting a certificate. An unsupported version elicits Version Negotiation.
+async fn wait_for_http3_listener(addr: SocketAddr, timeout: std::time::Duration) -> Result<()> {
+    let socket = tokio::net::UdpSocket::bind("127.0.0.1:0").await?;
+    socket.connect(addr).await?;
+    let connection_ids = uuid::Uuid::new_v4();
+    let connection_ids = connection_ids.as_bytes();
+    let mut probe = vec![0_u8; 1200];
+    probe[..6].copy_from_slice(&[0xc0, 0xfa, 0xce, 0xb0, 0x0c, 8]);
+    probe[6..14].copy_from_slice(&connection_ids[..8]);
+    probe[14] = 8;
+    probe[15..23].copy_from_slice(&connection_ids[8..]);
+    let deadline = tokio::time::Instant::now() + timeout;
+    let mut response = [0_u8; 1500];
+    loop {
+        socket.send(&probe).await?;
+        if let Ok(Ok(length)) = tokio::time::timeout(
+            std::time::Duration::from_millis(100),
+            socket.recv(&mut response),
+        )
+        .await
+        {
+            if length >= 27
+                && response[0] & 0x80 != 0
+                && response[1..5] == [0, 0, 0, 0]
+                && response[5] == 8
+                && response[6..14] == connection_ids[8..]
+                && response[14] == 8
+                && response[15..23] == connection_ids[..8]
+            {
+                return Ok(());
+            }
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(eyre::eyre!(
+                "HTTP/3 listener {addr} did not become ready within {timeout:?}"
+            ));
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+}
+
 async fn wait_for_proxy_listener(addr: SocketAddr, timeout: std::time::Duration) -> Result<()> {
     let deadline = tokio::time::Instant::now() + timeout;
     loop {
@@ -846,8 +930,71 @@ async fn wait_for_proxy_listener(addr: SocketAddr, timeout: std::time::Duration)
     }
 }
 
+#[cfg(test)]
+mod http3_readiness_tests {
+    use super::*;
+
+    // H3 cannot carry the browser's client certificate to a mutually
+    // authenticated upstream origin. A hostname-level block does not connect
+    // upstream at all and may be handled natively over H3; request-only rules
+    // must retain the established TCP/CONNECT + client-cert probing path.
+    #[test]
+    fn h3_admission_restricts_unprobed_origins_to_host_level_blocks() {
+        assert!(http3_host_policy_admits(
+            crate::core::BlockingResult::Blocked,
+            false,
+        ));
+        assert!(!http3_host_policy_admits(
+            crate::core::BlockingResult::NotBlocked,
+            true,
+        ));
+        assert!(!http3_host_policy_admits(
+            crate::core::BlockingResult::NotBlocked,
+            false,
+        ));
+    }
+
+    #[tokio::test]
+    async fn actual_quinn_listener_passes_readiness_without_a_tls_certificate() {
+        let tcp = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let tcp_addr = tcp.local_addr().unwrap();
+        drop(tcp);
+        let udp = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let udp_addr = udp.local_addr().unwrap();
+        drop(udp);
+
+        let ca_dir = tempfile::tempdir().unwrap();
+        // No SNI is admitted. Readiness must not issue a certificate, require
+        // a real account policy, or alter any engine-managed configuration.
+        let proxy = MitmProxy::new(ProxyConfig::new(tcp_addr, ca_dir.path()).with_http3(udp_addr))
+            .with_http3_sni_policy(Arc::new(|_host| false));
+        let server = tokio::spawn(async move { proxy.run().await });
+        let ready = wait_for_http3_listener(udp_addr, std::time::Duration::from_secs(3)).await;
+        server.abort();
+        assert!(ready.is_ok(), "QUIC listener never became ready: {ready:?}");
+    }
+
+    #[tokio::test]
+    async fn arbitrary_udp_responses_cannot_fake_quic_readiness() {
+        let socket = tokio::net::UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let addr = socket.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let mut datagram = [0_u8; 1500];
+            while let Ok((_, peer)) = socket.recv_from(&mut datagram).await {
+                let _ = socket.send_to(b"not QUIC", peer).await;
+            }
+        });
+        let ready = wait_for_http3_listener(addr, std::time::Duration::from_millis(250)).await;
+        server.abort();
+        assert!(
+            ready.is_err(),
+            "arbitrary UDP socket looked like a live QUIC listener"
+        );
+    }
+}
+
 /// Initial backoff; keep retrying every minute after these delays.
-const TUN_RETRY_DELAYS_SECS: &[u64] = &[5, 15, 30, 60, 60, 60, 60, 60, 60, 60];
+const TUN_RETRY_DELAYS_SECS: &[u64] = &[5, 15, 30, 60, 60, 60, 60, 60, 60, 60, 60];
 
 fn tun_retry_delay_secs(attempt_index: usize) -> u64 {
     TUN_RETRY_DELAYS_SECS

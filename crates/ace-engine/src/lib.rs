@@ -319,10 +319,6 @@ async fn spawn_proxy_service(
 ) -> tokio::task::JoinHandle<()> {
     let listen_port: u16 =
         openport::pick_random_unused_port().expect("No free port for the proxy. Aborting");
-    // No HTTP/3 listener: ace-tun drops QUIC (UDP 443) at the tunnel so clients
-    // fall back to TCP, which the proxy inspects reliably. MITM-ing QUIC is
-    // fragile — browsers may reject a locally-rooted cert over HTTP/3 — so we
-    // force TCP instead. `TunRedirectBuilder::quic_policy` can revisit this.
     let proxy = match proxy::AceProxy::new(network_manager.clone(), listen_port).await {
         Ok(p) => p,
         Err(error) => {

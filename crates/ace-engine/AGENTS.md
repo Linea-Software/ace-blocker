@@ -15,6 +15,12 @@ Linux, utun on macOS) that replaces the earlier WinDivert-based
 See [`ace-tun/README.md`](../ace-tun/README.md) for architecture. The `ace-tun` and `mitm-proxy` crates are workspace members under `crates/`, so engine builds always use the in-repo sources rather than remote Git revisions.
 Only browser processes are routed through the MITM proxy; other applications'
 connections are passed through or blocked at the kernel level without decryption.
+For HTTP/3, the TUN recognizes browser QUIC Initials even on alternative UDP
+ports, and forwards selected flows only to the local H3 endpoint. Unattributed
+or migrated QUIC is rejected. The engine's H3 SNI policy permits ONLY hosts
+currently blocked at hostname level; hosts needing URL/path/Resistance inspection
+must use the TCP/CONNECT fallback, which retains the TLS client-certificate
+preflight. Do not relax this without real native/browser/Windows tests.
 
 ---
 

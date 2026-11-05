@@ -103,7 +103,7 @@ serde_json = "~1.0"
 strum = { version = "~0.28", features = ["derive"] }
 strum_macros = "~0.28"
 url = "~2.5"
-mitm-proxy = { path = "../mitm-proxy" }
+mitm-proxy = { path = "../mitm-proxy", features = ["http3"] }
 ace-tun = { path = "../ace-tun" }
 sysuri = "~0.4"
 thiserror = "~2.0"
