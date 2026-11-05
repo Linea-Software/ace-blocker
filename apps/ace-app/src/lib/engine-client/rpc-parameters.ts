@@ -55,6 +55,9 @@ export const rpcParameters = {
   "createNetworkBlock": [
     "payload"
   ],
+  "saveNetworkBlock": [
+    "payload"
+  ],
   "deleteNetworkBlock": [
     "network_block_id"
   ],

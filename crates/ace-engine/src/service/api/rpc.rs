@@ -178,6 +178,11 @@ pub trait EngineControl {
         capability: Option<String>,
         payload: CreateNetworkBlockRequest,
     ) -> Result<RpcResult<CreateNetworkBlockResponse>, CallError>;
+    async fn save_network_block(
+        &self,
+        capability: Option<String>,
+        payload: SaveNetworkBlockRequest,
+    ) -> Result<RpcResult<SaveNetworkBlockResponse>, CallError>;
     async fn delete_network_block(
         &self,
         capability: Option<String>,
@@ -855,6 +860,21 @@ impl EngineControl for EngineRpc {
         }
         Ok(
             super::operations_network_blocks::create_network_block(self.state.clone(), payload)
+                .await
+                .map_err(Into::into),
+        )
+    }
+
+    async fn save_network_block(
+        &self,
+        capability: Option<String>,
+        payload: SaveNetworkBlockRequest,
+    ) -> Result<RpcResult<SaveNetworkBlockResponse>, CallError> {
+        if let Err(error) = self.check_capability(capability.as_deref(), true) {
+            return Ok(Err(error));
+        }
+        Ok(
+            super::operations_network_blocks::save_network_block(self.state.clone(), payload)
                 .await
                 .map_err(Into::into),
         )

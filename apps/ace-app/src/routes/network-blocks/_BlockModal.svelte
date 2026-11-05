@@ -162,19 +162,21 @@
 
             if (outcome.kind === "failed") {
                 console.error("Failed to save network block:", outcome.error);
-                if (!outcome.attempted) {
+                if (!outcome.uncertain) {
+                    // A rejected transaction changes nothing. Keep the draft
+                    // available so the user can fix the error and retry.
                     toast.error(m.failed_to_sync());
                     return;
                 }
 
-                // These writes are not transactional. Re-read canonical state
-                // before allowing further edits, even if the first RPC failed.
+                // A lost acknowledgement can follow a successful COMMIT.
+                // Reconcile rather than falsely declaring a rollback.
                 partialSaveWarning = true;
                 isLoadingData = true;
                 await invalidateAll();
                 const snapshot = await getDashboardSnapshot();
-                const canonical = snapshot.data?.blocks.find(
-                    (entry) => entry.block.id === outcome.id,
+                const canonical = block && snapshot.data?.blocks.find(
+                    (entry) => entry.block.id === block?.id,
                 );
                 if (snapshot.error || !canonical) {
                     dataLoadFailed = true;
@@ -188,20 +190,8 @@
                 toast.error(m.block_save_partially_applied());
                 return;
             }
-            const currentBlockId = outcome.id;
 
-            onSave({
-                id: currentBlockId,
-                name,
-                icon: blockIcon,
-                enabled: block?.enabled ?? true,
-                isActive: block ? block.isActive : true,
-                isLocked: block ? block.isLocked : false,
-                lockState: block
-                    ? $state.snapshot(block.lockState)
-                    : { state: "inactive" },
-                safeSearch: isSafeSearch,
-            });
+            onSave(outcome.block);
             open = false;
         } catch (error) {
             console.error("Failed to save network block:", error);

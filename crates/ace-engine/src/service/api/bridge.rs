@@ -189,6 +189,16 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
+        "saveNetworkBlock" => {
+            let payload: SaveNetworkBlockRequest =
+                serde_json::from_value(args.get("payload").cloned().unwrap_or(Value::Null))
+                    .map_err(bad_args)?;
+            let result = client
+                .save_network_block(capability, payload)
+                .await
+                .map_err(transport_error)??;
+            serde_json::to_value(result).map_err(transport_error)
+        }
         "deleteNetworkBlock" => {
             let network_block_id: uuid::Uuid = serde_json::from_value(
                 args.get("network_block_id").cloned().unwrap_or(Value::Null),

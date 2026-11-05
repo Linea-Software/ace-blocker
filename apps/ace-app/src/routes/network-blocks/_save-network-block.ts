@@ -1,85 +1,60 @@
 import {
-    createNetworkBlock,
-    renameNetworkBlock,
-    setNetworkBlockIcon,
-    setNetworkBlockSafeSearch,
+    saveNetworkBlock as saveNetworkBlockRpc,
+    type BaseScheduleEntrySchema,
     type NetworkBlockSchema,
+    type UserDefinedRule,
 } from "$engine-client";
 
-/**
- * Network Block save is deliberately NOT a cross-resource transaction.
- * Each engine mutation has its own authorization/commit boundary. Execute in
- * order and report ambiguous/partial outcomes rather than claiming rollback.
- */
+/** UI edits are local drafts until the single atomic engine save RPC. */
 export type BlockSaveDraft = {
     block: NetworkBlockSchema | null;
     name: string;
     icon: string | null;
     safeSearch: boolean;
-    rules: { changes: readonly unknown[]; pushChangesToServer(id: string): Promise<void> };
-    schedule: { changes: readonly unknown[]; pushChangesToServer(id: string): Promise<void> };
-    packs: { changes: readonly unknown[]; pushChangesToServer(id: string): Promise<void> };
+    rules: { currentRules: readonly UserDefinedRule[] };
+    schedule: { currentScheduleEntries: readonly BaseScheduleEntrySchema[] };
+    packs: { currentConnectedListIds: readonly string[] };
 };
 
 export type BlockSaveResult =
-    | { kind: "saved"; id: string }
-    | { kind: "failed"; id?: string; attempted: boolean; error: unknown };
+    | { kind: "saved"; block: NetworkBlockSchema }
+    | { kind: "failed"; error: unknown; uncertain: boolean };
 
 export async function saveNetworkBlock(draft: BlockSaveDraft): Promise<BlockSaveResult> {
-    let id = draft.block?.id;
-    let attempted = false;
     try {
-        if (!id) {
-            attempted = true;
-            const result = await createNetworkBlock({
-                body: { blockName: draft.name, icon: draft.icon },
-            });
-            if (result.error) throw result.error;
-            if (!result.data?.networkBlock?.id) {
-                throw new Error("Network Block creation returned no id");
-            }
-            id = result.data.networkBlock.id;
-        } else {
-            if (draft.name !== draft.block?.name) {
-                attempted = true;
-                const result = await renameNetworkBlock({
-                    path: { network_block_id: id },
-                    body: { newName: draft.name },
-                });
-                if (result.error) throw result.error;
-            }
+        const result = await saveNetworkBlockRpc({
+            body: {
+                id: draft.block?.id ?? null,
+                name: draft.name,
+                icon: draft.icon,
+                safeSearch: draft.safeSearch,
+                rules: draft.rules.currentRules.map(({ rule, ruleType }) => ({
+                    rule,
+                    ruleType,
+                })),
+                scheduleEntries: draft.schedule.currentScheduleEntries.map(
+                    ({ startTime, endTime, monday, tuesday, wednesday, thursday, friday, saturday, sunday }) => ({
+                        startTime, endTime, monday, tuesday, wednesday, thursday, friday, saturday, sunday,
+                    }),
+                ),
+                sitePackIds: [...draft.packs.currentConnectedListIds],
+            },
+        });
 
-            if (draft.icon !== (draft.block?.icon ?? null)) {
-                attempted = true;
-                const result = await setNetworkBlockIcon({
-                    path: { network_block_id: id },
-                    body: { icon: draft.icon },
-                });
-                if (result.error) throw result.error;
-            }
+        if (result.error) {
+            // Engine errors reject the entire SQLite transaction. Transport
+            // loss, however, can happen after the server has committed.
+            return {
+                kind: "failed",
+                error: result.error,
+                uncertain: result.error.code === "transport_unavailable",
+            };
         }
-
-        // Later batches must not begin after an earlier failure. A delta may
-        // itself have partially committed (or unsuccessfully rolled back).
-        for (const delta of [draft.rules, draft.schedule, draft.packs]) {
-            if (delta.changes.length === 0) continue;
-            attempted = true;
-            await delta.pushChangesToServer(id);
+        if (!result.data?.networkBlock) {
+            return { kind: "failed", error: new Error("Missing save acknowledgement"), uncertain: true };
         }
-
-        if (!draft.block || draft.safeSearch !== draft.block.safeSearch) {
-            attempted = true;
-            const result = await setNetworkBlockSafeSearch({
-                path: { network_block_id: id },
-                body: { enabled: draft.safeSearch },
-            });
-            if (result.error) throw result.error;
-        }
-
-        return { kind: "saved", id };
+        return { kind: "saved", block: result.data.networkBlock };
     } catch (error) {
-        // A failed RPC can have committed before the transport failed;
-        // callers must reconcile even when this is the first operation.
-        return { kind: "failed", id, attempted, error };
+        return { kind: "failed", error, uncertain: true };
     }
 }

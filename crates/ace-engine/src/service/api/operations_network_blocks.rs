@@ -96,3 +96,79 @@ pub(super) async fn set_network_block_icon(
     manager.set_network_block_icon(&NetworkBlockId::from(network_block_id), payload.icon)?;
     Ok(())
 }
+
+/// Commit a complete Network Block editor draft as one database transaction.
+pub(super) async fn save_network_block(
+    state: AppState,
+    payload: SaveNetworkBlockRequest,
+) -> Result<SaveNetworkBlockResponse, ApiError> {
+    use crate::core::{ScheduleEntry, SitePackId};
+    use crate::manager::network::save_network_block::NetworkBlockDraft;
+    use chrono::Weekday;
+
+    // Entitlement may perform remote I/O: never hold the manager write lock
+    // while checking it.
+    let entitled = state.is_pro_account_entitled().await;
+    let mut schedule = Vec::with_capacity(payload.schedule_entries.len());
+    for entry in payload.schedule_entries {
+        let mut days = 0;
+        if entry.monday {
+            days |= 1 << Weekday::Mon as u8;
+        }
+        if entry.tuesday {
+            days |= 1 << Weekday::Tue as u8;
+        }
+        if entry.wednesday {
+            days |= 1 << Weekday::Wed as u8;
+        }
+        if entry.thursday {
+            days |= 1 << Weekday::Thu as u8;
+        }
+        if entry.friday {
+            days |= 1 << Weekday::Fri as u8;
+        }
+        if entry.saturday {
+            days |= 1 << Weekday::Sat as u8;
+        }
+        if entry.sunday {
+            days |= 1 << Weekday::Sun as u8;
+        }
+        let proposed = ScheduleEntry::from_raw(
+            uuid::Uuid::now_v7().to_string(),
+            payload.id.unwrap_or(uuid::Uuid::nil()).to_string(),
+            &entry.start_time.format("%H:%M:%S").to_string(),
+            &entry.end_time.format("%H:%M:%S").to_string(),
+            days,
+        )
+        .map_err(|error| ApiError::BadRequest(error.to_string()))?;
+        schedule.push(proposed);
+    }
+    let site_pack_ids = payload
+        .site_pack_ids
+        .into_iter()
+        .map(|value| {
+            SitePackId::try_new(value)
+                .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    let mut manager = state.network_manager.write().await;
+    let id = manager.save_network_block(
+        NetworkBlockDraft {
+            id: payload.id.map(NetworkBlockId::from),
+            name: payload.name,
+            icon: payload.icon,
+            safe_search: payload.safe_search,
+            rules: payload.rules,
+            schedule,
+            site_pack_ids,
+        },
+        entitled,
+    )?;
+    let block = manager
+        .get_network_block_from(&id)
+        .expect("saved block must be published after transaction");
+    Ok(SaveNetworkBlockResponse {
+        network_block: NetworkBlockSchema::from((block, &Local::now())),
+    })
+}

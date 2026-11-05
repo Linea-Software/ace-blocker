@@ -166,9 +166,11 @@ Preserve lock policy checks, handle error/data responses and streaming statuses,
 and localize user-visible errors. The TypeScript facade uses `RpcFailure`
 from `src/lib/engine-client/rpc-error.ts` for explicit error results, not
 Fetch-style `response.status` objects; `rpc-contract.test.ts` compares the
-operation map against the current Rust bridge. Network Block editing coordinates
-independent writes in `src/routes/network-blocks/_save-network-block.ts` and
-must never report success or blindly retry after an ambiguous partial commit.
+operation map against the current Rust bridge. Network Block editing sends
+one complete draft via `src/routes/network-blocks/_save-network-block.ts` to
+the transactional `saveNetworkBlock` remoc method. Only Save changes the block
+configuration. A lost RPC acknowledgement after COMMIT remains ambiguous and
+must trigger a refresh, not a blind retry or a claim that nothing was saved.
 Native IPC/capability tests require the disposable Windows VM gate documented
 in `docs/ai/ACE_APP_NATIVE_TEST_GATE.md`. **Desktop WebView shutdown is forbidden**:
 `src-tauri/src/lib.rs` denies the `shutdown` operation before capability

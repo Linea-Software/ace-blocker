@@ -9,7 +9,7 @@ services; the Tauri frontend runs as an unprivileged user-session process.
 
 - Engine listener: `\\.\pipe\AceBlockerEngineControlV1` on Windows;
   `/run/ace-blocker-control/engine-control.sock` on Linux.
-- `crates/ace-engine/src/service/api/rpc.rs` declares the 63 typed remoc RPC
+- `crates/ace-engine/src/service/api/rpc.rs` declares the 64 typed remoc RPC
   operations. They call transport-independent `operations_*.rs` modules,
   preserving lock checks, cloud authorization, shutdown and backup.
 - `service/api/transport.rs` establishes remoc connections and serves

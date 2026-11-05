@@ -32,6 +32,26 @@ pub struct CreateNetworkBlockRequest {
     pub icon: Option<String>,
 }
 
+/// Entire editor draft, persisted in one SQLite transaction.
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveNetworkBlockRequest {
+    /// Omit the ID when creating a new block.
+    pub id: Option<uuid::Uuid>,
+    pub name: String,
+    pub icon: Option<String>,
+    pub safe_search: bool,
+    pub rules: Vec<UserDefinedRule>,
+    pub schedule_entries: Vec<BaseScheduleEntrySchema>,
+    pub site_pack_ids: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SaveNetworkBlockResponse {
+    pub network_block: NetworkBlockSchema,
+}
+
 #[derive(Deserialize, Serialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SetIconRequest {

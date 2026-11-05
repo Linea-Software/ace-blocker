@@ -135,6 +135,21 @@ export type CreateNetworkBlockResponse = {
     networkBlock: NetworkBlockSchema;
 };
 
+/** The complete editable state of a block, saved atomically by Ace Engine. */
+export type SaveNetworkBlockRequest = {
+    id: string | null;
+    name: string;
+    icon: string | null;
+    safeSearch: boolean;
+    rules: Array<UserDefinedRule>;
+    scheduleEntries: Array<BaseScheduleEntrySchema>;
+    sitePackIds: Array<string>;
+};
+
+export type SaveNetworkBlockResponse = {
+    networkBlock: NetworkBlockSchema;
+};
+
 export type CreateSitePackRequest = {
     customFolder?: string | null;
     description?: string | null;
@@ -796,6 +811,16 @@ export type CreateNetworkBlockResponses = {
 };
 
 export type CreateNetworkBlockResponse2 = CreateNetworkBlockResponses[keyof CreateNetworkBlockResponses];
+
+export type SaveNetworkBlockData = {
+    body: SaveNetworkBlockRequest;
+    path?: never;
+    query?: never;
+};
+
+export type SaveNetworkBlockResponses = {
+    200: SaveNetworkBlockResponse;
+};
 
 export type GetDashboardSnapshotData = {
     body?: never;

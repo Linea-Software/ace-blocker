@@ -5,6 +5,7 @@ pub mod exceptions_repo;
 pub mod lock_repo;
 pub mod models;
 pub mod network_block_repo;
+pub mod network_block_snapshot_repo;
 pub mod network_block_to_site_pack_repo;
 pub mod proxy_exclusion_repo;
 pub mod resistance_mode_repo;

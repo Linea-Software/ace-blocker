@@ -12,6 +12,7 @@ pub mod network_blocks_to_site_pack;
 pub mod proxy_exclusions;
 pub mod resistance_mode;
 pub mod schedule;
+pub mod save_network_block;
 mod script_activation_recovery;
 pub mod site_pack;
 pub mod user_defined;
