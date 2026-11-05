@@ -66,7 +66,10 @@ impl AccountManager {
             .entitlement_token
             .as_deref()
             .zip(account.api_key.as_deref())
-            .and_then(|(token, key)| signed_entitlement::verify_lease(token, key, now).ok())
+            .zip(account.entitlement_public_key.as_deref())
+            .and_then(|((token, key), public_key)| {
+                signed_entitlement::verify_lease(token, key, now, public_key).ok()
+            })
             .unwrap_or(0);
         let cached_pro = cached_until >= now && now + 300 >= clock_high_watermark;
         Ok(AccountManager {
@@ -164,7 +167,7 @@ impl AccountManager {
                 if error_msg.contains("invalid entitlement") {
                     let _ = self
                         .db
-                        .update_entitlement_token(None, Utc::now().to_rfc3339());
+                        .update_entitlement_token(None, None, Utc::now().to_rfc3339());
                     self.cached_pro.store(false, Ordering::Release);
                     self.cached_until.store(0, Ordering::Release);
                     return false;
@@ -221,15 +224,54 @@ impl AccountManager {
         matches!(self.get_api_key().await, Ok(Some(_))) && self.get_cached_pro_status()
     }
 
-    async fn verify_pro_status_remote(&self, api_key: &ApiKey) -> Result<bool, String> {
-        #[cfg(debug_assertions)]
-        let base_url = "http://localhost:5173";
-        #[cfg(not(debug_assertions))]
-        let base_url = "https://aceblocker.com";
+    /// Verify a new account key and its signed Pro entitlement *before*
+    /// replacing the local credential. A failed import leaves the previous
+    /// account intact and propagates the failure to the protocol receiver.
+    pub async fn import_api_key(&self, api_key: ApiKey) -> Result<(), String> {
+        self.import_api_key_from(api_key, Self::entitlement_server_origin())
+            .await
+    }
 
+    async fn import_api_key_from(&self, api_key: ApiKey, base_url: &str) -> Result<(), String> {
+        let _guard = self.verify_lock.lock().await;
+        let (token, public_key, until) =
+            Self::fetch_verified_entitlement(&api_key, base_url).await?;
+        let now = Utc::now();
+        let mut account = self.account.write().await;
+        let updated = self
+            .db
+            .commit_verified_account(api_key.into_inner(), now.to_rfc3339(), token, public_key)
+            .map_err(|error| error.to_string())?;
+        *account = updated;
+        self.cached_until.store(until, Ordering::Release);
+        self.clock_high_watermark
+            .fetch_max(now.timestamp(), Ordering::AcqRel);
+        self.update_is_pro_status(until >= now.timestamp())?;
+        Ok(())
+    }
+
+    fn entitlement_server_origin() -> &'static str {
+        #[cfg(debug_assertions)]
+        {
+            "http://localhost:5173"
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            "https://aceblocker.com"
+        }
+    }
+
+    /// Both importing and renewing a license use the same authentication and
+    /// signature validation; this step never changes local account state.
+    async fn fetch_verified_entitlement(
+        api_key: &ApiKey,
+        base_url: &str,
+    ) -> Result<(Option<String>, Option<String>, i64), String> {
         #[derive(Deserialize)]
         struct Reply {
             token: Option<String>,
+            #[serde(rename = "publicKey")]
+            public_key: String,
         }
         let response = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(10))
@@ -248,26 +290,41 @@ impl AccountManager {
         }
         let reply: Reply = response.json().await.map_err(|error| error.to_string())?;
         let now = Utc::now();
-        // Verify the server signature BEFORE persisting anything as Pro.
+        // Reject missing/malformed keys, even on Free accounts. The public
+        // key is delivered in the authenticated server response (HTTPS in
+        // release, loopback in development), never through desktop IPC.
+        signed_entitlement::validate_public_key(&reply.public_key)
+            .map_err(|error| format!("invalid entitlement public key: {error}"))?;
         let until = match reply.token.as_deref() {
-            Some(token) => {
-                signed_entitlement::verify_lease(token, api_key.as_ref(), now.timestamp())
-                    .map_err(|error| format!("invalid entitlement: {error}"))?
-            }
+            Some(token) => signed_entitlement::verify_lease(
+                token,
+                api_key.as_ref(),
+                now.timestamp(),
+                &reply.public_key,
+            )
+            .map_err(|error| format!("invalid entitlement: {error}"))?,
             None => 0,
         };
-        // Authentication and signing happen at the server. Local entitlement
-        // can only change after both signature and durable writes succeed.
+        Ok((reply.token, Some(reply.public_key), until))
+    }
+
+    async fn verify_pro_status_remote(&self, api_key: &ApiKey) -> Result<bool, String> {
+        let (token, public_key, until) =
+            Self::fetch_verified_entitlement(api_key, Self::entitlement_server_origin()).await?;
+        let now = Utc::now();
+        // A renewal must not overwrite a key that changed during the request.
         let mut account = self.account.write().await;
         if account.api_key.as_deref() != Some(api_key.as_ref()) {
             return Err("API key changed while refreshing entitlement".to_owned());
         }
-        self.db
-            .update_account(Some(api_key.as_ref().to_owned()), Some(now.to_rfc3339()))
-            .map_err(|error| error.to_string())?;
         let updated = self
             .db
-            .update_entitlement_token(reply.token, now.to_rfc3339())
+            .commit_verified_account(
+                api_key.as_ref().to_owned(),
+                now.to_rfc3339(),
+                token,
+                public_key,
+            )
             .map_err(|error| error.to_string())?;
         *account = updated;
         self.cached_until.store(until, Ordering::Release);
@@ -403,6 +460,157 @@ mod cached_pro_tests {
 
         manager.update_is_pro_status(false).unwrap();
         assert!(!clone.get_cached_pro_status());
+    }
+}
+
+#[cfg(test)]
+mod license_import_tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
+    fn test_public_key() -> String {
+        use base64::Engine as _;
+        let signing = ed25519_dalek::SigningKey::from_bytes(&[17; 32]);
+        base64::engine::general_purpose::STANDARD.encode(signing.verifying_key().as_bytes())
+    }
+
+    // Local synthetic HTTP responses, never real site accounts or credentials.
+    async fn mock_entitlement_server(status: &str, body: &str) -> String {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let status = status.to_owned();
+        let body = body.to_owned();
+        tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut request = [0_u8; 4096];
+            let _ = stream.read(&mut request).await.unwrap();
+            let reply = format!(
+                "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            stream.write_all(reply.as_bytes()).await.unwrap();
+        });
+        format!("http://{address}")
+    }
+
+    fn test_manager() -> (tempfile::TempDir, AccountManager) {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&dir.path().join("license.sqlite")).unwrap());
+        (dir, AccountManager::from(db).unwrap())
+    }
+
+    #[tokio::test]
+    async fn rejected_key_preserves_the_previous_login() {
+        let (_dir, manager) = test_manager();
+        manager
+            .update_account(
+                Some(ApiKey::try_new("previous-working-key".to_owned()).unwrap()),
+                None,
+            )
+            .await
+            .unwrap();
+        let endpoint =
+            mock_entitlement_server("401 Unauthorized", r#"{"message":"Invalid API key."}"#).await;
+        let error = manager
+            .import_api_key_from(
+                ApiKey::try_new("rejected-key".to_owned()).unwrap(),
+                &endpoint,
+            )
+            .await
+            .unwrap_err();
+        assert!(error.contains("HTTP 401"));
+        assert_eq!(
+            manager.get_api_key().await.unwrap().unwrap().as_ref(),
+            "previous-working-key"
+        );
+    }
+
+    #[tokio::test]
+    async fn unsigned_pro_lease_cannot_replace_the_previous_login() {
+        let (_dir, manager) = test_manager();
+        manager
+            .update_account(
+                Some(ApiKey::try_new("previous-working-key".to_owned()).unwrap()),
+                None,
+            )
+            .await
+            .unwrap();
+        let response = format!(
+            r#"{{"token":"invalid-token","publicKey":"{}"}}"#,
+            test_public_key()
+        );
+        let endpoint = mock_entitlement_server("200 OK", &response).await;
+        let error = manager
+            .import_api_key_from(
+                ApiKey::try_new("candidate-key".to_owned()).unwrap(),
+                &endpoint,
+            )
+            .await
+            .unwrap_err();
+        assert!(error.contains("invalid entitlement"));
+        assert_eq!(
+            manager.get_api_key().await.unwrap().unwrap().as_ref(),
+            "previous-working-key"
+        );
+    }
+
+    #[tokio::test]
+    async fn signed_pro_lease_survives_restart_without_build_time_key() {
+        use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
+        use ed25519_dalek::{Signer, SigningKey};
+        use sha2::{Digest, Sha256};
+        let (dir, manager) = test_manager();
+        let signing = SigningKey::from_bytes(&[17; 32]);
+        let key = "verified-pro-key";
+        let now = Utc::now().timestamp();
+        let header = URL_SAFE_NO_PAD.encode(
+            serde_json::json!({"alg":"EdDSA","typ":"ACE-ENTITLEMENT","kid":"ace-v1"}).to_string(),
+        );
+        let payload = URL_SAFE_NO_PAD.encode(
+            serde_json::json!({
+                "iss":"aceblocker.com", "sub":"test-user",
+                "key_sha256": hex::encode(Sha256::digest(key.as_bytes())),
+                "iat": now, "exp": now + 86400,
+                "offline_until": now + 86400 + signed_entitlement::OFFLINE_GRACE_SECONDS,
+                "features":["custom_site_packs","premium_site_packs","resistance_mode","cloud_backup"]
+            }).to_string()
+        );
+        let message = format!("{header}.{payload}");
+        let signature = URL_SAFE_NO_PAD.encode(signing.sign(message.as_bytes()).to_bytes());
+        let response = serde_json::json!({
+            "token": format!("{message}.{signature}"),
+            "publicKey": test_public_key()
+        })
+        .to_string();
+        let endpoint = mock_entitlement_server("200 OK", &response).await;
+        manager
+            .import_api_key_from(ApiKey::try_new(key.to_owned()).unwrap(), &endpoint)
+            .await
+            .unwrap();
+        assert!(manager.get_cached_pro_status());
+        let db = Arc::new(EngineDB::from(&dir.path().join("license.sqlite")).unwrap());
+        let restarted = AccountManager::from(db).unwrap();
+        assert!(restarted.get_cached_pro_status());
+    }
+
+    #[tokio::test]
+    async fn authenticated_free_account_can_be_imported_without_pro_grant() {
+        let (_dir, manager) = test_manager();
+        let response = format!(r#"{{"token":null,"publicKey":"{}"}}"#, test_public_key());
+        let endpoint = mock_entitlement_server("200 OK", &response).await;
+        manager
+            .import_api_key_from(
+                ApiKey::try_new("valid-free-key".to_owned()).unwrap(),
+                &endpoint,
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            manager.get_api_key().await.unwrap().unwrap().as_ref(),
+            "valid-free-key"
+        );
+        assert!(!manager.get_cached_pro_status());
     }
 }
 

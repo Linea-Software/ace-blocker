@@ -137,19 +137,29 @@ A successful build is **not** proof of release safety. Verify at least:
 Do **not** publish the draft to end users solely because CI passes. Native
 Windows/Linux integration and security tests are separate release gates.
 
-## Signed Pro entitlement key for release builds
+## Signed Pro entitlements in development and release
 
-Ace Engine pins the Ed25519 **public** verification key at compile time. Before
-release builds and release-profile CI checks, configure the GitHub Actions
-repository variable `ACE_ENTITLEMENT_PUBLIC_KEY_BASE64` (base64-encoded **raw
-32-byte** public key). The private signing key must never enter this repository
-or its release workflow. Release builds fail when the public key is missing.
+Both development and release engines request the entitlement and its Ed25519
+**public** verification key from the authenticated Ace server endpoint
+`GET /api/v1/account/entitlement`. Production uses HTTPS and development uses
+loopback HTTP. No entitlement key is required at compile time and
+`crates/ace-engine/build.rs` does not read any server secrets or local
+website checkout. The server-only signing private key never reaches the client.
 
-The backend uses the matching private key in the secret
-`ACE_ENTITLEMENT_SIGNING_KEY_BASE64` and checks the match against its own
-`ACE_ENTITLEMENT_PUBLIC_KEY_BASE64`. Generate a pair using the website utility
+The server configures `ACE_ENTITLEMENT_SIGNING_KEY_BASE64` (private PKCS#8)
+and can optionally check the matching `ACE_ENTITLEMENT_PUBLIC_KEY_BASE64`.
+The engine verifies each signed lease before granting Pro and stores the
+public key alongside that lease in its service-owned SQLite database for
+offline validation after restart. The public key is authenticated by HTTPS
+at receipt time in production; local development trusts the loopback server.
+A compromised server connection at the moment of first acquisition would
+change the trust model compared with a compile-time pin; never use plaintext
+remote HTTP in production.
+
+Generate the server key pair using the website utility
 `bun scripts/generate-entitlement-keys.ts <secure-directory-outside-repo>`.
-Rebuild and redeploy the engine in coordination with server key rotation.
+Rotation is handled by the next authenticated entitlement response; no desktop
+rebuild or release variable is necessary.
 
 Pro leases expire after at most 24 hours, with another 72 hours allowed for
 intermittent offline use. Previously active blocking protections remain enabled

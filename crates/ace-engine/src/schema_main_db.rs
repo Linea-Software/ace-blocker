@@ -7,6 +7,7 @@ diesel::table! {
         last_pro_check -> Nullable<Text>,
         tos_accepted_at -> Nullable<Text>,
         entitlement_token -> Nullable<Text>,
+        entitlement_public_key -> Nullable<Text>,
         clock_high_watermark -> Nullable<Text>,
     }
 }

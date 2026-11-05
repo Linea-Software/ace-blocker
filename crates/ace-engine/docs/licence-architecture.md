@@ -5,15 +5,15 @@
 - **DodoPayments** sends signed subscription lifecycle webhooks to the ACE backend. It intentionally remains in `test_mode` even in release builds until the product changes its billing policy.
 - **Better Auth** authenticates users and desktop API keys. The backend checks the effective Pro expiration before serving cloud backups, scripts or premium pack download URLs.
 - **ACE backend** signs short-lived Pro entitlements using a server-only Ed25519 private key.
-- **ACE Engine** verifies the signature using a compile-time-pinned public key and enforces Pro independent of Svelte UI state.
+- **ACE Engine** verifies the signature using the server-delivered public key authenticated by HTTPS in production (loopback HTTP in dev) and enforces Pro independent of Svelte UI state.
 
 ## Signed entitlement protocol
 
-`GET /api/v1/account/entitlement` accepts a desktop API key, authenticates that key independently of browser cookies and sets `Cache-Control: no-store`. It returns `{ "token": null }` for Free accounts or a compact EdDSA-signed token for active Pro.
+`GET /api/v1/account/entitlement` accepts a desktop API key, authenticates that key independently of browser cookies and sets `Cache-Control: no-store`. It returns `{ "token": null, "publicKey": "<base64>" }` for Free accounts or a compact EdDSA-signed token with the same `publicKey` for active Pro. The public key is the 32-byte Ed25519 verification key, not the private signing key.
 
 The token includes `iss = aceblocker.com`, the user ID (`sub`), SHA-256 fingerprint of the API key (`key_sha256`), `iat`, `exp`, `offline_until`, grants for Pro features, and `kid = ace-v1`. `exp` is at most 24 hours after issue and never later than the paid billing deadline. `offline_until` is exactly 72 hours after `exp`.
 
-The Engine uses `ed25519-dalek 3.0` with strict verification and validates issuer, API-key binding, time bounds, offline deadline and features. Local booleans and user-editable backup metadata cannot establish Pro. SQLite persists only the signed lease and the last verified clock high-watermark.
+The Engine uses `ed25519-dalek 3.0` with strict verification and validates issuer, API-key binding, time bounds, offline deadline and features. Local booleans and user-editable backup metadata cannot establish Pro. Service-owned SQLite persists the signed lease, its authenticated public verification key and the last verified clock high-watermark; cached Pro is still computed from strict signature validation after restart.
 
 ## Refresh, expiry and revocation
 
@@ -23,7 +23,7 @@ The proxy uses the verified, time-bounded local snapshot instead of waiting for 
 
 ## Payment integrity and deployment
 
-The backend rejects duplicate and stale signed webhook events. A failed entitlement database write releases its event claim and propagates the error so the payment provider can retry. The server uses `ACE_ENTITLEMENT_SIGNING_KEY_BASE64` (private PKCS#8 DER, standard base64) and validates the matching `ACE_ENTITLEMENT_PUBLIC_KEY_BASE64`. Desktop release binaries must be compiled with the matching **public** key, never the private key. See `docs/RELEASING.md` and `ace-blocker-site/docs/DEPLOY.md` for generation and rotation.
+The backend rejects duplicate and stale signed webhook events. A failed entitlement database write releases its event claim and propagates the error so the payment provider can retry. The server uses `ACE_ENTITLEMENT_SIGNING_KEY_BASE64` (private PKCS#8 DER, standard base64) and validates the matching `ACE_ENTITLEMENT_PUBLIC_KEY_BASE64`. Desktop binaries obtain the **public** key with the authenticated entitlement response at runtime, in both dev and release. TLS authentication protects initial key distribution in release. Local DB write protection protects the persisted verifier; compromise of that privileged storage or a trusted server response would weaken this trust-on-first-retrieval model. See `docs/RELEASING.md` and `ace-blocker-site/docs/DEPLOY.md` for generation and rotation.
 
 No machine fingerprint or device quotas are enforced. A technically capable local administrator could modify the local binary; no fully local entitlement check guarantees perfect resistance to such tampering. The server controls all backend-hosted resources and ensures ordinary offline access is finite.
 

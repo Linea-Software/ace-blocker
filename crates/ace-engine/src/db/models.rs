@@ -149,6 +149,7 @@ pub struct AccountModel {
     pub last_pro_check: Option<String>,
     pub tos_accepted_at: Option<String>,
     pub entitlement_token: Option<String>,
+    pub entitlement_public_key: Option<String>,
     pub clock_high_watermark: Option<String>,
 }
 

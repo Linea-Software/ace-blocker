@@ -29,6 +29,7 @@ impl EngineDB {
                 api_key.eq(api_key_val),
                 last_pro_check.eq(last_pro_check_val),
                 entitlement_token.eq(None::<String>),
+                entitlement_public_key.eq(None::<String>),
             ))
             .get_result(conn)
             .map_err(|error| DBError::UpdateError {
@@ -45,6 +46,33 @@ impl EngineDB {
             .set((
                 api_key.eq(api_key_val),
                 entitlement_token.eq(None::<String>),
+                entitlement_public_key.eq(None::<String>),
+            ))
+            .get_result(conn)
+            .map_err(|error| DBError::UpdateError {
+                table: "accounts".to_string(),
+                message: error.to_string(),
+            })
+    }
+
+    /// Commit a verified credential, its signed lease and server verification
+    /// key atomically. A failed write cannot strand the account half-imported.
+    pub fn commit_verified_account(
+        &self,
+        new_api_key: String,
+        checked_at: String,
+        token: Option<String>,
+        public_key: Option<String>,
+    ) -> Result<AccountModel, DBError> {
+        use crate::schema_main_db::accounts::dsl::*;
+        let conn = &mut self.get_db_connection()?;
+        diesel::update(accounts.filter(table_lock.eq("0")))
+            .set((
+                api_key.eq(Some(new_api_key)),
+                last_pro_check.eq(Some(checked_at.clone())),
+                entitlement_token.eq(token),
+                entitlement_public_key.eq(public_key),
+                clock_high_watermark.eq(Some(checked_at)),
             ))
             .get_result(conn)
             .map_err(|error| DBError::UpdateError {
@@ -57,6 +85,7 @@ impl EngineDB {
     pub fn update_entitlement_token(
         &self,
         token: Option<String>,
+        public_key: Option<String>,
         observed_at: String,
     ) -> Result<AccountModel, DBError> {
         use crate::schema_main_db::accounts::dsl::*;
@@ -64,6 +93,7 @@ impl EngineDB {
         diesel::update(accounts.filter(table_lock.eq("0")))
             .set((
                 entitlement_token.eq(token),
+                entitlement_public_key.eq(public_key),
                 clock_high_watermark.eq(Some(observed_at)),
             ))
             .get_result(conn)

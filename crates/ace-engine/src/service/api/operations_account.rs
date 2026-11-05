@@ -50,16 +50,20 @@ pub(super) async fn set_api_key(
     let api_key = ApiKey::try_new(payload.api_key)
         .map_err(|_| ApiError::BadRequest("apiKey must not be empty".to_string()))?;
 
-    // Save the new key and clear the previous verification timestamp so the
-    // entitlement check below validates this credential immediately.
+    // Validate against the site's key-only entitlement endpoint and verify
+    // the signed lease before replacing any saved account. An HTTP 401 must
+    // reach the protocol receiver as a failure, never "callback accepted".
     state
         .account_manager
-        .update_account(Some(api_key), None)
+        .import_api_key(api_key)
         .await
-        .map_err(ApiError::Internal)?;
-
-    // Trigger pro check
-    state.account_manager.is_pro().await;
+        .map_err(|error| {
+            if error.contains("HTTP 401") || error.contains("HTTP 403") {
+                ApiError::Unauthorized("The account key was rejected. Sign in again.".to_owned())
+            } else {
+                ApiError::ProStatusCheckFailed(error)
+            }
+        })?;
 
     Ok(())
 }
