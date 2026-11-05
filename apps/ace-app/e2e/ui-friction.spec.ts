@@ -71,7 +71,7 @@ test.describe("Desktop UI friction", () => {
         await expect(page.getByRole("link", { name: "Getting Started" })).toBeVisible();
     });
 
-    test("Control keeps its divider full height without stretching full width", async ({ page }) => {
+    test("Control fills large screens without overflowing compact windows", async ({ page }) => {
         await page.setViewportSize({ width: 1200, height: 800 });
         await page.goto("/");
         await expect(page.getByRole("heading", { name: "Control" })).toBeVisible({
@@ -107,6 +107,7 @@ test.describe("Desktop UI friction", () => {
                     id: `test-${index}`,
                     name: `Policy ${index}`,
                     isActive: true,
+                    enabled: true,
                     lockState: { state: "inactive" },
                 },
                 scheduleEntries: [],
@@ -116,24 +117,26 @@ test.describe("Desktop UI friction", () => {
             engineStore.isAlive = true;
         });
 
-        const board = page.locator(".state-board");
+        const board = page.locator(".control-dashboard");
         await expect(board).toBeVisible();
+        await expect(board.locator(".protection-overview")).toBeVisible();
+        await expect(board.getByRole("heading", { name: "What does locking a block do?" })).toBeVisible();
 
-        for (const width of [1200, 800]) {
+        for (const width of [1600, 1200, 800, 580]) {
             await page.setViewportSize({ width, height: 800 });
             const measurements = await board.evaluate((element) => {
-                const left = element.querySelector(".now-board")!;
-                const right = element.querySelector(".change-board")!;
+                const grid = element.querySelector(".dashboard-grid")!;
+                const pageLayout = element.closest(".page-layout")!;
                 return {
-                    boardWidth: element.getBoundingClientRect().width,
-                    leftHeight: left.getBoundingClientRect().height,
-                    rightHeight: right.getBoundingClientRect().height,
-                    borderWidth: getComputedStyle(right).borderLeftWidth,
+                    layoutWidth: pageLayout.getBoundingClientRect().width,
+                    columnCount: getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+                    scrollWidth: element.scrollWidth,
+                    clientWidth: element.clientWidth,
                 };
             });
-            expect(measurements.boardWidth).toBeLessThanOrEqual(920);
-            expect(Math.abs(measurements.leftHeight - measurements.rightHeight)).toBeLessThan(1);
-            expect(measurements.borderWidth).toBe("1px");
+            expect(measurements.layoutWidth).toBeLessThanOrEqual(1280);
+            expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth + 1);
+            expect(measurements.columnCount).toBe(width >= 1200 ? 2 : 1);
         }
     });
 });
@@ -298,8 +301,9 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
     await page.goto("/network-blocks");
     // A local Svelte component fixture; no privileged engine request is sent.
     await page.evaluate(async () => {
+        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
-            import(/* @vite-ignore */ "/node_modules/.vite/deps/svelte.js"),
+            import(/* @vite-ignore */ runtime),
             import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
         ]);
         const fixture = document.createElement("div");
@@ -336,8 +340,9 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
 test("Reviewing a scheduled lock only offers removal outside active hours", async ({ page }) => {
     await page.goto("/network-blocks");
     await page.evaluate(async () => {
+        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
-            import(/* @vite-ignore */ "/node_modules/.vite/deps/svelte.js"),
+            import(/* @vite-ignore */ runtime),
             import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
         ]);
         mount(LockModal, {

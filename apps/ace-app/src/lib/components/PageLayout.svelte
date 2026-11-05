@@ -9,7 +9,7 @@
         children,
         ...restProps
     }: {
-        width?: "wide" | "narrow";
+        width?: "wide" | "narrow" | "dashboard";
         header: Snippet;
         children: Snippet;
         class?: string;
@@ -21,6 +21,7 @@
     class={cn(
         "page-layout",
         width === "narrow" && "page-layout--narrow",
+        width === "dashboard" && "page-layout--dashboard",
         className,
     )}
     {...restProps}
@@ -44,6 +45,10 @@
 
     .page-layout--narrow {
         max-width: 920px;
+    }
+
+    .page-layout--dashboard {
+        max-width: 1280px;
     }
 
     .page-header-slot {
