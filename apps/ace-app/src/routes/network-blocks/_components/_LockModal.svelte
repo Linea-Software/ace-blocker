@@ -15,6 +15,7 @@
     import { cn } from "$lib/utils";
     import { toast } from "svelte-sonner";
     import { setLock, type LockState } from "$engine-client";
+    import { buildLockPayload, isUnchangedLock, validateLockDraft } from "./lock-form";
     import { getLocale } from "$lib/paraglide/runtime";
     import {
         CalendarDate,
@@ -210,18 +211,23 @@
     async function handleSave() {
         if (!block || isSubmitting) return;
 
-        // Build the lock body from form state
-        const body: { lockState: string; lockEnd?: string | null } =
-            lockType === "active_until_lock_end"
-                ? { lockState: lockType, lockEnd }
-                : { lockState: lockType };
+        // No RPC unless the selected state is valid. In particular, the
+        // switch being off must never send the selected (hidden) lock type.
+        const body = buildLockPayload({
+            enabled: isActive,
+            type: lockType as Exclude<LockState["state"], "inactive">,
+            end: lockEnd,
+            original: originalLockState ?? { state: "inactive" },
+            scheduleCount: block.schedules?.length ?? 0,
+            isCurrentlyLocked: !!block.isLocked,
+            now: new Date(),
+        });
+        if (!body) return;
 
         // No-op if nothing changed
         if (
             originalLockState &&
-            originalLockState.state === body.lockState &&
-            (body.lockState !== "active_until_lock_end" ||
-                (originalLockState.end ?? "") === (lockEnd || ""))
+            isUnchangedLock(originalLockState, body)
         ) {
             // Nothing changed — close without calling the API
             onSave?.();
@@ -525,7 +531,15 @@
             <Button
                 class="h-10 rounded-sm border border-[var(--ace-signal-deep)] bg-[var(--ace-signal)] px-6 font-semibold text-[var(--ace-ink)] hover:bg-[var(--ace-signal-bright)]"
                 onclick={handleSave}
-                disabled={isSubmitting || isTimeInvalid}
+                disabled={isSubmitting || isTimeInvalid || (isActive && !!validateLockDraft({
+                    enabled: isActive,
+                    type: lockType as Exclude<LockState["state"], "inactive">,
+                    end: lockEnd,
+                    original: originalLockState ?? { state: "inactive" },
+                    scheduleCount: block?.schedules?.length ?? 0,
+                    isCurrentlyLocked: !!block?.isLocked,
+                    now: new Date(),
+                }))}
             >
                 {#if isSubmitting}
                     {m.saving()}
