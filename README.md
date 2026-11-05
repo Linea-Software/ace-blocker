@@ -18,7 +18,10 @@ initial snapshot, not a Git-history merge.
 LocalSystem Windows services; the Tauri app runs in the user session.
 The app now uses typed remoc RPC over Windows Named Pipes through the
 Tauri backend (Unix sockets on Linux). See docs/IPC_ARCHITECTURE.md for
-security boundaries and release verification.
+security boundaries and release verification. A **deferred** proposal for
+Cloudflare-backed trusted time (rather than frequent calls to Ace's VPS) is
+recorded in [docs/TRUSTED_TIME_FUTURE.md](docs/TRUSTED_TIME_FUTURE.md); it is
+not currently implemented.
 
 The public website (`ace-blocker-site`), Android client, host-list production
 pipeline (`ace-hosts`), and resistance-script source (`boredom-engine`) are
