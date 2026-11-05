@@ -19,12 +19,10 @@ export const logout = <ThrowOnError extends boolean = false>(options?: Options<L
  * Re-read the account's Pro status after an event that may have changed it
  * (login, logout, subscription change, focus regain).
  *
- * The engine never calls the Ace server when the last successful
- * verification is less than one day old: this endpoint returns the cached
- * status in that case and performs exactly one single-flight remote
- * re-verification only when the cache is stale or absent. Transient errors
- * keep the previous entitlement; authorization failures clear the API key
- * and transition the account to free.
+ * The explicit refresh path uses a 30-second freshness window (rather
+ * than the proxy's 24-hour lazy cache). Concurrent requests are single-flight
+ * and transient errors retain the last verified status. Valid Free accounts
+ * remain signed in so upgrades can be detected after checkout.
  */
 export const refreshAccount = <ThrowOnError extends boolean = false>(options?: Options<RefreshAccountData, ThrowOnError>): RequestResult<RefreshAccountResponses, unknown, ThrowOnError> => rpcRequest<RefreshAccountResponses, unknown, ThrowOnError>("refreshAccount", options);
 

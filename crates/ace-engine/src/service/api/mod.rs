@@ -55,6 +55,15 @@ impl AppState {
     /// Debug overrides are read before and after verification so concurrent
     /// changes to an override cannot return an outdated effective policy.
     async fn is_pro_account_entitled(&self) -> bool {
+        self.pro_account_entitled(false).await
+    }
+
+    /// Use the shorter, rate-limited refresh path on return from checkout.
+    async fn refresh_pro_account_entitled(&self) -> bool {
+        self.pro_account_entitled(true).await
+    }
+
+    async fn pro_account_entitled(&self, refresh: bool) -> bool {
         #[cfg(debug_assertions)]
         match self.network_manager.read().await.get_debug_pro_policy() {
             DebugProPolicy::Pro => return true,
@@ -62,7 +71,11 @@ impl AppState {
             DebugProPolicy::Default => {}
         }
 
-        let verified = self.account_manager.is_pro().await;
+        let verified = if refresh {
+            self.account_manager.refresh_pro_status().await
+        } else {
+            self.account_manager.is_pro().await
+        };
         #[cfg(debug_assertions)]
         match self.network_manager.read().await.get_debug_pro_policy() {
             DebugProPolicy::Pro => return true,

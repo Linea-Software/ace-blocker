@@ -13,14 +13,16 @@ pub(super) async fn get_account_info(state: AppState) -> AccountInfoResponse {
 /// Re-read the account's Pro status after an event that may have changed it
 /// (login, logout, subscription change, focus regain).
 ///
-/// The engine never calls the Ace server when the last successful
-/// verification is less than one day old: this endpoint returns the cached
-/// status in that case and performs exactly one single-flight remote
-/// re-verification only when the cache is stale or absent. Transient errors
-/// keep the previous entitlement; authorization failures clear the API key
-/// and transition the account to free.
+/// Explicit requests use a 30-second freshness window so returning from
+/// checkout can detect a Pro upgrade without waiting for the proxy's 24-hour
+/// lazy cache. Concurrent refreshes are coalesced by the AccountManager.
 pub(super) async fn refresh_account(state: AppState) -> AccountInfoResponse {
-    account_info(&state).await
+    let is_pro = state.refresh_pro_account_entitled().await;
+    let tos_accepted = state.account_manager.has_accepted_tos().await;
+    AccountInfoResponse {
+        is_pro,
+        tos_accepted,
+    }
 }
 
 async fn account_info(state: &AppState) -> AccountInfoResponse {

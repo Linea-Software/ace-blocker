@@ -21,6 +21,17 @@ pub const PERIODIC_PRO_REFRESH_INTERVAL: chrono::Duration = chrono::Duration::ho
 /// must surface within hours of connectivity returning, not after 24h.
 const PRO_VERIFY_RETRY_AFTER_HOURS: i64 = 1;
 
+fn pro_check_is_stale(
+    last_check: Option<DateTime<Local>>,
+    max_age: chrono::Duration,
+    now: DateTime<Local>,
+) -> bool {
+    match last_check {
+        None => true,
+        Some(last) => last > now || now - last > max_age,
+    }
+}
+
 #[derive(Clone)]
 pub struct AccountManager {
     account: Arc<RwLock<AccountModel>>,
@@ -61,6 +72,11 @@ impl AccountManager {
     }
 
     pub async fn is_pro(&self) -> bool {
+        // The proxy hot path uses the long cache window.
+        self.verify_pro_if_stale(chrono::Duration::days(1)).await
+    }
+
+    async fn verify_pro_if_stale(&self, max_age: chrono::Duration) -> bool {
         // No API key → cannot be pro (fast path, no remote call, no lock).
         match self.get_api_key().await {
             Ok(Some(_)) => {}
@@ -85,12 +101,7 @@ impl AccountManager {
                 .map(|dt| dt.with_timezone(&Local))
         });
 
-        let needs_update = if let Some(last_check_time) = last_check {
-            (Local::now() - last_check_time > chrono::Duration::days(1))
-                || last_check_time > Local::now()
-        } else {
-            true
-        };
+        let needs_update = pro_check_is_stale(last_check, max_age, Local::now());
 
         if !needs_update {
             return self.get_cached_pro_status();
@@ -144,20 +155,14 @@ impl AccountManager {
         }
     }
 
-    /// Re-reads the account's Pro status, performing a remote verification
-    /// **only when the last successful verification is older than one day**
-    /// (or no successful verification exists yet). Never calls the Ace server
-    /// more than once per day per account.
-    ///
-    /// This is what the app calls after login, after entitlement-changing
-    /// actions, and on focus/resume. A fresh `last_pro_check` (set by the
-    /// login/api-key path or a recent successful check) returns the cached
-    /// status without any network request; a stale one triggers exactly one
-    /// single-flight re-verification. Transient errors never clear the cached
-    /// entitlement, and a 401/403 (authorization failure) clears the API key
-    /// and transitions the account to free.
+    /// Explicit refresh after returning from checkout/login, or from the
+    /// periodic account task. Unlike proxy hot-path checks (24h cache), this
+    /// uses a thirty-second freshness window so upgrades become visible promptly.
+    /// Concurrent calls remain single-flight; transient errors retain the
+    /// last known entitlement.
     pub async fn refresh_pro_status(&self) -> bool {
-        self.is_pro().await
+        self.verify_pro_if_stale(chrono::Duration::seconds(30))
+            .await
     }
 
     pub fn get_cached_pro_status(&self) -> bool {
@@ -177,15 +182,14 @@ impl AccountManager {
                 let is_pro = details.is_pro;
                 let now = Local::now().to_rfc3339();
 
-                let api_key_to_save = if is_pro {
-                    Some(api_key.as_ref().to_owned())
-                } else {
-                    warn!("[ACCOUNT MANAGER] Licence is not active. Removing API key.");
-                    None
-                };
-
-                // Update account in DB
-                match self.db.update_account(api_key_to_save, Some(now.clone())) {
+                // A valid Free account must remain signed in. Clearing its
+                // credential here would prevent detecting an upgrade made in
+                // the browser. Only an explicit logout or unauthorized API
+                // response revokes the locally stored key.
+                match self
+                    .db
+                    .update_account(Some(api_key.as_ref().to_owned()), Some(now.clone()))
+                {
                     Ok(updated_account) => {
                         // Update local cache
                         *self.account.write().await = updated_account;
@@ -268,6 +272,28 @@ mod cached_pro_tests {
     use super::*;
 
     #[test]
+    fn explicit_refresh_can_detect_an_upgrade_before_the_proxy_cache_expires() {
+        let now = Local::now();
+        let forty_seconds_ago = now - chrono::Duration::seconds(40);
+        assert!(pro_check_is_stale(
+            Some(forty_seconds_ago),
+            chrono::Duration::seconds(30),
+            now,
+        ));
+        assert!(!pro_check_is_stale(
+            Some(forty_seconds_ago),
+            chrono::Duration::days(1),
+            now,
+        ));
+        assert!(!pro_check_is_stale(
+            Some(now),
+            chrono::Duration::seconds(30),
+            now,
+        ));
+        assert!(pro_check_is_stale(None, chrono::Duration::seconds(30), now,));
+    }
+
+    #[test]
     fn cached_entitlement_is_shared_between_clones_and_reloaded_on_restart() {
         let dir = tempfile::tempdir().unwrap();
         let db = Arc::new(EngineDB::from(&dir.path().join("account.sqlite")).unwrap());
@@ -298,9 +324,9 @@ mod cached_pro_tests {
 /// itself is single-flight (see [`AccountManager::refresh_pro_status`]) and
 /// never clears cached entitlement on transient network/server errors.
 pub async fn run_periodic_account_refresh(account_manager: AccountManager) {
-    // First pass immediately (SVC-15-style): a restart with cached account
-    // state should re-validate as soon as possible — but still only when the
-    // last successful verification is older than one day.
+    // First pass immediately (SVC-15-style): refresh an authenticated
+    // account when its last successful verification is older than thirty
+    // seconds, while retaining the lazy 24-hour window for proxy checks.
     loop {
         if matches!(account_manager.get_api_key().await, Ok(Some(_))) {
             account_manager.refresh_pro_status().await;

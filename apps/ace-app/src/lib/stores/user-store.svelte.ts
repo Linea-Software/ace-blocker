@@ -1,6 +1,7 @@
 import {
     getAccountInfo,
     refreshAccount,
+    triggerContentUpdate,
     type AccountInfoResponse,
 } from "$engine-client";
 
@@ -40,6 +41,12 @@ class UserStore {
     tosAccepted: boolean = $state(true); // ignored until accountInfoLoaded
     accountInfoLoaded: boolean = $state(false);
     accountLoadStatus: "loading" | "error" | "ready" = $state("loading");
+    // Increments when the engine has refreshed Pro content and persisted the
+    // latest site-pack catalogue; views can reload without restarting ACE.
+    proContentRevision = $state(0);
+    private proContentReady = false;
+    private proContentSync: Promise<void> | null = null;
+    private nextProContentAttempt = 0;
     private intervalId: ReturnType<typeof setInterval> | null = null;
     private inFlight: Promise<void> | null = null;
     private refreshOnVisible: (() => void) | null = null;
@@ -191,6 +198,50 @@ class UserStore {
         this.tosAccepted = data.tosAccepted ?? false;
         this.accountInfoLoaded = true;
         this.accountLoadStatus = "ready";
+
+        if (data.isPro) {
+            // Run once for a confirmed Pro entitlement, including after an
+            // upgrade while ACE stays open. The engine handles downloads,
+            // SHA validation, persistence and registration of available packs.
+            void this.syncProContent();
+        } else {
+            // Re-activation must be able to request fresh Pro content.
+            this.proContentReady = false;
+            this.nextProContentAttempt = 0;
+        }
+    }
+
+    private async syncProContent(): Promise<void> {
+        if (
+            this.proContentReady ||
+            this.proContentSync ||
+            Date.now() < this.nextProContentAttempt
+        ) return;
+
+        this.proContentSync = (async () => {
+            try {
+                // Use the existing typed Engine RPC, never access download
+                // endpoints or credentials directly from the WebView.
+                const { error } = await triggerContentUpdate();
+                if (!this.isPro) return;
+                // The engine may have registered new official packs even
+                // when one archive failed to download. Refresh open views
+                // after every completed pass, including partial failures.
+                this.proContentRevision += 1;
+                if (error) throw error;
+                this.proContentReady = true;
+            } catch (error) {
+                // Keep the confirmed entitlement even if content is offline;
+                // a later account refresh can retry without hammering the server.
+                console.error("Could not refresh Pro content:", error);
+                this.nextProContentAttempt = Date.now() + 60_000;
+            }
+        })();
+        try {
+            await this.proContentSync;
+        } finally {
+            this.proContentSync = null;
+        }
     }
 }
 
