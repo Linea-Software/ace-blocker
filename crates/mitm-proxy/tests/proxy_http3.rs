@@ -252,8 +252,103 @@ async fn http3_selective_interception_accepts_policy_host_and_rejects_other_sni(
     )
     .await
     .expect("handshake should be rejected promptly");
-    assert!(denied.is_err(), "unapproved SNI must not get a proxy certificate");
+    assert!(
+        denied.is_err(),
+        "unapproved SNI must not get a proxy certificate"
+    );
     handle.abort();
+}
+
+// An HTTP/3 connection may carry requests for multiple origins. Authorizing
+// its handshake SNI cannot authorize a different request :authority.
+#[tokio::test]
+async fn http3_rejects_unapproved_coalesced_authority_before_forwarding() {
+    init_tracing();
+    let ca_dir = TempDir::new().unwrap();
+    let tcp_addr = pick_tcp_addr().await;
+    let h3_addr = pick_udp_addr();
+    let cfg = ProxyConfig::new(tcp_addr, ca_dir.path())
+        .verify_upstream(false)
+        .with_http3(h3_addr);
+    let proxy = MitmProxy::new(cfg.clone())
+        .with_http3_sni_policy(Arc::new(|host: &str| host == "localhost"));
+    let server = tokio::spawn(async move { proxy.run().await });
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    let ca_pem = std::fs::read_to_string(&cfg.ca_cert_path).unwrap();
+    let client_tls = h3_client_config(&ca_pem);
+    let quic_crypto =
+        quinn::crypto::rustls::QuicClientConfig::try_from(Arc::new(client_tls)).unwrap();
+    let mut endpoint = quinn::Endpoint::client("127.0.0.1:0".parse().unwrap()).unwrap();
+    endpoint.set_default_client_config(quinn::ClientConfig::new(Arc::new(quic_crypto)));
+    let conn = endpoint
+        .connect(h3_addr, "localhost")
+        .unwrap()
+        .await
+        .unwrap();
+    let (mut connection, mut send_request) = h3::client::new(h3_quinn::Connection::new(conn))
+        .await
+        .unwrap();
+    let drive = tokio::spawn(async move {
+        future::poll_fn(|cx| connection.poll_close(cx)).await;
+    });
+
+    let request = Request::builder()
+        .method("GET")
+        .uri("https://unapproved.example/private")
+        .body(())
+        .unwrap();
+    let mut stream = send_request.send_request(request).await.unwrap();
+    stream.finish().await.unwrap();
+    let response = stream.recv_response().await.unwrap();
+    assert_eq!(response.status(), StatusCode::MISDIRECTED_REQUEST);
+    drop(stream);
+    drop(send_request);
+    drive.abort();
+    server.abort();
+}
+
+struct RejectH3Requests;
+
+#[async_trait::async_trait]
+impl RequestInspector for RejectH3Requests {
+    async fn inspect_request(
+        &self,
+        meta: &mitm_proxy::ConnMeta,
+        _request: &mut mitm_proxy::BufferedRequest,
+    ) -> RequestAction {
+        assert_eq!(meta.protocol, mitm_proxy::inspect::Protocol::Http3);
+        RequestAction::Respond(
+            Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Bytes::from_static(b"ACE blocked"))
+                .unwrap(),
+        )
+    }
+}
+
+#[tokio::test]
+async fn http3_blocking_inspector_responds_without_an_upstream_connection() {
+    init_tracing();
+    let ca_dir = TempDir::new().unwrap();
+    let tcp_addr = pick_tcp_addr().await;
+    let h3_addr = pick_udp_addr();
+    let cfg = ProxyConfig::new(tcp_addr, ca_dir.path())
+        .verify_upstream(false)
+        .with_http3(h3_addr);
+    let proxy = MitmProxy::new(cfg.clone())
+        .with_request_inspector(Arc::new(RejectH3Requests))
+        .with_http3_sni_policy(Arc::new(|host: &str| host == "localhost"));
+    let server = tokio::spawn(async move { proxy.run().await });
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+
+    let ca_pem = std::fs::read_to_string(&cfg.ca_cert_path).unwrap();
+    // TCP port 9 has no origin: this must succeed entirely at the request
+    // inspector, without attempting any upstream connection.
+    let (status, body) = h3_get(h3_addr, &ca_pem, "localhost", 9, "/private").await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body, "ACE blocked");
+    server.abort();
 }
 
 #[tokio::test]

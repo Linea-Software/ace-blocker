@@ -117,6 +117,21 @@ decryption). Default is `NoInterceptDecider` — intercept nothing.
 | `BufferedRequest` | `Request<Bytes>` |
 | `BufferedResponse` | `Response<Bytes>` |
 
+## ACE HTTP/3 admission contract
+
+The Engine now configures `with_http3_sni_policy`: only hostnames whose
+current policy blocks at the hostname level are admitted for QUIC/TLS.
+Missing/unauthorized SNI must fail **before** minting a leaf certificate.
+Unapproved HTTP/3 request `:authority` values get HTTP 421, never upstream
+access. Ordinary origins requiring path, Safe Search or Resistance inspection
+use TCP fallback because the existing TCP CONNECT path probes for TLS client
+certificates before attempting decryption. Do not relax this selective
+admission without a separately verified pre-handshake client-cert check.
+
+The TUN -> loopback HTTP/3 bridge is described in `crates/ace-tun/README.md`.
+Native Chrome/Brave/Firefox, Windows WFP, VPN and IPv6 checks are release gates;
+local Quinn HTTP/3 tests alone do not prove installed traffic enforcement.
+
 ## HTTP/3 stream-FIN bug
 
 **Root cause:** h3 0.0.8 sends GREASE frames during `finish()` on the first

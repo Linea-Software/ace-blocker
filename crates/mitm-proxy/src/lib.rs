@@ -33,8 +33,8 @@
 //! # }
 //! ```
 //!
-//! This crate is intentionally self-contained and is **not** wired into the
-//! surrounding ace-engine proxy, block rules, or resistance scripts.
+//! The proxy is independently usable. Ace Engine wires its own inspectors and
+//! a restrictive HTTP/3 SNI policy at the integration boundary.
 
 pub mod ca;
 pub mod config;
@@ -77,6 +77,8 @@ pub struct MitmProxy {
     config: ProxyConfig,
     inspectors: Inspectors,
     intercept_decider: Arc<dyn InterceptDecider>,
+    #[cfg(feature = "http3")]
+    http3_sni_policy: Option<Arc<dyn Fn(&str) -> bool + Send + Sync>>,
 }
 
 impl MitmProxy {
@@ -87,6 +89,8 @@ impl MitmProxy {
             config,
             inspectors: Inspectors::default(),
             intercept_decider: Arc::new(NoInterceptDecider),
+            #[cfg(feature = "http3")]
+            http3_sni_policy: None,
         }
     }
 
@@ -119,6 +123,21 @@ impl MitmProxy {
         self
     }
 
+    /// Restrict HTTP/3 interception to approved SNI and request authority hosts.
+    ///
+    /// Missing or denied SNI fails the QUIC TLS handshake without minting a
+    /// certificate, allowing clients to fall back to TCP. Denied request
+    /// authorities receive 421 to prevent cross-origin connection coalescing.
+    /// Without a policy, standalone HTTP/3 behavior is unchanged.
+    #[cfg(feature = "http3")]
+    pub fn with_http3_sni_policy(
+        mut self,
+        policy: Arc<dyn Fn(&str) -> bool + Send + Sync>,
+    ) -> Self {
+        self.http3_sni_policy = Some(policy);
+        self
+    }
+
     /// Run the proxy until a listener fails or the process is terminated.
     ///
     /// Starts the HTTP/1.x + HTTP/2 TCP listener and, if
@@ -143,7 +162,16 @@ impl MitmProxy {
         let resolver = Arc::new(DynamicCertResolver::new(ca));
         let server_tls = tls::server_config(resolver.clone(), tls::TCP_ALPN);
         #[cfg(feature = "http3")]
-        let h3_tls = tls::server_config(resolver.clone(), tls::H3_ALPN);
+        let h3_tls = match &self.http3_sni_policy {
+            Some(policy) => tls::server_config(
+                Arc::new(cert_resolver::Http3CertResolver::new(
+                    resolver.clone(),
+                    policy.clone(),
+                )),
+                tls::H3_ALPN,
+            ),
+            None => tls::server_config(resolver.clone(), tls::H3_ALPN),
+        };
         let client_tls = tls::client_config(self.config.verify_upstream, tls::TCP_ALPN)?;
 
         // --- shared state -----------------------------------------------
@@ -167,7 +195,7 @@ impl MitmProxy {
         #[cfg(feature = "http3")]
         match self.config.http3_addr {
             Some(addr) => {
-                let quic = http3::serve(state, addr);
+                let quic = http3::serve(state, addr, self.http3_sni_policy);
                 // Run both; return as soon as either fails.
                 tokio::try_join!(tcp, quic).map(|_| ())
             }

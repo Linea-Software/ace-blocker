@@ -33,9 +33,13 @@ MitmProxy::new(config)
 - **GREASE-free HTTP/3** — the h3 server explicitly disables GREASE frames
   for compatibility with strict HTTP/3 clients.
 
-HTTP/3 is **opt-in** via the Cargo feature `http3`. Ace Engine uses the default
-TCP-only configuration because protected-browser QUIC is dropped by ace-tun.
-The standalone proxy executable is also opt-in via `proxy-cli`, because ACE
+HTTP/3 is **opt-in** via the Cargo feature `http3`. Ace Engine now enables
+that feature with a local H3 listener and a selective TLS SNI policy: hostname-
+level blocks can be served over QUIC, while origins needing URL/path inspection
+or TLS client certificates are denied H3 and retain the TCP CONNECT fallback.
+Standalone HTTP/3 keeps its previous behavior unless an SNI/authority policy
+is explicitly configured. The standalone proxy executable remains opt-in via
+`proxy-cli`, because ACE
 ships the engine and watchdog instead. To run HTTP/3, use
 `cargo run -p mitm-proxy --features proxy-cli,http3 -- --http3 127.0.0.1:9443`.
 

@@ -115,6 +115,41 @@ impl ResolvesServerCert for DynamicCertResolver {
     }
 }
 
+/// QUIC-only gate: check SNI before consulting the shared certificate factory.
+#[cfg(feature = "http3")]
+pub(crate) struct Http3CertResolver {
+    inner: Arc<DynamicCertResolver>,
+    policy: Arc<dyn Fn(&str) -> bool + Send + Sync>,
+}
+
+#[cfg(feature = "http3")]
+impl Http3CertResolver {
+    pub(crate) fn new(
+        inner: Arc<DynamicCertResolver>,
+        policy: Arc<dyn Fn(&str) -> bool + Send + Sync>,
+    ) -> Self {
+        Self { inner, policy }
+    }
+}
+
+#[cfg(feature = "http3")]
+impl std::fmt::Debug for Http3CertResolver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Http3CertResolver").finish_non_exhaustive()
+    }
+}
+
+#[cfg(feature = "http3")]
+impl ResolvesServerCert for Http3CertResolver {
+    fn resolve(&self, client_hello: ClientHello<'_>) -> Option<Arc<CertifiedKey>> {
+        let host = client_hello.server_name()?;
+        if !(self.policy)(host) {
+            return None;
+        }
+        self.inner.certified_key(host)
+    }
+}
+
 /// Per-CONNECT resolver that uses the tunnel authority when the ClientHello has
 /// no SNI. IP-address TLS clients do not send SNI, but rustls can still verify an
 /// IP-SAN certificate, so the CONNECT target is the correct fallback identity.

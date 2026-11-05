@@ -1,6 +1,6 @@
 //! rustls configuration helpers for both sides of the proxy.
 //!
-//! * The *server* side (client <-> proxy) uses a [`DynamicCertResolver`] so a
+//! * The *server* side (client <-> proxy) uses a [`DynamicCertResolver`](crate::cert_resolver::DynamicCertResolver) so a
 //!   per-host leaf is minted during each handshake.
 //! * The *client* side (proxy <-> upstream) uses the platform trust verifier
 //!   (or, for testing, a no-op verifier).
@@ -15,8 +15,6 @@ use rustls::{
 };
 use rustls_platform_verifier::BuilderVerifierExt;
 
-use crate::cert_resolver::DynamicCertResolver;
-
 /// ALPN identifiers advertised to *clients* over the MITM'd TCP connection.
 pub const TCP_ALPN: &[&[u8]] = &[b"h2", b"http/1.1"];
 /// ALPN identifier advertised to *clients* over QUIC.
@@ -25,7 +23,10 @@ pub const H3_ALPN: &[&[u8]] = &[b"h3"];
 
 /// Build a server config that resolves certificates dynamically per SNI and
 /// advertises the given ALPN protocols.
-pub fn server_config(resolver: Arc<DynamicCertResolver>, alpn: &[&[u8]]) -> Arc<ServerConfig> {
+pub fn server_config(
+    resolver: Arc<dyn rustls::server::ResolvesServerCert>,
+    alpn: &[&[u8]],
+) -> Arc<ServerConfig> {
     let mut cfg = ServerConfig::builder()
         .with_no_client_auth()
         .with_cert_resolver(resolver);
@@ -35,10 +36,7 @@ pub fn server_config(resolver: Arc<DynamicCertResolver>, alpn: &[&[u8]]) -> Arc<
 
 /// Build the client config used to reach upstream origins. `alpn` controls
 /// which HTTP versions we offer upstream (typically h2 + http/1.1).
-pub fn client_config(
-    verify: bool,
-    alpn: &[&[u8]],
-) -> Result<Arc<ClientConfig>, rustls::Error> {
+pub fn client_config(verify: bool, alpn: &[&[u8]]) -> Result<Arc<ClientConfig>, rustls::Error> {
     let builder = ClientConfig::builder();
     let mut cfg = if verify {
         builder.with_platform_verifier()?.with_no_client_auth()

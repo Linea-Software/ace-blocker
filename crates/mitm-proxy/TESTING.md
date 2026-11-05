@@ -52,7 +52,7 @@ the process.
 | `inspector_tests.rs` | 4 | HTTPS | Observer counts calls, request header mutation, response body mutation, `RequestAction::Respond` blocks upstream |
 | `proxy_http1.rs` | 4 | HTTP/1.1 | Plaintext forward, CONNECT MITM GET, CONNECT MITM POST body round-trip, custom header |
 | `proxy_http2.rs` | 3 | HTTP/2 | CONNECT+MITM GET, POST body, two concurrent multiplexed streams on one h2 connection |
-| `proxy_http3.rs` | 3 | HTTP/3 (QUIC) | GET body, POST body round-trip, stream finishes cleanly (FIN regression test) |
+| `proxy_http3.rs` | 7 | HTTP/3 (QUIC) | GET/POST/FIN, Alt-Svc stripping, selective TLS SNI denial, HTTP/3 authority coalescing denial, blocking inspector without upstream |
 
 All integration tests use hermetically-bound local echo servers on
 `127.0.0.1:0` (ephemeral ports). The proxy runs **in-process** via

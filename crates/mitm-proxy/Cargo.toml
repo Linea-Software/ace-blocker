@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 
 [features]
 default = []
-# Engine redirects protected-browser QUIC to TCP, so HTTP/3 is opt-in.
+# HTTP/3 remains opt-in for standalone TCP-only consumers.
 http3 = ["dep:h3", "dep:h3-quinn", "dep:quinn"]
 # The standalone CLI is not shipped as part of the ACE service.
 proxy-cli = ["dep:clap", "dep:color-eyre", "dep:tracing-subscriber"]

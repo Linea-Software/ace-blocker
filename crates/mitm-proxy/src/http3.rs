@@ -30,10 +30,11 @@ use crate::util::{absolute_uri, ensure_host_header, snapshot_request_head, strip
 
 /// The h3 request stream type over a quinn connection, carrying `Bytes` bodies.
 type H3Stream = h3::server::RequestStream<h3_quinn::BidiStream<Bytes>, Bytes>;
+type SniPolicy = Arc<dyn Fn(&str) -> bool + Send + Sync>;
 const MAX_BUFFERED_REQUEST_BODY: usize = 16 * 1024 * 1024;
 
 /// Bind the QUIC endpoint and serve HTTP/3 until the process exits.
-pub async fn serve(state: SharedState, addr: SocketAddr) -> Result<()> {
+pub async fn serve(state: SharedState, addr: SocketAddr, policy: Option<SniPolicy>) -> Result<()> {
     let quic_crypto = quinn::crypto::rustls::QuicServerConfig::try_from(state.h3_tls.clone())
         .map_err(|error| eyre::eyre!("building QUIC server crypto: {error}"))?;
     let server_config = quinn::ServerConfig::with_crypto(Arc::new(quic_crypto));
@@ -44,8 +45,9 @@ pub async fn serve(state: SharedState, addr: SocketAddr) -> Result<()> {
 
     while let Some(incoming) = endpoint.accept().await {
         let state = state.clone();
+        let policy = policy.clone();
         tokio::spawn(async move {
-            if let Err(error) = serve_connection(incoming, state).await {
+            if let Err(error) = serve_connection(incoming, state, policy).await {
                 debug!("h3 connection ended: {error:#}");
             }
         });
@@ -55,7 +57,11 @@ pub async fn serve(state: SharedState, addr: SocketAddr) -> Result<()> {
 }
 
 /// Complete the QUIC handshake and serve every HTTP/3 request on the connection.
-async fn serve_connection(incoming: quinn::Incoming, state: SharedState) -> Result<()> {
+async fn serve_connection(
+    incoming: quinn::Incoming,
+    state: SharedState,
+    policy: Option<SniPolicy>,
+) -> Result<()> {
     let connecting = incoming
         .accept()
         .map_err(|error| eyre::eyre!("accepting QUIC connection: {error}"))?;
@@ -75,6 +81,7 @@ async fn serve_connection(incoming: quinn::Incoming, state: SharedState) -> Resu
         match h3_conn.accept().await {
             Ok(Some(resolver)) => {
                 let state = state.clone();
+                let policy = policy.clone();
                 tokio::spawn(async move {
                     let (req, stream) = match resolver.resolve_request().await {
                         Ok(pair) => pair,
@@ -83,7 +90,7 @@ async fn serve_connection(incoming: quinn::Incoming, state: SharedState) -> Resu
                             return;
                         }
                     };
-                    if let Err(error) = handle_request(req, stream, peer, state).await {
+                    if let Err(error) = handle_request(req, stream, peer, state, policy).await {
                         debug!("h3 request error: {error:#}");
                     }
                 });
@@ -106,6 +113,7 @@ async fn handle_request(
     mut stream: H3Stream,
     peer: SocketAddr,
     state: SharedState,
+    policy: Option<SniPolicy>,
 ) -> Result<()> {
     let (parts, ()) = req.into_parts();
 
@@ -114,6 +122,14 @@ async fn handle_request(
         return respond_error(&mut stream, StatusCode::BAD_REQUEST, "missing :authority").await;
     };
     let port = parts.uri.port_u16().unwrap_or(443);
+    if policy.as_ref().is_some_and(|policy| !policy(&host)) {
+        return respond_error(
+            &mut stream,
+            StatusCode::MISDIRECTED_REQUEST,
+            "unapproved :authority",
+        )
+        .await;
+    }
     let authority = if port == 443 {
         host.clone()
     } else {
@@ -191,10 +207,11 @@ async fn handle_request(
         .response
         .inspect_response_head(&meta, &head_snapshot, &mut response_head)
         .await;
-    let body_mode = state
-        .inspectors
-        .response
-        .response_body_mode(&meta, &head_snapshot, &response_head);
+    let body_mode =
+        state
+            .inspectors
+            .response
+            .response_body_mode(&meta, &head_snapshot, &response_head);
     let (parts, _) = response_head.into_parts();
 
     match body_mode {
@@ -234,7 +251,8 @@ async fn send_streaming_response(
         .map_err(|error| eyre::eyre!("sending h3 streaming response head: {error}"))?;
 
     while let Some(frame) = body.frame().await {
-        let frame = frame.map_err(|error| eyre::eyre!("reading upstream streaming frame: {error}"))?;
+        let frame =
+            frame.map_err(|error| eyre::eyre!("reading upstream streaming frame: {error}"))?;
         match frame.into_data() {
             Ok(data) => stream
                 .send_data(data)
@@ -242,10 +260,9 @@ async fn send_streaming_response(
                 .map_err(|error| eyre::eyre!("sending h3 streaming response data: {error}"))?,
             Err(frame) => {
                 if let Ok(trailers) = frame.into_trailers() {
-                    stream
-                        .send_trailers(trailers)
-                        .await
-                        .map_err(|error| eyre::eyre!("sending h3 streaming response trailers: {error}"))?;
+                    stream.send_trailers(trailers).await.map_err(|error| {
+                        eyre::eyre!("sending h3 streaming response trailers: {error}")
+                    })?;
                 }
             }
         }
@@ -264,8 +281,8 @@ async fn send_response(stream: &mut H3Stream, resp: Response<Bytes>) -> Result<(
     // HTTP/3 frames the body by stream length; drop HTTP/1-style framing hints.
     parts.headers.remove(http::header::CONTENT_LENGTH);
     parts.headers.remove(http::header::TRANSFER_ENCODING);
-    // Do not advertise QUIC/H3 to the client: the UDP path is not available
-    // through the proxy, and an `alt-svc` hint would make browsers retry there.
+    // Do not advertise arbitrary upstream H3 endpoints: Ace owns the
+    // QUIC admission and routing decision, not origin Alt-Svc hints.
     parts.headers.remove(http::header::ALT_SVC);
 
     let head = Response::from_parts(parts, ());
