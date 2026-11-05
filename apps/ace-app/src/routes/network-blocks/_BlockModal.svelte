@@ -67,7 +67,7 @@
     // Set when an existing block's editor data failed to load: saving against
     // empty rules/schedule/connections would clobber the server state.
     let dataLoadFailed = $state(false);
-    let partialSaveWarning = $state(false);
+    let saveConfirmationWarning = $state(false);
 
     const editorSections = [
         { id: "blocking", label: m.blocking() },
@@ -165,13 +165,13 @@
                 if (!outcome.uncertain) {
                     // A rejected transaction changes nothing. Keep the draft
                     // available so the user can fix the error and retry.
-                    toast.error(m.failed_to_sync());
+                    toast.error(m.block_save_rejected());
                     return;
                 }
 
                 // A lost acknowledgement can follow a successful COMMIT.
                 // Reconcile rather than falsely declaring a rollback.
-                partialSaveWarning = true;
+                saveConfirmationWarning = true;
                 isLoadingData = true;
                 await invalidateAll();
                 const snapshot = await getDashboardSnapshot();
@@ -187,7 +187,7 @@
                     isSafeSearch = canonical.block.safeSearch;
                     dataLoadFailed = !(await loadData(canonical.block.id));
                 }
-                toast.error(m.block_save_partially_applied());
+                toast.error(m.block_save_unconfirmed());
                 return;
             }
 
@@ -196,8 +196,8 @@
         } catch (error) {
             console.error("Failed to save network block:", error);
             dataLoadFailed = true;
-            partialSaveWarning = true;
-            toast.error(m.block_save_partially_applied());
+            saveConfirmationWarning = true;
+            toast.error(m.block_save_unconfirmed());
         } finally {
             isLoadingData = false;
             isSubmitting = false;
@@ -259,11 +259,11 @@
         </nav>
     {/snippet}
 
-    {#if partialSaveWarning}
+    {#if saveConfirmationWarning}
         <Alert.Root variant="destructive">
             <CircleAlert aria-hidden="true" />
-            <Alert.Title>{m.block_save_partially_applied_title()}</Alert.Title>
-            <Alert.Description>{m.block_save_partially_applied()}</Alert.Description>
+            <Alert.Title>{m.block_save_unconfirmed_title()}</Alert.Title>
+            <Alert.Description>{m.block_save_unconfirmed()}</Alert.Description>
         </Alert.Root>
     {/if}
     {#if isLoadingData}
