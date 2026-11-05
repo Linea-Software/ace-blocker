@@ -133,17 +133,6 @@ pub const DEFAULT_PACKS: &[DefaultSitePacks] = &[
         }],
     },
     DefaultSitePacks {
-        id: "pack-anime-manga-extended",
-        name: "Anime & Manga Websites — Extended",
-        description: "Optional broader anime, manga, manhwa, manhua, webtoon and novel blocking; may affect additional reading sites.",
-        requires_pro: true,
-        sources: &[DefaultSitePacksSource {
-            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/anime-manga-extended.txt",
-            source_type: SitePackSourceType::Url,
-            format: SitePackFormat::Standard,
-        }],
-    },
-    DefaultSitePacks {
         id: "pack-forums-pro",
         name: "Forums & Communities — Pro",
         description: "Blocks discussion forums and community websites.",
