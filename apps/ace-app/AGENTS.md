@@ -66,7 +66,7 @@ This is a **Tauri + SvelteKit** application. The project serves as a UI wrapper 
 - `src-tauri/` — **Backend Wrapper (Rust)**
     - `src/` — Rust source code (e.g., `main.rs`, custom commands).
 - `messages/` — Translation files (e.g., `en.json`).
-- `docs/` — Reference documentation for LLM context.
+- `docs/` — Reference documentation for LLM context. For natural, accurate AI-assisted translations and review, see `../../docs/LLM_LOCALIZATION_WORKFLOW.md` (with the shared website playbook when available).
 - `scripts/` — Utility scripts for building and testing.
 
 ### Technology Stack
