@@ -18,7 +18,7 @@ use chrono::Utc;
 use futures::{StreamExt, stream::BoxStream};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, BufReader};
 use tokio::sync::mpsc;
 use tracing::{info, warn};
 
@@ -26,6 +26,37 @@ use crate::core::utils::file_download;
 
 /// Number of hashes accumulated before flushing to SQLite (which uses smaller SQL statements).
 const INSERT_BATCH_SIZE: usize = 50_000;
+/// A domain/hosts/adblock rule should never need a 16 KiB line. Keep the
+/// parser's memory usage independent from the (up to GiB-sized) input file.
+const MAX_IMPORT_LINE_BYTES: usize = 16 * 1024;
+
+/// Reads through a newline without ever buffering more than the line cap.
+/// Oversized lines are drained in bounded chunks, then skipped by callers.
+async fn read_bounded_line<R: AsyncBufRead + Unpin>(
+    reader: &mut R,
+    line: &mut Vec<u8>,
+) -> std::io::Result<(usize, bool)> {
+    line.clear();
+    let mut bytes_read = 0usize;
+    let mut oversized = false;
+    loop {
+        let chunk = reader.fill_buf().await?;
+        if chunk.is_empty() {
+            return Ok((bytes_read, oversized));
+        }
+        let newline = chunk.iter().position(|byte| *byte == b'\n');
+        let chunk_len = newline.map_or(chunk.len(), |index| index + 1);
+        let available = MAX_IMPORT_LINE_BYTES.saturating_sub(line.len());
+        let to_copy = available.min(chunk_len);
+        line.extend_from_slice(&chunk[..to_copy]);
+        oversized |= to_copy < chunk_len;
+        bytes_read = bytes_read.saturating_add(chunk_len);
+        reader.consume(chunk_len);
+        if newline.is_some() {
+            return Ok((bytes_read, oversized));
+        }
+    }
+}
 
 /// A bounded producer/consumer pipeline: parsing never holds a SQLite writer
 /// connection, and the worker cannot outlive its staged database on cancellation.
@@ -294,8 +325,8 @@ impl Importer {
 
                 loop {
                     line_buffer.clear();
-                    let bytes_read = match reader.read_until(b'\n', &mut line_buffer).await {
-                        Ok(bytes_read) => bytes_read,
+                    let (bytes_read, oversized) = match read_bounded_line(&mut reader, &mut line_buffer).await {
+                        Ok(result) => result,
                         Err(error) => {
                             yield Self::failed(io_error(error), SitePackImportPhase::Importing);
                             return;
@@ -305,6 +336,10 @@ impl Importer {
                         break;
                     }
                     consumed_bytes += bytes_read as u64;
+                    if oversized {
+                        malformed_lines += 1;
+                        continue;
+                    }
 
                     let line = match std::str::from_utf8(&line_buffer) {
                         Ok(line) => line,
@@ -483,12 +518,14 @@ async fn read_sample(path: &Path) -> Result<String, SitePackImportError> {
     let mut sample = String::new();
     for _ in 0..ace_domain_blocklist::DETECTION_SAMPLE_LINES {
         let mut line_buffer: Vec<u8> = Vec::new();
-        let bytes_read = reader
-            .read_until(b'\n', &mut line_buffer)
+        let (bytes_read, oversized) = read_bounded_line(&mut reader, &mut line_buffer)
             .await
             .map_err(io_error)?;
         if bytes_read == 0 {
             break;
+        }
+        if oversized {
+            continue;
         }
         sample.push_str(&String::from_utf8_lossy(&line_buffer));
     }
@@ -758,6 +795,45 @@ mod tests {
         )
         .await;
 
+        assert!(matches!(
+            statuses.last(),
+            Some(SitePackCreationStatus::Completed { .. })
+        ));
+        assert_eq!(db.count_entries().unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn oversized_line_is_drained_without_unbounded_allocation() {
+        let mut data = vec![b'x'; MAX_IMPORT_LINE_BYTES * 128];
+        data.extend_from_slice(b"\nexample.com\n");
+        let mut reader = BufReader::new(data.as_slice());
+        let mut line = Vec::new();
+        let (consumed, oversized) = read_bounded_line(&mut reader, &mut line).await.unwrap();
+        assert!(oversized);
+        assert_eq!(consumed, MAX_IMPORT_LINE_BYTES * 128 + 1);
+        assert!(line.capacity() <= MAX_IMPORT_LINE_BYTES * 2);
+        let (consumed, oversized) = read_bounded_line(&mut reader, &mut line).await.unwrap();
+        assert!(!oversized);
+        assert_eq!(consumed, "example.com\n".len());
+        assert_eq!(line, b"example.com\n");
+    }
+
+    #[tokio::test]
+    async fn oversized_host_rule_is_skipped_and_valid_rule_after_it_imported() {
+        let temp = tempdir().unwrap();
+        let list_path = temp.path().join("oversized.txt");
+        let mut input = vec![b'x'; MAX_IMPORT_LINE_BYTES * 8];
+        input.extend_from_slice(b"\nexample.com\n");
+        std::fs::write(&list_path, input).unwrap();
+        let db = test_db(&temp.path().join("pack.db"));
+        let statuses = run_import(
+            &db,
+            vec![file_source(
+                list_path.to_str().unwrap(),
+                SitePackFormat::WildCardDomains,
+            )],
+        )
+        .await;
         assert!(matches!(
             statuses.last(),
             Some(SitePackCreationStatus::Completed { .. })
