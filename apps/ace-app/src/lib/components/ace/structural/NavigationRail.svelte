@@ -22,7 +22,7 @@
     const secondaryItems = [
         { href: "/getting-started", label: m.nav_guide, icon: BookOpen, tour: "getting-started" },
         { href: "/help", label: m.nav_help, icon: CircleHelp, tour: undefined },
-        { href: "/settings", label: m.settings, icon: Settings, tour: "settings" },
+        { href: "/settings", label: m.nav_settings, icon: Settings, tour: "settings" },
     ] as const;
 
     function isActive(href: string): boolean {

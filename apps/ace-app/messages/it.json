@@ -723,5 +723,11 @@
     "ui_close": "Chiudi",
     "ui_sidebar": "Barra laterale",
     "ui_sidebar_description": "Mostra la barra laterale per dispositivi mobili.",
-    "ui_toggle_sidebar": "Apri o chiudi la barra laterale"
+    "ui_toggle_sidebar": "Apri o chiudi la barra laterale",
+    "settings_language_title": "Lingua",
+    "settings_language_description": "Scegli la lingua dell’app. Per impostazione predefinita segue quella del sistema.",
+    "settings_language_label": "Lingua dell’app",
+    "settings_language_system": "Lingua di sistema",
+    "settings_language_save_failed": "Impossibile salvare la preferenza della lingua. Riprova.",
+    "nav_settings": "Opzioni"
 }

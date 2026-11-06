@@ -1,5 +1,7 @@
 <script lang="ts">
     import "../app.css";
+    import { onMount } from "svelte";
+    import { initializeAppLanguage } from "$lib/utils/app-language";
     import { ModeWatcher } from "mode-watcher";
     import { Toaster } from "$lib/components/ui/sonner";
     import TosModal from "$lib/components/TosModal.svelte";
@@ -13,6 +15,10 @@
     import { onboardingStore } from "$lib/stores/onboarding.svelte";
 
     let { children } = $props();
+
+    onMount(() => {
+        void initializeAppLanguage();
+    });
 
     const legalGateLoading = $derived(
         !engineStore.isReady ||

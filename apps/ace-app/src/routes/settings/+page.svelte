@@ -8,6 +8,7 @@
     import PageLayout from "$lib/components/PageLayout.svelte";
     import PageHeader from "$lib/components/PageHeader.svelte";
     import AppearanceSection from "./_AppearanceSection.svelte";
+    import LanguageSection from "./_LanguageSection.svelte";
     import BackupSection from "./_BackupSection.svelte";
     import ProductUpdateSection from "./_ProductUpdateSection.svelte";
     import LicenseSection from "./_LicenseSection.svelte";
@@ -77,6 +78,8 @@
 
     <div class="grid gap-7">
         <AppearanceSection {selectedTheme} onThemeChange={handleThemeChange} />
+        <div class="settings-rule" aria-hidden="true"></div>
+        <LanguageSection />
         <div class="settings-rule" aria-hidden="true"></div>
         <BackupSection />
         <div class="settings-rule" aria-hidden="true"></div>

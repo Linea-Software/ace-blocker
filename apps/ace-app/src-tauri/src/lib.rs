@@ -24,6 +24,12 @@ fn app_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Returns the native OS locale, not the locale of the embedded web page.
+#[tauri::command]
+fn system_locale() -> Option<String> {
+    sys_locale::get_locale()
+}
+
 pub fn get_capability_token_path() -> Result<PathBuf, String> {
     #[cfg(target_os = "linux")]
     {
@@ -126,7 +132,8 @@ pub fn run() {
             is_debug_mode,
             engine_call,
             engine_stream,
-            app_version
+            app_version,
+            system_locale
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

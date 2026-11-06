@@ -1,7 +1,10 @@
+import type { LanguagePreference } from "$lib/utils/language-preference";
 export type TimeFormat = "system" | "12h" | "24h";
 export type DateFormat = "system" | "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
 
 class LocalizationStore {
+    language = $state<LanguagePreference>("system");
+
     timeFormat = $state<TimeFormat>("system");
     dateFormat = $state<DateFormat>("system");
 

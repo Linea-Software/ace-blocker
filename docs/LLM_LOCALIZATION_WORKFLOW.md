@@ -26,6 +26,15 @@ Il glossario è una **proposta**, non una traduzione già approvata. Uniformarlo
 
 La configurazione Paraglide ha `en`, `de`, `it`, `es`, `fr`, `pt` e `pt-BR`. In `messages/en.json` ci sono 720 chiavi; `it.json` ne contiene 13 e gli altri locali 0. Il conteggio è uno snapshot, non copertura di UI. Evitare di considerare le lingue già pronte solo perché dichiarate in `project.inlang/settings.json`.
 
+## Stato dopo la prima implementazione (2026-11-06)
+
+Dopo lo snapshot iniziale, il catalogo EN/IT dell'app contiene 731 chiavi per
+lingua (incluse le etichette accessibili e il controllo lingua). Lo stato delle
+altre lingue non è stato esteso: il selettore mostra solo Sistema, EN e IT; un
+sistema operativo configurato in un locale senza traduzione usa l'inglese.
+Questo **non** certifica una revisione madrelingua o una validazione legale:
+riservare un'ulteriore verifica editoriale a vincoli, date e privacy.
+
 ## Checklist finale
 
 - JSON valido, chiavi e placeholder conservati; nessuna affermazione funzionale inventata.

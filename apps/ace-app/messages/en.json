@@ -723,5 +723,11 @@
     "ui_close": "Close",
     "ui_sidebar": "Sidebar",
     "ui_sidebar_description": "Displays the mobile sidebar.",
-    "ui_toggle_sidebar": "Toggle Sidebar"
+    "ui_toggle_sidebar": "Toggle Sidebar",
+    "settings_language_title": "Language",
+    "settings_language_description": "Choose the language for the app. System language is used by default.",
+    "settings_language_label": "App language",
+    "settings_language_system": "System language",
+    "settings_language_save_failed": "Could not save the language preference. Please try again.",
+    "nav_settings": "Settings"
 }

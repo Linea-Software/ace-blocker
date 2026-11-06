@@ -14,6 +14,22 @@ the first 16 characters. Schedules are separate civil-time windows whose
 IANA timezone is pinned by the engine, never inferred from the live Windows
 system timezone after policy creation. See `../../docs/TRUSTED_TIME_FUTURE.md`.
 
+## Desktop localization (2026-11-06)
+
+Italian and English have full Paraglide message coverage. The Settings page owns
+a language preference: System language (default), English, Italian.
+`src/lib/utils/app-language.ts` restores the preference at root layout mount
+and uses the `system_locale` **unprivileged** Tauri command backed by
+`sys-locale`, not the WebView's browser locale, for the native automatic choice.
+`settings.json` persists explicit choices in the existing Tauri store.
+Untranslated configured locales deliberately resolve to English. Changing the
+language uses Paraglide's cookie strategy with a document reload, not a
+component-level string-mutation bus. The non-Tauri browser preview saves a
+separate localStorage preference; it cannot exercise the native OS bridge.
+Run `bun run i18n:audit`, `bun run check`, `bun run test:unit`,
+and `cargo check -p ace-app --lib` for localization changes. See
+`../../docs/LLM_LOCALIZATION_WORKFLOW.md` for editorial review requirements.
+
 ## Whole-product updates (pre-release)
 
 The Settings route has a `_ProductUpdateSection.svelte` backed by the
