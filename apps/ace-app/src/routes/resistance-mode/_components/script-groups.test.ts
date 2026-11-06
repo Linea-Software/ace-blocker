@@ -13,13 +13,24 @@ const sample = (domain: string, name: string): ScriptInfo => ({
 describe("Resistance script site icons", () => {
     it("resolves bundled logos for supported domains and their subdomains", () => {
         for (const domain of [
+            "facebook.com",
+            "instagram.com",
+            "linkedin.com",
+            "www.linkedin.com",
+            "netflix.com",
+            "www.netflix.com",
+            "pinterest.com",
+            "reddit.com",
+            "snapchat.com",
+            "web.snapchat.com",
+            "tiktok.com",
+            "threads.net",
+            "www.threads.net",
+            "twitch.tv",
+            "x.com",
+            "news.ycombinator.com",
             "youtube.com",
             "m.youtube.com",
-            "instagram.com",
-            "reddit.com",
-            "tiktok.com",
-            "twitch.tv",
-            "facebook.com",
         ]) {
             expect(getSiteIcon(domain)?.svg).toContain("<svg");
         }
@@ -29,6 +40,9 @@ describe("Resistance script site icons", () => {
         expect(getSiteIcon("youtube.com")?.hex).toBe("FF0000");
         expect(getSiteIcon("reddit.com")?.hex).toBe("FF4500");
         expect(getSiteIcon("instagram.com")?.hex).toMatch(/^[0-9A-F]{6}$/i);
+        expect(getSiteIcon("linkedin.com")?.hex).toBe("0A66C2");
+        expect(getSiteIcon("snapchat.com")?.hex).toBe("FFFC00");
+        expect(getSiteIcon("x.com")?.hex).toBe("000000");
     });
 
     it("does not match lookalike domains and uses a neutral fallback for unknown sites", () => {
