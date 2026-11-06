@@ -219,6 +219,13 @@
               Source="artifacts\shutdown-engine.ps1" KeyPath="yes" />
       </Component>
 
+      <!-- Read-only Authenticode verifier used for a staged, signed MSI.
+           Verification alone never authorizes shutdown or maintenance. -->
+      <Component Id="C_UpdateSignatureVerifier" Guid="{F7725368-0D55-498C-9519-3CED5CEFD36E}">
+        <File Id="F_UpdateSignatureVerifier" Name="verify-product-signature.ps1"
+              Source="artifacts\verify-product-signature.ps1" KeyPath="yes" />
+      </Component>
+
     </ComponentGroup>
 
     <!-- ============================================================ -->
@@ -432,8 +439,10 @@
       <!-- Remove the engine certificates from the machine root store on
            uninstall, after the lock gate has passed. -->
       <Custom Action="CA_StopWatchdog" After="CA_PrepareEngineMaintenance" Condition="REMOVE" />
-      <Custom Action="CA_RemoveApiCert" After="CA_StopWatchdog" Condition="REMOVE" />
-      <Custom Action="CA_RemoveMitmCert" After="CA_RemoveApiCert" Condition="REMOVE" />
+      <!-- An MSI major upgrade is not a user-requested uninstall. Preserve
+           the existing root CAs and their private keys across upgrades. -->
+      <Custom Action="CA_RemoveApiCert" After="CA_StopWatchdog" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="CA_RemoveMitmCert" After="CA_RemoveApiCert" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
 
   </Package>

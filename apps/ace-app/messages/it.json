@@ -1,1 +1,15 @@
-{}
+{
+    "product_updates_title": "Aggiornamenti del prodotto",
+    "product_updates_description": "Gli aggiornamenti dell'installer Windows sono verificati separatamente da categorie e script.",
+    "product_updates_installed": "Versione installata",
+    "product_updates_checking": "Ricerca di una release autenticata…",
+    "product_updates_available": "È disponibile la release verificata {version}.",
+    "product_updates_current": "Non sono disponibili release autenticate più recenti.",
+    "product_updates_disabled": "Gli aggiornamenti automatici del prodotto non sono abilitati in questa build.",
+    "product_updates_error": "Impossibile verificare la distribuzione delle release. La protezione non cambia.",
+    "product_updates_not_installable": "L'installazione non è ancora abilitata. Protezione e blocchi restano attivi.",
+    "product_updates_downloaded": "MSI {version} scaricato; hash e firma del produttore verificati.",
+    "product_updates_downloading": "Download dell’MSI firmato {version} con protezione attiva…",
+    "product_updates_verifying": "Verifica dell'MSI {version} e della firma del produttore…",
+    "product_updates_retry": "Aggiorna stato"
+}

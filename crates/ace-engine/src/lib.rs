@@ -115,6 +115,18 @@ pub async fn run() -> Result<()> {
     #[cfg(debug_assertions)]
     let background_update_handle = std::future::pending::<()>();
 
+    // Product release discovery runs independently from content updates and
+    // trusted-time checks. Release builds only; verification never blocks
+    // filtering, nor does it grant permission to stop either service.
+    #[cfg(all(target_os = "windows", not(debug_assertions)))]
+    let _product_update_handle = if crate::platform::in_service_mode() {
+        Some(tokio::spawn(
+            crate::service::product_update::run_periodic_checks(),
+        ))
+    } else {
+        None
+    };
+
     // Periodic account/pro refresh (Issue 4): while an API key is stored the
     // engine re-verifies entitlement on its own cadence (single-flight, cache
     // preserved on transient errors), so subscription changes recorded on the

@@ -47,6 +47,8 @@ jobs:
       - name: Run unit tests
         working-directory: apps/ace-app
         run: bun run test:unit
+      - name: Validate signed-release payload and MSI static invariants
+        run: python3 -m unittest discover -s tests -p 'test_release_manifest.py'
 
   native:
     name: Rust checks and tests (${{ matrix.os }})
@@ -85,6 +87,7 @@ jobs:
       - name: Test engine RPC, scheduling, and watchdog
         shell: bash
         run: |
+          cargo test --locked -p ace-update-security
           cargo test --locked -p ace-watchdog-protocol
           cargo test --locked -p ace-watchdog --bin ace-watchdog
           cargo test --locked -p ace-engine --lib remoc_tests

@@ -152,6 +152,13 @@ if (-not (Test-Path -LiteralPath $ShutdownScript)) {
 Copy-Item -LiteralPath $ShutdownScript -Destination $Artifacts
 Write-Host "  shutdown-engine.ps1"
 
+$VerifierScript = Join-Path $ScriptDir "verify-product-signature.ps1"
+if (-not (Test-Path -LiteralPath $VerifierScript)) {
+    throw "verify-product-signature.ps1 is required for authenticated MSI staging."
+}
+Copy-Item -LiteralPath $VerifierScript -Destination $Artifacts
+Write-Host "  verify-product-signature.ps1"
+
 Write-Host "`n[2/3] Staging offline site packs..." -ForegroundColor Cyan
 $BundleManifest = Join-Path $BundledPacks "manifest.json"
 if (-not (Test-Path -LiteralPath $BundleManifest)) {

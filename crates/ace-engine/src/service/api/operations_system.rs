@@ -3,7 +3,8 @@ use crate::service::api::{
     AppState,
     error::ApiError,
     schemas::{
-        BinaryUpdateInfo, ContentUpdateInfo, SitePackUpdateEntry, UpdateCheckResponse, VersionInfo,
+        BinaryUpdateInfo, BinaryUpdateStatus, ContentUpdateInfo, SitePackUpdateEntry,
+        UpdateCheckResponse, VersionInfo,
     },
 };
 
@@ -34,20 +35,51 @@ pub(super) async fn open_pro_page() -> Result<&'static str, ApiError> {
 }
 
 pub(super) async fn check_updates(state: AppState) -> Result<UpdateCheckResponse, ApiError> {
+    // The whole-product release is checked independently of the content
+    // updater. Never hold its gate (or a NetworkManager lock) during the
+    // separate signed-manifest HTTPS request.
+    let verified_status = crate::service::product_update::check_available().await;
     let (mut content_service, gate) = state.content_update_service.lock().await.detached();
     let _single_flight = gate.lock().await;
 
-    // Metadata and local DB failures remain errors; empty lists/versions are
-    // reserved for genuinely empty results, never as error sentinels.
+    // Signed release discovery is distinct from any installation authority.
+    let (status, latest_version) = match verified_status {
+        crate::service::product_update::ProductUpdateCheck::Checking => {
+            (BinaryUpdateStatus::Checking, None)
+        }
+        crate::service::product_update::ProductUpdateCheck::Downloading(version) => {
+            (BinaryUpdateStatus::Downloading, Some(version))
+        }
+        crate::service::product_update::ProductUpdateCheck::Verifying(version) => {
+            (BinaryUpdateStatus::Verifying, Some(version))
+        }
+        crate::service::product_update::ProductUpdateCheck::Available(version) => {
+            (BinaryUpdateStatus::Available, Some(version))
+        }
+        crate::service::product_update::ProductUpdateCheck::Downloaded(version) => {
+            (BinaryUpdateStatus::Downloaded, Some(version))
+        }
+        crate::service::product_update::ProductUpdateCheck::UpToDate => {
+            (BinaryUpdateStatus::UpToDate, None)
+        }
+        crate::service::product_update::ProductUpdateCheck::Disabled => {
+            (BinaryUpdateStatus::Disabled, None)
+        }
+        crate::service::product_update::ProductUpdateCheck::Error => {
+            (BinaryUpdateStatus::Error, None)
+        }
+    };
     let engine = BinaryUpdateInfo {
         current_version: env!("CARGO_PKG_VERSION").to_string(),
-        latest_version: content_service
-            .get_latest_installer_version()
-            .await
-            .map_err(|error| {
-                ApiError::Internal(format!("Installer update check failed: {error}"))
-            })?,
-        available: false,
+        available: matches!(
+            status,
+            BinaryUpdateStatus::Available
+                | BinaryUpdateStatus::Downloading
+                | BinaryUpdateStatus::Verifying
+                | BinaryUpdateStatus::Downloaded
+        ),
+        latest_version,
+        status,
     };
 
     let site_packs_to_update = content_service

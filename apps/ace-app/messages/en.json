@@ -705,5 +705,18 @@
     "failed_to_load_block": "Could not load this block's data. Saving is disabled until it can be reloaded.",
     "failed_to_load_block_title": "Block configuration unavailable",
     "loading_block_configuration": "Loading block configuration",
-    "block_editor_sections_label": "Block configuration sections"
+    "block_editor_sections_label": "Block configuration sections",
+    "product_updates_title": "Product updates",
+    "product_updates_description": "Windows installer updates are verified separately from category and script updates.",
+    "product_updates_installed": "Installed version",
+    "product_updates_checking": "Checking for an authenticated release…",
+    "product_updates_available": "Verified release {version} is available.",
+    "product_updates_current": "No newer authenticated release is available.",
+    "product_updates_disabled": "Automatic product updates are not enabled for this build.",
+    "product_updates_error": "Unable to verify the release feed. Protection is unchanged.",
+    "product_updates_not_installable": "Installation is not enabled yet. Your protection and locks remain active.",
+    "product_updates_downloaded": "MSI {version} downloaded; package hash and publisher signature verified.",
+    "product_updates_downloading": "Downloading the signed MSI {version} while protection remains active…",
+    "product_updates_verifying": "Verifying the MSI {version} package and publisher signature…",
+    "product_updates_retry": "Refresh status"
 }

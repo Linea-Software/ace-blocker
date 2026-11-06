@@ -35,6 +35,7 @@ version = "0.1.0"
 dependencies = [
  "ace-domain-blocklist",
  "ace-tun",
+ "ace-update-security",
  "ace-watchdog-protocol",
  "app_dirs2",
  "async-compression",
@@ -82,6 +83,7 @@ dependencies = [
  "rustls",
  "rustls-pemfile",
  "schemars 1.2.3",
+ "semver",
  "serde",
  "serde_json",
  "sha2 0.11.1",
@@ -129,6 +131,21 @@ dependencies = [
  "wfp",
  "windows",
  "wintun",
+]
+
+[[package]]
+name = "ace-update-security"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "ed25519-dalek 3.0.0",
+ "hex",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "thiserror 2.0.21",
+ "url",
 ]
 
 [[package]]

@@ -630,10 +630,32 @@ impl NetworkListLockSchema {
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub enum BinaryUpdateStatus {
+    /// A signed release check is currently in progress.
+    Checking,
+    /// No signing trust and/or signed feed has been provisioned.
+    Disabled,
+    /// Valid signed feed but no newer compatible stable release.
+    UpToDate,
+    /// Authenticated newer stable release (not yet downloaded or installed).
+    Available,
+    /// A signed MSI is being downloaded without stopping protection.
+    Downloading,
+    /// The downloaded MSI is undergoing Authenticode/integrity checks.
+    Verifying,
+    /// MSI downloaded, hashed and verified with Windows Authenticode.
+    Downloaded,
+    /// A network error, malformed manifest or bad signature.
+    Error,
+}
+
+#[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct BinaryUpdateInfo {
     pub current_version: String,
     pub latest_version: Option<String>,
     pub available: bool,
+    pub status: BinaryUpdateStatus,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]

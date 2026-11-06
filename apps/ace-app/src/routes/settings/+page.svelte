@@ -9,6 +9,7 @@
     import PageHeader from "$lib/components/PageHeader.svelte";
     import AppearanceSection from "./_AppearanceSection.svelte";
     import BackupSection from "./_BackupSection.svelte";
+    import ProductUpdateSection from "./_ProductUpdateSection.svelte";
     import LicenseSection from "./_LicenseSection.svelte";
     import DebugSection from "./_DebugSection.svelte";
 
@@ -80,6 +81,8 @@
         <BackupSection />
         <div class="settings-rule" aria-hidden="true"></div>
         <LicenseSection />
+        <div class="settings-rule" aria-hidden="true"></div>
+        <ProductUpdateSection />
         {#if showDebugSettings}
             <div class="settings-rule" aria-hidden="true"></div>
             <DebugSection />

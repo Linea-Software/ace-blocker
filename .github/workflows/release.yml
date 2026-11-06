@@ -24,12 +24,34 @@ jobs:
   validate:
     runs-on: ubuntu-24.04
     steps:
-      - name: Validate release source and version
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Validate release source and unified product version
         env:
           VERSION: ${{ inputs.version }}
         run: |
           [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Version must be X.Y.Z"; exit 1; }
           [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "Run releases from main only"; exit 1; }
+          python3 - <<'PY'
+          import json
+          import os
+          import tomllib
+          from pathlib import Path
+
+          expected = os.environ["VERSION"]
+          sources = {
+              "engine": tomllib.loads(Path("crates/ace-engine/Cargo.toml").read_text())["package"]["version"],
+              "watchdog": tomllib.loads(Path("crates/ace-watchdog/Cargo.toml").read_text())["package"]["version"],
+              "release verifier": tomllib.loads(Path("crates/ace-update-security/Cargo.toml").read_text())["package"]["version"],
+              "Tauri Rust": tomllib.loads(Path("apps/ace-app/src-tauri/Cargo.toml").read_text())["package"]["version"],
+              "Tauri config": json.loads(Path("apps/ace-app/src-tauri/tauri.conf.json").read_text())["version"],
+              "Svelte package": json.loads(Path("apps/ace-app/package.json").read_text())["version"],
+          }
+          mismatches = {name: version for name, version in sources.items() if version != expected}
+          if mismatches:
+              raise SystemExit(f"Release version {expected} differs from product components: {mismatches}")
+          PY
 
   windows:
     name: Package Windows x64 MSI
@@ -51,6 +73,11 @@ jobs:
         working-directory: apps/ace-app
         run: bun install --frozen-lockfile
       - name: Build engine and watchdog
+        env:
+          # Public, compile-time trust roots (not private signing keys).
+          ACE_RELEASE_MANIFEST_URL: ${{ vars.ACE_RELEASE_MANIFEST_URL }}
+          ACE_RELEASE_MANIFEST_PUBLIC_KEY_HEX: ${{ vars.ACE_RELEASE_MANIFEST_PUBLIC_KEY_HEX }}
+          ACE_RELEASE_PUBLISHER_CERT_SHA256: ${{ vars.ACE_RELEASE_PUBLISHER_CERT_SHA256 }}
         run: cargo build --release --locked -p ace-engine -p ace-watchdog --bins
       - name: Build desktop app
         working-directory: apps/ace-app
@@ -102,6 +129,20 @@ jobs:
           }
           $manifest | ConvertTo-Json | Set-Content "installer\dist\release-candidate-windows.json" -Encoding utf8
           "sha256=$sha" >> $env:GITHUB_OUTPUT
+      # Candidate packaging is not publication. Only a separately approved
+      # signing service may sign the MSI; never store a PFX/private key here.
+      # Staging must reject unsigned/wrong-publisher artifacts.
+      - name: Verify signed MSI before optional website staging
+        if: ${{ inputs.stage_on_site }}
+        shell: pwsh
+        env:
+          PUBLISHER_PIN: ${{ vars.ACE_RELEASE_PUBLISHER_CERT_SHA256 }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          & ".\\installer\\verify-product-signature.ps1" `
+            -MsiPath "installer\\dist\\AceBlocker-$env:VERSION.msi" `
+            -ExpectedPublisherCertSha256 $env:PUBLISHER_PIN
+
       - name: Upload Windows release candidate
         uses: actions/upload-artifact@v7
         with:

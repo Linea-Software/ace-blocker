@@ -6,6 +6,7 @@ members = [
     "crates/ace-tun",
     "crates/ace-watchdog",
     "crates/ace-watchdog-protocol",
+    "crates/ace-update-security",
     "crates/mitm-proxy",
     "apps/ace-app/src-tauri",
 ]
@@ -15,6 +16,7 @@ default-members = [
     "crates/ace-tun",
     "crates/ace-watchdog",
     "crates/ace-watchdog-protocol",
+    "crates/ace-update-security",
     "crates/mitm-proxy",
 ]
 

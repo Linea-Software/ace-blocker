@@ -28,3 +28,5 @@
 /installer/artifacts/
 /installer/installer.generated.wxs
 /installer/bundled-packs.wxs
+
+**/__pycache__/

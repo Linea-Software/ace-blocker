@@ -121,6 +121,7 @@ export type BinaryUpdateInfo = {
     available: boolean;
     currentVersion: string;
     latestVersion?: string | null;
+    status: "checking" | "disabled" | "upToDate" | "available" | "downloading" | "verifying" | "downloaded" | "error";
 };
 
 export type ContentUpdateInfo = {

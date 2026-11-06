@@ -1,0 +1,20 @@
+[package]
+name = "ace-update-security"
+version = "0.1.0"
+edition = "2024"
+description = "Authenticated full-product release metadata and integrity verification for Ace Blocker"
+publish = false
+
+[dependencies]
+base64 = "0.22.1"
+ed25519-dalek = { version = "3.0.0", default-features = false, features = ["fast"] }
+hex = "0.4.3"
+semver = "1.0.28"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11.1"
+thiserror = "2"
+url = "2.5"
+
+[dev-dependencies]
+ed25519-dalek = { version = "3.0.0", features = ["fast"] }

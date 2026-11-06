@@ -54,6 +54,8 @@ required-features = ["dev-tools"]
 
 [dependencies]
 ace-watchdog-protocol = { path = "../ace-watchdog-protocol" }
+ace-update-security = { path = "../ace-update-security" }
+semver = "1.0.28"
 ace-domain-blocklist = { path = "../ace-domain-blocklist" }
 app_dirs2 = "~2.5"
 async-compression = { version = "~0.4", features = [
