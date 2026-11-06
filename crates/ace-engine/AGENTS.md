@@ -293,5 +293,9 @@ To ensure accuracy and avoid using deprecated or non-existent APIs, **ALWAYS ref
 > [!IMPORTANT]
 > If a library is not listed here, or the documentation seems outdated, use search tools to find the latest documentation and update these files.
 
+## Full-product Windows update discovery (pre-release)
+
+The independent `src/service/product_update.rs` polls a **signed** release feed only when public trust roots and endpoint are embedded in the build. It stages verified MSIs in the protected ProgramData cache and checks the pinned Authenticode publisher, but it never executes Windows Installer or requests watchdog maintenance. `ace-update-security` owns manifest signature/hash/version/state rules; the ordinary content updater is unrelated. The Windows installer upgrade path is still lock-gated until a privileged one-time authorized maintenance protocol is implemented. Consult `../../docs/PRODUCT_UPDATES.md` before modifying these boundaries. No prior public/legacy release compatibility is required.
+
 ## Remoc local IPC
 Read the root docs/IPC_ARCHITECTURE.md. Local REST control and port discovery have been removed. Extend the existing typed remoc RPC trait instead of adding HTTP endpoints.

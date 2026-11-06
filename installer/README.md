@@ -68,7 +68,11 @@ their SHA-256/provenance, and attaches both to a **draft prerelease** on GitHub.
 No macOS builds or automatic public publishing are configured.
 
 The optional `stage_on_site` input stages **only the Windows MSI** with the
-Ace website; the site requires an administrator to publish it. Configure
+Ace website; the site requires an administrator to publish it. It now requires
+a valid Authenticode signature matching `ACE_RELEASE_PUBLISHER_CERT_SHA256`.
+The workflow does not yet sign the MSI: an approved signing service must be
+configured externally before staging can succeed. See `docs/PRODUCT_UPDATES.md`
+for the pre-release signed-feed contract and disabled auto-install boundary. Configure
 `ACE_RELEASE_INGEST_URL` (repository variable) and
 `ACE_RELEASE_INGEST_TOKEN` (repository secret) to enable that step.
 
@@ -88,6 +92,7 @@ gates that must pass before publishing a release.
 | `wintun.dll` | WireGuard's signed TUN library (loads its kernel component on demand) |
 | `bundled-packs/*` | Offline site-pack seed data |
 | `shutdown-engine.ps1` | Fail-safe uninstall/upgrade maintenance and graceful-shutdown helper |
+| `verify-product-signature.ps1` | Authenticode + pinned publisher-certificate SHA-256 verifier for staged MSI packages |
 
 The obsolete `ace-sentinel` kernel driver is not packaged or modified by this
 installer. The userspace watchdog is intentionally not a kernel/PPL substitute.

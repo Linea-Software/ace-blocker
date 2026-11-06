@@ -11,6 +11,7 @@ tasks on this workspace.
   component instructions are in `crates/ace-engine/AGENTS.md`.
 - `crates/ace-watchdog/`: small, separate LocalSystem service executable.
 - `crates/ace-watchdog-protocol/`: shared heartbeat wire types and tests.
+- `crates/ace-update-security/`: signed Windows MSI release manifest, hash, version-policy and update-phase verification. No privileged installer capability.
 - `crates/ace-tun/`, `crates/mitm-proxy/`,
   `crates/ace-domain-blocklist/`: engine dependencies.
 - `apps/ace-app/`: SvelteKit user interface and Tauri Rust crate; component
@@ -36,6 +37,7 @@ by this root layout.
   Never reintroduce a local REST listener, API port or HTTP fallback.
 - The installer remains the production owner of service lifecycle and
   service security settings. Do not substitute ordinary Tauri bundling.
+- Product update discovery/staging is separate from content updates and TrustedClock. See `docs/PRODUCT_UPDATES.md`. Never treat signed metadata or downloaded MSI as permission to stop locked services; the privileged install path is currently disabled.
 - Only browser traffic may be decrypted by the proxy.
 
 ## Commands

@@ -14,6 +14,16 @@ the first 16 characters. Schedules are separate civil-time windows whose
 IANA timezone is pinned by the engine, never inferred from the live Windows
 system timezone after policy creation. See `../../docs/TRUSTED_TIME_FUTURE.md`.
 
+## Whole-product updates (pre-release)
+
+The Settings route has a `_ProductUpdateSection.svelte` backed by the
+existing typed `checkUpdates` engine API. It reports verified release and
+MSI staging states but MUST NOT display an Install action until a separate
+LocalSystem MSI orchestrator has been reviewed and integrated. Product update
+discovery is separate from content updates and TrustedClock; see
+`../../docs/PRODUCT_UPDATES.md`. Do not introduce Tauri's UI-only updater or
+any lock-bypassing shutdown commands.
+
 ## Project Description
 
 **Ace Blocker** is a blocker application designed to help users overcome internet addictions. It blocks addictive network sites (porn, social media, betting, etc.) and provides a suite of scripts to make these sites less appealing and more boring.

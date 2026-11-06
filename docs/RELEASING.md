@@ -26,7 +26,10 @@ they are not auto-merged.
 ## Building release candidates
 
 Manually run **Desktop release candidates (Windows and Linux)** from
-`main` with a three-part `version` (e.g. `0.3.0`).
+`main` with a three-part `version` (e.g. `0.3.0`). The workflow now rejects
+versions not already aligned in the engine, watchdog, release verifier,
+Tauri Rust/config and Svelte package manifests; the MSI packaging version
+alone is not authoritative.
 
 After **both** builds succeed, the workflow checks the artifact hashes and
 commit provenance and creates (or updates) a **draft prerelease** on GitHub
@@ -44,8 +47,12 @@ The individual GitHub Actions artifacts are retained for 14 days; the draft
 release keeps a copy of both assets and the manifests. Neither workflow
 builds or ships a macOS executable.
 
-The optional `stage_on_site` switch is **Windows only** and sends the MSI
-to the website's staged ingestion endpoint. It requires the repository variable
+The optional `stage_on_site` switch is **Windows only**, now requires a
+valid code-signing certificate pinned by `ACE_RELEASE_PUBLISHER_CERT_SHA256`,
+and sends the MSI to the website's staged ingestion endpoint. The workflow
+cannot sign it by itself: configure an approved signing service first.
+See `docs/PRODUCT_UPDATES.md` for the independently signed release envelope,
+public build keys, updater status and remaining privileged installer gates. It requires the repository variable
 `ACE_RELEASE_INGEST_URL` and secret `ACE_RELEASE_INGEST_TOKEN`; it does
 not publish the staged MSI.
 
