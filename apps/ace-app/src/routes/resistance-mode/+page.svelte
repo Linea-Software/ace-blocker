@@ -1,5 +1,6 @@
 <script lang="ts">
     import * as m from "$lib/paraglide/messages.js";
+    import { countMessage } from "$lib/utils/count-message";
     import {
         getAllScripts,
         getResistanceModeSettings,
@@ -239,7 +240,12 @@
                     ? { ...s, isEnabled: original.get(s.id) ?? s.isEnabled }
                     : s,
             );
-            toast.error(m.items_failed_to_update({ count: failed.length }));
+            toast.error(countMessage(
+                failed.length,
+                m.items_failed_to_update_zero,
+                m.items_failed_to_update_one,
+                () => m.items_failed_to_update({ count: failed.length }),
+            ));
         } else {
             toast.success(m.domain_policies_updated({ domain }));
         }

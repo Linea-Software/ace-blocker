@@ -29,6 +29,9 @@ separate localStorage preference; it cannot exercise the native OS bridge.
 Run `bun run i18n:audit`, `bun run check`, `bun run test:unit`,
 and `cargo check -p ace-app --lib` for localization changes. See
 `../../docs/LLM_LOCALIZATION_WORKFLOW.md` for editorial review requirements.
+The approved Italian product glossary and English-source review flags are in
+`../../docs/ITALIAN_TERMINOLOGY.md`. For counters requiring agreement use
+`src/lib/utils/count-message.ts` with explicit zero, singular and plural messages.
 
 ## Whole-product updates (pre-release)
 

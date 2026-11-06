@@ -104,3 +104,39 @@ test.describe("Getting Started", () => {
         ).toBeVisible();
     });
 });
+
+test("Italian Settings navigation is legible in light and dark themes", async ({
+    page,
+}) => {
+    await page.goto("/settings");
+    await page.locator("#app-language").selectOption("it");
+    await expect(
+        page.getByRole("heading", { name: "Impostazioni" }),
+    ).toBeVisible();
+    const navigationLink = page.getByRole("link", { name: "Impostazioni" });
+    await expect(navigationLink).toBeVisible();
+    const isNotTruncated = () =>
+        navigationLink
+            .locator("span")
+            .evaluate((el) => el.scrollWidth <= el.clientWidth);
+    expect(await isNotTruncated()).toBe(true);
+    await page.setViewportSize({ width: 680, height: 600 });
+    expect(await isNotTruncated()).toBe(true);
+    await page.screenshot({
+        path: "test-results/editorial-settings-it-compact.png",
+    });
+    await page.setViewportSize({ width: 800, height: 600 });
+    await page.screenshot({
+        path: "test-results/editorial-settings-it-light.png",
+    });
+    await page.getByRole("button", { name: "Scuro" }).click();
+    await expect(page.locator("html.dark")).toHaveCount(1);
+    await page.screenshot({
+        path: "test-results/editorial-settings-it-dark.png",
+    });
+    await page.locator("#app-language").selectOption("en");
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await page.screenshot({
+        path: "test-results/editorial-settings-en-dark.png",
+    });
+});

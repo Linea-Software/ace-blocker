@@ -68,9 +68,11 @@
         packName.trim().length > 0 && sources.length > 0,
     );
     const sourceCountLabel = $derived(
-        sources.length === 1
-            ? m.one_source_added()
-            : m.sources_added({ count: sources.length }),
+        sources.length === 0
+            ? m.sources_added_zero()
+            : sources.length === 1
+              ? m.one_source_added()
+              : m.sources_added({ count: sources.length }),
     );
 
     function isValidUrl(string: string) {

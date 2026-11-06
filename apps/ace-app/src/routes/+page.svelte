@@ -14,6 +14,7 @@
     import { SvelteDate } from "svelte/reactivity";
     import { resolve } from "$app/paths";
     import * as m from "$lib/paraglide/messages.js";
+    import { countMessage } from "$lib/utils/count-message";
     import { getLocale } from "$lib/paraglide/runtime";
     import PageLayout from "$lib/components/PageLayout.svelte";
     import PageHeader from "$lib/components/PageHeader.svelte";
@@ -45,9 +46,12 @@
 
     const protectionDescription = $derived.by(() => {
         if (activeSnapshots.length > 0) {
-            return m.control_protection_active_detail({
-                count: activeSnapshots.length,
-            });
+            return countMessage(
+                activeSnapshots.length,
+                m.control_protection_active_detail_zero,
+                m.control_protection_active_detail_one,
+                () => m.control_protection_active_detail({ count: activeSnapshots.length }),
+            );
         }
         if (dashboardStore.totalBlocksCount === 0) return m.control_protection_empty_detail();
         if (enabledScheduledCount > 0) return m.control_protection_scheduled_detail();
@@ -164,10 +168,12 @@
                             <h2 id="enforcing-now-title">{m.enforcing_now()}</h2>
                         </div>
                         <span class="count-readout">
-                            {m.policy_count_active({
-                                active: activeSnapshots.length,
-                                total: dashboardStore.totalBlocksCount,
-                            })}
+                            {activeSnapshots.length === 1
+                                ? m.policy_count_active_one({ active: 1, total: dashboardStore.totalBlocksCount })
+                                : m.policy_count_active({
+                                      active: activeSnapshots.length,
+                                      total: dashboardStore.totalBlocksCount,
+                                  })}
                         </span>
                     </header>
 

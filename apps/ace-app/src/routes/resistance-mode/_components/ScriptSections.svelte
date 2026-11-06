@@ -1,5 +1,6 @@
 <script lang="ts">
     import * as m from "$lib/paraglide/messages.js";
+    import { countMessage } from "$lib/utils/count-message";
     import { Button } from "$lib/components/ui/button";
     import { Switch } from "$lib/components/ui/switch";
     import {
@@ -63,7 +64,12 @@
         </div>
         {#if scripts.length > 0}
             <span class="shrink-0 font-mono text-xs text-muted-foreground">
-                {m.covered_sites_active_count({ count: enabledCount })}
+                {countMessage(
+                    enabledCount,
+                    m.covered_sites_active_count_zero,
+                    m.covered_sites_active_count_one,
+                    () => m.covered_sites_active_count({ count: enabledCount }),
+                )}
             </span>
         {/if}
     </div>
@@ -174,9 +180,12 @@
                             >
                             <span
                                 class="shrink-0 font-mono text-[11px] font-medium text-muted-foreground"
-                                >{m.group_active_count({
-                                    count: group.activeCount,
-                                })}</span
+                                >{countMessage(
+                                    group.activeCount,
+                                    m.group_active_count_zero,
+                                    m.group_active_count_one,
+                                    () => m.group_active_count({ count: group.activeCount }),
+                                )}</span
                             >
                             {#if isExpanded}
                                 <ChevronUp class="h-4 w-4 shrink-0 text-muted-foreground" />

@@ -31,6 +31,8 @@
     import { resolve } from "$app/paths";
 
     import * as m from "$lib/paraglide/messages.js";
+
+    import { countMessage } from "$lib/utils/count-message";
     import { onboardingStore } from "$lib/stores/onboarding.svelte";
     import { getPackIcon, FALLBACK_ICON } from "$lib/utils/pack-icons";
     import {
@@ -192,9 +194,12 @@
      *  connected site packs (seeded blocks are pack-backed), else "0 rules". */
     function getRuleSummary(choice: BlockChoice): string {
         if (choice.rulesCount > 0) {
-            return m.onboarding_block_rule_count({
-                count: choice.rulesCount,
-            });
+            return countMessage(
+                choice.rulesCount,
+                m.onboarding_block_rule_count_zero,
+                m.onboarding_block_rule_count_one,
+                () => m.onboarding_block_rule_count({ count: choice.rulesCount }),
+            );
         }
         if (choice.sitePackConnectionCount > 0) {
             return choice.sitePackConnectionCount === 1
@@ -203,7 +208,12 @@
                       count: choice.sitePackConnectionCount,
                   });
         }
-        return m.onboarding_block_rule_count({ count: 0 });
+        return countMessage(
+            0,
+            m.onboarding_block_rule_count_zero,
+            m.onboarding_block_rule_count_one,
+            () => m.onboarding_block_rule_count({ count: 0 }),
+        );
     }
 
     onMount(() => {
@@ -445,9 +455,12 @@
                             <Check class="size-4.5" />
                         </div>
                         <p class="text-sm leading-relaxed">
-                            {m.onboarding_done_summary({
-                                count: enabledCount,
-                            })}
+                            {countMessage(
+                                enabledCount,
+                                m.onboarding_done_summary_zero,
+                                m.onboarding_done_summary_one,
+                                () => m.onboarding_done_summary({ count: enabledCount }),
+                            )}
                         </p>
                     </div>
 

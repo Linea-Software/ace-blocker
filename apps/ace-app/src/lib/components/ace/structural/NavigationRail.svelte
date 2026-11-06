@@ -150,6 +150,12 @@
         white-space: nowrap;
     }
 
+    /* Keep the localized Settings label legible within the compact rail. */
+    .rail-group-secondary .rail-link:last-child span {
+        max-width: 68px;
+        font-size: 10.5px;
+    }
+
     .rail-link:hover {
         background: var(--sidebar-accent);
         color: var(--sidebar-accent-foreground);
@@ -166,8 +172,8 @@
 
     @media (max-width: 720px) {
         .rail {
-            width: 62px;
-            flex-basis: 62px;
+            width: 72px;
+            flex-basis: 72px;
         }
 
         .rail-link span {

@@ -1,5 +1,6 @@
 <script lang="ts">
     import * as m from "$lib/paraglide/messages.js";
+    import { countMessage } from "$lib/utils/count-message";
     import { engineStore } from "$lib/stores/engine.svelte";
     import { dashboardStore } from "$lib/stores/dashboard.svelte";
     import { onMount } from "svelte";
@@ -15,9 +16,12 @@
     const description = $derived.by(() => {
         if (!online) return m.status_engine_offline_description();
         if (enforcing) {
-            return m.status_enforcement_active_description({
-                count: dashboardStore.activeBlocksCount,
-            });
+            return countMessage(
+                dashboardStore.activeBlocksCount,
+                m.status_enforcement_active_description_zero,
+                m.status_enforcement_active_description_one,
+                () => m.status_enforcement_active_description({ count: dashboardStore.activeBlocksCount }),
+            );
         }
         return m.status_engine_ready_description();
     });

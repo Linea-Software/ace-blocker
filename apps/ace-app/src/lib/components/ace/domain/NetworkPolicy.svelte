@@ -159,9 +159,9 @@
         const extra =
             policy.schedules.length > 1
                 ? " " +
-                  m.schedule_extra_count({
-                      count: policy.schedules.length - 1,
-                  })
+                  (policy.schedules.length === 2
+                      ? m.schedule_extra_count_one()
+                      : m.schedule_extra_count({ count: policy.schedules.length - 1 }))
                 : "";
 
         return days + ", " + range + extra;
