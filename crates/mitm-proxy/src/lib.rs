@@ -60,8 +60,9 @@ pub use ca::CertAuthority;
 pub use config::ProxyConfig;
 pub use error::{ProxyError, Result};
 pub use inspect::{
-    BufferedRequest, BufferedResponse, ConnMeta, Inspectors, Protocol, RequestAction,
-    RequestBodyMode, RequestInspector, ResponseAction, ResponseBodyMode, ResponseInspector,
+    BufferedRequest, BufferedResponse, ConnMeta, ConnectAction, Inspectors, Protocol,
+    RequestAction, RequestBodyMode, RequestInspector, ResponseAction, ResponseBodyMode,
+    ResponseInspector,
 };
 pub use intercept::{InterceptDecider, NoInterceptDecider};
 

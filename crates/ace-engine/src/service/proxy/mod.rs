@@ -23,9 +23,9 @@ use bytes::Bytes;
 use eyre::{Context, Result};
 use http::StatusCode;
 use mitm_proxy::{
-    BufferedRequest, BufferedResponse, ConnMeta, InterceptDecider, MitmProxy, ProxyConfig,
-    RequestAction, RequestBodyMode, RequestInspector, ResponseAction, ResponseBodyMode,
-    ResponseInspector,
+    BufferedRequest, BufferedResponse, ConnMeta, ConnectAction, InterceptDecider, MitmProxy,
+    ProxyConfig, RequestAction, RequestBodyMode, RequestInspector, ResponseAction,
+    ResponseBodyMode, ResponseInspector,
 };
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
@@ -92,6 +92,7 @@ impl ProxyAdapter {
         http::Response::builder()
             .status(StatusCode::NOT_FOUND)
             .header("Clear-Site-Data", "\"cache\", \"storage\"")
+            .header(http::header::CACHE_CONTROL, "no-store")
             .body(Bytes::new())
             .expect("Failed to build block response")
     }
@@ -101,6 +102,12 @@ fn normalize_proxy_host(host: &str) -> String {
     host.trim_matches(['[', ']'])
         .trim_end_matches('.')
         .to_ascii_lowercase()
+}
+
+fn is_ip_literal_host(host: &str) -> bool {
+    normalize_proxy_host(host)
+        .parse::<std::net::IpAddr>()
+        .is_ok()
 }
 
 /// Preserve unrelated query bytes while replacing every decoded occurrence
@@ -152,24 +159,32 @@ impl RequestInspector for ProxyAdapter {
         &self,
         _meta: &ConnMeta,
         authority: &http::uri::Authority,
-    ) -> RequestAction {
+    ) -> ConnectAction {
         let host = authority.host();
 
         if Self::is_local_host(host) {
             self.set_interception_required(host, false);
-            return RequestAction::Continue;
+            return ConnectAction::Continue;
         }
 
         let (blocking_result, requires_interception) =
             self.network_manager.read().await.connect_host_policy(host);
         self.set_interception_required(host, requires_interception);
 
-        if !matches!(blocking_result, crate::core::BlockingResult::NotBlocked) {
+        if blocking_result.is_blocked() {
             self.record_blocked_attempt().await;
-            return RequestAction::Respond(Self::blocked_response());
+            // CONNECT is outside the origin's TLS session. To make
+            // Clear-Site-Data effective, deliver the block response inside
+            // browser-side TLS, with no upstream connection permitted.
+            if authority.port_u16().unwrap_or(443) == 443 && !is_ip_literal_host(host) {
+                return ConnectAction::Intercept(Self::blocked_response());
+            }
+            // IP targets and non-HTTPS CONNECT retain an immediate deny.
+            // Their inner HTTP origin may not match the CONNECT target.
+            return ConnectAction::Respond(Self::blocked_response());
         }
 
-        RequestAction::Continue
+        ConnectAction::Continue
     }
 
     /// Recheck established tunnels against the current policy. A newly blocked
@@ -186,7 +201,27 @@ impl RequestInspector for ProxyAdapter {
 
         let (blocking_result, requires_interception) =
             self.network_manager.read().await.connect_host_policy(host);
-        blocking_result.is_blocked() || requires_interception != is_intercepted
+        if blocking_result.is_blocked() {
+            // Only hostname-level HTTPS blocks use an intercepted TLS response.
+            // IP targets and other ports must terminate even if intercepted.
+            return is_ip_literal_host(host)
+                || authority.port_u16().unwrap_or(443) != 443
+                || !is_intercepted;
+        }
+        requires_interception != is_intercepted
+    }
+
+    async fn should_terminate_blocked_tunnel(&self, authority: &http::uri::Authority) -> bool {
+        // A synthetic 404 is tied to the original blocked CONNECT. Once the
+        // hostname becomes allowed, close it even if another rule still needs
+        // TLS inspection, so a new CONNECT uses the current policy.
+        !self
+            .network_manager
+            .read()
+            .await
+            .connect_host_policy(authority.host())
+            .0
+            .is_blocked()
     }
 
     async fn should_terminate_upgraded(&self, meta: &ConnMeta, uri: &http::Uri) -> bool {
@@ -509,8 +544,8 @@ impl ResponseInspector for ProxyAdapter {
 /// policy for that host genuinely requires decrypted HTTP (regex/path rules,
 /// URL exceptions, Safe Search rewriting, or Resistance script injection).
 ///
-/// Hostname-only blocking is enforced by `inspect_connect`, before this decider
-/// runs, so ordinary browsing retains the browser's native TLS/HTTP fingerprint.
+/// Hostname-only blocking forces a TLS response through `inspect_connect`.
+/// Ordinary allowed browsing retains the browser's native TLS/HTTP fingerprint.
 #[derive(Debug)]
 pub struct ProxyInterceptDecider {
     interception_hosts: Arc<StdRwLock<HashSet<String>>>,
@@ -1487,7 +1522,7 @@ mod tests {
             };
             assert!(matches!(
                 adapter.inspect_connect(&meta, &authority).await,
-                RequestAction::Continue
+                ConnectAction::Continue
             ));
             assert!(decider.should_intercept(&authority, None));
             assert!(adapter.should_terminate_tunnel(&authority, false).await);
@@ -1525,7 +1560,51 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn opaque_connect_remains_blockable_by_hostname() {
+    async fn allowed_https_is_not_force_intercepted_or_given_block_headers() {
+        let (_manager, adapter) = adapter_with_resistance(false).await;
+        let authority: http::uri::Authority = "allowed.example:443".parse().unwrap();
+        let meta = ConnMeta {
+            client_addr: "127.0.0.1:12345".parse().unwrap(),
+            protocol: mitm_proxy::Protocol::Http1,
+            is_tls: false,
+            authority: "allowed.example:443".into(),
+        };
+        assert!(matches!(
+            adapter.inspect_connect(&meta, &authority).await,
+            ConnectAction::Continue
+        ));
+        let decider = ProxyInterceptDecider::new(adapter.interception_hosts.clone());
+        assert!(!decider.should_intercept(&authority, None));
+        assert!(adapter.should_terminate_blocked_tunnel(&authority).await);
+
+        let mut request = http::Request::builder()
+            .uri("https://allowed.example/")
+            .body(Bytes::new())
+            .unwrap();
+        assert!(matches!(
+            adapter.inspect_request_head(&meta, &mut request).await,
+            RequestAction::Continue
+        ));
+    }
+
+    #[tokio::test]
+    async fn synthetic_block_tunnel_exits_when_resistance_inspection_remains() {
+        let (manager, adapter) = adapter_with_resistance(true).await;
+        manager
+            .write()
+            .await
+            .get_resistance_mode_mut()
+            .set_intensity(crate::manager::resistance::PunishmentIntensity::Medium);
+        let authority: http::uri::Authority = "example.com:443".parse().unwrap();
+        // This origin is no longer blocked but still needs TLS inspection for
+        // Resistance scripts. An ordinary intercepted tunnel may stay open;
+        // a synthetic 404 tunnel must close and reconnect under new policy.
+        assert!(!adapter.should_terminate_tunnel(&authority, true).await);
+        assert!(adapter.should_terminate_blocked_tunnel(&authority).await);
+    }
+
+    #[tokio::test]
+    async fn blocked_https_connect_is_intercepted_for_origin_response() {
         let (manager, adapter) = adapter_with_resistance(false).await;
 
         {
@@ -1551,10 +1630,16 @@ mod tests {
             manager
                 .add_user_defined_entries(
                     &list_id,
-                    vec![crate::core::UserDefinedRule::new(
-                        "example.com".into(),
-                        crate::core::UserDefinedRuleType::Domain,
-                    )],
+                    vec![
+                        crate::core::UserDefinedRule::new(
+                            "example.com".into(),
+                            crate::core::UserDefinedRuleType::Domain,
+                        ),
+                        crate::core::UserDefinedRule::new(
+                            "203.0.113.7".into(),
+                            crate::core::UserDefinedRuleType::Domain,
+                        ),
+                    ],
                 )
                 .unwrap();
             manager
@@ -1575,12 +1660,50 @@ mod tests {
         };
         let authority: http::uri::Authority = "example.com:443".parse().unwrap();
 
-        match adapter.inspect_connect(&meta, &authority).await {
+        assert!(matches!(
+            adapter.inspect_connect(&meta, &authority).await,
+            ConnectAction::Intercept(_)
+        ));
+        assert!(!adapter.should_terminate_tunnel(&authority, true).await);
+        assert!(adapter.should_terminate_tunnel(&authority, false).await);
+        assert!(!adapter.should_terminate_blocked_tunnel(&authority).await);
+
+        let tls_meta = ConnMeta {
+            is_tls: true,
+            ..meta.clone()
+        };
+        let mut blocked_request = http::Request::builder()
+            .uri("https://example.com/watch")
+            .body(Bytes::new())
+            .unwrap();
+        match adapter
+            .inspect_request_head(&tls_meta, &mut blocked_request)
+            .await
+        {
             RequestAction::Respond(response) => {
-                assert_eq!(response.status(), StatusCode::NOT_FOUND)
+                assert_eq!(response.status(), StatusCode::NOT_FOUND);
+                assert_eq!(
+                    response.headers()["clear-site-data"],
+                    "\"cache\", \"storage\""
+                );
+                assert_eq!(response.headers()[http::header::CACHE_CONTROL], "no-store");
             }
-            RequestAction::Continue => panic!("blocked hostname CONNECT must not be tunneled"),
+            RequestAction::Continue => panic!("blocked HTTPS request must not reach origin"),
         }
+
+        let non_https_authority: http::uri::Authority = "example.com:8443".parse().unwrap();
+        assert!(matches!(
+            adapter.inspect_connect(&meta, &non_https_authority).await,
+            ConnectAction::Respond(_)
+        ));
+
+        let ip_authority: http::uri::Authority = "203.0.113.7:443".parse().unwrap();
+        assert!(matches!(
+            adapter.inspect_connect(&meta, &ip_authority).await,
+            ConnectAction::Respond(_)
+        ));
+        assert!(adapter.should_terminate_tunnel(&ip_authority, true).await);
+
         let ip_meta = ConnMeta {
             authority: "203.0.113.7:443".into(),
             is_tls: true,

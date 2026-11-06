@@ -66,6 +66,16 @@ pub enum RequestAction {
     Respond(BufferedResponse),
 }
 
+/// CONNECT decision before the browser starts its TLS session.
+pub enum ConnectAction {
+    /// Establish the tunnel using the ordinary selective-interception policy.
+    Continue,
+    /// Reject CONNECT without establishing TLS.
+    Respond(BufferedResponse),
+    /// Serve this response inside browser-side TLS. Never contact the origin.
+    Intercept(BufferedResponse),
+}
+
 /// Outcome of inspecting a response.
 pub enum ResponseAction {
     /// Return the (possibly-mutated) response to the client.
@@ -96,14 +106,14 @@ pub enum ResponseBodyMode {
 #[async_trait]
 pub trait RequestInspector: Send + Sync {
     /// Inspect an HTTP CONNECT target before the tunnel is established. This
-    /// hook also runs for tunnels that will remain opaque, which lets callers
-    /// enforce hostname-level blocking without terminating the client's TLS.
+    /// hook also runs for tunnels that will remain opaque. `Intercept` forces
+    /// browser-side TLS so a blocked HTTPS origin can receive an HTTP response.
     async fn inspect_connect(
         &self,
         _meta: &ConnMeta,
         _authority: &http::uri::Authority,
-    ) -> RequestAction {
-        RequestAction::Continue
+    ) -> ConnectAction {
+        ConnectAction::Continue
     }
 
     /// Return true when an already-established tunnel should be closed so the
@@ -116,6 +126,13 @@ pub trait RequestInspector: Send + Sync {
         _is_intercepted: bool,
     ) -> bool {
         false
+    }
+
+    /// Return true once a tunnel created for a synthetic blocked-origin
+    /// response should be closed. Callers can override this independently
+    /// of ordinary interception policy transitions.
+    async fn should_terminate_blocked_tunnel(&self, authority: &http::uri::Authority) -> bool {
+        self.should_terminate_tunnel(authority, true).await
     }
 
     /// Recheck a protocol stream after its HTTP handshake. Keep the original
@@ -140,11 +157,7 @@ pub trait RequestInspector: Send + Sync {
 
     /// Select body handling for this request. Buffering remains the default so
     /// existing inspectors that mutate request bodies retain their semantics.
-    fn request_body_mode(
-        &self,
-        _meta: &ConnMeta,
-        _req_head: &BufferedRequest,
-    ) -> RequestBodyMode {
+    fn request_body_mode(&self, _meta: &ConnMeta, _req_head: &BufferedRequest) -> RequestBodyMode {
         RequestBodyMode::Buffer
     }
 

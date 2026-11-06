@@ -133,8 +133,8 @@ impl RequestInspector for BlockConnect {
         &self,
         _meta: &mitm_proxy::ConnMeta,
         _authority: &http::uri::Authority,
-    ) -> RequestAction {
-        RequestAction::Respond(
+    ) -> mitm_proxy::ConnectAction {
+        mitm_proxy::ConnectAction::Respond(
             http::Response::builder()
                 .status(http::StatusCode::FORBIDDEN)
                 .body(Bytes::new())
@@ -192,6 +192,116 @@ async fn opaque_connect_can_be_blocked_before_tunnel_establishment() {
         "CONNECT inspector should reject before opaque tunneling, got: {head}"
     );
 }
+// ---------------------------------------------------------------------------
+// Blocked HTTPS: response headers must reach the browser *inside* TLS.
+// ---------------------------------------------------------------------------
+
+struct ForceHttpsBlock;
+
+#[async_trait::async_trait]
+impl RequestInspector for ForceHttpsBlock {
+    async fn inspect_connect(
+        &self,
+        _meta: &mitm_proxy::ConnMeta,
+        _authority: &http::uri::Authority,
+    ) -> mitm_proxy::ConnectAction {
+        mitm_proxy::ConnectAction::Intercept(
+            http::Response::builder()
+                .status(http::StatusCode::NOT_FOUND)
+                .header("clear-site-data", "\"cache\", \"storage\"")
+                .header("cache-control", "no-store")
+                .body(Bytes::new())
+                .unwrap(),
+        )
+    }
+
+    async fn inspect_request_head(
+        &self,
+        _meta: &mitm_proxy::ConnMeta,
+        _req: &mut mitm_proxy::BufferedRequest,
+    ) -> RequestAction {
+        panic!("forced HTTPS block must bypass the request inspector")
+    }
+
+    async fn inspect_request(
+        &self,
+        _meta: &mitm_proxy::ConnMeta,
+        _req: &mut mitm_proxy::BufferedRequest,
+    ) -> RequestAction {
+        panic!("blocked request must not reach the body inspector")
+    }
+}
+
+#[tokio::test]
+async fn blocked_https_headers_arrive_over_tls_without_origin_connection() {
+    init_tracing();
+
+    // A real loopback origin lets us detect both a stray mTLS probe and a
+    // forwarded blocked request. The decider would otherwise be opaque.
+    let origin = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let origin_port = origin.local_addr().unwrap().port();
+    let ca_dir = TempDir::new().unwrap();
+    let proxy_addr = pick_tcp_addr().await;
+    let config = ProxyConfig::new(proxy_addr, ca_dir.path())
+        .preserve_client_cert_auth(true)
+        .verify_upstream(false);
+    let ca_path = config.ca_cert_path.clone();
+    let proxy = MitmProxy::new(config)
+        .with_request_inspector(Arc::new(ForceHttpsBlock))
+        .with_intercept_decider(Arc::new(TunnelAll));
+    let handle = tokio::spawn(async move {
+        let _ = proxy.run().await;
+    });
+    tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+    let ca_pem = std::fs::read_to_string(ca_path).unwrap();
+
+    let tls = connect_tls_through_proxy(
+        proxy_addr,
+        &ca_pem,
+        "localhost",
+        origin_port,
+        vec![b"http/1.1".to_vec()],
+    )
+    .await;
+    let (mut sender, connection) =
+        hyper::client::conn::http1::handshake(hyper_util::rt::TokioIo::new(tls))
+            .await
+            .unwrap();
+    tokio::spawn(async move {
+        let _ = connection.await;
+    });
+
+    let response = sender
+        .send_request(
+            http::Request::builder()
+                .uri("/watch")
+                .header("host", "localhost")
+                .body(http_body_util::Full::new(Bytes::new()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), http::StatusCode::NOT_FOUND);
+    assert_eq!(
+        response.headers()["clear-site-data"],
+        "\"cache\", \"storage\""
+    );
+    assert_eq!(response.headers()["cache-control"], "no-store");
+    let body = http_body_util::BodyExt::collect(response.into_body())
+        .await
+        .unwrap()
+        .to_bytes();
+    assert!(body.is_empty());
+
+    assert!(
+        tokio::time::timeout(std::time::Duration::from_millis(200), origin.accept())
+            .await
+            .is_err(),
+        "a forced blocked-origin TLS tunnel must not dial upstream"
+    );
+    handle.abort();
+}
+
 // ---------------------------------------------------------------------------
 // Invariant: byte-for-byte passthrough on the non-intercepted path
 // ---------------------------------------------------------------------------

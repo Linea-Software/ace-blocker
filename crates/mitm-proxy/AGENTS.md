@@ -107,7 +107,8 @@ decryption). Default is `NoInterceptDecider` — intercept nothing.
 |------|------|
 | `Protocol` | Enum: `Http1`, `Http2`, `Http3` |
 | `ConnMeta` | Connection metadata: client_addr, protocol, is_tls, authority |
-| `RequestAction` | `Continue` or `Respond(BufferedResponse)` |
+| `RequestAction` | `Continue` or `Respond(BufferedResponse)` for decrypted HTTP |
+| `ConnectAction` | `Continue`, `Respond(BufferedResponse)` or `Intercept(BufferedResponse)` for TLS-local synthetic blocks |
 | `ResponseAction` | `Continue` |
 | `RequestInspector` trait | `fn inspect_request(&self, meta, req) -> RequestAction` |
 | `ResponseInspector` trait | `fn inspect_response(&self, meta, req_head, res) -> ResponseAction` |

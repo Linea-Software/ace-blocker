@@ -27,6 +27,10 @@ MitmProxy::new(config)
 - **Transparent inspect point** — every decrypted request/response passes
   through caller-supplied `RequestInspector` / `ResponseInspector` hooks for
   observation, mutation, or blocking (synthetic responses).
+- **HTTPS block responses** — `inspect_connect` can return
+  `ConnectAction::Intercept(response)` to serve a fixed response within
+  browser-side TLS (HTTP/1.1 or HTTP/2). Forced block tunnels never probe
+  or forward to the origin, including if policy changes before closure.
 - **Dynamic certificate authority** — auto-generates a root CA on first run,
   mints per-host leaf certs signed by that CA during each intercepted TLS
   handshake. Clients that trust the root CA see valid TLS chains.

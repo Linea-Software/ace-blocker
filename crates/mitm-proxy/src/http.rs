@@ -34,7 +34,10 @@ use tracing::{debug, info, warn};
 
 use crate::cert_resolver::TunnelCertResolver;
 use crate::error::{ProxyError, Result};
-use crate::inspect::{ConnMeta, Protocol, RequestAction, RequestBodyMode, ResponseBodyMode};
+use crate::inspect::{
+    BufferedResponse, ConnMeta, ConnectAction, Protocol, RequestAction, RequestBodyMode,
+    ResponseBodyMode,
+};
 use crate::state::SharedState;
 use crate::util::{
     absolute_uri, authority_display, ensure_host_header, is_ip_literal, snapshot_request_head,
@@ -57,6 +60,7 @@ const TUNNEL_POLICY_POLL_INTERVAL: Duration = Duration::from_millis(500);
 async fn wait_for_tunnel_termination(
     authority: &Authority,
     is_intercepted: bool,
+    is_synthetic_block: bool,
     inspector: &dyn crate::inspect::RequestInspector,
 ) {
     let mut interval = tokio::time::interval(TUNNEL_POLICY_POLL_INTERVAL);
@@ -64,10 +68,14 @@ async fn wait_for_tunnel_termination(
     interval.tick().await;
     loop {
         interval.tick().await;
-        if inspector
-            .should_terminate_tunnel(authority, is_intercepted)
-            .await
-        {
+        let should_terminate = if is_synthetic_block {
+            inspector.should_terminate_blocked_tunnel(authority).await
+        } else {
+            inspector
+                .should_terminate_tunnel(authority, is_intercepted)
+                .await
+        };
+        if should_terminate {
             debug!(%authority, "closing tunnel for policy transition");
             return;
         }
@@ -152,21 +160,24 @@ async fn outer_handler(
             is_tls: false,
             authority: authority.to_string(),
         };
-        match state
+        let synthetic_response = match state
             .inspectors
             .request
             .inspect_connect(&connect_meta, &authority)
             .await
         {
-            RequestAction::Continue => {}
-            RequestAction::Respond(resp) => return into_full(resp),
-        }
+            ConnectAction::Continue => None,
+            ConnectAction::Intercept(resp) => Some(resp),
+            ConnectAction::Respond(resp) => return into_full(resp),
+        };
 
         tokio::spawn(async move {
             match hyper::upgrade::on(req).await {
                 Ok(upgraded) => {
                     let io = TokioIo::new(upgraded);
-                    if let Err(error) = mitm_tunnel(io, authority, peer, state).await {
+                    if let Err(error) =
+                        mitm_tunnel(io, authority, peer, state, synthetic_response).await
+                    {
                         debug!("MITM tunnel error: {error:#}");
                     }
                 }
@@ -212,6 +223,7 @@ async fn mitm_tunnel<I>(
     authority: Authority,
     peer: SocketAddr,
     state: SharedState,
+    synthetic_response: Option<BufferedResponse>,
 ) -> Result<()>
 where
     I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
@@ -245,18 +257,38 @@ where
             is_tls: false,
             authority: policy_authority.to_string(),
         };
-        if let RequestAction::Respond(_) = state
+        let synthetic_response = match state
             .inspectors
             .request
             .inspect_connect(&meta, &policy_authority)
             .await
         {
-            debug!(%policy_authority, "blocked TLS SNI recovered from IP CONNECT");
-            return Ok(());
-        }
-        return serve_tls_tunnel(io, authority, policy_authority, peer, state).await;
+            ConnectAction::Continue => None,
+            ConnectAction::Intercept(resp) => Some(resp),
+            ConnectAction::Respond(_) => {
+                debug!(%policy_authority, "blocked TLS SNI recovered from IP CONNECT");
+                return Ok(());
+            }
+        };
+        return serve_tls_tunnel(
+            io,
+            authority,
+            policy_authority,
+            peer,
+            state,
+            synthetic_response,
+        )
+        .await;
     }
-    serve_tls_tunnel(io, authority.clone(), authority, peer, state).await
+    serve_tls_tunnel(
+        io,
+        authority.clone(),
+        authority,
+        peer,
+        state,
+        synthetic_response,
+    )
+    .await
 }
 
 async fn serve_tls_tunnel<I>(
@@ -265,6 +297,7 @@ async fn serve_tls_tunnel<I>(
     policy_authority: Authority,
     peer: SocketAddr,
     state: SharedState,
+    synthetic_response: Option<BufferedResponse>,
 ) -> Result<()>
 where
     I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
@@ -274,9 +307,11 @@ where
 
     // The effective TLS name, not a DNS-cache-miss IP literal, determines the
     // interception policy; opaque traffic still connects to the original IP.
-    let should_intercept = state
-        .intercept_decider
-        .should_intercept(&policy_authority, Some(&host));
+    let force_intercept = synthetic_response.is_some();
+    let should_intercept = force_intercept
+        || state
+            .intercept_decider
+            .should_intercept(&policy_authority, Some(&host));
     debug!(
         client = %peer,
         authority = %policy_authority,
@@ -295,7 +330,10 @@ where
         .await;
     }
 
-    if state.config.preserve_client_cert_auth
+    // A forced blocked-origin tunnel never dials the origin, including for
+    // a client-certificate probe. Its HTTP responses are fixed at CONNECT.
+    if !force_intercept
+        && state.config.preserve_client_cert_auth
         && state
             .upstream
             .requires_client_certificate(&host, port)
@@ -343,12 +381,19 @@ where
 
     let tunnel_inspector = state.inspectors.request.clone();
     let host = Arc::new(host);
+    let synthetic_response = synthetic_response.map(Arc::new);
     let hyper_io = TokioIo::new(tls);
 
     let service = service_fn(move |req: Request<Incoming>| {
         let state = state.clone();
         let host = host.clone();
+        let synthetic_response = synthetic_response.clone();
         async move {
+            // A CONNECT rejected by policy must never be able to forward
+            // traffic, even if policy changes before this tunnel is closed.
+            if let Some(response) = synthetic_response {
+                return Ok::<_, Infallible>(into_full(copy_response(&response)));
+            }
             let meta = ConnMeta {
                 client_addr: peer,
                 protocol,
@@ -371,7 +416,7 @@ where
         result = connection => {
             result.map_err(|error| eyre::eyre!("serving decrypted connection: {error}"))
         }
-        _ = wait_for_tunnel_termination(&policy_authority, true, tunnel_inspector.as_ref()) => Ok(()),
+        _ = wait_for_tunnel_termination(&policy_authority, true, force_intercept, tunnel_inspector.as_ref()) => Ok(()),
     }
 }
 
@@ -416,7 +461,7 @@ where
             result.map_err(|error| eyre::eyre!("opaque tunnel relay to {authority} failed: {error}"))?;
             Ok(())
         }
-        _ = wait_for_tunnel_termination(policy_authority, false, state.inspectors.request.as_ref()) => Ok(()),
+        _ = wait_for_tunnel_termination(policy_authority, false, false, state.inspectors.request.as_ref()) => Ok(()),
     }
 }
 
@@ -791,6 +836,15 @@ fn streaming_body(body: Incoming) -> ProxyBody {
         .boxed_unsync()
 }
 
+/// Duplicate a synthetic block response for each request on its TLS tunnel.
+fn copy_response(source: &BufferedResponse) -> BufferedResponse {
+    let mut response = Response::new(source.body().clone());
+    *response.status_mut() = source.status();
+    *response.version_mut() = source.version();
+    *response.headers_mut() = source.headers().clone();
+    response
+}
+
 /// Convert a buffered response into one hyper can serve, fixing framing headers.
 fn into_full(resp: Response<Bytes>) -> Response<ProxyBody> {
     let (mut parts, body) = resp.into_parts();
@@ -883,15 +937,15 @@ mod tests {
 
     #[async_trait::async_trait]
     impl crate::inspect::RequestInspector for BlockCachedHost {
-        async fn inspect_connect(&self, _meta: &ConnMeta, authority: &Authority) -> RequestAction {
+        async fn inspect_connect(&self, _meta: &ConnMeta, authority: &Authority) -> ConnectAction {
             self.observed
                 .lock()
                 .unwrap()
                 .push(authority.host().to_owned());
             if authority.host() == "blocked.example" {
-                RequestAction::Respond(Response::new(Bytes::new()))
+                ConnectAction::Respond(Response::new(Bytes::new()))
             } else {
-                RequestAction::Continue
+                ConnectAction::Continue
             }
         }
 
@@ -937,6 +991,7 @@ mod tests {
             "127.0.0.1:443".parse().unwrap(),
             "127.0.0.1:1234".parse().unwrap(),
             state,
+            None,
         ));
         let config = rustls::ClientConfig::builder()
             .with_root_certificates(rustls::RootCertStore::empty())
