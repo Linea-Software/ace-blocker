@@ -42,6 +42,7 @@
             <option value="system">{m.settings_language_system()}</option>
             <option value="en">English</option>
             <option value="it">Italiano</option>
+            <option value="de">Deutsch</option>
         </select>
     </div>
     {#if error}

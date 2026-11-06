@@ -8,22 +8,28 @@ import {
 } from "./language-preference";
 
 describe("desktop language preference", () => {
-    it("starts in system mode and detects Italian", () => {
+    it("starts in system mode and detects Italian and German", () => {
         expect(isLanguagePreference(undefined)).toBe(false);
         expect(isLanguagePreference("system")).toBe(true);
         expect(resolveAppLocale("system", "it-IT")).toBe("it");
         expect(resolveAppLocale("system", "it_IT")).toBe("it");
         expect(resolveAppLocale("system", "en-US")).toBe("en");
+        for (const locale of ["de", "de-DE", "de-AT", "de-CH", "DE_de"]) {
+            expect(resolveAppLocale("system", locale)).toBe("de");
+        }
     });
 
     it("falls back to English for configured but untranslated languages", () => {
-        for (const locale of ["de-DE", "fr", "pt-BR", "es-ES", null, ""]) {
+        for (const locale of ["fr", "pt-BR", "es-ES", null, ""]) {
             expect(resolveAppLocale("system", locale)).toBe("en");
         }
     });
 
     it("honors the manual override and supports returning to system mode", () => {
         expect(resolveAppLocale("it", "en-US")).toBe("it");
+        expect(resolveAppLocale("de", "it-IT")).toBe("de");
+        expect(resolveAppLocale("de", "en-US")).toBe("de");
+        expect(resolveAppLocale("system", "de-CH")).toBe("de");
         expect(resolveAppLocale("en", "it-IT")).toBe("en");
         expect(resolveAppLocale("system", "it-IT")).toBe("it");
     });
@@ -34,6 +40,8 @@ describe("desktop language preference", () => {
         expect(await loadLanguagePreference(store)).toBe("it");
         expect(get).toHaveBeenCalledWith("language");
         get.mockResolvedValue({ value: "de" });
+        expect(await loadLanguagePreference(store)).toBe("de");
+        get.mockResolvedValue({ value: "es" });
         expect(await loadLanguagePreference(store)).toBe("system");
         get.mockResolvedValue(undefined);
         expect(await loadLanguagePreference(store)).toBe("system");
@@ -44,9 +52,11 @@ describe("desktop language preference", () => {
         const save = vi.fn().mockResolvedValue(undefined);
         const store = { set, save } as unknown as LanguagePreferenceStore;
         await saveLanguagePreference(store, "it");
+        await saveLanguagePreference(store, "de");
         await saveLanguagePreference(store, "system");
         expect(set).toHaveBeenNthCalledWith(1, "language", { value: "it" });
-        expect(set).toHaveBeenNthCalledWith(2, "language", { value: "system" });
-        expect(save).toHaveBeenCalledTimes(2);
+        expect(set).toHaveBeenNthCalledWith(2, "language", { value: "de" });
+        expect(set).toHaveBeenNthCalledWith(3, "language", { value: "system" });
+        expect(save).toHaveBeenCalledTimes(3);
     });
 });

@@ -18,7 +18,7 @@ const browserPreferenceKey = "ace:app-language";
 function browserLanguagePreference(): LanguagePreference {
     try {
         const saved = localStorage.getItem(browserPreferenceKey);
-        return saved === "it" || saved === "en" ? saved : "system";
+        return saved === "it" || saved === "en" || saved === "de" ? saved : "system";
     } catch {
         return "system";
     }
