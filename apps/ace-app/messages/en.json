@@ -718,5 +718,10 @@
     "product_updates_downloaded": "MSI {version} downloaded; package hash and publisher signature verified.",
     "product_updates_downloading": "Downloading the signed MSI {version} while protection remains active…",
     "product_updates_verifying": "Verifying the MSI {version} package and publisher signature…",
-    "product_updates_retry": "Refresh status"
+    "product_updates_retry": "Refresh status",
+    "ui_loading": "Loading",
+    "ui_close": "Close",
+    "ui_sidebar": "Sidebar",
+    "ui_sidebar_description": "Displays the mobile sidebar.",
+    "ui_toggle_sidebar": "Toggle Sidebar"
 }
