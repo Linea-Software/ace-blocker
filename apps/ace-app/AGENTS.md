@@ -4,6 +4,16 @@ If the Svelte MCP server is connected, use its documentation tools for Svelte 5 
 
 - **Maintain Context**: You MUST automatically edit this `AGENTS.md` file whenever significant changes occur in the project (e.g., new tools added, new core documentation links found, project structure changes, or new patterns established). Keep this document up-to-date as the "Source of Truth" for your behavior in this project.
 
+## Trusted timed locks (2026-11-06)
+
+Network Block and Resistance Mode timed-lock forms send absolute RFC3339
+UTC deadlines. A local date/time picker is converted to a UTC ISO string just
+before RPC submission; the engine persists the absolute instant. Displayed
+lock deadlines can be offset-bearing; parse them as instants, not by truncating
+the first 16 characters. Schedules are separate civil-time windows whose
+IANA timezone is pinned by the engine, never inferred from the live Windows
+system timezone after policy creation. See `../../docs/TRUSTED_TIME_FUTURE.md`.
+
 ## Project Description
 
 **Ace Blocker** is a blocker application designed to help users overcome internet addictions. It blocks addictive network sites (porn, social media, betting, etc.) and provides a suite of scripts to make these sites less appealing and more boring.

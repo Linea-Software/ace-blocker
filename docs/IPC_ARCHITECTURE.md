@@ -45,6 +45,14 @@ but it does **not** cryptographically attest executable identity: another
 user-session process that obtains that token could impersonate the application.
 Do not advertise executable attestation as an existing protection.
 
+As of 2026-11-06, `export_backup` also requires the installation capability:
+the payload includes policy names, rules and schedules. Other read-only
+operations retain their established authorization behavior. A capability
+readable by another Windows account is still not executable attestation and
+requires separate multi-user DACL/identity verification on the installed MSI.
+The trusted-time floor and schedule IANA state are owned by the engine and do
+not create another IPC listener.
+
 On Linux both Engine and App resolve shared data and the capability token from
 the canonical `/usr/local/share/AceBlocker` path, ignoring differences in
 XDG_DATA_DIRS between systemd and the user desktop session. Pre-existing

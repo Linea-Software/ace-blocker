@@ -1,76 +1,43 @@
-# Trusted network time for locks — future design note
+# Trusted network time for locks — approved architecture and release gates
 
-**Status:** DEFERRED / DESIGN REFERENCE ONLY (2026-11-05). No implementation or polling frequency is approved by this document.
-**Scope:** Desktop engine on Windows first; adapt separately for Linux/macOS. This is not a task to implement now.
+**Status:** APPROVED (2026-11-06); initial implementation in `crates/ace-engine/src/trusted_time.rs`. This document separates the decisions now approved from the remaining release verification and deferred possibilities. The feature is **not yet Windows-VM validated**.
 
-## Product direction and rationale
+## Approved decisions (binding)
 
-Ace Blocker should eventually evaluate time-sensitive lock decisions using authenticated external UTC time, rather than blindly trusting user-adjustable OS wall time. This would address clock/date changes and related schedule/lock bypasses without a proprietary kernel driver.
+- **Primary authority:** Cloudflare Roughtime over UDP, `roughtime.cloudflare.com:2003`; pin the published Ed25519 root `0GD7c3yP8xEc4Zl2zeuN2SlLvDVVocjsPSL8/Rl/7zg=`. Cloudflare describes the service as beta and may rotate the root. Updates to the root require an authenticated, reviewed application release, not downloading and trusting a DNS-supplied key.
+- **Authenticated protocol:** the `roughtime 0.2.1` client verifies delegation, Ed25519 signatures, nonce/Merkle binding, delegation validity and its anti-rollback floor. Neither unauthenticated NTP nor HTTP `Date` is an alternative authority. No Ace-hosted endpoint is involved.
+- **Cadence:** after a successful sample, refresh every **60 minutes**, not every 5 or 10. Start with one due request on engine startup. Failed attempts use bounded timeout, exponential backoff (starting at 120 seconds, capped near 60 minutes) and jitter. A minute-local wakeup checks whether enough monotonic time has elapsed, including after resume; it does *not* make network requests when not due. Never query per site, network flow, lock check or editor visit. The independent installer `--check-locks` process may perform **one** separately authenticated sample per uninstall check (not an engine polling mechanism).
+- **Time model:** every authenticated sample is an interval, not an exact instant. Include signed uncertainty radius, measured total request/response time and bounded oscillator drift (500 ppm) while advancing with monotonic uptime. A lower bound is used to decide whether a lock *has certainly expired*; optimistic timestamps never authorize early unlock. `GetTickCount64` is selected on Windows for time elapsed across sleep/hibernation; the process `Instant` is used on other platforms. Neither is persisted across reboots.
+- **Persistence:** save a high-water/rollback floor under shared engine data, independent of local wall time. Updates are serialized across engine and installer with a separate advisory lock file and replace-on-rename, avoiding truncation and stale-process rollback. On the next boot it is only a floor, **never** a reboot-spanning elapsed clock. There is no trusted current time until a fresh verified response. An outage cannot silently substitute an unauthenticated source.
+- **Failure behavior:** existing filtering and services continue. Existing timed locks remain active when their expiry cannot be verified; the uninstall gate makes the same conservative decision, while an explicitly inactive state remains inactive. Creating new timed locks requires a valid trusted reference for the 90-day cap. An outage does not globally disable the tunnel, proxy or Internet.
+- **Cooldowns:** the five-minute soft-unlock delay uses an in-memory monotonic `Instant`; challenges disappear on service restart. A new timed deadline must be strictly later than the authenticated interval; upgrading a soft lock to a timed lock with less than five minutes remaining is rejected.
+- **Time zones:** schedules carry a persisted IANA zone in `network_blocks.schedule_timezone`, captured at block creation; matching uses authenticated UTC converted to that zone via `chrono-tz`, including daylight-saving transitions. Changing Windows time zone does not silently change existing windows. Timed lock deadlines persist as RFC3339 absolute instants and compare as UTC, separately from civil schedule time. Non-authenticated/stale time must not be used to weaken scheduled locks.
+- **No change:** never set the Windows clock. Engine, watchdog, Tauri, typed Named Pipe/remoc IPC, installer gates, WinTun/WFP/nftables, and browser-only TLS decryption remain separate.
 
-**Do not run frequent per-user time requests against aceblocker.com on the current small VPS.** The earlier suggestion of polling the Ace backend every ten minutes was rejected as too expensive for a simple time service. A hosted public time service, preferably Cloudflare, should be evaluated first.
+## Current integration and verification
 
-The preferred future architecture is:
+- `trusted_time.rs`: pin, sampling, refresh/backoff, quality and UTC interval, persisted floor.
+- `core/common/lock.rs`, `core/network_block/mod.rs`, `manager/network/`, `manager/resistance/`: lock guards use the shared trusted reference, not local wall time, including Resistance Mode and policy mutations.
+- `core/common/unlock_challenge.rs`: monotonic cooldown.
+- `lock_check.rs` and `main.rs`: separate read-only SQLite uninstall gate with an independent Roughtime query; the shared *time floor* may be updated separately, but no database writes are made.
+- `core/common/schedule.rs`, `db/`, migration `0026_schedule_iana_timezone`: pinned zone and DST semantics; local JSON backup exports and restores it. **Existing rows** initially carry a migration sentinel, which the engine resolves to the host's IANA zone at first upgrade before loading policy. Legacy offset-less timed deadlines are converted once to RFC3339 using that pinned zone, conservatively choosing the later instant for ambiguous DST times. Subsequent Windows timezone changes cannot rewrite the pinned zone or deadlines. If the host timezone was already changed before the first upgrade, the historical zone cannot be recovered; validate such installations before release.
+- RPC and frontend lock forms now use offset-bearing UTC timestamps. A new timezone-aware cloud backup schema is **not** yet available: cloud export refuses non-UTC scheduled blocks, and cloud import refuses scheduled blocks when the source zone cannot be established. Local backup remains available.
+- Unit/regression tests use synthetic times and forged invalid packets, not Cloudflare production load. Before shipping: native Windows test of GetTickCount64 suspend/hibernate/reboot behavior, named-pipe/installer access and ACL, clean MSI upgrade, Cloudflare UDP blocked, key rotation and affected browser/TUN flows.
 
-1. **Initially:** an authenticated Cloudflare time source used directly by the desktop engine, with a cached trusted-time anchor and a monotonic clock between network samples.
-2. **Possibly later:** an authenticated/signed time endpoint on aceblocker.com, if operational capacity justifies it, with Cloudflare retained as fallback. The order of precedence would change only in that later phase.
-3. **Currently:** existing behavior remains unchanged. Neither Cloudflare integration nor an Ace endpoint is authorized or implemented.
+## Still deferred or deliberately excluded
 
-## Candidate Cloudflare protocols (verify before implementation)
+1. **Ace backend time endpoint:** not added. A future signed endpoint may be justified by an operational review; Cloudflare would remain an authenticated fallback.
+2. **NTS / other authenticated time sources:** not added as hidden fallbacks. NTS bootstrapping requires explicit certificate-time decisions.
+3. **OS notifications for resume/reconnect:** no native Windows power/network event subscription yet; the local minute wakeup accounts for elapsed uptime and the failure retry cadence. Event-driven refresh needs native verification, deduplication and network usage review before release.
+4. **Complete protection against privileged OS administrators:** out of scope. Public beta-key rotation, unstable UDP paths, memory/disk tampering by administrators, and unsupported IPv6-only DNS resolution must be documented to users and release engineering.
+5. **Full cloud backup IANA metadata:** requires a separate Ace Server API/schema change, not a handwritten edit of generated clients. Do not silently reinterpret civil schedules in another zone.
 
-- **Roughtime (preferred candidate):** Cloudflare documents `roughtime.cloudflare.com:2003` over UDP, returning cryptographically signed time. Its signature verification can bootstrap trustworthy time even if the local OS clock is sufficiently wrong to break ordinary HTTPS certificate validation. The protocol provides approximate time with an uncertainty interval, not a guaranteed exact UTC instant. Validate nonce/response binding, signature/delegation, uncertainty, and replay resistance.
-- **Cloudflare NTS:** `time.cloudflare.com` supports Network Time Security (RFC 8915). NTS authenticates NTP, but its TLS-based key exchange raises a bootstrapping question when the Windows clock is badly wrong. Evaluate as an alternative or second authenticated source rather than assuming it solves the initial bad-clock problem.
-- **Plain NTP:** `time.cloudflare.com` serves ordinary NTP, but unauthenticated NTP is not sufficient on its own for a security-sensitive unlock/expiry decision.
+## References
 
-Cloudflare Roughtime is **beta**: its published root public key can change. A future client needs an explicit, authenticated key trust/rotation policy; do not silently accept arbitrary public keys fetched through untrusted DNS. The documented endpoint and port must also be rechecked before shipping. Public accessibility is broad, but UDP/2003 may be blocked on captive portals, enterprise networks or some firewalls; connectivity to the web does not prove connectivity to Roughtime.
+- Cloudflare Roughtime: https://developers.cloudflare.com/time-services/roughtime/
+- Published server key and endpoint (UDP/2003): https://developers.cloudflare.com/time-services/roughtime/usage/
+- Deprecated older UDP/2002 endpoint: https://developers.cloudflare.com/time-services/roughtime/deprecation/
+- Usage recipes: https://developers.cloudflare.com/time-services/roughtime/recipes/
+- Windows GetTickCount64: https://learn.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount64
 
-Official references (checked 2026-11-05):
-- https://developers.cloudflare.com/time-services/roughtime/usage/
-- https://developers.cloudflare.com/time-services/roughtime/recipes/
-- https://developers.cloudflare.com/time-services/roughtime/
-- https://developers.cloudflare.com/time-services/nts/
-- https://www.cloudflare.com/time/
-
-## Future time model (proposal, not an approved contract)
-
-- Never change Windows' system clock. The engine should maintain its **own** trusted UTC estimate.
-- On a validated time reply, record the authenticated UTC interval (including uncertainty), a monotonic-clock reading and the relevant boot/session identity. Within the same boot, advance the estimate using elapsed monotonic time, not `chrono::Local::now()`. On Windows, evaluate `GetTickCount64` for elapsed time across sleep/hibernation; verify its behavior and limitations in tests.
-- Preserve a protected last-known-good time/high-watermark as an additional anti-rollback signal. **A monotonic counter cannot bridge a restart on its own.** A new boot with no trustworthy fresh time must not conclude that an existing lock has expired based only on the adjustable Windows clock.
-- Represent lock expiry in UTC. For wall-clock schedules, explicitly choose an IANA time zone at configuration time and evaluate day/time in that zone, rather than accepting arbitrary user-initiated system time-zone changes.
-- Differentiate **lock expiry** (security decision) from ordinary **network availability**. A time-service outage must not automatically disable blocking or permanently cut off the network. Any fail-closed behavior should be narrowly scoped to time-dependent unlock/expiry and uninstall checks, and must specify user recovery and support consequences.
-- Respect time uncertainty and network RTT, especially near a lock deadline; design deterministic handling for indeterminate boundary intervals and large forward/backward jumps.
-- Recognize the stated limit: an administrator with control over system binaries/network can defeat a local app; the goal is to remove easy clock-based bypasses, not to claim resistance against an omnipotent local admin.
-
-## Query cadence: decide by measurement, not by a fixed ten-minute timer
-
-**No final polling cadence is selected.** The ten-minute VPS-polling proposal should not be used as a requirement.
-
-Candidate policy for later prototyping:
-- Refresh once at service start when network access permits.
-- Prefer event-triggered refresh after reconnect, resume, abnormal clock change, or when an expiry/unlock decision requires higher confidence.
-- Between validated responses, use the monotonic clock; there is no need to poll every few minutes merely to defend against manual changes to the OS clock.
-- Consider infrequent periodic refresh (e.g. a configurable, jittered 1–6 hour interval) only after testing drift, uptime, data cost, reliability and provider guidance. This range is a study input, **not** a shipping default.
-- Use bounded timeouts, limited retries with exponential backoff/jitter, no query storms and no requirement that Cloudflare always be reachable. Re-evaluate provider usage limits/terms before a public rollout.
-- If the public source is unavailable, preserve the last trusted anchor where meaningful; on restart without validated elapsed time, do not treat an adjustable wall-clock reading as authorization to remove an active lock.
-
-## Existing code touchpoints for any future design
-
-- `crates/ace-engine/src/core/common/lock.rs`: `ActiveUntilLockEnd` is checked against a caller-provided local time.
-- `crates/ace-engine/src/core/common/schedule.rs`: schedule windows are based on local wall time.
-- `crates/ace-engine/src/core/common/unlock_challenge.rs`: the five-minute cooldown uses `Local::now()` and is in-memory only.
-- `crates/ace-engine/src/manager/resistance/manager.rs`: Resistance Mode lock expiry uses `Local::now()`.
-- `crates/ace-engine/src/lock_check.rs`: the installer's independent read-only uninstall gate checks timed-lock end against `Local::now()`; it must not diverge from the engine's trusted-time decision model.
-- `crates/ace-engine/src/manager/account.rs`: Pro entitlements already implement a persisted clock high-watermark, but that is **not** a general trusted clock for locks.
-- `crates/ace-watchdog/src/main.rs`: existing `Instant` use for watchdog heartbeat is useful precedent, but it does not establish a trusted clock for the engine.
-
-Because timed locks and the uninstall gate are security/runtime contracts, any future implementation needs an explicit design approval covering persistence across restart, offline behavior, time-zone semantics, failure recovery and testing.
-
-## Tests required before enabling
-
-Use an isolated Windows VM with synthetic blocks and disabled external production dependencies where possible:
-- Advance/rollback the wall clock and change the system time zone while locks/schedules are active.
-- Suspend/hibernate, resume, reboot with/without network, and reconnect after a clock jump.
-- Test network available but Cloudflare UDP/2003 unavailable, high RTT, malformed/unsigned/stale Roughtime replies, and published-key rotation.
-- Check lock expiry/unlock boundaries, Resistance Mode, schedule activation and the MSI uninstall gate all agree.
-- Confirm failed time sync does not disable filtering or trap users in an unrecoverable state.
-
-**Non-goal now:** add dependencies, alter engine logic, deploy Ace backend endpoints, require kernel access, or change user-facing lock semantics.
+**Release decision:** code and Linux tests are not proof of native Windows anti-bypass guarantees. Run the bounded Windows VM security, MSI and clock-suspend scenarios before enabling this feature for release.
