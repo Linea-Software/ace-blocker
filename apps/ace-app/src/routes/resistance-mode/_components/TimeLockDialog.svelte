@@ -77,8 +77,8 @@
 
     function commit() {
         if (isCommitDisabled || !expiration) return;
-        const p = (n: number) => n.toString().padStart(2, "0");
-        const iso = `${expiration.year}-${p(expiration.month)}-${p(expiration.day)}T${p(expiration.hour)}:${p(expiration.minute)}:00`;
+        // Send an absolute UTC instant, never a timezone-ambiguous wall time.
+        const iso = expiration.toDate(getLocalTimeZone()).toISOString();
         confirmOpen = false;
         onCommit(iso);
     }

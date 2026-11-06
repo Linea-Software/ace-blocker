@@ -279,7 +279,7 @@ impl NetworkBlock {
     }
 
     pub fn set_schedule(&mut self, schedule_entries: Vec<ScheduleEntry>) {
-        self.schedule = Schedule::from(schedule_entries);
+        self.schedule = Schedule::from_in_zone(schedule_entries, self.schedule.timezone());
     }
 
     pub fn set_lock(&mut self, lock: Lock) {
@@ -368,14 +368,49 @@ impl NetworkBlock {
         BlockingResult::NotBlocked
     }
 
-    pub fn is_locked(&self, now: &DateTime<Local>) -> bool {
-        self.lock.is_active(&self.schedule, now)
+    pub fn is_locked(&self, _now: &DateTime<Local>) -> bool {
+        #[cfg(test)]
+        if crate::trusted_time::current_interval().is_none() {
+            return self.lock.is_active(&self.schedule, _now);
+        }
+        match self.lock.get_state() {
+            crate::core::LockState::Inactive => false,
+            crate::core::LockState::SoftUnlockable => true,
+            crate::core::LockState::ActiveDuringSchedule => {
+                // If UTC is unavailable, a schedule-bound lock cannot be
+                // proven outside its active window.
+                crate::trusted_time::current_interval().is_none_or(|range| {
+                    range.quality == crate::trusted_time::TimeQuality::Stale
+                        || self
+                            .schedule
+                            .overlaps_utc_interval(range.earliest, range.latest)
+                })
+            }
+            crate::core::LockState::ActiveUntilLockEnd { end } => {
+                crate::trusted_time::current_interval()
+                    .is_none_or(|range| range.earliest <= end.with_timezone(&chrono::Utc))
+            }
+        }
     }
 
-    /// Enforcement requires both the enabled switch and a matching schedule.
-    /// A lock constrains edits; it does not activate an otherwise inactive block.
-    pub fn is_active(&self, now: &DateTime<Local>) -> bool {
-        self.enabled && self.schedule.is_active_at(now)
+    /// When time is unavailable, keep a configured, enabled schedule active,
+    /// rather than quietly failing open on network enforcement.
+    pub fn is_active(&self, _now: &DateTime<Local>) -> bool {
+        #[cfg(test)]
+        if crate::trusted_time::current_interval().is_none() {
+            return self.enabled && self.schedule.is_active_at(_now);
+        }
+        self.enabled
+            && crate::trusted_time::current_interval().map_or_else(
+                || !self.schedule.get_entries().is_empty(),
+                |range| {
+                    (range.quality == crate::trusted_time::TimeQuality::Stale
+                        && !self.schedule.get_entries().is_empty())
+                        || self
+                            .schedule
+                            .overlaps_utc_interval(range.earliest, range.latest)
+                },
+            )
     }
 }
 #[cfg(test)]

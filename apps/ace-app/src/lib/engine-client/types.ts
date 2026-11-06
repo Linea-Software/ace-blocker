@@ -56,6 +56,8 @@ export type BackupNetworkBlock = {
     id: string;
     name: string;
     safeSearch: boolean;
+    /** Policy's persisted IANA timezone (not the current Windows timezone). */
+    scheduleTimezone: string;
     schedules: Array<BackupScheduleEntry>;
     userRules: Array<UserDefinedRule>;
 };

@@ -42,7 +42,7 @@ impl NetworkManager {
             .ok_or_else(|| NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
             })?;
-        if block.is_locked(&chrono::Local::now()) {
+        if block.is_locked(&crate::trusted_time::locking_now()) {
             return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                 id: network_block_id.clone(),
             });
@@ -92,7 +92,7 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         enabled: bool,
     ) -> Result<(), NetworkManagerOpErr> {
-        let now = &chrono::Local::now();
+        let now = &crate::trusted_time::locking_now();
 
         let network_block = self.get_network_block_from(network_block_id).ok_or(
             NetworkManagerOpErr::NetworkBlockNotFound {
@@ -159,7 +159,7 @@ impl NetworkManager {
     }
 
     pub fn is_network_block_locked(&self, net_list_id: &NetworkBlockId) -> bool {
-        let now = &chrono::Local::now();
+        let now = &crate::trusted_time::locking_now();
 
         if let Some(block) = self.network_blocks.get(net_list_id) {
             return block.is_locked(now);
@@ -170,7 +170,7 @@ impl NetworkManager {
 
     /// Returns true if *any* network block currently has an active lock.
     pub fn any_network_block_locked(&self) -> bool {
-        let now = &chrono::Local::now();
+        let now = &crate::trusted_time::locking_now();
         self.network_blocks
             .values()
             .any(|block| block.is_locked(now))

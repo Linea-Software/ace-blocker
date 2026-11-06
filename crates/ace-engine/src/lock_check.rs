@@ -30,8 +30,11 @@
 //!   A schedule lock therefore blocks uninstall until the user removes it
 //!   from the app — it never "expires on its own" like a timed lock.
 
-use chrono::{Local, NaiveDateTime};
+use chrono::{DateTime, Utc};
+#[cfg(test)]
+use chrono::{Local, NaiveDateTime, TimeZone};
 
+#[cfg(test)]
 use crate::core::constants::DATETIME_FORMAT;
 use crate::settings::Settings;
 
@@ -50,28 +53,75 @@ const BUSY_TIMEOUT_MS: i32 = 2000;
 /// while `now <= end`; `soft_unlockable` and `active_during_schedule` are
 /// treated as active (the engine's `is_locked()` does the same). Anything
 /// unparseable is treated as active — fail safe.
-fn lock_is_active(state: &str, lock_end: Option<&str>) -> bool {
+fn lock_is_active_at(
+    state: &str,
+    lock_end: Option<&str>,
+    verified_now: Option<DateTime<Utc>>,
+) -> bool {
     match state {
         "INACTIVE" | "inactive" => false,
-        "active_until_lock_end" => match lock_end
-            .and_then(|raw| NaiveDateTime::parse_from_str(raw, DATETIME_FORMAT).ok())
-        {
-            Some(end) => Local::now().naive_local() <= end,
-            // A timed lock without a parseable end time cannot be proven
-            // expired — treat it as active.
-            None => true,
-        },
-        // soft_unlockable, active_during_schedule, anything unknown.
+        "active_until_lock_end" => {
+            // New stored deadlines carry a UTC offset, so system timezone
+            // changes cannot change their absolute end.
+            let end = lock_end.and_then(|raw| {
+                DateTime::parse_from_rfc3339(raw)
+                    .ok()
+                    .map(|dt| dt.to_utc())
+                    .or_else(|| {
+                        // Pre-release local-only rows cannot be authenticated
+                        // across a timezone change, so don't declare them expired.
+                        #[cfg(test)]
+                        {
+                            NaiveDateTime::parse_from_str(raw, DATETIME_FORMAT)
+                                .ok()
+                                .and_then(|dt| Local.from_local_datetime(&dt).single())
+                                .map(|dt| dt.to_utc())
+                        }
+                        #[cfg(not(test))]
+                        {
+                            let _ = raw;
+                            None
+                        }
+                    })
+            });
+            match (verified_now, end) {
+                (Some(now), Some(end)) => now <= end,
+                _ => true, // never release based on untrusted wall time
+            }
+        }
         _ => true,
     }
+}
+
+#[cfg(test)]
+fn lock_is_active(state: &str, lock_end: Option<&str>) -> bool {
+    lock_is_active_at(state, lock_end, effective_time())
+}
+
+fn effective_time() -> Option<DateTime<Utc>> {
+    #[cfg(test)]
+    if crate::trusted_time::current_interval().is_none() {
+        return Some(Utc::now()); // legacy fixture compatibility only
+    }
+    crate::trusted_time::current_interval().map(|interval| interval.earliest)
 }
 
 /// Human-readable message for an active lock row, or `None` when the row is
 /// not active. `subject` names the locked thing ("a network block" or
 /// "Resistance Mode"); a timed lock's message carries the exact `lock_end`
 /// value so callers and users see the precise expiration time.
+#[cfg(test)]
 fn active_lock_message(subject: &str, state: &str, lock_end: Option<&str>) -> Option<String> {
-    if !lock_is_active(state, lock_end) {
+    active_lock_message_at(subject, state, lock_end, effective_time())
+}
+
+fn active_lock_message_at(
+    subject: &str,
+    state: &str,
+    lock_end: Option<&str>,
+    now: Option<DateTime<Utc>>,
+) -> Option<String> {
+    if !lock_is_active_at(state, lock_end, now) {
         return None;
     }
     Some(match lock_end {
@@ -82,13 +132,29 @@ fn active_lock_message(subject: &str, state: &str, lock_end: Option<&str>) -> Op
 
 /// Runs the lock check against the engine's main database and returns the
 /// process exit code.
-pub fn check_locks_main() -> i32 {
-    check_locks_at(&Settings::get_main_db_path())
+pub async fn check_locks_main() -> i32 {
+    // A separate installer process cannot reuse the engine's uptime anchor.
+    // Perform one independent authenticated query; offline timed locks remain
+    // active. The SQLite query itself stays strictly read-only.
+    let clock = crate::trusted_time::TrustedClock::new(
+        Settings::get_app_data_dir().join("trusted_clock_floor"),
+    );
+    if let Err(error) = clock.synchronize().await {
+        eprintln!("Ace Blocker: authenticated uninstall-time unavailable ({error})");
+    }
+    check_locks_at_time(
+        &Settings::get_main_db_path(),
+        clock.now().map(|interval| interval.earliest),
+    )
 }
 
 /// Runs the lock check against `db_path` (read-only). Public so tests and
 /// tooling can point at an arbitrary database.
 pub fn check_locks_at(db_path: &std::path::Path) -> i32 {
+    check_locks_at_time(db_path, effective_time())
+}
+
+fn check_locks_at_time(db_path: &std::path::Path, now: Option<DateTime<Utc>>) -> i32 {
     if !db_path.exists() {
         eprintln!(
             "Ace Blocker: cannot verify lock state — engine database not found at {}",
@@ -144,7 +210,7 @@ pub fn check_locks_at(db_path: &std::path::Path) -> i32 {
         Ok(rows) => {
             for (state, lock_end) in rows {
                 if let Some(message) =
-                    active_lock_message("a network block", &state, lock_end.as_deref())
+                    active_lock_message_at("a network block", &state, lock_end.as_deref(), now)
                 {
                     active_locks.push(message);
                 }
@@ -169,7 +235,7 @@ pub fn check_locks_at(db_path: &std::path::Path) -> i32 {
     {
         Ok((state, lock_end)) => {
             if let Some(message) =
-                active_lock_message("Resistance Mode", &state, lock_end.as_deref())
+                active_lock_message_at("Resistance Mode", &state, lock_end.as_deref(), now)
             {
                 active_locks.push(message);
             }
@@ -332,6 +398,35 @@ mod tests {
         assert!(!lock_is_active("active_until_lock_end", Some(&later(-1))));
         assert!(!lock_is_active("inactive", None));
         assert!(!lock_is_active("INACTIVE", None));
+    }
+
+    #[test]
+    fn offline_reboot_does_not_expire_a_timed_lock() {
+        let end = "2020-01-01T00:00:00+00:00";
+        assert!(lock_is_active_at("active_until_lock_end", Some(end), None));
+        assert!(!lock_is_active_at(
+            "active_until_lock_end",
+            Some(end),
+            Some(Utc.with_ymd_and_hms(2026, 11, 5, 12, 0, 0).unwrap()),
+        ));
+    }
+
+    #[test]
+    fn independent_uninstall_gate_uses_authenticated_instant() {
+        let temp = tempfile::tempdir().unwrap();
+        let db = open_db(temp.path());
+        let db_path = temp.path().join("engine_db.sql");
+        let block_id = uuid::Uuid::now_v7();
+        insert_block(&db, &block_id);
+        db.set_lock(crate::db::models::NetworkBlockLockModel {
+            network_block_id: block_id.to_string(),
+            lock_state: "active_until_lock_end".into(),
+            lock_end: Some("2020-01-01T00:00:00+00:00".into()),
+        })
+        .unwrap();
+        assert_eq!(check_locks_at_time(&db_path, None), EXIT_LOCKS_ACTIVE);
+        let verified = Utc.with_ymd_and_hms(2026, 11, 5, 12, 0, 0).unwrap();
+        assert_eq!(check_locks_at_time(&db_path, Some(verified)), EXIT_NO_LOCKS);
     }
 
     #[test]

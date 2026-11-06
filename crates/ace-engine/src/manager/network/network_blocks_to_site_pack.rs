@@ -100,7 +100,7 @@ impl NetworkManager {
             },
         )?;
 
-        if network_block.is_locked(&chrono::Local::now()) {
+        if network_block.is_locked(&crate::trusted_time::locking_now()) {
             return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                 id: network_block_id.clone(),
             });

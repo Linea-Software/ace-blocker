@@ -29,6 +29,37 @@ use std::{collections::HashMap, path::Path};
 // migrations is simply the ace-engine/migrations/ folder from the perspective of cargo
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
+/// Legacy naive timestamps were local wall times. Resolve the civil instant
+/// in the policy's initial pinned zone, choosing the *later* instant for a
+/// repeated DST hour. A nonexistent local hour conservatively advances to a
+/// representable local time (rather than shortening the lock).
+fn legacy_deadline_as_absolute(
+    raw: &str,
+    timezone: chrono_tz::Tz,
+) -> Result<Option<String>, DBError> {
+    use chrono::{LocalResult, TimeZone};
+    if chrono::DateTime::parse_from_rfc3339(raw).is_ok() {
+        return Ok(None);
+    }
+    let civil =
+        chrono::NaiveDateTime::parse_from_str(raw, crate::core::common::constants::DATETIME_FORMAT)
+            .map_err(|error| DBError::MigrationError {
+                message: format!("Invalid legacy lock date {raw:?}: {error}"),
+            })?;
+    let choose_latest = |date| match timezone.from_local_datetime(&date) {
+        LocalResult::Single(instant) => Some(instant),
+        LocalResult::Ambiguous(first, second) => Some(first.max(second)),
+        LocalResult::None => None,
+    };
+    let instant = choose_latest(civil)
+        .or_else(|| choose_latest(civil + chrono::Duration::hours(3)))
+        .or_else(|| choose_latest(civil + chrono::Duration::days(2)))
+        .ok_or_else(|| DBError::MigrationError {
+            message: format!("Unrepresentable legacy lock deadline {raw:?} in {timezone}"),
+        })?;
+    Ok(Some(instant.to_rfc3339()))
+}
+
 pub struct EngineDB {
     db_pool: Pool<ConnectionManager<SqliteConnection>>,
 }
@@ -39,7 +70,89 @@ pub use error::DBError;
 impl EngineDB {
     pub fn from(db_path: &Path) -> Result<EngineDB, DBError> {
         let pool = sqlite_pool::open_pool(db_path, MIGRATIONS)?;
-        Ok(EngineDB { db_pool: pool })
+        let db = EngineDB { db_pool: pool };
+        let system_zone = crate::core::common::schedule::system_timezone();
+        db.pin_legacy_schedule_timezone(system_zone.name())?;
+        db.pin_legacy_timed_lock_deadlines(system_zone)?;
+        Ok(db)
+    }
+
+    /// Capture the install-time IANA zone for policies written before the
+    /// timezone column existed, before a manager can load those rows.
+    /// Conditional UPDATE makes the migration idempotent and leaves existing
+    /// pinned zones unchanged on later reboots / Windows timezone changes.
+    fn pin_legacy_schedule_timezone(&self, tz: &str) -> Result<(), DBError> {
+        use crate::schema_main_db::network_blocks::dsl::{network_blocks, schedule_timezone};
+        let mut connection = self.get_db_connection()?;
+        diesel::update(network_blocks.filter(schedule_timezone.eq("__legacy_system_timezone__")))
+            .set(schedule_timezone.eq(tz))
+            .execute(&mut connection)
+            .map_err(|error| DBError::MigrationError {
+                message: format!("Could not pin legacy schedule IANA timezone: {error}"),
+            })?;
+        Ok(())
+    }
+
+    /// Normalize older timezone-less lock timestamps exactly once, while
+    /// preserving the original civil zone captured during this upgrade.
+    /// All subsequent loads use RFC3339 absolute deadlines, so a Windows
+    /// timezone change cannot make an existing legacy lock expire earlier.
+    fn pin_legacy_timed_lock_deadlines(&self, fallback_zone: chrono_tz::Tz) -> Result<(), DBError> {
+        use crate::schema_main_db::{
+            network_block_locks as locks, network_blocks as blocks,
+            resistance_mode_settings as resistance,
+        };
+        let mut connection = self.get_db_connection()?;
+        let rows: Vec<(String, Option<String>, String)> = locks::table
+            .inner_join(blocks::table)
+            .select((
+                locks::network_block_id,
+                locks::lock_end,
+                blocks::schedule_timezone,
+            ))
+            .load(&mut connection)
+            .map_err(|error| DBError::MigrationError {
+                message: format!("Could not read legacy lock dates: {error}"),
+            })?;
+        for (id, raw, name) in rows {
+            let Some(raw) = raw else {
+                continue;
+            };
+            let zone = name
+                .parse::<chrono_tz::Tz>()
+                .map_err(|error| DBError::MigrationError {
+                    message: format!("Invalid pinned timezone {name}: {error}"),
+                })?;
+            if let Some(absolute) = legacy_deadline_as_absolute(&raw, zone)? {
+                diesel::update(locks::table.find(&id))
+                    .set(locks::lock_end.eq(absolute))
+                    .execute(&mut connection)
+                    .map_err(|error| DBError::MigrationError {
+                        message: format!("Could not normalize legacy network lock {id}: {error}"),
+                    })?;
+            }
+        }
+
+        let mode = resistance::table
+            .select(resistance::lock_end)
+            .first::<Option<String>>(&mut connection)
+            .optional()
+            .map_err(|error| DBError::MigrationError {
+                message: format!("Could not read legacy Resistance Mode lock: {error}"),
+            })?;
+        if let Some(Some(raw)) = mode {
+            if let Some(absolute) = legacy_deadline_as_absolute(&raw, fallback_zone)? {
+                diesel::update(resistance::table)
+                    .set(resistance::lock_end.eq(absolute))
+                    .execute(&mut connection)
+                    .map_err(|error| DBError::MigrationError {
+                        message: format!(
+                            "Could not normalize legacy Resistance Mode lock: {error}"
+                        ),
+                    })?;
+            }
+        }
+        Ok(())
     }
 
     pub fn get_db_connection(
@@ -206,6 +319,93 @@ mod migration_seed_tests {
     /// free packs exist under the canonical catalog IDs
     /// (pack-adult-free / pack-social-free), and a manager loaded from this DB
     /// resolves everything (no dangling pack references — MGR-01).
+    #[test]
+    fn legacy_lock_deadlines_are_migrated_to_absolute_utc_once() {
+        let temp = tempfile::tempdir().unwrap();
+        let db = EngineDB::from(&temp.path().join("legacy-locks.sqlite")).unwrap();
+        let mut conn = db.get_db_connection().unwrap();
+        use crate::schema_main_db::network_block_locks as locks;
+        use crate::schema_main_db::network_blocks as blocks;
+        use crate::schema_main_db::resistance_mode_settings as mode;
+        diesel::update(blocks::table.find(ADULT_BLOCK))
+            .set(blocks::schedule_timezone.eq("Europe/Rome"))
+            .execute(&mut conn)
+            .unwrap();
+        diesel::update(locks::table.find(ADULT_BLOCK))
+            .set((
+                locks::lock_state.eq("active_until_lock_end"),
+                locks::lock_end.eq(Some("2026-10-25T02:30:00")),
+            ))
+            .execute(&mut conn)
+            .unwrap();
+        diesel::update(mode::table)
+            .set((
+                mode::enabled.eq(true),
+                mode::lock_state.eq("active_until_lock_end"),
+                mode::lock_end.eq(Some("2026-03-29T02:30:00")),
+            ))
+            .execute(&mut conn)
+            .unwrap();
+        drop(conn);
+
+        db.pin_legacy_timed_lock_deadlines("Europe/Rome".parse().unwrap())
+            .unwrap();
+        let row = db
+            .get_lock_of(&uuid::Uuid::parse_str(ADULT_BLOCK).unwrap())
+            .unwrap();
+        // Fall back chooses the *later* 02:30 on Rome's DST transition.
+        assert_eq!(row.lock_end.as_deref(), Some("2026-10-25T02:30:00+01:00"));
+        let resistance = db.get_resistance_mode_settings().unwrap();
+        // Spring gap is advanced, never interpreted as an earlier instant.
+        assert!(
+            resistance
+                .lock_end
+                .as_ref()
+                .is_some_and(|raw| raw.contains("+02:00"))
+        );
+
+        // A later Windows timezone change cannot rewrite old absolute dates.
+        db.pin_legacy_timed_lock_deadlines("America/New_York".parse().unwrap())
+            .unwrap();
+        let reloaded = db
+            .get_lock_of(&uuid::Uuid::parse_str(ADULT_BLOCK).unwrap())
+            .unwrap();
+        assert_eq!(reloaded.lock_end, row.lock_end);
+    }
+
+    #[test]
+    fn legacy_schedule_timezone_is_pinned_once_on_upgrade() {
+        let temp = tempfile::tempdir().unwrap();
+        let db = EngineDB::from(&temp.path().join("upgrade.sqlite")).unwrap();
+        let mut conn = db.get_db_connection().unwrap();
+        // Test the conditional upgrade with a specific named zone so the
+        // test does not depend on the host running these fixtures.
+        diesel::update(crate::schema_main_db::network_blocks::table)
+            .set(
+                crate::schema_main_db::network_blocks::schedule_timezone
+                    .eq("__legacy_system_timezone__"),
+            )
+            .execute(&mut conn)
+            .unwrap();
+        drop(conn);
+
+        db.pin_legacy_schedule_timezone("Europe/Rome").unwrap();
+        let rows = db.get_all_network_blocks().unwrap();
+        assert!(!rows.is_empty());
+        assert!(
+            rows.iter()
+                .all(|block| block.schedule_timezone == "Europe/Rome")
+        );
+
+        db.pin_legacy_schedule_timezone("America/New_York").unwrap();
+        let reloaded = db.get_all_network_blocks().unwrap();
+        assert!(
+            reloaded
+                .iter()
+                .all(|block| block.schedule_timezone == "Europe/Rome")
+        );
+    }
+
     #[test]
     fn seeded_default_blocks_use_packs_and_domain_rules() {
         set_test_sites_dir();
@@ -415,11 +615,17 @@ mod migration_seed_tests {
             GAMBLING_RULE_COUNT
         );
 
-        // Revert the new entitlement migration (0024), then the enabled
-        // flag (0023) before reverting the packs migration (0022).
-        conn.revert_last_migration(MIGRATIONS).unwrap();
-        conn.revert_last_migration(MIGRATIONS).unwrap();
-        conn.revert_last_migration(MIGRATIONS).unwrap();
+        // Revert all migrations newer than 0022, then 0022 itself.
+        // Do not hard-code a count: adding a later schema migration must not
+        // quietly turn this into a test of the wrong down.sql.
+        while conn
+            .applied_migrations()
+            .unwrap()
+            .iter()
+            .any(|version| version.to_string() == "0022")
+        {
+            conn.revert_last_migration(MIGRATIONS).unwrap();
+        }
 
         // Post-revert state.
         assert_eq!(

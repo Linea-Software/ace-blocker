@@ -10,7 +10,6 @@
         CalendarDate,
         DateFormatter,
         getLocalTimeZone,
-        parseDateTime,
         today,
     } from "@internationalized/date";
     import {
@@ -110,9 +109,10 @@
         requestError = false;
         if (saved.end) {
             try {
-                const end = parseDateTime(saved.end.slice(0, 16));
-                calendarValue = new CalendarDate(end.year, end.month, end.day);
-                timeValue = `${String(end.hour).padStart(2, "0")}:${String(end.minute).padStart(2, "0")}`;
+                const end = parseLockEnd(saved.end);
+                if (!end) throw new Error("Invalid stored expiration");
+                calendarValue = new CalendarDate(end.getFullYear(), end.getMonth() + 1, end.getDate());
+                timeValue = `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
             } catch {
                 calendarValue = undefined;
                 timeValue = "12:00";

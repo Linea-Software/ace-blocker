@@ -67,6 +67,8 @@ async-stream = "~0.3"
 base64 = "~0.23"
 bytes = "~1.12"
 chrono = { version = "~0.4", features = ["serde"] }
+chrono-tz = "~0.10.4"
+iana-time-zone = "~0.1.65"
 crates_llms_txt = { git = "https://github.com/kingsword09/crates_llms_txt", optional = true }
 diesel = { version = "~2.3", features = [
     "sqlite",
@@ -92,6 +94,7 @@ rcgen = "~0.14"
 hex = "~0.4"
 flate2 = { version = "~1.1", optional = true }
 reqwest = { version = "~0.13", features = ["json", "stream"] }
+roughtime = { version = "0.2.1", default-features = false }
 remoc = { version = "0.20.4", default-features = false, features = ["rch", "rtc"] }
 sha2 = "~0.11"
 subtle = "~2.6"
@@ -143,6 +146,7 @@ windows = { version = "~0.62", features = [
     "Win32_Storage_FileSystem",
     "Win32_System_Pipes",
     "Win32_System_Threading",
+    "Win32_System_SystemInformation",
 ] }
 
 [dev-dependencies]

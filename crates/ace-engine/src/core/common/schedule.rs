@@ -206,23 +206,90 @@ impl ScheduleEntry {
 }
 
 /// A block is scheduled whenever at least one entry matches local time.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Schedule {
     entries: Vec<ScheduleEntry>,
+    // Pinned when the block is created; changing Windows timezone does not
+    // silently move configured weekday/time windows.
+    timezone: chrono_tz::Tz,
+}
+
+pub fn system_timezone() -> chrono_tz::Tz {
+    iana_time_zone::get_timezone()
+        .ok()
+        .and_then(|name| name.parse().ok())
+        .unwrap_or(chrono_tz::UTC)
+}
+
+impl Default for Schedule {
+    fn default() -> Self {
+        Self::from_in_zone(Vec::new(), chrono_tz::UTC)
+    }
 }
 
 impl Schedule {
     pub fn from(schedule_entries: Vec<ScheduleEntry>) -> Schedule {
-        Schedule {
-            entries: schedule_entries,
-        }
+        Self::from_in_zone(schedule_entries, system_timezone())
     }
 
-    /// Checks the union of all entries; an empty schedule is never active.
+    pub fn from_in_zone(entries: Vec<ScheduleEntry>, timezone: chrono_tz::Tz) -> Self {
+        Self { entries, timezone }
+    }
+
+    pub fn timezone(&self) -> chrono_tz::Tz {
+        self.timezone
+    }
+
+    /// Evaluation of an authenticated UTC instant in the policy's fixed
+    /// IANA zone. DST transitions are resolved by chrono-tz.
+    pub fn is_active_at_utc(&self, utc: chrono::DateTime<chrono::Utc>) -> bool {
+        let wall = utc.with_timezone(&self.timezone);
+        self.entries
+            .iter()
+            .any(|entry| entry.has_weekday(wall.weekday()) && entry.contains(wall.time()))
+    }
+
+    /// Returns true if an authenticated uncertainty interval could overlap
+    /// any configured civil-time window. Checking only the interval endpoints
+    /// is unsound: a one-minute window can lie wholly between them. Schedule
+    /// boundaries have minute precision, so inspect all included UTC minute
+    /// transitions, which also covers DST gaps and repeated civil hours.
+    pub fn overlaps_utc_interval(
+        &self,
+        earliest: chrono::DateTime<chrono::Utc>,
+        latest: chrono::DateTime<chrono::Utc>,
+    ) -> bool {
+        if self.entries.is_empty() {
+            return false;
+        }
+        let duration = latest.signed_duration_since(earliest);
+        // A malformed or excessively uncertain interval is not enough to
+        // prove we're outside a lock/active schedule. No unbounded loops.
+        if duration < chrono::Duration::zero() || duration >= chrono::Duration::minutes(10) {
+            return true;
+        }
+        if self.is_active_at_utc(earliest) || self.is_active_at_utc(latest) {
+            return true;
+        }
+        let mut minute = (earliest.timestamp().div_euclid(60) + 1) * 60;
+        while let Some(instant) = chrono::DateTime::<chrono::Utc>::from_timestamp(minute, 0) {
+            if instant >= latest {
+                break;
+            }
+            if self.is_active_at_utc(instant) {
+                return true;
+            }
+            minute += 60;
+        }
+        false
+    }
+
+    /// Local-time form retained for pure call-site fixtures. The live
+    /// engine calls is_active_at_utc with authenticated time instead.
     pub fn is_active_at(&self, time: &chrono::DateTime<chrono::Local>) -> bool {
-        self.entries.iter().any(|schedule_entry| {
-            schedule_entry.has_weekday(time.weekday()) && schedule_entry.contains(time.time())
-        })
+        self.entries
+            .iter()
+            .any(|entry| entry.has_weekday(time.weekday()) && entry.contains(time.time()))
     }
 
     pub fn get_entries(&self) -> &Vec<ScheduleEntry> {
@@ -503,5 +570,77 @@ mod tests {
             }
             _ => panic!("Expected StartTimeAfterEndTime error"),
         }
+    }
+}
+
+#[cfg(test)]
+mod pinned_timezone_tests {
+    use super::*;
+    use chrono::{TimeZone, Utc, WeekdaySet};
+
+    fn sunday_window(start: (u32, u32), end: (u32, u32)) -> ScheduleEntry {
+        ScheduleEntry::from(
+            ScheduleEntryId::from(Uuid::now_v7()),
+            NetworkBlockId::from(Uuid::now_v7()),
+            chrono::NaiveTime::from_hms_opt(start.0, start.1, 0).unwrap(),
+            chrono::NaiveTime::from_hms_opt(end.0, end.1, 0).unwrap(),
+            {
+                let mut days = WeekdaySet::EMPTY;
+                days.insert(chrono::Weekday::Sun);
+                days
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn a_short_window_inside_roughtime_uncertainty_is_not_missed() {
+        use chrono::{NaiveTime, WeekdaySet};
+        let id = NetworkBlockId::from(Uuid::now_v7());
+        let start = NaiveTime::from_hms_opt(12, 1, 0).unwrap();
+        let end = NaiveTime::from_hms_opt(12, 1, 0).unwrap();
+        let mut days = WeekdaySet::EMPTY;
+        days.insert(chrono::Weekday::Mon);
+        let entry =
+            ScheduleEntry::from(ScheduleEntryId::from(Uuid::now_v7()), id, start, end, days)
+                .unwrap();
+        let zone = "Etc/UTC".parse().unwrap();
+        let schedule = Schedule::from_in_zone(vec![entry], zone);
+        let earliest = Utc.with_ymd_and_hms(2026, 11, 2, 12, 0, 30).unwrap();
+        let latest = Utc.with_ymd_and_hms(2026, 11, 2, 12, 2, 0).unwrap();
+        assert!(!schedule.is_active_at_utc(earliest));
+        assert!(!schedule.is_active_at_utc(latest));
+        assert!(schedule.overlaps_utc_interval(earliest, latest));
+        assert!(!schedule.overlaps_utc_interval(
+            Utc.with_ymd_and_hms(2026, 11, 2, 12, 2, 1).unwrap(),
+            Utc.with_ymd_and_hms(2026, 11, 2, 12, 3, 0).unwrap(),
+        ));
+    }
+
+    #[test]
+    fn spring_forward_skips_missing_civil_hour() {
+        let zone = "Europe/Rome".parse().unwrap();
+        let schedule = Schedule::from_in_zone(vec![sunday_window((3, 0), (3, 45))], zone);
+        assert!(!schedule.is_active_at_utc(Utc.with_ymd_and_hms(2026, 3, 29, 0, 30, 0).unwrap()));
+        assert!(schedule.is_active_at_utc(Utc.with_ymd_and_hms(2026, 3, 29, 1, 30, 0).unwrap()));
+    }
+
+    #[test]
+    fn fall_back_repeated_civil_hour_is_enforced_twice() {
+        let zone = "Europe/Rome".parse().unwrap();
+        let schedule = Schedule::from_in_zone(vec![sunday_window((2, 0), (2, 45))], zone);
+        assert!(schedule.is_active_at_utc(Utc.with_ymd_and_hms(2026, 10, 25, 0, 30, 0).unwrap()));
+        assert!(schedule.is_active_at_utc(Utc.with_ymd_and_hms(2026, 10, 25, 1, 30, 0).unwrap()));
+    }
+
+    #[test]
+    fn pinned_iana_zone_does_not_follow_system_timezone() {
+        let entry = sunday_window((2, 0), (2, 45));
+        let rome = Schedule::from_in_zone(vec![entry.clone()], "Europe/Rome".parse().unwrap());
+        let new_york = Schedule::from_in_zone(vec![entry], "America/New_York".parse().unwrap());
+        let instant = Utc.with_ymd_and_hms(2026, 10, 25, 0, 30, 0).unwrap();
+        assert!(rome.is_active_at_utc(instant));
+        assert!(!new_york.is_active_at_utc(instant));
+        assert_eq!(rome.timezone().name(), "Europe/Rome");
     }
 }

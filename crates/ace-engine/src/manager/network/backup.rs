@@ -51,6 +51,8 @@ pub struct BackupNetworkBlock {
     pub enabled: bool,
     pub safe_search: bool,
     pub icon: Option<String>,
+    /// IANA zone pinned to this policy at creation.
+    pub schedule_timezone: String,
     pub schedules: Vec<BackupScheduleEntry>,
     pub user_rules: Vec<crate::core::UserDefinedRule>,
     pub connected_site_packs: Vec<String>,
@@ -136,6 +138,7 @@ impl NetworkManager {
                 enabled: network_block.is_enabled(),
                 safe_search: network_block.is_safe_search_enabled(),
                 icon: network_block.get_icon(),
+                schedule_timezone: network_block.get_schedule().timezone().name().to_string(),
                 schedules,
                 user_rules: network_block.get_user_defined_rules().rules().to_vec(),
                 connected_site_packs: network_block
@@ -272,6 +275,11 @@ impl NetworkManager {
 
         for block in backup.network_blocks {
             let id = block.id;
+            let timezone: chrono_tz::Tz = block.schedule_timezone.parse().map_err(|_| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid IANA timezone in backup for {id}"),
+                }
+            })?;
             if self.is_network_block_locked(&NetworkBlockId::from(id)) {
                 tracing::info!(%id, "Skipping locked network block during backup restore");
                 continue;
@@ -339,6 +347,7 @@ impl NetworkManager {
                 enabled: block.enabled,
                 safe_search: block.safe_search,
                 icon: block.icon.as_deref(),
+                schedule_timezone: timezone.name(),
                 schedules: &schedules,
                 user_rules: normalized_rules.rules(),
                 site_pack_ids: &site_pack_ids,
@@ -463,6 +472,66 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn local_restore_keeps_pinned_timezone() {
+        let (mut manager, _temp) = setup_manager();
+        let block_id = uuid::Uuid::now_v7();
+        let mut block = backup_block(block_id, "IANA schedule");
+        block.schedule_timezone = "Europe/Rome".to_string();
+        block.schedules.push(BackupScheduleEntry {
+            start_time: "08:00:00".into(),
+            end_time: "09:00:00".into(),
+            monday: true,
+            tuesday: false,
+            wednesday: false,
+            thursday: false,
+            friday: false,
+            saturday: false,
+            sunday: false,
+        });
+        let backup = EngineBackup {
+            version: "1.0".into(),
+            custom_site_packs: vec![],
+            network_blocks: vec![block],
+            deactivated_resistance_scripts: vec![],
+        };
+        manager.import_backup(backup).await.unwrap();
+        let restored = manager
+            .get_network_block_from(&crate::core::NetworkBlockId::from(block_id))
+            .unwrap();
+        assert_eq!(restored.get_schedule().timezone().name(), "Europe/Rome");
+        let exported = manager.export_backup().unwrap();
+        assert_eq!(
+            exported
+                .network_blocks
+                .iter()
+                .find(|b| b.id == block_id)
+                .unwrap()
+                .schedule_timezone,
+            "Europe/Rome"
+        );
+    }
+
+    #[tokio::test]
+    async fn invalid_timezone_backup_is_rejected_before_write() {
+        let (mut manager, _temp) = setup_manager();
+        let id = uuid::Uuid::now_v7();
+        let mut block = backup_block(id, "Bad zone");
+        block.schedule_timezone = "This/IsNotReal".into();
+        let backup = EngineBackup {
+            version: "1.0".into(),
+            custom_site_packs: vec![],
+            network_blocks: vec![block],
+            deactivated_resistance_scripts: vec![],
+        };
+        assert!(manager.import_backup(backup).await.is_err());
+        assert!(
+            manager
+                .get_network_block_from(&crate::core::NetworkBlockId::from(id))
+                .is_none()
+        );
+    }
+
+    #[tokio::test]
     async fn test_backup_round_trip_keeps_block_site_pack_reference() {
         let (mut manager, _temp) = setup_manager();
 
@@ -510,6 +579,7 @@ mod tests {
             enabled: true,
             safe_search: false,
             icon: None,
+            schedule_timezone: "Etc/UTC".into(),
             schedules: vec![],
             user_rules: vec![],
             connected_site_packs: vec![],

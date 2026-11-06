@@ -489,10 +489,7 @@ impl From<crate::core::LockState> for LockState {
             },
             crate::core::LockState::ActiveUntilLockEnd { end } => Self {
                 state: "active_until_lock_end".to_string(),
-                end: Some(
-                    end.format(crate::core::constants::DATETIME_FORMAT)
-                        .to_string(),
-                ),
+                end: Some(end.to_rfc3339()),
             },
         }
     }
@@ -624,10 +621,7 @@ impl NetworkListLockSchema {
             network_block_id,
             is_active,
             lock_state: lock.get_state().into(),
-            lock_end: lock.get_end_time().map(|end| {
-                end.format(crate::core::constants::DATETIME_FORMAT)
-                    .to_string()
-            }),
+            lock_end: lock.get_end_time().map(|end| end.to_rfc3339()),
         }
     }
 }

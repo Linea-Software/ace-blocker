@@ -4,6 +4,21 @@ use crate::db::models::NetworkBlockLockModel;
 
 use super::{NetworkManager, error::NetworkManagerOpErr};
 
+fn timed_upgrade_shortens_soft_cooldown(
+    current: LockState,
+    proposed: LockState,
+    latest_trusted_now: chrono::DateTime<chrono::Utc>,
+) -> bool {
+    matches!(
+        (current, proposed),
+        (LockState::SoftUnlockable, LockState::ActiveUntilLockEnd { end })
+            if end.with_timezone(&chrono::Utc) <
+                latest_trusted_now + chrono::Duration::seconds(
+                    crate::core::common::unlock_challenge::UnlockChallenge::COOLDOWN_SECONDS
+                )
+    )
+}
+
 impl NetworkManager {
     pub fn get_lock_of(
         &self,
@@ -24,7 +39,7 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         new_lock: Lock,
     ) -> Result<(), NetworkManagerOpErr> {
-        let now = chrono::Local::now();
+        let now = crate::trusted_time::locking_now();
         let network_block = self.get_network_block_from(network_block_id).ok_or(
             NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
@@ -33,6 +48,20 @@ impl NetworkManager {
 
         let current_lock = network_block.get_lock();
 
+        // A timed upgrade that expires before the soft-unlock reflection
+        // cooldown is over is not actually stricter: it would bypass the
+        // mandatory five minutes without redeeming the challenge.
+        if let Some(interval) = crate::trusted_time::current_interval()
+            && timed_upgrade_shortens_soft_cooldown(
+                current_lock.get_state(),
+                new_lock.get_state(),
+                interval.latest,
+            )
+        {
+            return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
+                id: network_block_id.clone(),
+            });
+        }
         if network_block.is_locked(&now) && !new_lock.is_stricter_than(current_lock) {
             return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                 id: network_block_id.clone(),
@@ -87,10 +116,7 @@ impl NetworkManager {
         let new_lock_model = NetworkBlockLockModel {
             network_block_id: (*network_block_id).to_string(),
             lock_state: new_lock.get_state().to_string(),
-            lock_end: new_lock.get_end_time().map(|end| {
-                end.format(crate::core::constants::DATETIME_FORMAT)
-                    .to_string()
-            }),
+            lock_end: new_lock.get_end_time().map(|end| end.to_rfc3339()),
         };
 
         self.db
@@ -161,6 +187,32 @@ mod tests {
             manager,
             _temp_dir: temp_dir,
         }
+    }
+
+    #[test]
+    fn a_short_timed_upgrade_cannot_bypass_soft_unlock_delay() {
+        let now = chrono::Utc::now();
+        let short = LockState::ActiveUntilLockEnd {
+            end: (now + chrono::Duration::seconds(1)).with_timezone(&Local),
+        };
+        let long = LockState::ActiveUntilLockEnd {
+            end: (now + chrono::Duration::hours(1)).with_timezone(&Local),
+        };
+        assert!(timed_upgrade_shortens_soft_cooldown(
+            LockState::SoftUnlockable,
+            short,
+            now
+        ));
+        assert!(!timed_upgrade_shortens_soft_cooldown(
+            LockState::SoftUnlockable,
+            long,
+            now
+        ));
+        assert!(!timed_upgrade_shortens_soft_cooldown(
+            LockState::Inactive,
+            short,
+            now
+        ));
     }
 
     #[test]

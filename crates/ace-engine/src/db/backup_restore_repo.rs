@@ -19,6 +19,7 @@ pub struct RestoredNetworkBlock<'a> {
     pub enabled: bool,
     pub safe_search: bool,
     pub icon: Option<&'a str>,
+    pub schedule_timezone: &'a str,
     pub schedules: &'a [NetworkBlockScheduleEntryModel],
     pub user_rules: &'a [UserDefinedRule],
     pub site_pack_ids: &'a [SitePackId],
@@ -100,6 +101,7 @@ impl EngineDB {
                         network_blocks::enabled.eq(block.enabled),
                         network_blocks::safe_search.eq(block.safe_search),
                         network_blocks::icon.eq(block.icon),
+                        network_blocks::schedule_timezone.eq(block.schedule_timezone),
                     ))
                     .execute(connection)?;
 

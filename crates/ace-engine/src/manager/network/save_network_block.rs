@@ -55,8 +55,13 @@ impl NetworkManager {
                 message: format!("Invalid user-defined rules: {error}"),
             }
         })?;
-        let schedule = Schedule::from(draft.schedule);
-        let locked = current.is_some_and(|block| block.is_locked(&chrono::Local::now()));
+        let timezone = current
+            .map_or_else(crate::core::common::schedule::system_timezone, |block| {
+                block.get_schedule().timezone()
+            });
+        let schedule = Schedule::from_in_zone(draft.schedule, timezone);
+        let locked =
+            current.is_some_and(|block| block.is_locked(&crate::trusted_time::locking_now()));
 
         if let Some(block) = current {
             if locked {
@@ -206,12 +211,13 @@ impl NetworkManager {
             enabled: original_enabled,
             safe_search: draft.safe_search,
             icon: draft.icon.clone(),
+            schedule_timezone: timezone.name().to_string(),
         };
         let prepared_block = NetworkBlock::from_with_icon(
             id.clone(),
             draft.name,
             original_enabled,
-            Schedule::from(committed_schedule),
+            Schedule::from_in_zone(committed_schedule, timezone),
             original_lock,
             selected_packs,
             rules,

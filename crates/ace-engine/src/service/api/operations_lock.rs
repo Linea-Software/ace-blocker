@@ -17,7 +17,7 @@ pub(super) async fn get_lock(
         lock: NetworkListLockSchema::from_lock(
             lock,
             network_block_id,
-            network_block.is_locked(&chrono::Local::now()),
+            network_block.is_locked(&crate::trusted_time::locking_now()),
         ),
     })
 }
@@ -29,7 +29,7 @@ pub(super) async fn set_lock(
 ) -> Result<SetNetworkLockResponse, ApiError> {
     let mut manager = state.network_manager.write().await;
 
-    let lock = Lock::from_raw(payload.lock_state.to_string(), payload.lock_end.clone())
+    let lock = Lock::from_user_raw(payload.lock_state.to_string(), payload.lock_end.clone())
         .map_err(|error| ApiError::BadRequest(error.to_string()))?;
 
     manager.set_lock(&NetworkBlockId::from(network_block_id), lock)?;
@@ -41,7 +41,7 @@ pub(super) async fn set_lock(
     Ok(SetNetworkLockResponse {
         lock: NetworkListLockSchema {
             network_block_id,
-            is_active: network_block.is_locked(&chrono::Local::now()),
+            is_active: network_block.is_locked(&crate::trusted_time::locking_now()),
             lock_state: network_block.get_lock().get_state().into(),
             lock_end: payload.lock_end,
         },

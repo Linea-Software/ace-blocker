@@ -9,6 +9,7 @@ pub struct NetworkBlockModel {
     pub enabled: bool,
     pub safe_search: bool,
     pub icon: Option<String>,
+    pub schedule_timezone: String,
 }
 
 #[derive(Queryable, Selectable, Insertable, AsChangeset)]

@@ -311,7 +311,7 @@ impl NetworkManager {
             return false;
         }
 
-        let now = Local::now();
+        let now = crate::trusted_time::locking_now();
 
         self.network_blocks
             .iter()

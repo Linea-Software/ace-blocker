@@ -14,7 +14,7 @@ async fn main() {
     // before anything else — it never boots the engine, never starts the
     // service, and never touches the single-instance guard.
     if _args.len() >= 2 && _args[1] == "--check-locks" {
-        std::process::exit(ace_engine::lock_check::check_locks_main());
+        std::process::exit(ace_engine::lock_check::check_locks_main().await);
     }
 
     // Installer maintenance uses the same typed RPC shutdown operation.

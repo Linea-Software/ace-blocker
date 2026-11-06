@@ -57,7 +57,7 @@ describe("lock form invariants", () => {
         expect(buildLockPayload(draft({
             ...timed, end: "2026-11-06T12:00:00",
         }))).toEqual({
-            lockState: "active_until_lock_end", lockEnd: "2026-11-06T12:00:00",
+            lockState: "active_until_lock_end", lockEnd: new Date("2026-11-06T12:00:00").toISOString(),
         });
     });
 

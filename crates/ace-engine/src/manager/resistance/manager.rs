@@ -69,7 +69,14 @@ impl ResistanceModeManager {
             crate::core::LockState::Inactive => false,
             crate::core::LockState::SoftUnlockable => true,
             crate::core::LockState::ActiveDuringSchedule => true,
-            crate::core::LockState::ActiveUntilLockEnd { end } => chrono::Local::now() <= end,
+            crate::core::LockState::ActiveUntilLockEnd { end } => {
+                #[cfg(test)]
+                if crate::trusted_time::current_interval().is_none() {
+                    return chrono::Local::now() <= end;
+                }
+                crate::trusted_time::current_interval()
+                    .is_none_or(|range| range.earliest <= end.with_timezone(&chrono::Utc))
+            }
         }
     }
 

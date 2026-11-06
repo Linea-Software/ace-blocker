@@ -80,7 +80,7 @@ impl NetworkManager {
             }
         })?;
         let network_block_id = NetworkBlockId::from(block_uuid);
-        let now = &chrono::Local::now();
+        let now = &crate::trusted_time::locking_now();
 
         // Check memory first
         let network_block = self.get_network_block_from(&network_block_id).ok_or(

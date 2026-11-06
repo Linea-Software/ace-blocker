@@ -10,6 +10,7 @@ pub mod schema_main_db;
 pub mod schema_site_packs;
 pub mod service;
 pub mod settings;
+pub mod trusted_time;
 pub mod watchdog;
 pub mod watchdog_protocol;
 
@@ -57,6 +58,12 @@ pub async fn run() -> Result<()> {
     let _watchdog_link_handle = crate::platform::in_service_mode()
         .then(crate::watchdog::spawn_engine_watchdog_task)
         .flatten();
+
+    // Start the one-hour authenticated time loop before loading policies.
+    // Lock expiry is conservative until the first verified reply; filtering
+    // and startup never depend on Cloudflare availability.
+    let _trusted_clock_handle =
+        tokio::spawn(trusted_time::initialize_engine_clock().run_refresh_loop());
 
     let db = initialize_db().await;
 

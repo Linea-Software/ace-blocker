@@ -1,57 +1,57 @@
 use chrono::{DateTime, Local};
 use nutype::nutype;
-use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 use uuid::Uuid;
 
-#[nutype(derive(Debug, Clone, Copy, PartialEq, Eq, Hash, From, Into, Display, Serialize, Deserialize))]
+#[nutype(derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    From,
+    Into,
+    Display,
+    Serialize,
+    Deserialize
+))]
 pub struct UnlockChallengeId(Uuid);
 
-/// An active soft-unlock reflection challenge for a network block.
-///
-/// Created when the client calls `/network-blocks/{id}/unlock/initiate`
-/// on a block whose lock is `SoftUnlockable`.
-///
-/// The unlock is granted only when the 5-minute cooldown since
-/// `initiated_at` has elapsed and the challenge id is presented at confirm.
-///
-/// Challenges are stored in-memory only and do **not** survive engine restarts.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A five-minute, in-memory soft-unlock challenge. Only the monotonic
+/// elapsed duration authorizes redemption; local wall-clock changes have
+/// no effect. Restart discards all challenges.
+#[derive(Debug, Clone)]
 pub struct UnlockChallenge {
-    /// Unique identifier for this challenge.
     pub challenge_id: UnlockChallengeId,
-    /// When the challenge was initiated.
+    /// Display-only initiation timestamp, not used for policy decisions.
     pub initiated_at: DateTime<Local>,
+    started_monotonic: Instant,
 }
 
 impl UnlockChallenge {
-    /// Minimum cooldown in seconds before the unlock can be applied.
     pub const COOLDOWN_SECONDS: i64 = 5 * 60;
-
-    /// Minimum word count for the reflection text.
     pub const MIN_WORDS: u32 = 20;
-
-    /// The placeholder prompt sent to the client for localization.
     pub const REFLECTION_PROMPT: &'static str = "What's making you want to stop right now?";
 
-    /// Creates a new challenge with the current timestamp and a fresh UUID.
     pub fn new() -> Self {
         Self {
             challenge_id: UnlockChallengeId::from(Uuid::now_v7()),
             initiated_at: Local::now(),
+            started_monotonic: Instant::now(),
         }
     }
 
-    /// Returns true if at least `COOLDOWN_SECONDS` have elapsed since `initiated_at`.
     pub fn is_cooldown_elapsed(&self) -> bool {
-        let elapsed = Local::now() - self.initiated_at;
-        elapsed.num_seconds() >= Self::COOLDOWN_SECONDS
+        self.started_monotonic.elapsed() >= Duration::from_secs(Self::COOLDOWN_SECONDS as u64)
     }
 
-    /// How many seconds remain until the cooldown elapses.
-    /// Returns 0 if already elapsed.
     pub fn cooldown_remaining_seconds(&self) -> i64 {
-        let elapsed = (Local::now() - self.initiated_at).num_seconds();
-        (Self::COOLDOWN_SECONDS - elapsed).max(0)
+        let remaining = Duration::from_secs(Self::COOLDOWN_SECONDS as u64)
+            .saturating_sub(self.started_monotonic.elapsed());
+        // Round up so the UI never reports zero before redemption is legal.
+        i64::try_from(remaining.as_secs()).unwrap_or(i64::MAX)
+            + i64::from(remaining.subsec_nanos() > 0)
     }
 }
 
@@ -64,30 +64,30 @@ impl Default for UnlockChallenge {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Duration;
 
-    fn challenge_started(seconds_ago: i64) -> UnlockChallenge {
+    fn challenge_started(seconds_ago: u64) -> UnlockChallenge {
         UnlockChallenge {
             challenge_id: UnlockChallengeId::from(Uuid::now_v7()),
-            initiated_at: Local::now() - Duration::seconds(seconds_ago),
+            initiated_at: Local::now() + chrono::Duration::days(100),
+            started_monotonic: Instant::now() - Duration::from_secs(seconds_ago),
         }
     }
 
     #[test]
     fn soft_unlock_cooldown_is_exactly_five_minutes() {
-        assert_eq!(UnlockChallenge::COOLDOWN_SECONDS, 5 * 60);
+        assert_eq!(UnlockChallenge::COOLDOWN_SECONDS, 300);
     }
 
     #[test]
-    fn soft_unlock_cannot_redeem_before_five_minutes() {
-        let challenge = challenge_started(UnlockChallenge::COOLDOWN_SECONDS - 1);
+    fn wall_clock_does_not_complete_cooldown() {
+        let challenge = challenge_started(299);
         assert!(!challenge.is_cooldown_elapsed());
         assert!(challenge.cooldown_remaining_seconds() >= 1);
     }
 
     #[test]
-    fn soft_unlock_can_redeem_after_five_minutes() {
-        let challenge = challenge_started(UnlockChallenge::COOLDOWN_SECONDS);
+    fn monotonic_elapsed_completes_cooldown() {
+        let challenge = challenge_started(300);
         assert!(challenge.is_cooldown_elapsed());
         assert_eq!(challenge.cooldown_remaining_seconds(), 0);
     }

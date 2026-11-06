@@ -1,4 +1,3 @@
-use chrono::Duration;
 use chrono::Local;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -71,6 +70,8 @@ pub enum LockParseError {
         "Lock end time is too far in the future: the maximum lock duration is 90 days from now"
     )]
     LockEndTooFar,
+    #[error("Lock end must be strictly after the authenticated UTC interval")]
+    LockEndNotFuture,
 }
 
 impl Lock {
@@ -122,20 +123,27 @@ impl Lock {
             "active_during_schedule" => LockState::ActiveDuringSchedule,
             "active_until_lock_end" => {
                 if let Some(lock_end_str) = lock_end {
-                    let end = chrono::NaiveDateTime::parse_from_str(
-                        &lock_end_str,
-                        crate::core::common::constants::DATETIME_FORMAT,
-                    )
-                    .map_err(|error| LockParseError::InvalidDateFormat {
-                        message: error.to_string(),
-                    })?;
-
-                    let end_local = end.and_local_timezone(Local).unwrap();
-                    let max_end = Local::now() + Duration::days(90);
-
-                    if end_local > max_end {
-                        return Err(LockParseError::LockEndTooFar);
-                    }
+                    // An offset-bearing stored deadline is an absolute
+                    // instant, unaffected by future Windows timezone changes.
+                    let end_local =
+                        if let Ok(end) = chrono::DateTime::parse_from_rfc3339(&lock_end_str) {
+                            end.with_timezone(&Local)
+                        } else {
+                            let end = chrono::NaiveDateTime::parse_from_str(
+                                &lock_end_str,
+                                crate::core::common::constants::DATETIME_FORMAT,
+                            )
+                            .map_err(|error| {
+                                LockParseError::InvalidDateFormat {
+                                    message: error.to_string(),
+                                }
+                            })?;
+                            end.and_local_timezone(Local).single().ok_or_else(|| {
+                                LockParseError::InvalidDateFormat {
+                                    message: "ambiguous or nonexistent local lock deadline".into(),
+                                }
+                            })?
+                        };
 
                     LockState::ActiveUntilLockEnd { end: end_local }
                 } else {
@@ -151,6 +159,50 @@ impl Lock {
         };
 
         Ok(Lock { state })
+    }
+
+    pub fn from_user_raw(
+        lock_state_str: String,
+        lock_end: Option<String>,
+    ) -> Result<Lock, LockParseError> {
+        // User-supplied new deadlines must be unambiguous absolute instants.
+        // Only the legacy database loader accepts offset-less dates.
+        if lock_state_str == "active_until_lock_end"
+            && !lock_end
+                .as_ref()
+                .is_some_and(|end| chrono::DateTime::parse_from_rfc3339(end).is_ok())
+        {
+            return Err(LockParseError::InvalidDateFormat {
+                message: "a timed lock requires an RFC3339 timestamp with UTC offset".into(),
+            });
+        }
+        let lock = Self::from_raw(lock_state_str, lock_end)?;
+        if let LockState::ActiveUntilLockEnd { end } = lock.state {
+            let trusted = crate::trusted_time::current_interval()
+                .filter(|interval| interval.quality == crate::trusted_time::TimeQuality::Verified)
+                .ok_or_else(|| LockParseError::InvalidDateFormat {
+                    message: "fresh authenticated UTC unavailable".into(),
+                })?;
+            Self::validate_new_timed_deadline(end.with_timezone(&chrono::Utc), trusted)?;
+        }
+        Ok(lock)
+    }
+
+    fn validate_new_timed_deadline(
+        end: chrono::DateTime<chrono::Utc>,
+        trusted: crate::trusted_time::UtcInterval,
+    ) -> Result<(), LockParseError> {
+        // The latest possible current instant must still precede the deadline.
+        // A past deadline could otherwise upgrade SoftUnlockable to an
+        // already-expired timed lock and avoid its reflection cooldown.
+        if end <= trusted.latest {
+            return Err(LockParseError::LockEndNotFuture);
+        }
+        // Use earliest to ensure the 90-day bound isn't relaxed by ambiguity.
+        if end > trusted.earliest + chrono::Duration::days(90) {
+            return Err(LockParseError::LockEndTooFar);
+        }
+        Ok(())
     }
 
     /// Whether this lock is a *strict* upgrade over `other`.
@@ -225,6 +277,45 @@ mod tests {
             }
         }
         result
+    }
+
+    #[test]
+    fn user_timed_lock_requires_explicit_utc_offset_even_when_offline() {
+        let result = Lock::from_user_raw(
+            "active_until_lock_end".into(),
+            Some("2026-11-06T12:00:00".into()),
+        );
+        assert!(matches!(
+            result,
+            Err(LockParseError::InvalidDateFormat { .. })
+        ));
+    }
+
+    #[test]
+    fn rejects_expired_or_ambiguous_new_timed_deadline() {
+        let earliest = chrono::Utc.with_ymd_and_hms(2026, 11, 6, 12, 0, 0).unwrap();
+        let latest = earliest + chrono::Duration::seconds(5);
+        let trusted = crate::trusted_time::UtcInterval {
+            earliest,
+            latest,
+            quality: crate::trusted_time::TimeQuality::Verified,
+        };
+        assert!(matches!(
+            Lock::validate_new_timed_deadline(earliest, trusted),
+            Err(LockParseError::LockEndNotFuture)
+        ));
+        assert!(matches!(
+            Lock::validate_new_timed_deadline(latest, trusted),
+            Err(LockParseError::LockEndNotFuture)
+        ));
+        assert!(matches!(
+            Lock::validate_new_timed_deadline(earliest + chrono::Duration::days(91), trusted),
+            Err(LockParseError::LockEndTooFar)
+        ));
+        assert!(
+            Lock::validate_new_timed_deadline(latest + chrono::Duration::minutes(1), trusted)
+                .is_ok()
+        );
     }
 
     #[test]

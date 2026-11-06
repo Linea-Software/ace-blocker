@@ -367,7 +367,11 @@ impl EngineRpc {
             return Ok(());
         }
         let Some(expected) = self.state.capability_token.as_deref() else {
-            return Ok(());
+            return if self.state.enforce_capability {
+                Err(RpcError::forbidden())
+            } else {
+                Ok(())
+            };
         };
         match presented {
             Some(token) if super::security::tokens_match(token, expected) => Ok(()),
@@ -444,7 +448,9 @@ impl EngineControl for EngineRpc {
         &self,
         capability: Option<String>,
     ) -> Result<RpcResult<crate::manager::network::backup::EngineBackup>, CallError> {
-        if let Err(error) = self.check_capability(capability.as_deref(), false) {
+        // Export includes policy names, rules and schedules; this is a
+        // sensitive read, not a public health/status endpoint.
+        if let Err(error) = self.check_capability(capability.as_deref(), true) {
             return Ok(Err(error));
         }
         Ok(super::operations_backup::export_backup(self.state.clone())

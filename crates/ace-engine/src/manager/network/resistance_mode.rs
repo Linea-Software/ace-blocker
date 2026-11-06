@@ -124,15 +124,15 @@ impl NetworkManager {
         // Clean up expired lock before persisting — an ActiveUntilLockEnd lock
         // whose end time has passed should be stored as Inactive.
         let (lock_state, lock_end) = match lock.get_state() {
-            crate::core::LockState::ActiveUntilLockEnd { end } if chrono::Local::now() > end => {
+            crate::core::LockState::ActiveUntilLockEnd { end }
+                if crate::trusted_time::current_interval()
+                    .is_some_and(|range| range.earliest > end.with_timezone(&chrono::Utc)) =>
+            {
                 ("inactive".to_string(), None)
             }
             other => (
                 other.to_string(),
-                lock.get_end_time().map(|end| {
-                    end.format(crate::core::constants::DATETIME_FORMAT)
-                        .to_string()
-                }),
+                lock.get_end_time().map(|end| end.to_rfc3339()),
             ),
         };
 

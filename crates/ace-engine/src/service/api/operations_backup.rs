@@ -53,6 +53,17 @@ pub(super) async fn export_backup_to_cloud(state: AppState) -> Result<(), ApiErr
         let mut manager = state.network_manager.write().await;
         manager.export_backup()?
     };
+    // The current Ace Server backup schema has no schedule_timezone field.
+    // Reject lossy exports rather than silently shifting user schedules.
+    if backup.network_blocks.iter().any(|block| {
+        !block.schedules.is_empty()
+            && block.schedule_timezone != "Etc/UTC"
+            && block.schedule_timezone != "UTC"
+    }) {
+        return Err(ApiError::BadRequest(
+            "Cloud backup cannot preserve non-UTC schedules until Ace Server supports IANA timezones; use local export".into(),
+        ));
+    }
 
     let client = AceServerClient::new_http_client(Some(&api_key));
 
@@ -156,6 +167,17 @@ pub(super) async fn import_backup_from_cloud(state: AppState) -> Result<(), ApiE
         .fetch_backup()
         .await
         .map_err(|error| ApiError::Internal(format!("Cloud import failed: {}", error)))?;
+    // Remote rows cannot identify the original civil-time zone: importing a
+    // schedule would silently reinterpret it in UTC. Preserve correctness.
+    if backup
+        .network_blocks
+        .iter()
+        .any(|block| !block.schedules.is_empty())
+    {
+        return Err(ApiError::BadRequest(
+            "Cloud backup lacks schedule timezone metadata; scheduled blocks must be imported from a local timezone-aware backup".into(),
+        ));
+    }
 
     use crate::ace_server_api::types::FetchBackupResponseNetworkBlocksItemUserRulesItemRuleType;
     use crate::manager::network::backup::*;
@@ -191,6 +213,7 @@ pub(super) async fn import_backup_from_cloud(state: AppState) -> Result<(), ApiE
                 id: block.id,
                 name: block.name,
                 icon: block.icon.flatten(),
+                schedule_timezone: "Etc/UTC".into(),
                 // The remote backup contract predates this field. Treat it like a
                 // legacy local backup and preserve the historical enabled behavior.
                 enabled: true,

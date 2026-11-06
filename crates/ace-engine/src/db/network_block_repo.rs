@@ -28,6 +28,7 @@ impl EngineDB {
             name.eq(block_list_name),
             enabled.eq(true),
             safe_search.eq(false),
+            schedule_timezone.eq(crate::core::common::schedule::system_timezone().name()),
         );
 
         diesel::insert_into(network_blocks)
@@ -53,6 +54,7 @@ impl EngineDB {
             name.eq(block_list_name),
             enabled.eq(true),
             safe_search.eq(false),
+            schedule_timezone.eq(crate::core::common::schedule::system_timezone().name()),
         );
 
         diesel::insert_into(network_blocks)

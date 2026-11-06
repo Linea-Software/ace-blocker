@@ -11,8 +11,8 @@ pub mod network_blocks;
 pub mod network_blocks_to_site_pack;
 pub mod proxy_exclusions;
 pub mod resistance_mode;
-pub mod schedule;
 pub mod save_network_block;
+pub mod schedule;
 mod script_activation_recovery;
 pub mod site_pack;
 pub mod user_defined;
@@ -560,7 +560,17 @@ impl NetworkManager {
             NetworkBlockId::from(block_id),
             model.name,
             model.enabled,
-            Schedule::from(schedule_entries),
+            Schedule::from_in_zone(
+                schedule_entries,
+                model.schedule_timezone.parse().map_err(|_| {
+                    NetworkManagerOpErr::InternalError {
+                        message: format!(
+                            "Invalid persisted schedule timezone: {}",
+                            model.schedule_timezone
+                        ),
+                    }
+                })?,
+            ),
             lock,
             assigned_site_packs,
             user_def_entries,

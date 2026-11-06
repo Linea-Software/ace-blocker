@@ -79,7 +79,7 @@ impl NetworkManager {
 
         entries.push(edited_schedule_entry);
 
-        if net_list.is_locked(&chrono::Local::now()) {
+        if net_list.is_locked(&crate::trusted_time::locking_now()) {
             let proposed_schedule = Schedule::from(entries.clone());
             if !net_list
                 .get_schedule()
@@ -100,7 +100,7 @@ impl NetworkManager {
     ) -> Result<(), NetworkManagerOpErr> {
         let net_list = self.get_net_list_of_schedule_entry(schedule_entry_id.clone())?;
 
-        if net_list.is_locked(&chrono::Local::now()) {
+        if net_list.is_locked(&crate::trusted_time::locking_now()) {
             return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                 id: net_list.get_id(),
             });

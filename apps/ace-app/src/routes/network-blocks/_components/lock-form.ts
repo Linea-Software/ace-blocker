@@ -22,19 +22,25 @@ export type LockDraft = {
 
 export type LockPayload = { lockState: string; lockEnd?: string };
 
-/** A strict local date parser: the engine expects a wall-clock timestamp without a zone. */
+/** Local minute precision for edits; RFC3339 for persisted absolute instants. */
 export function parseLockEnd(raw: string): Date | null {
     const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):00$/.exec(raw);
-    if (!match) return null;
-    const [, y, mo, d, h, mi] = match.map(Number);
-    const result = new Date(y, mo - 1, d, h, mi);
-    return result.getFullYear() === y &&
-        result.getMonth() === mo - 1 &&
-        result.getDate() === d &&
-        result.getHours() === h &&
-        result.getMinutes() === mi
-        ? result
-        : null;
+    if (match) {
+        const [, y, mo, d, h, mi] = match.map(Number);
+        const result = new Date(y, mo - 1, d, h, mi);
+        return result.getFullYear() === y &&
+            result.getMonth() === mo - 1 &&
+            result.getDate() === d &&
+            result.getHours() === h &&
+            result.getMinutes() === mi
+            ? result
+            : null;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(raw)) {
+        return null;
+    }
+    const result = new Date(raw);
+    return Number.isNaN(result.getTime()) ? null : result;
 }
 
 /** Mirrors engine invariants before the user can submit a lock. */
@@ -66,12 +72,14 @@ export function buildLockPayload(draft: LockDraft): LockPayload | null {
     if (validateLockDraft(draft)) return null;
     if (!draft.enabled) return { lockState: "inactive" };
     return draft.type === "active_until_lock_end"
-        ? { lockState: draft.type, lockEnd: draft.end }
+        ? { lockState: draft.type, lockEnd: parseLockEnd(draft.end)!.toISOString() }
         : { lockState: draft.type };
 }
 
 export function isUnchangedLock(original: LockState, payload: LockPayload): boolean {
-    return original.state === payload.lockState &&
-        (original.state !== "active_until_lock_end" ||
-            original.end === payload.lockEnd);
+    if (original.state !== payload.lockState) return false;
+    if (original.state !== "active_until_lock_end") return true;
+    const oldEnd = parseLockEnd(original.end ?? "");
+    const newEnd = parseLockEnd(payload.lockEnd ?? "");
+    return !!oldEnd && !!newEnd && oldEnd.getTime() === newEnd.getTime();
 }

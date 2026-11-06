@@ -19,7 +19,7 @@ pub(super) async fn get_resistance_mode_settings(state: AppState) -> ResistanceM
         lock_end: engine
             .lock
             .get_end_time()
-            .map(|dt: chrono::DateTime<chrono::Local>| dt.naive_local().to_string()),
+            .map(|dt: chrono::DateTime<chrono::Local>| dt.to_rfc3339()),
         mode: punishment.mode,
         current_intensity,
         static_intensity: punishment.static_intensity,
@@ -46,7 +46,7 @@ pub(super) async fn set_resistance_mode_lock(
     payload: SetNetworkLockRequest,
 ) -> Result<(), ApiError> {
     let mut manager = state.network_manager.write().await;
-    let lock = crate::core::Lock::from_raw(payload.lock_state, payload.lock_end)
+    let lock = crate::core::Lock::from_user_raw(payload.lock_state, payload.lock_end)
         .map_err(|error| ApiError::BadRequest(error.to_string()))?;
     manager.set_resistance_mode_lock(lock)?;
     Ok(())

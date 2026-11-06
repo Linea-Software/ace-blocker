@@ -27,7 +27,7 @@ impl NetworkManager {
                 id: network_block_id.clone(),
             },
         )?;
-        if list.is_locked(&chrono::Local::now()) {
+        if list.is_locked(&crate::trusted_time::locking_now()) {
             return Err(NetworkManagerOpErr::NetworkBlockIsLocked {
                 id: network_block_id.clone(),
             });
@@ -75,7 +75,7 @@ impl NetworkManager {
             }
         })?;
         let net_list_id = NetworkBlockId::from(block_uuid);
-        let now = &chrono::Local::now();
+        let now = &crate::trusted_time::locking_now();
 
         // Check memory first
         let content_list = self.get_network_block_from(&net_list_id).ok_or(
