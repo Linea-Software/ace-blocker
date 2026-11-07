@@ -344,6 +344,7 @@ mod tests {
         assert_eq!(current.get_icon(), None);
         assert!(!current.is_safe_search_enabled());
         assert!(current.get_schedule().get_entries().is_empty());
+        assert_eq!(current.schedule_mode(), ScheduleMode::Always);
         assert_eq!(
             current.get_user_defined_rules().rules(),
             &[rule("old.example")]
@@ -357,6 +358,7 @@ mod tests {
         assert_eq!(persisted.get_icon(), None);
         assert!(!persisted.is_safe_search_enabled());
         assert!(persisted.get_schedule().get_entries().is_empty());
+        assert_eq!(persisted.schedule_mode(), ScheduleMode::Always);
         assert_eq!(
             persisted.get_user_defined_rules().rules(),
             &[rule("old.example")]
@@ -480,6 +482,94 @@ mod tests {
             manager.get_network_block_from(&id).unwrap().schedule_mode(),
             ScheduleMode::Always
         );
+    }
+
+    #[test]
+    fn locked_scheduled_can_upgrade_to_always_and_keep_enforcing() {
+        let (mut manager, _temp) = context();
+        let id = manager
+            .save_network_block(draft(None, "Scheduled"), false)
+            .unwrap();
+        manager
+            .set_lock(
+                &id,
+                Lock::from(LockState::ActiveUntilLockEnd {
+                    end: Local::now() + Duration::hours(1),
+                }),
+            )
+            .unwrap();
+
+        let mut upgrade = draft(Some(id.clone()), "Scheduled");
+        upgrade.schedule_mode = ScheduleMode::Always;
+        upgrade.schedule.clear();
+        manager
+            .save_network_block(upgrade, false)
+            .expect("Always is stronger than Scheduled, even without periods");
+        let block = manager.get_network_block_from(&id).unwrap();
+        assert_eq!(block.schedule_mode(), ScheduleMode::Always);
+        assert!(block.get_schedule().get_entries().is_empty());
+        assert!(block.is_active(&Local::now()));
+        assert!(block.is_locked(&Local::now()));
+
+        let db = manager.db.clone();
+        let account = AccountManager::from(db.clone()).unwrap();
+        let reloaded = NetworkManager::from(db, account).unwrap();
+        assert_eq!(
+            reloaded
+                .get_network_block_from(&id)
+                .unwrap()
+                .schedule_mode(),
+            ScheduleMode::Always
+        );
+    }
+
+    #[test]
+    fn always_schedule_lock_blocks_disabling_and_weakening() {
+        let (mut manager, _temp) = context();
+        let id = manager
+            .create_network_block("Always with schedule lock".into())
+            .unwrap();
+        manager
+            .set_lock(&id, Lock::from(LockState::ActiveDuringSchedule))
+            .unwrap();
+
+        let block = manager.get_network_block_from(&id).unwrap();
+        assert!(block.is_locked(&Local::now()));
+        assert!(block.is_active(&Local::now()));
+        assert!(matches!(
+            manager.set_network_block_enabled(&id, false),
+            Err(NetworkManagerOpErr::NetworkBlockIsLocked { .. })
+        ));
+
+        let mut weaker = draft(Some(id.clone()), "Always with schedule lock");
+        weaker.icon = None;
+        weaker.safe_search = false;
+        assert!(matches!(
+            manager.save_network_block(weaker, false),
+            Err(NetworkManagerOpErr::NetworkBlockIsLocked { .. })
+        ));
+        let block = manager.get_network_block_from(&id).unwrap();
+        assert!(block.is_enabled());
+        assert_eq!(block.schedule_mode(), ScheduleMode::Always);
+    }
+
+    #[test]
+    fn rejecting_empty_scheduled_edit_preserves_existing_always_policy() {
+        let (mut manager, _temp) = context();
+        let id = manager.create_network_block("Existing".into()).unwrap();
+        let mut update = draft(Some(id.clone()), "Weaker");
+        update.schedule.clear();
+        assert!(manager.save_network_block(update, false).is_err());
+        let block = manager.get_network_block_from(&id).unwrap();
+        assert_eq!(block.get_name(), "Existing");
+        assert_eq!(block.schedule_mode(), ScheduleMode::Always);
+
+        let db = manager.db.clone();
+        let account = AccountManager::from(db.clone()).unwrap();
+        let reloaded = NetworkManager::from(db, account).unwrap();
+        let block = reloaded.get_network_block_from(&id).unwrap();
+        assert_eq!(block.get_name(), "Existing");
+        assert_eq!(block.schedule_mode(), ScheduleMode::Always);
     }
 
     #[test]
