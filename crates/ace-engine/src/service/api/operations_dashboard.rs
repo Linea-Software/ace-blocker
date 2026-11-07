@@ -3,6 +3,15 @@ use chrono::Local;
 use crate::core::NetworkBlockId;
 use crate::service::api::{AppState, error::ApiError, schemas::*};
 
+/// A lock is not active merely because a Network Block is enforcing.
+/// In particular, an enabled Always block may have no lock at all.
+fn block_lock_snapshot(
+    block: &crate::core::NetworkBlock,
+    now: &chrono::DateTime<Local>,
+) -> NetworkListLockSchema {
+    NetworkListLockSchema::from_lock(block.get_lock(), *block.get_id(), block.is_locked(now))
+}
+
 pub(super) async fn get_dashboard_snapshot(
     state: AppState,
 ) -> Result<DashboardSnapshotResponse, ApiError> {
@@ -61,10 +70,10 @@ pub(super) async fn get_dashboard_snapshot(
         let block_id_owned = block_id_ref.clone();
         let block_uuid: uuid::Uuid = *block_id_owned.as_ref();
 
-        // Lock info from the same in-memory policy snapshot.
-        let lock = manager.get_lock_of(block_id_ref).ok();
-        let lock_schema =
-            lock.map(|lock_ref| NetworkListLockSchema::from_lock(lock_ref, block_uuid, is_active));
+        // Lock activity and block enforcement are separate dimensions.
+        let lock_schema = manager
+            .get_network_block_from(block_id_ref)
+            .map(|block| block_lock_snapshot(block, &now));
 
         // Schedule entries
         let schedule_entries = manager
@@ -149,4 +158,43 @@ pub(super) async fn get_dashboard_snapshot(
         blocked_attempts,
         resistance_mode_settings,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::core::{
+        Lock, LockState, NetworkBlock, NetworkBlockId, RegexRules, Schedule, ScheduleMode,
+        UserDefinedRules,
+    };
+    use std::collections::HashMap;
+
+    #[test]
+    fn enabled_always_block_is_not_implicitly_locked_in_dashboard() {
+        let id = NetworkBlockId::from(uuid::Uuid::now_v7());
+        let mut block = NetworkBlock::from(
+            id,
+            "Always".into(),
+            true,
+            Schedule::default(),
+            Lock::default(),
+            HashMap::new(),
+            UserDefinedRules::default(),
+            RegexRules::default(),
+            false,
+        );
+        block.set_schedule_mode(ScheduleMode::Always);
+        let now = Local::now();
+        assert!(block.is_active(&now));
+        assert!(!block.is_locked(&now));
+        let lock = block_lock_snapshot(&block, &now);
+        assert!(!lock.is_active, "enforcing does not imply a lock");
+
+        block.set_lock(Lock::from(LockState::ActiveDuringSchedule));
+        let lock = block_lock_snapshot(&block, &now);
+        assert!(
+            lock.is_active,
+            "Always schedule locks stay active continuously"
+        );
+    }
 }
