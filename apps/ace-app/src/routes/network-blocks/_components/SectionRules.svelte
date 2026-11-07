@@ -6,6 +6,7 @@
     import * as m from "$lib/paraglide/messages.js";
     import type { UserDefinedRulesDelta } from "$lib/deltas/user-defined-rules-delta.svelte.ts";
     import type { TempId } from "$lib/deltas/common";
+    import { websiteHostname } from "./website-input";
 
     let {
         delta,
@@ -20,27 +21,19 @@
     let domainInput = $state("");
     let regexInput = $state("");
 
-    const regexOperators = /[()[\]{}*+?|^$\\]/;
-    const domainFormat = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-
     let domainValidation = $derived.by(() => {
         const input = domainInput.trim();
-        if (!input) return { isValid: false, error: null };
-
-        if (regexOperators.test(input)) {
-            return {
-                isValid: false,
-                error: m.error_regex_in_basic_mode(),
-            };
+        if (!input) return { domain: null, error: null };
+        const domain = websiteHostname(input);
+        if (!domain) {
+            return { domain: null, error: m.error_invalid_domain_format() };
         }
-        if (!domainFormat.test(input)) {
-            return {
-                isValid: false,
-                error: m.error_invalid_domain_format(),
-            };
+        if (delta.currentRules.some(
+            (item) => item.ruleType === "domain" && item.rule.toLowerCase() === domain,
+        )) {
+            return { domain: null, error: m.website_already_added() };
         }
-
-        return { isValid: true, error: null };
+        return { domain, error: null };
     });
 
     let activeRules = $derived(
@@ -59,8 +52,8 @@
     );
 
     function addDomainRule() {
-        if (!domainValidation.isValid) return;
-        delta.addRule(domainInput.trim(), "domain");
+        if (!domainValidation.domain) return;
+        delta.addRule(domainValidation.domain, "domain");
         domainInput = "";
     }
 
@@ -85,36 +78,38 @@
         <h3 class="font-condensed text-base font-semibold text-foreground">
             {m.custom_rules()}
         </h3>
-        <p class="text-muted-foreground mt-0.5 text-xs">
+        <p class="text-muted-foreground mt-0.5 text-sm leading-relaxed">
             {m.section_rules_description()}
         </p>
     </div>
 
     <div class="space-y-2">
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             <Input
-                placeholder={m.basic_mode_placeholder()}
+                placeholder={m.website_url_placeholder()}
                 bind:value={domainInput}
                 onkeydown={(event) =>
                     event.key === "Enter" && addDomainRule()}
-                class="bg-card rounded-sm"
+                class="bg-card h-11 min-w-44 flex-1 rounded-sm"
                 aria-label={m.specific_website_input_label()}
                 {disabled}
             />
             <Button
                 onclick={addDomainRule}
-                size="icon"
-                disabled={disabled || !domainValidation.isValid}
-                class="shrink-0 rounded-sm shadow-none"
+                disabled={disabled || !domainValidation.domain}
+                class="h-11 shrink-0 gap-2 rounded-sm shadow-none"
                 aria-label={m.add_specific_website()}
             >
                 <Plus class="size-4" aria-hidden="true" />
+                {m.add_specific_website()}
             </Button>
         </div>
 
         {#if domainValidation.error}
-            <p class="text-destructive px-1 text-xs">
-                {domainValidation.error}
+            <p class="text-destructive px-1 text-xs">{domainValidation.error}</p>
+        {:else}
+            <p class="text-muted-foreground px-1 text-xs leading-relaxed">
+                {m.website_url_scope_hint()}
             </p>
         {/if}
     </div>

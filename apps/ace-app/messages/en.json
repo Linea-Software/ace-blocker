@@ -746,5 +746,8 @@
     "settings_language_label": "App language",
     "settings_language_system": "System language",
     "settings_language_save_failed": "Could not save the language preference. Please try again.",
-    "nav_settings": "Settings"
+    "nav_settings": "Settings",
+    "website_url_placeholder": "Paste a website or URL (e.g. instagram.com)",
+    "website_url_scope_hint": "Only the domain is blocked. URL paths are ignored.",
+    "website_already_added": "This website has already been added."
 }

@@ -746,5 +746,8 @@
     "settings_language_label": "Lingua dell’app",
     "settings_language_system": "Lingua di sistema",
     "settings_language_save_failed": "Impossibile salvare la preferenza della lingua. Riprova.",
-    "nav_settings": "Impostazioni"
+    "nav_settings": "Impostazioni",
+    "website_url_placeholder": "Incolla un sito o un URL (es. instagram.com)",
+    "website_url_scope_hint": "Il blocco si applica al dominio. Il percorso dell’URL viene ignorato.",
+    "website_already_added": "Questo sito è già stato aggiunto."
 }

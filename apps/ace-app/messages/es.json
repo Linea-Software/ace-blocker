@@ -746,5 +746,8 @@
     "settings_language_label": "Idioma de la aplicación",
     "settings_language_system": "Idioma del sistema",
     "settings_language_save_failed": "No se pudo guardar la preferencia de idioma. Vuelve a intentarlo.",
-    "nav_settings": "Configuración"
+    "nav_settings": "Configuración",
+    "website_url_placeholder": "Pega un sitio web o una URL (p. ej., instagram.com)",
+    "website_url_scope_hint": "El bloqueo se aplica al dominio. Se ignora la ruta de la URL.",
+    "website_already_added": "Este sitio web ya está añadido."
 }

@@ -746,5 +746,8 @@
     "settings_language_label": "App-Sprache",
     "settings_language_system": "Systemsprache",
     "settings_language_save_failed": "Die Spracheinstellung konnte nicht gespeichert werden. Bitte versuche es erneut.",
-    "nav_settings": "Einstellungen"
+    "nav_settings": "Einstellungen",
+    "website_url_placeholder": "Website oder URL einfügen (z. B. instagram.com)",
+    "website_url_scope_hint": "Die Sperre gilt für die Domain. Der URL-Pfad wird ignoriert.",
+    "website_already_added": "Diese Website wurde bereits hinzugefügt."
 }
