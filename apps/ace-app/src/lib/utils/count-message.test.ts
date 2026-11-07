@@ -72,3 +72,30 @@ it("uses grammatical Italian completion summaries for 0, 1 and many", () => {
         ).toBe(expected[index]);
     }
 });
+
+it("renders Spanish singular and plural block and rule summaries", () => {
+    const locale = "es" as const;
+    for (const [count, expected] of [
+        [0, "No hay bloqueos de red aplicando sus reglas."],
+        [1, "Hay 1 bloqueo de red aplicando sus reglas."],
+        [3, "Hay 3 bloqueos de red aplicando sus reglas."],
+    ] as const) {
+        expect(
+            countMessage(
+                count,
+                () => m.control_protection_active_detail_zero({}, { locale }),
+                () => m.control_protection_active_detail_one({}, { locale }),
+                () => m.control_protection_active_detail({ count }, { locale }),
+            ),
+        ).toBe(expected);
+    }
+    expect(m.onboarding_block_rule_count_zero({}, { locale })).toBe(
+        "Sin reglas incluidas",
+    );
+    expect(m.onboarding_block_rule_count_one({}, { locale })).toBe(
+        "1 regla incluida",
+    );
+    expect(m.onboarding_block_rule_count({ count: 4 }, { locale })).toBe(
+        "4 reglas incluidas",
+    );
+});

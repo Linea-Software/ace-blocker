@@ -18,7 +18,12 @@ const browserPreferenceKey = "ace:app-language";
 function browserLanguagePreference(): LanguagePreference {
     try {
         const saved = localStorage.getItem(browserPreferenceKey);
-        return saved === "it" || saved === "en" || saved === "de" ? saved : "system";
+        return saved === "it" ||
+            saved === "en" ||
+            saved === "de" ||
+            saved === "es"
+            ? saved
+            : "system";
     } catch {
         return "system";
     }
@@ -55,7 +60,9 @@ export function initializeAppLanguage(): Promise<void> {
     return (initPromise ??= (async () => {
         if (isTauri()) {
             try {
-                const saved = await loadLanguagePreference(await settingsStore());
+                const saved = await loadLanguagePreference(
+                    await settingsStore(),
+                );
                 if (!preferenceChanged) localizationStore.language = saved;
             } catch (error) {
                 console.error("Failed to restore language preference:", error);
@@ -68,7 +75,9 @@ export function initializeAppLanguage(): Promise<void> {
     })());
 }
 
-export async function changeAppLanguage(preference: LanguagePreference): Promise<void> {
+export async function changeAppLanguage(
+    preference: LanguagePreference,
+): Promise<void> {
     await initializeAppLanguage();
     preferenceChanged = true;
     const previous = localizationStore.language;

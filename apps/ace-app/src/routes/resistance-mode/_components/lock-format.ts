@@ -1,13 +1,15 @@
+import { getLocale } from "$lib/paraglide/runtime";
+
 /**
- * Formats the engine's `lockEnd` string (local naive datetime
- * `YYYY-MM-DDTHH:MM:SS`) into a human-readable local date/time.
+ * Format the engine's absolute lock deadline in the selected app locale.
+ * Date parses the original instant, including its RFC3339 offset.
  * Falls back to the raw value when parsing fails.
  */
-export function formattedLockEnd(raw: string): string {
+export function formattedLockEnd(raw: string, locale = getLocale()): string {
     try {
         const parsed = new Date(raw);
         if (Number.isNaN(parsed.getTime())) return raw;
-        return parsed.toLocaleString();
+        return parsed.toLocaleString(locale);
     } catch {
         return raw;
     }
