@@ -22,6 +22,11 @@ test("Network Block editor makes sites and activation visible", async ({ page })
     const editor = page.locator(".inspector.wide");
     await expect(editor.getByRole("heading", { name: "What to block" })).toBeVisible();
     await expect(editor.getByRole("heading", { name: "When to block" })).toBeVisible();
+    const sections = editor.getByRole("navigation", {
+        name: "Block configuration sections",
+    });
+    await expect(sections).toBeVisible();
+    await expect(sections.getByRole("button", { name: /When to block/ })).toBeVisible();
     await expect(editor.getByRole("button", { name: /Always/ })).toHaveAttribute("aria-pressed", "true");
 
     const website = editor.getByRole("textbox", { name: "Specific website" });

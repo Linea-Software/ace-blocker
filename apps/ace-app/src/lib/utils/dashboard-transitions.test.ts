@@ -20,6 +20,7 @@ function snapshot(name: string, enabled: boolean, entries: ScheduleEntrySchema[]
             id: name,
             name,
             enabled,
+            scheduleMode: "scheduled",
             isActive: false,
             lockState: { state: "inactive" },
         },
@@ -47,6 +48,13 @@ describe("Control upcoming changes", () => {
         expect(results.map((result) => result.block.block.name)).toEqual(["Work", "Work"]);
         expect(results[0].at).toEqual(new Date(2026, 10, 2, 9, 0));
         expect(results[1].at).toEqual(new Date(2026, 10, 2, 10, 0));
+    });
+
+    it("does not invent start/end transitions for Always blocks with historical periods", () => {
+        const always = snapshot("Always", true);
+        always.block.scheduleMode = "always";
+        expect(always.scheduleEntries).toHaveLength(1);
+        expect(findUpcomingBlockTransitions([always], from)).toEqual([]);
     });
 
     it("limits results and never returns transitions for disabled blocks", () => {
