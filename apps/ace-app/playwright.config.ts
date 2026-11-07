@@ -6,7 +6,7 @@ import { defineConfig } from "@playwright/test";
  */
 export default defineConfig({
     testDir: "e2e",
-    testMatch: /(getting-started|help|ui-friction)\.spec\.ts/,
+    testMatch: /(getting-started|help|ui-friction|block-editor-redesign)\.spec\.ts/,
     use: {
         baseURL: "http://localhost:1420",
     },

@@ -17,6 +17,7 @@
     } from "$engine-client";
     import type {
         NetworkBlockSchema,
+        ScheduleMode,
         ScheduleEntrySchema,
         SitePackSchema,
         UserDefinedRuleSchema,
@@ -49,6 +50,7 @@
     let name = $state(block?.name ?? "");
     let blockIcon = $state<string | null>(block?.icon ?? null);
     let isSafeSearch = $state(block?.safeSearch ?? false);
+    let scheduleMode = $state<ScheduleMode>(block?.scheduleMode ?? "always");
     let isSubmitting = $state(false);
     let isLoadingData = $state(block !== null);
 
@@ -63,29 +65,24 @@
     let connectedListIds = $state<string[]>([]);
     let availableLists = $state<SitePackSchema[]>([]);
 
-    // UI State
-    let activeSection = $state<"blocking" | "schedule">("blocking");
-    // Navigation can open directly on Schedule from the lock setup.
-    // Keep it reactive without overwriting manual tab changes.
-    $effect.pre(() => {
-        activeSection = initialSection;
-    });
+    // Each block is staged locally and persisted through a single engine RPC.
     let scheduleEditorOpen = $state(false);
-    // Set when an existing block's editor data failed to load: saving against
-    // empty rules/schedule/connections would clobber the server state.
     let dataLoadFailed = $state(false);
     let saveConfirmationWarning = $state(false);
 
-    const editorSections = [
-        { id: "blocking", label: m.blocking() },
-        { id: "schedule", label: m.schedule() },
-    ] as const;
-
-    const showBlockingError = $derived(!name || name.trim() === "");
     const isScheduleViolation = $derived(
-        block?.isLocked &&
-            !scheduleDelta.isValidForLockedBlock(),
+        (block?.isLocked ?? false) &&
+        ((block?.scheduleMode === "always" && scheduleMode === "scheduled") ||
+            (scheduleMode === "scheduled" && !scheduleDelta.isValidForLockedBlock())),
     );
+    const needsSchedule = $derived(
+        scheduleMode === "scheduled" && scheduleDelta.currentScheduleEntries.length === 0,
+    );
+    const targetCount = $derived(
+        rulesDelta.currentRules.length + sitePacksDelta.currentConnectedListIds.length +
+            (isSafeSearch ? 1 : 0),
+    );
+    const needsTargets = $derived(!block && targetCount === 0);
 
     async function loadData(blockId: string): Promise<boolean> {
         const [rulesRes, scheduleRes, connectionsRes, listsRes] =
@@ -147,6 +144,10 @@
                 toast.error(m.failed_to_load_block());
             }
             isLoadingData = false;
+            if (initialSection === "schedule") {
+                await tick();
+                document.getElementById("block-when")?.scrollIntoView({ block: "center" });
+            }
         } else {
             const response = await getAllSitePacks();
             availableLists = response.data?.sitePacks ?? [];
@@ -162,6 +163,7 @@
                 name,
                 icon: blockIcon,
                 safeSearch: isSafeSearch,
+                scheduleMode,
                 rules: rulesDelta,
                 schedule: scheduleDelta,
                 packs: sitePacksDelta,
@@ -192,6 +194,7 @@
                     name = canonical.block.name;
                     blockIcon = canonical.block.icon ?? null;
                     isSafeSearch = canonical.block.safeSearch;
+                    scheduleMode = canonical.block.scheduleMode;
                     dataLoadFailed = !(await loadData(canonical.block.id));
                 }
                 toast.error(m.block_save_unconfirmed());
@@ -209,13 +212,6 @@
             isLoadingData = false;
             isSubmitting = false;
         }
-    }
-
-        async function goToBlockName() {
-        if (scheduleEditorOpen) return;
-        activeSection = "blocking";
-        await tick();
-        document.getElementById("name")?.focus();
     }
 
     function handleWindowKeydown(event: KeyboardEvent) {
@@ -236,33 +232,18 @@
     description={m.block_modal_description()}
     closeLabel={m.close()}
     onClose={() => (open = false)}
+    wide
 >
     {#snippet navigation()}
-        <nav
-            aria-label={m.block_editor_sections_label()}
-            class="flex w-full gap-1 p-2"
-        >
-            {#each editorSections as section (section.id)}
-                <Button
-                    variant={activeSection === section.id ? "secondary" : "ghost"}
-                    class="h-9 min-w-0 flex-1 rounded-sm px-3"
-                    onclick={() => (activeSection = section.id)}
-                    aria-pressed={activeSection === section.id}
-                    disabled={scheduleEditorOpen &&
-                        activeSection === "schedule" &&
-                        section.id !== "schedule"}
-                >
-                    <span class="relative">
-                        {section.label}
-                        {#if section.id === "blocking" && showBlockingError}
-                            <span
-                                class="bg-destructive ring-background absolute -top-0.5 -right-2 size-1.5 rounded-full ring-1"
-                                aria-hidden="true"
-                            ></span>
-                        {/if}
-                    </span>
-                </Button>
-            {/each}
+        <nav class="editor-quick-nav" aria-label={m.block_editor_sections_label()}>
+            <button type="button"
+                onclick={() => document.getElementById("block-what")?.scrollIntoView({ block: "start" })}>
+                <span>01</span> {m.block_what_heading()}
+            </button>
+            <button type="button"
+                onclick={() => document.getElementById("block-when")?.scrollIntoView({ block: "start" })}>
+                <span>02</span> {m.block_when_heading()}
+            </button>
         </nav>
     {/snippet}
 
@@ -273,12 +254,9 @@
             <Alert.Description>{m.block_save_unconfirmed()}</Alert.Description>
         </Alert.Root>
     {/if}
+
     {#if isLoadingData}
-        <div
-            class="flex flex-col gap-5"
-            role="status"
-            aria-label={m.loading_block_configuration()}
-        >
+        <div class="flex flex-col gap-5" role="status" aria-label={m.loading_block_configuration()}>
             <Skeleton class="h-10 w-full rounded-sm" />
             <Skeleton class="h-28 w-full rounded-sm" />
             <Skeleton class="h-24 w-full rounded-sm" />
@@ -289,38 +267,103 @@
             <Alert.Title>{m.failed_to_load_block_title()}</Alert.Title>
             <Alert.Description>{m.failed_to_load_block()}</Alert.Description>
         </Alert.Root>
-    {:else if activeSection === "blocking"}
-        <div class="space-y-6">
-            <SectionGeneral
-                bind:name
-                bind:icon={blockIcon}
-                bind:isSafeSearch
-                disabled={isSubmitting}
-                isLocked={block?.isLocked ?? false}
-            />
-
-            <div class="border-border border-t"></div>
-
-            <SectionSites
-                delta={sitePacksDelta}
-                bind:availableLists
-                isLocked={block?.isLocked ?? false}
-            />
-
-            <div class="border-border border-t"></div>
-
-            <SectionRules
-                delta={rulesDelta}
-                disabled={isSubmitting}
-                isLocked={block?.isLocked ?? false}
-            />
-        </div>
     {:else}
-        <SectionSchedule
-            delta={scheduleDelta}
-            isLocked={block?.isLocked ?? false}
-            bind:hasOpenEditor={scheduleEditorOpen}
-        />
+        <div class="block-editor-grid">
+            <section class="editor-column space-y-5" aria-labelledby="block-what">
+                <h3 id="block-what" class="editor-heading">
+                    <span class="editor-index">01</span>
+                    {m.block_what_heading()}
+                </h3>
+                <SectionGeneral
+                    bind:name
+                    bind:icon={blockIcon}
+                    bind:isSafeSearch
+                    disabled={isSubmitting}
+                    isLocked={block?.isLocked ?? false}
+                />
+
+                <div class="border-border border-t pt-5">
+                    <SectionRules
+                        delta={rulesDelta}
+                        disabled={isSubmitting}
+                        isLocked={block?.isLocked ?? false}
+                    />
+                </div>
+
+                <details class="category-disclosure" open={connectedListIds.length > 0}>
+                    <summary>
+                        <span>{m.block_categories_toggle()}</span>
+                        <span class="category-count">
+                            {m.block_categories_count({ count: sitePacksDelta.currentConnectedListIds.length })}
+                        </span>
+                    </summary>
+                    <div class="category-content">
+                        <SectionSites
+                            delta={sitePacksDelta}
+                            bind:availableLists
+                            isLocked={block?.isLocked ?? false}
+                        />
+                    </div>
+                </details>
+            </section>
+
+            <section class="editor-column space-y-5" id="block-when" aria-labelledby="block-when-heading">
+                <h3 id="block-when-heading" class="editor-heading">
+                    <span class="editor-index">02</span>
+                    {m.block_when_heading()}
+                </h3>
+
+                <div class="mode-selector" role="group" aria-label={m.block_when_heading()}>
+                    <button
+                        type="button"
+                        class:selected={scheduleMode === "always"}
+                        aria-pressed={scheduleMode === "always"}
+                        disabled={scheduleEditorOpen || isSubmitting}
+                        onclick={() => (scheduleMode = "always")}
+                    >
+                        <strong>{m.block_mode_always()}</strong>
+                        <span>{m.block_mode_always_detail()}</span>
+                    </button>
+                    <button
+                        type="button"
+                        class:selected={scheduleMode === "scheduled"}
+                        aria-pressed={scheduleMode === "scheduled"}
+                        disabled={scheduleEditorOpen || isSubmitting ||
+                            (!!block?.isLocked && block?.scheduleMode === "always")}
+                        onclick={() => (scheduleMode = "scheduled")}
+                    >
+                        <strong>{m.block_mode_scheduled()}</strong>
+                        <span>{m.block_mode_scheduled_detail()}</span>
+                    </button>
+                </div>
+
+                {#if scheduleMode === "scheduled"}
+                    <div class="border-border border-t pt-5">
+                        <SectionSchedule
+                            delta={scheduleDelta}
+                            isLocked={block?.isLocked ?? false}
+                            bind:hasOpenEditor={scheduleEditorOpen}
+                        />
+                    </div>
+                {/if}
+
+                <div class="enforcement-preview" aria-live="polite">
+                    <span class="preview-rail" aria-hidden="true"></span>
+                    <div class="space-y-2">
+                        <p class="preview-heading">{m.block_preview_heading()}</p>
+                        <p>{scheduleMode === "always"
+                            ? m.block_preview_always()
+                            : m.block_preview_scheduled()}</p>
+                        {#if needsSchedule}
+                            <p class="preview-warning">{m.block_need_schedule()}</p>
+                        {/if}
+                        {#if needsTargets}
+                            <p class="preview-warning">{m.block_need_targets()}</p>
+                        {/if}
+                    </div>
+                </div>
+            </section>
+        </div>
     {/if}
 
     {#snippet footer()}
@@ -332,20 +375,14 @@
                         <span>{m.schedule_period_finish_edit()}</span>
                     </div>
                 {:else if !name || name.trim() === ""}
-                    <div class="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
+                    <div class="text-muted-foreground flex items-center gap-2 text-sm">
                         <CircleAlert class="size-4 shrink-0" aria-hidden="true" />
-                        <span>{activeSection === "schedule"
-                            ? m.schedule_missing_name_hint()
-                            : m.enter_block_name_warning()}</span>
-                        {#if activeSection === "schedule"}
-                            <button
-                                type="button"
-                                class="text-foreground focus-visible:ring-ring rounded-sm underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2"
-                                onclick={goToBlockName}
-                            >
-                                {m.schedule_go_to_blocking()}
-                            </button>
-                        {/if}
+                        <span>{m.enter_block_name_warning()}</span>
+                    </div>
+                {:else if needsSchedule || needsTargets}
+                    <div class="text-muted-foreground flex items-center gap-2 text-sm">
+                        <CircleAlert class="size-4 shrink-0" aria-hidden="true" />
+                        <span>{needsSchedule ? m.block_need_schedule() : m.block_need_targets()}</span>
                     </div>
                 {:else if isScheduleViolation}
                     <div
@@ -376,7 +413,9 @@
                         !name ||
                         name.trim() === "" ||
                         scheduleEditorOpen ||
-                        isScheduleViolation}
+                        isScheduleViolation ||
+                        needsSchedule ||
+                        needsTargets}
                     class="min-w-24 px-6"
                 >
                     {#if isSubmitting}
@@ -386,10 +425,158 @@
                         ? block
                             ? m.saving()
                             : m.creating()
-                        : m.save()}
+                        : block
+                            ? m.save()
+                            : m.block_button_create_activate()}
                 </Button>
             </div>
         </div>
     {/snippet}
 </Inspector>
 
+
+<style>
+    .editor-quick-nav {
+        display: flex;
+        gap: 4px;
+        padding: 7px 16px;
+        background: var(--card);
+    }
+    .editor-quick-nav button {
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: left;
+    }
+    .editor-quick-nav button:hover,
+    .editor-quick-nav button:focus-visible {
+        border-color: var(--border);
+        background: var(--muted);
+    }
+    .editor-quick-nav button span {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        color: var(--muted-foreground);
+    }
+    .block-editor-grid {
+        display: grid;
+        gap: 28px;
+        align-items: start;
+    }
+    .editor-column {
+        min-width: 0;
+    }
+    .editor-heading {
+        display: flex;
+        align-items: baseline;
+        gap: 11px;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+    .editor-index {
+        color: var(--muted-foreground);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .category-disclosure {
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--card);
+    }
+    .category-disclosure summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 15px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    .category-disclosure summary:focus-visible,
+    .mode-selector button:focus-visible {
+        outline: 2px solid var(--foreground);
+        outline-offset: -2px;
+    }
+    .category-count {
+        color: var(--muted-foreground);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+        font-weight: 400;
+    }
+    .category-content {
+        padding: 15px;
+        border-top: 1px solid var(--border);
+    }
+    .mode-selector {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+    .mode-selector button {
+        display: grid;
+        min-height: 88px;
+        align-content: center;
+        gap: 6px;
+        padding: 14px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--card);
+        text-align: left;
+        cursor: pointer;
+    }
+    .mode-selector button.selected {
+        border-color: var(--ace-signal-deep);
+        box-shadow: inset 0 3px var(--ace-signal);
+    }
+    .mode-selector button:disabled {
+        cursor: not-allowed;
+        opacity: .55;
+    }
+    .mode-selector strong {
+        font-size: 15px;
+        line-height: 1.2;
+    }
+    .mode-selector span {
+        color: var(--muted-foreground);
+        font-size: 13px;
+        line-height: 1.45;
+    }
+    .enforcement-preview {
+        display: grid;
+        grid-template-columns: 4px minmax(0, 1fr);
+        gap: 14px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--muted);
+        padding: 0 15px 0 0;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+    .enforcement-preview > div {
+        padding-block: 14px;
+    }
+    .preview-rail {
+        background: var(--ace-signal);
+    }
+    .preview-heading {
+        font-weight: 600;
+    }
+    .preview-warning {
+        color: var(--destructive);
+    }
+    @container inspector (min-width: 800px) {
+        .block-editor-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
+        }
+    }
+</style>

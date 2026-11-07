@@ -19,6 +19,7 @@ function draft(override: Partial<BlockSaveDraft> = {}): BlockSaveDraft {
         name: "New name",
         icon: "shield",
         safeSearch: true,
+        scheduleMode: "scheduled",
         rules: {
             currentRules: [{ rule: "example.com", ruleType: "domain" }],
         },
@@ -57,6 +58,7 @@ describe("Network Block atomic save", () => {
                 name: "New name",
                 icon: "shield",
                 safeSearch: true,
+                scheduleMode: "scheduled",
                 rules: [{ rule: "example.com", ruleType: "domain" }],
                 scheduleEntries: [{
                     startTime: "09:00",

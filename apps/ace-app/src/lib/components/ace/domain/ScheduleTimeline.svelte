@@ -9,9 +9,11 @@
     let {
         entries = [],
         active = true,
+        always = false,
     }: {
         entries?: ScheduleEntrySchema[];
         active?: boolean;
+        always?: boolean;
     } = $props();
 
     const dayKeys: WeekdayKey[] = [
@@ -40,6 +42,7 @@
     const currentMinute = now.getHours() * 60 + now.getMinutes();
 
     const summary = $derived.by(() => {
+        if (always) return m.block_mode_always();
         const activeDays = coverage.filter((row) => row.ranges.length > 0);
         if (activeDays.length === 0) return m.schedule_coverage_none_summary();
         return activeDays
@@ -79,7 +82,9 @@
             <div class="day-row">
                 <span class="day">{day.label()}</span>
                 <span class="track">
-                    {#if row}
+                    {#if always}
+                        <span class="window" style:left="0%" style:width="100%"></span>
+                    {:else if row}
                         {#each row.ranges as range (range.start)}
                             <span
                                 class="window"

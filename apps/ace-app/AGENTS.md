@@ -14,6 +14,10 @@ the first 16 characters. Schedules are separate civil-time windows whose
 IANA timezone is pinned by the engine, never inferred from the live Windows
 system timezone after policy creation. See `../../docs/TRUSTED_TIME_FUTURE.md`.
 
+## Network Block editor and activation (2026-11-07)
+
+The expanded Network Block editor exposes `Always` (default) and `Scheduled` modes independently of Enabled, and requires actual websites/categories before creating a block. Website URL paste stores its normalized hostname only; schedules use pinned civil-time windows. The editor preserves atomic `saveNetworkBlock` semantics, Lock anti-weakening and uncertain-ack reconciliation. `Inspector.svelte` supports a wide editor variant, with a pinned footer in both navigation/no-navigation layouts. See `../../docs/NETWORK_BLOCK_ACTIVATION.md`; browser-only screenshots and Playwright fixture live under `docs/ux-audit-assets/` and `e2e/block-editor-redesign.spec.ts`. Native IPC/enforcement validation is still a separate gate.
+
 ## Desktop localization (2026-11-06)
 
 Italian and English have full Paraglide message coverage. The Settings page owns

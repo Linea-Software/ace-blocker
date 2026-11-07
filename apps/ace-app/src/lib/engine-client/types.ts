@@ -49,6 +49,8 @@ export type ApiConstants = {
     time_format: '%H:%M:%S';
 };
 
+export type ScheduleMode = 'always' | 'scheduled';
+
 export type BackupNetworkBlock = {
     connectedSitePacks: Array<string>;
     enabled?: boolean;
@@ -58,6 +60,7 @@ export type BackupNetworkBlock = {
     safeSearch: boolean;
     /** Policy's persisted IANA timezone (not the current Windows timezone). */
     scheduleTimezone: string;
+    scheduleMode: ScheduleMode;
     schedules: Array<BackupScheduleEntry>;
     userRules: Array<UserDefinedRule>;
 };
@@ -146,6 +149,7 @@ export type SaveNetworkBlockRequest = {
     safeSearch: boolean;
     rules: Array<UserDefinedRule>;
     scheduleEntries: Array<BaseScheduleEntrySchema>;
+    scheduleMode: ScheduleMode;
     sitePackIds: Array<string>;
 };
 
@@ -241,6 +245,7 @@ export type NetworkBlockSchema = {
     lockState: LockState;
     name: string;
     safeSearch: boolean;
+    scheduleMode: ScheduleMode;
 };
 
 /**

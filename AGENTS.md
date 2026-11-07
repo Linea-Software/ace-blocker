@@ -58,6 +58,7 @@ The Network Block editor saves the full draft through one capability-protected
 the entire policy and locks, persists its metadata/rules/schedule/connections
 in one SQLite transaction, then publishes live state after COMMIT. The separate
 quick enable switch and category download are independent explicit actions.
+Network Blocks now persist an explicit `scheduleMode` (`always`/`scheduled`) independent of Enabled: `always` is the default, `scheduled` requires at least one period, and Lock must never permit `Always -> Scheduled`. See `docs/NETWORK_BLOCK_ACTIVATION.md` for migration, backup and enforcement semantics.
 
 ## AI refactoring: read only what applies
 

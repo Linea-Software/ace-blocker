@@ -30,7 +30,7 @@
         dashboardStore.networkBlockSnapshots.filter((snapshot) => snapshot.block.enabled),
     );
     const enabledScheduledCount = $derived(
-        enabledSnapshots.filter((snapshot) => snapshot.scheduleEntries.length > 0).length,
+        enabledSnapshots.filter((snapshot) => snapshot.block.scheduleMode === "scheduled" && snapshot.scheduleEntries.length > 0).length,
     );
     const upcomingTransitions = $derived(
         findUpcomingBlockTransitions(dashboardStore.networkBlockSnapshots),

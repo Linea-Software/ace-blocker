@@ -8,6 +8,7 @@
         description,
         closeLabel,
         onClose,
+        wide = false,
         navigation,
         children,
         footer,
@@ -16,6 +17,7 @@
         description?: string;
         closeLabel: string;
         onClose: () => void;
+        wide?: boolean;
         navigation?: Snippet;
         children: Snippet;
         footer?: Snippet;
@@ -48,7 +50,7 @@
 
 <svelte:window onkeydown={handleEscape} />
 
-<aside class="inspector" role="region" aria-labelledby={uid + "-title"}>
+<aside class="inspector" class:wide class:with-navigation={!!navigation} role="region" aria-labelledby={uid + "-title"}>
     <header class="inspector-header">
         <div class="title-block">
             <h2 id={uid + "-title"}>{title}</h2>
@@ -94,12 +96,20 @@
         bottom: 0;
         width: min(560px, calc(100vw - 72px));
         display: grid;
-        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-rows: auto minmax(0, 1fr) auto;
         border-left: 1px solid var(--border);
         background: var(--background);
         container-type: inline-size;
         container-name: inspector;
         animation: inspector-in 160ms ease-out;
+    }
+
+    .inspector.with-navigation {
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+    }
+
+    .inspector.wide {
+        width: min(940px, calc(100vw - 72px));
     }
 
     .inspector-header {
@@ -180,7 +190,8 @@
     }
 
     @media (max-width: 720px) {
-        .inspector {
+        .inspector,
+        .inspector.wide {
             width: calc(100vw - 62px);
         }
     }

@@ -55,7 +55,7 @@
     // inactive. Only the engine's isLocked flag should disable editing.
     const locked = $derived(policy.lockState.state !== "inactive");
     const lockedNow = $derived(policy.isLocked);
-    const hasSchedule = $derived((policy.schedules?.length ?? 0) > 0);
+    const hasSchedule = $derived(policy.scheduleMode === "always" || (policy.schedules?.length ?? 0) > 0);
 
     const stateLabel = $derived.by(() => {
         if (!policy.enabled) return m.block_state_disabled();
@@ -107,6 +107,7 @@
     });
 
     const scheduleText = $derived.by(() => {
+        if (policy.scheduleMode === "always") return m.block_mode_always();
         if (!policy.schedules || policy.schedules.length === 0) {
             return m.block_unscheduled_hint();
         }
@@ -168,7 +169,7 @@
     });
 
     const nextTransition = $derived.by(() =>
-        policy.enabled
+        policy.enabled && policy.scheduleMode === "scheduled"
             ? findNextScheduleTransition(policy.schedules ?? [])
             : null,
     );
@@ -305,6 +306,7 @@
                 <div class="schedule-zone">
                     <ScheduleTimeline
                         entries={policy.schedules ?? []}
+                        always={policy.scheduleMode === "always"}
                         active={policy.enabled && policy.isActive}
                     />
                 </div>

@@ -2,6 +2,7 @@ import {
     saveNetworkBlock as saveNetworkBlockRpc,
     type BaseScheduleEntrySchema,
     type NetworkBlockSchema,
+    type ScheduleMode,
     type UserDefinedRule,
 } from "$engine-client";
 
@@ -11,6 +12,7 @@ export type BlockSaveDraft = {
     name: string;
     icon: string | null;
     safeSearch: boolean;
+    scheduleMode: ScheduleMode;
     rules: { currentRules: readonly UserDefinedRule[] };
     schedule: { currentScheduleEntries: readonly BaseScheduleEntrySchema[] };
     packs: { currentConnectedListIds: readonly string[] };
@@ -28,6 +30,7 @@ export async function saveNetworkBlock(draft: BlockSaveDraft): Promise<BlockSave
                 name: draft.name,
                 icon: draft.icon,
                 safeSearch: draft.safeSearch,
+                scheduleMode: draft.scheduleMode,
                 rules: draft.rules.currentRules.map(({ rule, ruleType }) => ({
                     rule,
                     ruleType,
