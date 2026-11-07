@@ -670,12 +670,15 @@ impl AceProxy {
             //    VPN clients are intentionally allowed; platform enforcement
             //    prevents them from becoming a route-level bypass.
             .add_rule(Rule::new(LOCAL_PROXY_PROCESSES.join(";")).action(RuleAction::Block))
-            // 4. Browser VPN/proxy extensions tunnel inside ordinary HTTPS, so
-            //    route enforcement alone cannot distinguish them from a normal
-            //    website. Keep the narrowly scoped relay-domain denylist as
-            //    application-layer defense in depth.
+            // 4. Browser VPN/proxy extensions can hide the destination
+            //    inside an HTTPS relay, beyond network-layer host filtering.
+            //    Deny recognized extension relay domains for protected browsers
+            //    only, using DNS attribution when available. Never block
+            //    unrelated apps (including native VPN clients) on this basis;
+            //    relay domains and encrypted/DoH destinations are not reliably
+            //    discoverable, so this is defense in depth, not a guarantee.
             .add_rule(
-                Rule::new("*")
+                Rule::new(protected_browsers.clone())
                     .domains(VPN_EXTENSION_DOMAINS)
                     .action(RuleAction::Block),
             )

@@ -93,17 +93,18 @@ pub fn browser_processes() -> String {
 /// names.
 pub const LOCAL_PROXY_PROCESSES: &[&str] = &["tor.exe", "torservice.exe", "obfs4proxy.exe"];
 
-/// Domains used by browser-based VPN/proxy extensions. Blocking these at
-/// the network level prevents extensions from connecting to their relay
-/// servers.
+/// Known VPN/proxy extension relay domains. DNS-attributed browser traffic
+/// to these hosts is blocked as defense in depth; this list is not complete,
+/// and encrypted DNS, IP endpoints, and rotating relays can evade it.
+/// The caller must scope this to protected browsers, not other processes.
 ///
 /// Scope note (security/false-positive review): this list must contain only
 /// *VPN-extension relay/API* domains, never a parent domain shared by
 /// unrelated services of the same vendor. `proton.me` is Proton's shared
 /// identity domain — `mail.proton.me`, `calendar.proton.me`, `drive.proton.me`,
 /// `pass.proton.me`, `account.proton.me` are NOT VPN infrastructure, and the
-/// tun-level block applies to every process (including non-browser Proton
-/// desktop apps). It was removed here on purpose. Desktop VPN clients are
+/// browser-only relay filter must not affect Proton's non-VPN services
+/// (including Proton Mail and Drive). It was removed here on purpose. Desktop VPN clients are
 /// handled structurally by the platform enforcement layer; the browser-extension
 /// relay remains covered by the VPN-specific `*.protonvpn.com` domain.
 pub const VPN_EXTENSION_DOMAINS: &str = "*.protonvpn.com;*.windscribe.com;*.browsec.com;\
@@ -169,6 +170,79 @@ mod tests {
         assert!(
             VPN_EXTENSION_DOMAINS.contains("*.protonvpn.com"),
             "the Proton VPN extension domain must stay blocked"
+        );
+    }
+
+    #[test]
+    fn extension_relay_rule_affects_browsers_only_when_host_is_known() {
+        use ace_tun::{Rule, RuleAction, RuleProtocol, RuleSet};
+        use std::net::IpAddr;
+
+        let protected = browser_processes();
+        let rules = RuleSet::new(&[
+            Rule::new(protected.clone())
+                .domains(VPN_EXTENSION_DOMAINS)
+                .action(RuleAction::Block),
+            Rule::new(protected)
+                .ports("80;443")
+                .protocol(RuleProtocol::Tcp)
+                .action(RuleAction::Proxy),
+            Rule::new("*").action(RuleAction::Direct),
+        ]);
+        let address: IpAddr = "203.0.113.17".parse().unwrap();
+
+        assert_eq!(
+            rules
+                .evaluate(
+                    "chrome.exe",
+                    address,
+                    443,
+                    false,
+                    Some("node.protonvpn.com")
+                )
+                .action,
+            RuleAction::Block,
+            "recognized Proton VPN relay is denied for a protected browser",
+        );
+        assert_eq!(
+            rules
+                .evaluate(
+                    "chrome.exe",
+                    address,
+                    8443,
+                    false,
+                    Some("node.protonvpn.com")
+                )
+                .action,
+            RuleAction::Block,
+            "known relay must not escape the denylist by changing TCP port",
+        );
+        assert_eq!(
+            rules
+                .evaluate(
+                    "protonvpn.exe",
+                    address,
+                    443,
+                    false,
+                    Some("node.protonvpn.com")
+                )
+                .action,
+            RuleAction::Direct,
+            "the browser-extension heuristic must not block the native VPN client",
+        );
+        assert_eq!(
+            rules
+                .evaluate("chrome.exe", address, 443, false, Some("mail.proton.me"))
+                .action,
+            RuleAction::Proxy,
+            "Proton Mail shares identity infrastructure, not VPN relay domains",
+        );
+        assert_eq!(
+            rules
+                .evaluate("chrome.exe", address, 443, false, None)
+                .action,
+            RuleAction::Proxy,
+            "unknown hostname cannot be claimed blocked; HTTPS remains on inspected path",
         );
     }
 
