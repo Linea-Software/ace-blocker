@@ -33,6 +33,7 @@ impl EngineDB {
                         network_blocks::name.eq(&block.name),
                         network_blocks::icon.eq(&block.icon),
                         network_blocks::safe_search.eq(block.safe_search),
+                        network_blocks::schedule_mode.eq(&block.schedule_mode),
                     ))
                     .execute(conn)?;
                 if updated != 1 {

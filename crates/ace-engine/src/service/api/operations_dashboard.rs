@@ -35,6 +35,7 @@ pub(super) async fn get_dashboard_snapshot(
                 network_block.get_name(),
                 network_block.get_icon(),
                 network_block.is_enabled(),
+                network_block.schedule_mode(),
                 network_block.is_active(&now),
                 network_block.is_locked(&now),
                 network_block.is_safe_search_enabled(),
@@ -43,8 +44,16 @@ pub(super) async fn get_dashboard_snapshot(
         };
         // Immutable borrow of `manager` is now dropped.
 
-        let (block_name, block_icon, enabled, is_active, is_locked, safe_search, core_lock_state) =
-            block_data;
+        let (
+            block_name,
+            block_icon,
+            enabled,
+            schedule_mode,
+            is_active,
+            is_locked,
+            safe_search,
+            core_lock_state,
+        ) = block_data;
 
         // Convert block_id_ref to owned uuid::Uuid for schema usage.
         // NetworkBlockId: Deref<Target = Uuid> + Copy is not derived,
@@ -88,6 +97,7 @@ pub(super) async fn get_dashboard_snapshot(
                 id: block_uuid,
                 name: block_name,
                 enabled,
+                schedule_mode,
                 is_active,
                 is_locked,
                 lock_state: core_lock_state.into(),

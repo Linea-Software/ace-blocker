@@ -60,6 +60,7 @@ diesel::table! {
         safe_search -> Bool,
         icon -> Nullable<Text>,
         schedule_timezone -> Text,
+        schedule_mode -> Text,
     }
 }
 

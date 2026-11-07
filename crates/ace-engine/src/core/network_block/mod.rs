@@ -31,6 +31,33 @@ use nutype::nutype;
 ))]
 pub struct NetworkBlockId(Uuid);
 
+/// Whether an enabled block enforces continuously or only in configured windows.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum ScheduleMode {
+    Always,
+    Scheduled,
+}
+
+impl ScheduleMode {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Always => "always",
+            Self::Scheduled => "scheduled",
+        }
+    }
+
+    pub fn parse_persisted(value: &str) -> Option<Self> {
+        match value {
+            "always" => Some(Self::Always),
+            "scheduled" => Some(Self::Scheduled),
+            _ => None,
+        }
+    }
+}
+
 /// One independently scheduled rule set with shared site-pack handles.
 /// URI decisions are cached per block, separately from activation checks.
 #[derive(Debug, Clone)]
@@ -38,6 +65,7 @@ pub struct NetworkBlock {
     id: NetworkBlockId,
     name: String,
     enabled: bool,
+    schedule_mode: ScheduleMode,
     schedule: Schedule,
     lock: Lock,
 
@@ -96,6 +124,7 @@ impl NetworkBlock {
             id,
             name,
             enabled,
+            schedule_mode: ScheduleMode::Scheduled,
             schedule,
             lock,
 
@@ -129,6 +158,7 @@ impl NetworkBlock {
             id,
             name,
             enabled,
+            schedule_mode: ScheduleMode::Scheduled,
             schedule,
             lock,
 
@@ -162,6 +192,14 @@ impl NetworkBlock {
     /// Changes the explicit switch without modifying schedule entries.
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
+    }
+
+    pub fn schedule_mode(&self) -> ScheduleMode {
+        self.schedule_mode
+    }
+
+    pub fn set_schedule_mode(&mut self, mode: ScheduleMode) {
+        self.schedule_mode = mode;
     }
 
     pub fn set_icon(&mut self, icon: Option<String>) {
@@ -369,6 +407,11 @@ impl NetworkBlock {
     }
 
     pub fn is_locked(&self, _now: &DateTime<Local>) -> bool {
+        if self.schedule_mode == ScheduleMode::Always
+            && self.lock.get_state() == crate::core::LockState::ActiveDuringSchedule
+        {
+            return true;
+        }
         #[cfg(test)]
         if crate::trusted_time::current_interval().is_none() {
             return self.lock.is_active(&self.schedule, _now);
@@ -396,6 +439,12 @@ impl NetworkBlock {
     /// When time is unavailable, keep a configured, enabled schedule active,
     /// rather than quietly failing open on network enforcement.
     pub fn is_active(&self, _now: &DateTime<Local>) -> bool {
+        if !self.enabled {
+            return false;
+        }
+        if self.schedule_mode == ScheduleMode::Always {
+            return true;
+        }
         #[cfg(test)]
         if crate::trusted_time::current_interval().is_none() {
             return self.enabled && self.schedule.is_active_at(_now);

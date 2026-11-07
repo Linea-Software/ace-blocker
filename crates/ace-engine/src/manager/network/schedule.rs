@@ -124,6 +124,18 @@ impl NetworkManager {
         network_block_id: &NetworkBlockId,
         all_entries: Vec<ScheduleEntry>,
     ) -> Result<(), NetworkManagerOpErr> {
+        if all_entries.is_empty() {
+            let block = self
+                .get_network_block_from(network_block_id)
+                .ok_or_else(|| NetworkManagerOpErr::NetworkBlockNotFound {
+                    id: network_block_id.clone(),
+                })?;
+            if block.schedule_mode() == crate::core::ScheduleMode::Scheduled {
+                return Err(NetworkManagerOpErr::InternalError {
+                    message: "Scheduled blocks require at least one time period".into(),
+                });
+            }
+        }
         // Simplify the schedule by breaking it down into intervals
         #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
         struct Interval {

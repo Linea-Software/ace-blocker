@@ -217,6 +217,11 @@ pub(super) async fn import_backup_from_cloud(state: AppState) -> Result<(), ApiE
                 // The remote backup contract predates this field. Treat it like a
                 // legacy local backup and preserve the historical enabled behavior.
                 enabled: true,
+                schedule_mode: if block.schedules.is_empty() {
+                    crate::core::ScheduleMode::Always
+                } else {
+                    crate::core::ScheduleMode::Scheduled
+                },
                 safe_search: block.safe_search,
                 user_rules: block
                     .user_rules

@@ -49,6 +49,7 @@ pub struct BackupNetworkBlock {
     pub id: uuid::Uuid,
     pub name: String,
     pub enabled: bool,
+    pub schedule_mode: crate::core::ScheduleMode,
     pub safe_search: bool,
     pub icon: Option<String>,
     /// IANA zone pinned to this policy at creation.
@@ -136,6 +137,7 @@ impl NetworkManager {
                 id: *network_block.get_id(),
                 name: network_block.get_name(),
                 enabled: network_block.is_enabled(),
+                schedule_mode: network_block.schedule_mode(),
                 safe_search: network_block.is_safe_search_enabled(),
                 icon: network_block.get_icon(),
                 schedule_timezone: network_block.get_schedule().timezone().name().to_string(),
@@ -275,6 +277,13 @@ impl NetworkManager {
 
         for block in backup.network_blocks {
             let id = block.id;
+            if block.schedule_mode == crate::core::ScheduleMode::Scheduled
+                && block.schedules.is_empty()
+            {
+                return Err(NetworkManagerOpErr::InternalError {
+                    message: format!("Scheduled backup block {id} has no periods"),
+                });
+            }
             let timezone: chrono_tz::Tz = block.schedule_timezone.parse().map_err(|_| {
                 NetworkManagerOpErr::InternalError {
                     message: format!("Invalid IANA timezone in backup for {id}"),
@@ -345,6 +354,7 @@ impl NetworkManager {
                 id,
                 name: &block.name,
                 enabled: block.enabled,
+                schedule_mode: block.schedule_mode.as_str(),
                 safe_search: block.safe_search,
                 icon: block.icon.as_deref(),
                 schedule_timezone: timezone.name(),
@@ -577,6 +587,7 @@ mod tests {
             id,
             name: name.to_string(),
             enabled: true,
+            schedule_mode: crate::core::ScheduleMode::Always,
             safe_search: false,
             icon: None,
             schedule_timezone: "Etc/UTC".into(),

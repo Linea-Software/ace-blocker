@@ -556,7 +556,7 @@ impl NetworkManager {
             }
         })?;
 
-        Ok(NetworkBlock::from_with_icon(
+        let mut block = NetworkBlock::from_with_icon(
             NetworkBlockId::from(block_id),
             model.name,
             model.enabled,
@@ -577,7 +577,15 @@ impl NetworkManager {
             exceptions,
             model.safe_search,
             model.icon,
-        ))
+        );
+        block.set_schedule_mode(
+            crate::core::ScheduleMode::parse_persisted(&model.schedule_mode).ok_or_else(|| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid persisted schedule mode: {}", model.schedule_mode),
+                }
+            })?,
+        );
+        Ok(block)
     }
 
     /// Loads the resistance manager from the database.

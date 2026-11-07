@@ -1,5 +1,5 @@
 pub use crate::core::importer::{SitePackFormat, SitePackSourceType};
-pub use crate::core::{UserDefinedRule, UserDefinedRuleType};
+pub use crate::core::{ScheduleMode, UserDefinedRule, UserDefinedRuleType};
 pub use crate::manager::resistance::{PunishmentIntensity, PunishmentMode};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -12,6 +12,7 @@ pub struct NetworkBlockSchema {
     pub id: uuid::Uuid,
     pub name: String,
     pub enabled: bool,
+    pub schedule_mode: ScheduleMode,
     pub is_active: bool,
     pub is_locked: bool,
     pub lock_state: LockState,
@@ -43,6 +44,7 @@ pub struct SaveNetworkBlockRequest {
     pub safe_search: bool,
     pub rules: Vec<UserDefinedRule>,
     pub schedule_entries: Vec<BaseScheduleEntrySchema>,
+    pub schedule_mode: ScheduleMode,
     pub site_pack_ids: Vec<String>,
 }
 
@@ -544,6 +546,7 @@ impl From<(&crate::core::NetworkBlock, &chrono::DateTime<chrono::Local>)> for Ne
             id: *block.get_id(),
             name: block.get_name(),
             enabled: block.is_enabled(),
+            schedule_mode: block.schedule_mode(),
             is_active: block.is_active(now),
             is_locked: block.is_locked(now),
             lock_state: block.get_lock().get_state().into(),

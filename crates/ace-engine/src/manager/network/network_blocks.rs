@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use super::{NetworkManager, error::NetworkManagerOpErr};
-use crate::core::{Lock, NetworkBlock, NetworkBlockId, RegexRules, Schedule, UserDefinedRules};
+use crate::core::{
+    Lock, NetworkBlock, NetworkBlockId, RegexRules, Schedule, ScheduleMode, UserDefinedRules,
+};
 
 impl NetworkManager {
     pub fn get_network_block_from(
@@ -68,7 +70,7 @@ impl NetworkManager {
         })?;
         let net_list_id = NetworkBlockId::from(block_uuid);
 
-        let net_list = NetworkBlock::from(
+        let mut net_list = NetworkBlock::from(
             net_list_id.clone(),
             network_block_name,
             true,
@@ -80,6 +82,7 @@ impl NetworkManager {
             false,
         );
 
+        net_list.set_schedule_mode(ScheduleMode::Always);
         self.network_blocks.insert(net_list_id.clone(), net_list);
 
         Ok(net_list_id)

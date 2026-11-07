@@ -19,4 +19,6 @@ pub use network_block::site_pack::{SitePack, SitePackImportError};
 pub use network_block::user_defined_rules::{
     UserDefinedRule, UserDefinedRuleType, UserDefinedRules, UserDefinedRulesError,
 };
-pub use network_block::{BlockingResult, NetworkBlock, NetworkBlockId, NetworkBlockOpErr};
+pub use network_block::{
+    BlockingResult, NetworkBlock, NetworkBlockId, NetworkBlockOpErr, ScheduleMode,
+};

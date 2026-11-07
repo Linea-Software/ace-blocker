@@ -48,6 +48,7 @@ pub(super) async fn create_network_block(
             id: *block_id,
             name: payload.block_name,
             enabled: true,
+            schedule_mode: crate::core::ScheduleMode::Always,
             is_active: false,
             is_locked: false,
             lock_state: crate::core::LockState::default().into(),
@@ -106,6 +107,14 @@ pub(super) async fn save_network_block(
     use crate::manager::network::save_network_block::NetworkBlockDraft;
     use chrono::Weekday;
 
+    if payload.schedule_mode == crate::core::ScheduleMode::Scheduled
+        && payload.schedule_entries.is_empty()
+    {
+        return Err(ApiError::BadRequest(
+            "Scheduled blocks require a time period".into(),
+        ));
+    }
+
     // Entitlement may perform remote I/O: never hold the manager write lock
     // while checking it.
     let entitled = state.is_pro_account_entitled().await;
@@ -161,6 +170,7 @@ pub(super) async fn save_network_block(
             safe_search: payload.safe_search,
             rules: payload.rules,
             schedule,
+            schedule_mode: payload.schedule_mode,
             site_pack_ids,
         },
         entitled,

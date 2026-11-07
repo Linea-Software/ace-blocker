@@ -6,8 +6,8 @@ use std::sync::{Arc, RwLock};
 use super::{NetworkManager, error::NetworkManagerOpErr};
 use crate::core::common::schedule::weekday_set_to_bitmask;
 use crate::core::{
-    NetworkBlock, NetworkBlockId, Schedule, ScheduleEntry, ScheduleEntryId, SitePack, SitePackId,
-    UserDefinedRule, UserDefinedRules,
+    NetworkBlock, NetworkBlockId, Schedule, ScheduleEntry, ScheduleEntryId, ScheduleMode, SitePack,
+    SitePackId, UserDefinedRule, UserDefinedRules,
 };
 use crate::db::models::{
     NetworkBlockModel, NetworkBlockScheduleEntryModel, NetworkBlockToSitePackModel,
@@ -21,6 +21,7 @@ pub struct NetworkBlockDraft {
     pub safe_search: bool,
     pub rules: Vec<UserDefinedRule>,
     pub schedule: Vec<ScheduleEntry>,
+    pub schedule_mode: ScheduleMode,
     pub site_pack_ids: Vec<SitePackId>,
 }
 
@@ -60,6 +61,11 @@ impl NetworkManager {
                 block.get_schedule().timezone()
             });
         let schedule = Schedule::from_in_zone(draft.schedule, timezone);
+        if draft.schedule_mode == ScheduleMode::Scheduled && schedule.get_entries().is_empty() {
+            return Err(NetworkManagerOpErr::InternalError {
+                message: "Scheduled blocks require at least one time period".into(),
+            });
+        }
         let locked =
             current.is_some_and(|block| block.is_locked(&crate::trusted_time::locking_now()));
 
@@ -79,10 +85,17 @@ impl NetworkManager {
                     };
                     remaining.remove(index);
                 }
-                if !block
-                    .get_schedule()
-                    .is_strictly_more_restrictive_than(&schedule)
-                {
+                // Always covers every minute. A locked Always block cannot
+                // be reduced to Scheduled; Scheduled -> Always is stronger.
+                let allowed = match (block.schedule_mode(), draft.schedule_mode) {
+                    (ScheduleMode::Always, ScheduleMode::Scheduled) => false,
+                    (ScheduleMode::Always, ScheduleMode::Always) => true,
+                    (ScheduleMode::Scheduled, ScheduleMode::Always) => true,
+                    (ScheduleMode::Scheduled, ScheduleMode::Scheduled) => block
+                        .get_schedule()
+                        .is_strictly_more_restrictive_than(&schedule),
+                };
+                if !allowed {
                     return Err(NetworkManagerOpErr::NetworkBlockIsLocked { id });
                 }
             }
@@ -212,6 +225,7 @@ impl NetworkManager {
             safe_search: draft.safe_search,
             icon: draft.icon.clone(),
             schedule_timezone: timezone.name().to_string(),
+            schedule_mode: draft.schedule_mode.as_str().into(),
         };
         let prepared_block = NetworkBlock::from_with_icon(
             id.clone(),
@@ -225,6 +239,9 @@ impl NetworkManager {
             draft.safe_search,
             draft.icon,
         );
+
+        let mut prepared_block = prepared_block;
+        prepared_block.set_schedule_mode(draft.schedule_mode);
 
         self.db.save_network_block_snapshot(
             &model,
@@ -268,6 +285,7 @@ mod tests {
             icon: Some("shield".into()),
             safe_search: true,
             rules: vec![rule("new.example")],
+            schedule_mode: ScheduleMode::Scheduled,
             schedule: vec![
                 ScheduleEntry::from(
                     ScheduleEntryId::from(uuid::Uuid::now_v7()),
@@ -369,6 +387,7 @@ mod tests {
                 safe_search: false,
                 rules: Vec::new(),
                 schedule: Vec::new(),
+                schedule_mode: ScheduleMode::Always,
                 site_pack_ids: Vec::new(),
             },
             false,
@@ -384,6 +403,82 @@ mod tests {
                 .get_user_defined_rules()
                 .rules(),
             &[rule("old.example")]
+        );
+    }
+
+    #[test]
+    fn always_mode_enforces_without_schedule_and_survives_reload() {
+        let (mut manager, _temp) = context();
+        let id = manager.create_network_block("Always".into()).unwrap();
+        let block = manager.get_network_block_from(&id).unwrap();
+        assert_eq!(block.schedule_mode(), ScheduleMode::Always);
+        assert!(block.get_schedule().get_entries().is_empty());
+        assert!(block.is_active(&Local::now()));
+
+        manager.set_network_block_enabled(&id, false).unwrap();
+        assert!(
+            !manager
+                .get_network_block_from(&id)
+                .unwrap()
+                .is_active(&Local::now())
+        );
+
+        let db = manager.db.clone();
+        let account = AccountManager::from(db.clone()).unwrap();
+        let loaded = NetworkManager::from(db, account).unwrap();
+        let block = loaded.get_network_block_from(&id).unwrap();
+        assert_eq!(block.schedule_mode(), ScheduleMode::Always);
+        assert!(!block.is_active(&Local::now()));
+    }
+
+    #[test]
+    fn scheduled_mode_needs_a_period_and_rejects_partial_new_block() {
+        let (mut manager, _temp) = context();
+        let initial = manager.get_all_network_blocks().len();
+        let mut empty = draft(None, "No period");
+        empty.schedule_mode = ScheduleMode::Scheduled;
+        empty.schedule.clear();
+        assert!(manager.save_network_block(empty, false).is_err());
+        assert_eq!(manager.get_all_network_blocks().len(), initial);
+
+        let id = manager
+            .save_network_block(draft(None, "Scheduled"), false)
+            .unwrap();
+        assert_eq!(
+            manager.get_network_block_from(&id).unwrap().schedule_mode(),
+            ScheduleMode::Scheduled
+        );
+        let db = manager.db.clone();
+        let account = AccountManager::from(db.clone()).unwrap();
+        let loaded = NetworkManager::from(db, account).unwrap();
+        assert_eq!(
+            loaded.get_network_block_from(&id).unwrap().schedule_mode(),
+            ScheduleMode::Scheduled
+        );
+    }
+
+    #[test]
+    fn locked_always_cannot_be_weakened_to_scheduled() {
+        let (mut manager, _temp) = context();
+        let id = manager.create_network_block("Protected".into()).unwrap();
+        manager
+            .set_lock(
+                &id,
+                Lock::from(LockState::ActiveUntilLockEnd {
+                    end: Local::now() + Duration::hours(1),
+                }),
+            )
+            .unwrap();
+        let mut change = draft(Some(id.clone()), "Protected");
+        change.safe_search = false;
+        change.icon = None;
+        assert!(matches!(
+            manager.save_network_block(change, false),
+            Err(NetworkManagerOpErr::NetworkBlockIsLocked { .. })
+        ));
+        assert_eq!(
+            manager.get_network_block_from(&id).unwrap().schedule_mode(),
+            ScheduleMode::Always
         );
     }
 
