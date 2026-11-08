@@ -29,7 +29,7 @@
     function blockPriority(block: (typeof data.blocks)[number]): number {
         if (block.enabled && block.isActive) return 0;
         if (block.lockState.state !== "inactive") return 1;
-        if ((block.schedules?.length ?? 0) > 0) return 2;
+        if (block.scheduleMode === "scheduled") return 2;
         return 3;
     }
 

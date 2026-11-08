@@ -10,7 +10,6 @@
     import { onMount } from "svelte";
     import { Eye, Lock, LockOpen, Pencil, Trash2, Ellipsis } from "@lucide/svelte";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
-    import ScheduleTimeline from "./ScheduleTimeline.svelte";
     import LockSeal from "./LockSeal.svelte";
     import { findNextScheduleTransition } from "$lib/utils/schedule-transitions";
 
@@ -301,17 +300,7 @@
             </div>
         </div>
 
-        <div class:no-schedule={!hasSchedule} class="policy-grid">
-            {#if hasSchedule}
-                <div class="schedule-zone">
-                    <ScheduleTimeline
-                        entries={policy.schedules ?? []}
-                        always={policy.scheduleMode === "always"}
-                        active={policy.enabled && policy.isActive}
-                    />
-                </div>
-            {/if}
-
+        <div class="policy-grid">
             <dl class="policy-facts">
                 <div>
                     <dt>{m.sites_lists()}</dt>
@@ -577,25 +566,13 @@
     }
 
     .policy-grid {
-        display: grid;
-        grid-template-columns: minmax(240px, 1fr) auto;
-        align-items: end;
-        gap: 22px;
-        padding: 0 18px 17px;
-    }
-
-    .policy-grid.no-schedule {
-        grid-template-columns: 1fr;
-        gap: 0;
-    }
-
-    .schedule-zone {
-        min-width: 0;
-        min-height: 76px;
-        display: grid;
+        display: flex;
         align-items: center;
-        padding-top: 12px;
+        padding: 10px 18px 13px;
         border-top: 1px solid var(--border);
+        margin: 0 18px;
+        padding-left: 0;
+        padding-right: 0;
     }
 
     .policy-facts {
@@ -640,10 +617,6 @@
 
         .actions {
             width: 100%;
-        }
-
-        .policy-grid {
-            grid-template-columns: 1fr;
         }
 
         .policy-facts {
