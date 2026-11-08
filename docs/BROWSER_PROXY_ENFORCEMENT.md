@@ -3,6 +3,8 @@
 **Status:** Implemented as an opt-in policy guard. Windows/browser live tests are
 still required before claiming a fully closed VPN-extension bypass.
 
+For the Linux equivalent, see `docs/LINUX_BROWSER_PROXY_ENFORCEMENT.md`.
+
 ## Why this exists
 
 HTTPS browser proxy extensions such as Proton VPN, Windscribe and NordVPN send

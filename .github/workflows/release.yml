@@ -196,6 +196,8 @@ jobs:
         run: |
           bash -n installer/linux/install.sh
           bash -n installer/linux/migrate-legacy-data.sh
+          python3 -m py_compile installer/linux/browser-proxy-policy.py
+          python3 -m unittest discover -s installer/linux/tests -p 'test_*.py' -v
           desktop-file-validate installer/linux/ace-blocker.desktop
           desktop-file-validate installer/linux/ace-blocker-handler.desktop
           if installer/linux/install.sh >/dev/null 2>&1; then
@@ -229,6 +231,7 @@ jobs:
           done
           cp -R installer/bundled-packs "release-input/$package/bundled-packs"
           install -m 0755 installer/linux/install.sh "release-input/$package/install.sh"
+          install -m 0755 installer/linux/browser-proxy-policy.py "release-input/$package/browser-proxy-policy.py"
           install -m 0755 installer/linux/migrate-legacy-data.sh "release-input/$package/migrate-legacy-data.sh"
           install -m 0644 installer/linux/ace-blocker.desktop "release-input/$package/ace-blocker.desktop"
           install -m 0644 installer/linux/ace-blocker-handler.desktop "release-input/$package/ace-blocker-handler.desktop"

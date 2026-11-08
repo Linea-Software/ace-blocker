@@ -36,6 +36,14 @@ if [[ ! -d "$package_dir/bundled-packs" ]]; then
   exit 1
 fi
 
+# Ship an optional, root-controlled browser policy manager with every Linux
+# release. Installation alone must not alter Chrome/Chromium/Brave/Firefox policy.
+if [[ ! -f "$package_dir/browser-proxy-policy.py" ||
+      -L "$package_dir/browser-proxy-policy.py" ]]; then
+  echo "Missing or unsafe browser proxy policy manager" >&2
+  exit 1
+fi
+
 # Prevent a partial install when a rolling-release system has replaced or
 # removed the Linux shared libraries expected by the packaged binaries.
 if ! command -v ldd >/dev/null 2>&1; then
@@ -97,6 +105,9 @@ install -d -m 0755 "$install_dir"
 for binary in ace-engine ace-watchdog ace-app ace-redirect install-cert; do
   install -m 0755 "$package_dir/$binary" "$install_dir/$binary"
 done
+# Available for explicit administrator opt-in after installation only.
+# Never enable machine-wide browser policy without a separate user action.
+install -o root -g root -m 0755 "$package_dir/browser-proxy-policy.py" "$install_dir/browser-proxy-policy.py"
 cp -R "$package_dir/bundled-packs" "$install_dir/"
 install -D -m 0644 "$package_dir/ace-blocker.desktop" /usr/local/share/applications/ace-blocker.desktop
 install -D -m 0644 "$package_dir/ace-blocker-handler.desktop" /usr/local/share/applications/ace-blocker-handler.desktop
@@ -130,4 +141,6 @@ else
   echo "  xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker" >&2
 fi
 
+echo "Browser proxy protection is available but not enabled by default."
+echo "To opt in after reviewing its effects: sudo $install_dir/browser-proxy-policy.py --enable"
 echo "ACE installed: services enabled and started; desktop launcher and account callback registered."
