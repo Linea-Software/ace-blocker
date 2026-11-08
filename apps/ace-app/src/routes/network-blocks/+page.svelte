@@ -9,11 +9,10 @@
         WifiOff,
         ArrowRight,
     } from "@lucide/svelte";
-    import BlockModal from "./_BlockModal.svelte";
     import LockModal from "./_components/_LockModal.svelte";
     import SoftUnlockModal from "./_components/_SoftUnlockModal.svelte";
     import NetworkPolicy from "$lib/components/ace/domain/NetworkPolicy.svelte";
-    import { invalidateAll } from "$app/navigation";
+    import { invalidateAll, goto } from "$app/navigation";
     import { resolve } from "$app/paths";
     import type { NetworkBlockSchema } from "$engine-client";
     import type { NetworkBlockWithLock } from "./+page";
@@ -26,9 +25,6 @@
 
     let { data }: { data: PageData } = $props();
 
-    let isEditorOpen = $state(false);
-    let editorInitialSection = $state<"blocking" | "schedule">("blocking");
-    let selectedBlock = $state<NetworkBlockSchema | null>(null);
 
     function blockPriority(block: (typeof data.blocks)[number]): number {
         if (block.enabled && block.isActive) return 0;
@@ -46,12 +42,8 @@
     );
 
     onMount(() => {
-        const blockId = new URL(window.location.href).searchParams.get("block");
-        if (!blockId) return;
-        const match = blocks.find((block) => block.id === blockId);
-        if (!match) return;
-        selectedBlock = match;
-        isEditorOpen = true;
+        const id = new URL(window.location.href).searchParams.get("block");
+        if (id) void goto(resolve("/network-blocks/editor") + "?block=" + encodeURIComponent(id), { replaceState: true });
     });
 
     let isLockModalOpen = $state(false);
@@ -65,26 +57,16 @@
     let isDeleting = $state(false);
 
     function handleCreate() {
-        selectedBlock = null;
-        editorInitialSection = "blocking";
-        isEditorOpen = true;
+        void goto(resolve("/network-blocks/editor"));
     }
 
     function handleEdit(block: NetworkBlockSchema) {
-        selectedBlock = block;
-        editorInitialSection = "blocking";
-        isEditorOpen = true;
+        void goto(resolve("/network-blocks/editor") + "?block=" + encodeURIComponent(block.id));
     }
 
     function handleEditSchedule(block: NetworkBlockWithLock) {
         isLockModalOpen = false;
-        selectedBlock = block;
-        editorInitialSection = "schedule";
-        isEditorOpen = true;
-    }
-
-    async function handleEditorSave() {
-        await invalidateAll();
+        void goto(resolve("/network-blocks/editor") + "?block=" + encodeURIComponent(block.id) + "&section=schedule");
     }
 
     async function handleEnabledChange(block: NetworkBlockSchema, enabled: boolean) {
@@ -256,15 +238,6 @@
         </div>
     {/if}
 </PageLayout>
-
-{#if isEditorOpen}
-    <BlockModal
-        bind:open={isEditorOpen}
-        block={selectedBlock}
-        initialSection={editorInitialSection}
-        onSave={handleEditorSave}
-    />
-{/if}
 
 <LockModal
     bind:open={isLockModalOpen}

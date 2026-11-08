@@ -716,7 +716,6 @@
     "failed_to_load_block": "No se pudieron cargar los datos de este bloqueo. No podrás guardarlo hasta que se vuelva a cargar.",
     "failed_to_load_block_title": "Configuración de bloqueo no disponible",
     "loading_block_configuration": "Cargando configuración del bloqueo",
-    "block_editor_sections_label": "Secciones de configuración del bloqueo",
     "product_updates_title": "Actualizaciones del producto",
     "product_updates_description": "Las actualizaciones del instalador de Windows se verifican por separado de las de categorías y scripts.",
     "product_updates_installed": "Versión instalada",
@@ -751,11 +750,17 @@
     "block_mode_scheduled": "Horario personalizado",
     "block_mode_scheduled_detail": "Solo durante los periodos elegidos.",
     "block_categories_toggle": "Ver categorías y listas personalizadas",
-    "block_categories_count": "{count} seleccionadas",
     "block_preview_always": "Si está habilitado, el bloqueo se aplica en todo momento.",
     "block_preview_scheduled": "Si está habilitado, el bloqueo se aplica durante el horario elegido.",
     "block_need_schedule": "Elige al menos un periodo antes de guardar.",
     "block_need_targets": "Añade un sitio web o una categoría para decidir qué bloquear.",
     "block_button_create_activate": "Crear y activar bloqueo",
-    "block_preview_heading": "Comportamiento previsto"
+    "block_preview_heading": "Comportamiento previsto",
+    "block_show_more_sites": "Mostrar otros {count} sitios",
+    "block_show_less_sites": "Mostrar menos sitios",
+    "block_bulk_add_title": "Pegar varios sitios web",
+    "block_bulk_add_hint": "Un sitio o URL por línea, coma o espacio.",
+    "block_bulk_add_action": "Añadir sitios",
+    "block_bulk_skipped": "omitidos (no válidos o duplicados)",
+    "block_lock_after_save": "Guarda el bloqueo antes de configurar el candado."
 }

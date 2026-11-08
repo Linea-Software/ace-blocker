@@ -1,5 +1,4 @@
 <script lang="ts">
-    import Inspector from "$lib/components/ace/structural/Inspector.svelte";
     import * as Alert from "$lib/components/ui/alert/index.js";
     import { Button } from "$lib/components/ui/button/index.js";
     import { Skeleton } from "$lib/components/ui/skeleton/index.js";
@@ -34,16 +33,19 @@
     import SectionSchedule from "./_components/SectionSchedule.svelte";
 
     import CircleAlert from "@lucide/svelte/icons/circle-alert";
+    import { ArrowLeft, LockKeyhole } from "@lucide/svelte";
 
     let {
-        open = $bindable(false),
         block = $bindable(null),
         onSave,
+        onClose = () => {},
+        onProtect = () => {},
         initialSection = "blocking",
     }: {
-        open: boolean;
         block: NetworkBlockSchema | null;
         onSave: (block: NetworkBlockSchema) => void;
+        onClose?: () => void;
+        onProtect?: () => void;
         initialSection?: "blocking" | "schedule";
     } = $props();
 
@@ -69,6 +71,7 @@
     let scheduleEditorOpen = $state(false);
     let dataLoadFailed = $state(false);
     let saveConfirmationWarning = $state(false);
+    function leaveEditor() { if (!isSubmitting && !scheduleEditorOpen) onClose(); }
 
     const isScheduleViolation = $derived(
         (block?.isLocked ?? false) &&
@@ -83,6 +86,16 @@
             (isSafeSearch ? 1 : 0),
     );
     const needsTargets = $derived(!block && targetCount === 0);
+    // A lock must never be committed against an outdated unsaved draft.
+    const hasUnsavedChanges = $derived(!!block && (
+        name !== block.name ||
+        blockIcon !== (block.icon ?? null) ||
+        isSafeSearch !== block.safeSearch ||
+        scheduleMode !== block.scheduleMode ||
+        rulesDelta.changes.length > 0 ||
+        scheduleDelta.changes.length > 0 ||
+        sitePacksDelta.changes.length > 0
+    ));
 
     async function loadData(blockId: string): Promise<boolean> {
         const [rulesRes, scheduleRes, connectionsRes, listsRes] =
@@ -202,7 +215,6 @@
             }
 
             onSave(outcome.block);
-            open = false;
         } catch (error) {
             console.error("Failed to save network block:", error);
             dataLoadFailed = true;
@@ -214,39 +226,17 @@
         }
     }
 
-    function handleWindowKeydown(event: KeyboardEvent) {
-        if (event.key === "Escape" && open && !isSubmitting) {
-            if (scheduleEditorOpen) {
-                event.preventDefault();
-                return;
-            }
-            open = false;
-        }
-    }
 </script>
 
-<svelte:window onkeydown={handleWindowKeydown} />
-
-<Inspector
-    title={block ? m.edit_block() : m.create_block()}
-    description={m.block_modal_description()}
-    closeLabel={m.close()}
-    onClose={() => (open = false)}
-    wide
->
-    {#snippet navigation()}
-        <nav class="editor-quick-nav" aria-label={m.block_editor_sections_label()}>
-            <button type="button"
-                onclick={() => document.getElementById("block-what")?.scrollIntoView({ block: "start" })}>
-                <span>01</span> {m.block_what_heading()}
-            </button>
-            <button type="button"
-                onclick={() => document.getElementById("block-when")?.scrollIntoView({ block: "start" })}>
-                <span>02</span> {m.block_when_heading()}
-            </button>
-        </nav>
-    {/snippet}
-
+<main class="block-editor-page" aria-label={block ? m.edit_block() : m.create_block()}>
+    <header class="editor-page-header">
+        <button type="button" class="back-link" onclick={leaveEditor} aria-label={m.cancel()}>
+            <ArrowLeft size={19} aria-hidden="true" /> {m.network_blocks()}
+        </button>
+        <h1>{block ? m.edit_block() : m.create_block()}</h1>
+        <p>{m.block_modal_description()}</p>
+    </header>
+    <div class="editor-page-body">
     {#if saveConfirmationWarning}
         <Alert.Root variant="destructive">
             <CircleAlert aria-hidden="true" />
@@ -271,7 +261,6 @@
         <div class="block-editor-grid">
             <section class="editor-column space-y-5" aria-labelledby="block-what">
                 <h3 id="block-what" class="editor-heading">
-                    <span class="editor-index">01</span>
                     {m.block_what_heading()}
                 </h3>
                 <SectionGeneral
@@ -282,34 +271,24 @@
                     isLocked={block?.isLocked ?? false}
                 />
 
-                <div class="border-border border-t pt-5">
+                <div class="content-section border-border border-t pt-5">
+                    <SectionSites
+                        delta={sitePacksDelta}
+                        bind:availableLists
+                        isLocked={block?.isLocked ?? false}
+                    />
+                </div>
+                <div class="content-section border-border border-t pt-5">
                     <SectionRules
                         delta={rulesDelta}
                         disabled={isSubmitting}
                         isLocked={block?.isLocked ?? false}
                     />
                 </div>
-
-                <details class="category-disclosure" open={connectedListIds.length > 0}>
-                    <summary>
-                        <span>{m.block_categories_toggle()}</span>
-                        <span class="category-count">
-                            {m.block_categories_count({ count: sitePacksDelta.currentConnectedListIds.length })}
-                        </span>
-                    </summary>
-                    <div class="category-content">
-                        <SectionSites
-                            delta={sitePacksDelta}
-                            bind:availableLists
-                            isLocked={block?.isLocked ?? false}
-                        />
-                    </div>
-                </details>
             </section>
 
             <section class="editor-column space-y-5" id="block-when" aria-labelledby="block-when-heading">
                 <h3 id="block-when-heading" class="editor-heading">
-                    <span class="editor-index">02</span>
                     {m.block_when_heading()}
                 </h3>
 
@@ -363,10 +342,28 @@
                     </div>
                 </div>
             </section>
+
+            <section class="editor-column protection-section" aria-labelledby="block-protection-heading">
+                <h3 class="editor-heading" id="block-protection-heading">{m.lock_protect_action()}</h3>
+                <div class="protection-panel">
+                    <LockKeyhole size={20} aria-hidden="true" />
+                    <div>
+                        <strong>{block?.isLocked ? m.lock_review_title() : m.lock_protect_title()}</strong>
+                        <p>{m.control_lock_help_detail()}</p>
+                    </div>
+                    {#if block}
+                        <button type="button" onclick={onProtect} disabled={isSubmitting || isLoadingData || hasUnsavedChanges}
+                            title={hasUnsavedChanges ? m.save() : m.lock_protect_action()}>{m.lock_protect_action()}</button>
+                    {:else}
+                        <span>{m.block_lock_after_save()}</span>
+                    {/if}
+                </div>
+            </section>
         </div>
     {/if}
 
-    {#snippet footer()}
+    </div>
+    <footer class="editor-page-footer">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0 flex-1" aria-live="polite">
                 {#if scheduleEditorOpen}
@@ -400,7 +397,7 @@
             <div class="flex shrink-0 items-center justify-end gap-2">
                 <Button
                     variant="outline"
-                    onclick={() => (open = false)}
+                    onclick={leaveEditor}
                     disabled={isSubmitting}
                 >
                     {m.cancel()}
@@ -431,39 +428,11 @@
                 </Button>
             </div>
         </div>
-    {/snippet}
-</Inspector>
+    </footer>
+</main>
 
 
 <style>
-    .editor-quick-nav {
-        display: flex;
-        gap: 4px;
-        padding: 7px 16px;
-        background: var(--card);
-    }
-    .editor-quick-nav button {
-        min-height: 36px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        border: 1px solid transparent;
-        border-radius: 4px;
-        font-size: 13px;
-        font-weight: 600;
-        text-align: left;
-    }
-    .editor-quick-nav button:hover,
-    .editor-quick-nav button:focus-visible {
-        border-color: var(--border);
-        background: var(--muted);
-    }
-    .editor-quick-nav button span {
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
-        color: var(--muted-foreground);
-    }
     .block-editor-grid {
         display: grid;
         gap: 28px;
@@ -481,41 +450,41 @@
         font-weight: 600;
         line-height: 1.2;
     }
-    .editor-index {
-        color: var(--muted-foreground);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 12px;
-        font-weight: 500;
+    .protection-section {
+        border-top: 1px solid var(--border);
+        padding-top: 25px;
     }
-    .category-disclosure {
+    .protection-panel {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 16px;
+        margin-top: 16px;
+        padding: 18px;
         border: 1px solid var(--border);
         border-radius: 5px;
         background: var(--card);
     }
-    .category-disclosure summary {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 15px;
-        cursor: pointer;
-        font-size: 14px;
+    .protection-panel strong { font-size: 14px; }
+    .protection-panel p,
+    .protection-panel span {
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--muted-foreground);
+    }
+    .protection-panel button {
+        padding: 8px 12px;
+        min-height: 36px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        font-size: 13px;
         font-weight: 600;
     }
-    .category-disclosure summary:focus-visible,
-    .mode-selector button:focus-visible {
-        outline: 2px solid var(--foreground);
-        outline-offset: -2px;
-    }
-    .category-count {
-        color: var(--muted-foreground);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
-        font-weight: 400;
-    }
-    .category-content {
-        padding: 15px;
-        border-top: 1px solid var(--border);
+    .protection-panel button:hover { background: var(--muted); }
+    @container block-editor (max-width: 610px) {
+        .protection-panel { grid-template-columns: auto 1fr; }
+        .protection-panel button,
+        .protection-panel > span { grid-column: 2; justify-self: start; }
     }
     .mode-selector {
         display: grid;
@@ -574,9 +543,55 @@
     .preview-warning {
         color: var(--destructive);
     }
-    @container inspector (min-width: 800px) {
-        .block-editor-grid {
-            grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
-        }
+    .block-editor-page {
+        width: min(920px, calc(100% - 44px));
+        min-height: 100%;
+        margin: 0 auto;
+        padding-top: 22px;
+        display: flex;
+        flex-direction: column;
+        container: block-editor / inline-size;
+    }
+    .editor-page-header {
+        padding: 4px 0 20px;
+        border-bottom: 1px solid var(--border);
+    }
+    .back-link {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        min-height: 34px;
+        padding: 0;
+        color: var(--muted-foreground);
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .back-link:hover { color: var(--foreground); }
+    .editor-page-header h1 {
+        margin-top: 10px;
+        font: 600 clamp(27px, 5cqi, 35px)/1.15 "IBM Plex Sans Condensed", sans-serif;
+    }
+    .editor-page-header p {
+        margin-top: 7px;
+        font-size: 14px;
+        color: var(--muted-foreground);
+    }
+    .editor-page-body {
+        flex: 1;
+        min-width: 0;
+        padding: 25px 0 24px;
+    }
+    .editor-page-footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        margin: 0;
+        padding: 15px 0;
+        border-top: 1px solid var(--border);
+        background: var(--background);
+    }
+    @container ace-workspace (max-width: 720px) {
+        .block-editor-page { width: calc(100% - 28px); }
+        .editor-page-footer { margin: 0; }
     }
 </style>

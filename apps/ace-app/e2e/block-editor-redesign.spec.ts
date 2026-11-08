@@ -6,27 +6,25 @@ test("Network Block editor makes sites and activation visible", async ({ page })
     await page.goto("/getting-started");
     await page.evaluate(async () => {
         const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
-        const [{ mount }, { default: BlockModal }] = await Promise.all([
+        const [{ mount }, { default: BlockEditor }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockModal.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.svelte"),
         ]);
         const host = document.createElement("div");
         host.dataset.testid = "block-editor-fixture";
+        host.style.cssText = "position:fixed;inset:0;overflow:auto;z-index:200;background:var(--background);";
         document.body.append(host);
-        mount(BlockModal, {
+        mount(BlockEditor, {
             target: host,
-            props: { open: true, block: null, onSave: () => {} },
+            props: { block: null, onSave: () => {} },
         });
     });
 
-    const editor = page.locator(".inspector.wide");
+    const editor = page.locator(".block-editor-page");
     await expect(editor.getByRole("heading", { name: "What to block" })).toBeVisible();
     await expect(editor.getByRole("heading", { name: "When to block" })).toBeVisible();
-    const sections = editor.getByRole("navigation", {
-        name: "Block configuration sections",
-    });
-    await expect(sections).toBeVisible();
-    await expect(sections.getByRole("button", { name: /When to block/ })).toBeVisible();
+    await expect(editor.getByRole("heading", { name: "Categories" })).toBeVisible();
+    await expect(editor.getByRole("button", { name: "Browse categories and custom lists" })).toBeVisible();
     await expect(editor.getByRole("button", { name: /Always/ })).toHaveAttribute("aria-pressed", "true");
 
     const website = editor.getByRole("textbox", { name: "Specific website" });

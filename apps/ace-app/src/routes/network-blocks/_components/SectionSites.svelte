@@ -31,6 +31,7 @@
     } = $props();
 
     let searchQuery = $state("");
+    let browseOpen = $state(false);
 
     let downloadModalOpen = $state(false);
     let listToDownload = $state<SitePackSchema | null>(null);
@@ -46,12 +47,14 @@
         [...availableLists].sort((a, b) => {
             const kindOrder = Number(isAceCategory(b)) - Number(isAceCategory(a));
             if (kindOrder !== 0) return kindOrder;
+            if (a.requiresPro !== b.requiresPro) return a.requiresPro ? 1 : -1;
             return getBlockingListDisplayName(a).localeCompare(
                 getBlockingListDisplayName(b),
             );
         }),
     );
 
+    let selectedLists = $derived(sortedAllLists.filter((item) => connectedListIds.includes(item.id)));
     let filteredLists = $derived(
         searchQuery.trim()
             ? sortedAllLists.filter((list) =>
@@ -111,7 +114,7 @@
     }
 
     function toggleList(list: SitePackSchema) {
-        if (list.requiresPro && isFreeUser) return;
+        if (list.requiresPro && isFreeUser && !delta.isConnected(list.id)) return;
 
         if (!list.isSynced) {
             listToDownload = list;
@@ -139,7 +142,7 @@
 
 {#snippet listRow(list: SitePackSchema)}
     {@const isConnected = connectedListIds.includes(list.id)}
-    {@const isProGated = list.requiresPro && isFreeUser}
+    {@const isProGated = list.requiresPro && isFreeUser && !isConnected}
     {@const canToggle =
         !isProGated &&
         (!isConnected || !(isLocked && delta.isInitialConnection(list.id)))}
@@ -239,6 +242,18 @@
             </p>
         </div>
 
+        <div class="selected-categories">
+            {#each selectedLists as selected (selected.id)}
+                {@render listRow(selected)}
+            {:else}
+                <p class="text-muted-foreground text-sm">{m.block_need_targets()}</p>
+            {/each}
+        </div>
+        <button type="button" class="browse-categories" aria-expanded={browseOpen} onclick={() => (browseOpen = !browseOpen)}>
+            {browseOpen ? m.close() : m.block_categories_toggle()}
+        </button>
+
+        {#if browseOpen}
         <div class="relative">
             <Search
                 class="text-muted-foreground/60 absolute top-1/2 left-3 size-4 -translate-y-1/2"
@@ -258,18 +273,29 @@
             </p>
         {:else if filteredCategories.length > 0}
             <div class="space-y-1">
-                {#each filteredCategories as list (list.id)}
+                {#each filteredCategories.filter((item) => !item.requiresPro) as list (list.id)}
                     {@render listRow(list)}
                 {/each}
             </div>
+            {#if filteredCategories.some((item) => item.requiresPro)}
+                <details class="pro-categories">
+                    <summary>{m.pro_badge()} · {m.block_categories_toggle()}</summary>
+                    <div class="space-y-1 pt-3">
+                        {#each filteredCategories.filter((item) => item.requiresPro) as list (list.id)}
+                            {@render listRow(list)}
+                        {/each}
+                    </div>
+                </details>
+            {/if}
         {:else}
             <p class="text-muted-foreground py-1 text-xs">
                 {m.no_categories_found()}
             </p>
         {/if}
+    {/if}
     </section>
 
-    {#if filteredLists.length > 0}
+    {#if browseOpen && filteredLists.length > 0}
         <section
             class="border-border space-y-3 border-t pt-5"
             aria-labelledby="custom-lists-heading"
@@ -399,3 +425,28 @@
         </AlertDialog.Footer>
     </AlertDialog.Content>
 </AlertDialog.Root>
+
+
+<style>
+    .selected-categories { display: grid; gap: 6px; }
+    .browse-categories {
+        min-height: 40px;
+        padding: 0 13px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--card);
+        font-size: 13px;
+        font-weight: 600;
+    }
+    .browse-categories:hover { background: var(--muted); }
+    .pro-categories {
+        border-top: 1px solid var(--border);
+        padding-top: 12px;
+        margin-top: 10px;
+    }
+    .pro-categories summary {
+        font-size: 13px;
+        color: var(--muted-foreground);
+        cursor: pointer;
+    }
+</style>

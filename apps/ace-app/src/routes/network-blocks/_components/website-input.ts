@@ -21,3 +21,20 @@ export function websiteHostname(input: string): string | null {
         return null;
     }
 }
+
+/** Normalize bulk pasted domains/URLs without changing any saved policy. */
+export function parseWebsiteList(text: string, existing: readonly string[]) {
+    const known = new Set(existing.map((domain) => domain.toLowerCase()));
+    const websites: string[] = [];
+    const skipped: string[] = [];
+    for (const token of text.split(/[\s,;]+/).filter(Boolean)) {
+        const domain = websiteHostname(token);
+        if (!domain || known.has(domain)) {
+            skipped.push(token);
+            continue;
+        }
+        websites.push(domain);
+        known.add(domain);
+    }
+    return { websites, skipped };
+}

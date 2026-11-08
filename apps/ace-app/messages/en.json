@@ -716,7 +716,6 @@
     "failed_to_load_block": "Could not load this block's data. Saving is disabled until it can be reloaded.",
     "failed_to_load_block_title": "Block configuration unavailable",
     "loading_block_configuration": "Loading block configuration",
-    "block_editor_sections_label": "Block configuration sections",
     "product_updates_title": "Product updates",
     "product_updates_description": "Windows installer updates are verified separately from category and script updates.",
     "product_updates_installed": "Installed version",
@@ -751,11 +750,17 @@
     "block_mode_scheduled": "Custom hours",
     "block_mode_scheduled_detail": "Only during selected periods.",
     "block_categories_toggle": "Browse categories and custom lists",
-    "block_categories_count": "{count} selected",
     "block_preview_always": "When enabled, this block applies continuously.",
     "block_preview_scheduled": "When enabled, this block applies during the selected hours.",
     "block_need_schedule": "Choose at least one period before saving.",
     "block_need_targets": "Add a website or category to choose what to block.",
     "block_button_create_activate": "Create and enable block",
-    "block_preview_heading": "Expected behavior"
+    "block_preview_heading": "Expected behavior",
+    "block_show_more_sites": "Show {count} more websites",
+    "block_show_less_sites": "Show fewer websites",
+    "block_bulk_add_title": "Paste multiple websites",
+    "block_bulk_add_hint": "One website or URL per line, comma or space.",
+    "block_bulk_add_action": "Add websites",
+    "block_bulk_skipped": "skipped (invalid or duplicate)",
+    "block_lock_after_save": "Configure lock after saving this block."
 }

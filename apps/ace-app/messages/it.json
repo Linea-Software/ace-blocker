@@ -716,7 +716,6 @@
     "failed_to_load_block": "Impossibile caricare i dati del blocco. Il salvataggio è disabilitato finché non sarà possibile ricaricarli.",
     "failed_to_load_block_title": "Configurazione del blocco non disponibile",
     "loading_block_configuration": "Caricamento configurazione del blocco",
-    "block_editor_sections_label": "Sezioni di configurazione del blocco",
     "product_updates_title": "Aggiornamenti del prodotto",
     "product_updates_description": "Gli aggiornamenti dell'installer Windows sono verificati separatamente da categorie e script.",
     "product_updates_installed": "Versione installata",
@@ -751,11 +750,17 @@
     "block_mode_scheduled": "Orari personalizzati",
     "block_mode_scheduled_detail": "Solo negli intervalli scelti.",
     "block_categories_toggle": "Sfoglia categorie e liste personalizzate",
-    "block_categories_count": "{count} selezionate",
     "block_preview_always": "Quando è abilitato, il blocco funziona continuamente.",
     "block_preview_scheduled": "Quando è abilitato, il blocco funziona negli orari scelti.",
     "block_need_schedule": "Scegli almeno un intervallo prima di salvare.",
     "block_need_targets": "Aggiungi un sito o una categoria per scegliere cosa bloccare.",
     "block_button_create_activate": "Crea e attiva il blocco",
-    "block_preview_heading": "Comportamento previsto"
+    "block_preview_heading": "Comportamento previsto",
+    "block_show_more_sites": "Mostra altri {count} siti",
+    "block_show_less_sites": "Mostra meno siti",
+    "block_bulk_add_title": "Incolla più siti web",
+    "block_bulk_add_hint": "Un sito o URL per riga, virgola o spazio.",
+    "block_bulk_add_action": "Aggiungi siti",
+    "block_bulk_skipped": "ignorati (non validi o duplicati)",
+    "block_lock_after_save": "Salva il blocco prima di configurare il lock."
 }

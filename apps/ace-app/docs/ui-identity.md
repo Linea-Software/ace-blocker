@@ -177,7 +177,7 @@ The exact labels may change after UX testing, but the information architecture s
 
 ### Contextual inspector
 
-Prefer a persistent inspector for editing/selecting blocks, categories, Custom Lists, and other domain objects rather than opening large modal forms for ordinary editing.
+Prefer a contextual inspector for lightweight object inspection and quick edits. The Network Block policy editor is deliberately a full-page route: its contents, schedule, and lock controls need more room than an inspector affords. Categories and Custom Lists retain inspectors.
 
 Reserve dialogs for:
 

@@ -14,6 +14,20 @@ the first 16 characters. Schedules are separate civil-time windows whose
 IANA timezone is pinned by the engine, never inferred from the live Windows
 system timezone after policy creation. See `../../docs/TRUSTED_TIME_FUTURE.md`.
 
+## Network Block editor redesign (2026-11-08)
+
+Create/Edit Network Block now uses the dedicated `/network-blocks/editor`
+route instead of a wide floating Inspector. The `_BlockEditor.svelte`
+file retains the draft's atomic `saveNetworkBlock` and uncertain-result
+reconciliation, but renders in the full page with a sticky commit footer.
+Category selection precedes website rules; the category catalog and long rule
+lists are collapsible. Bulk-pasted URLs must pass `parseWebsiteList` and
+hostname normalization before staging. Never write incremental rule changes
+from the editor: its only ordinary persistence point is Save. Lock controls
+still use the dedicated `_LockModal` and must preserve all engine invariants.
+The Playwright fixture renders this page-like component directly and is not
+an enforcement test.
+
 ## Network Block editor and activation (2026-11-07)
 
 The expanded Network Block editor exposes `Always` (default) and `Scheduled` modes independently of Enabled, and requires actual websites/categories before creating a block. Website URL paste stores its normalized hostname only; schedules use pinned civil-time windows. The editor preserves atomic `saveNetworkBlock` semantics, Lock anti-weakening and uncertain-ack reconciliation. `Inspector.svelte` supports a wide editor variant, with a pinned footer in both navigation/no-navigation layouts. See `../../docs/NETWORK_BLOCK_ACTIVATION.md`; browser-only screenshots and Playwright fixture live under `docs/ux-audit-assets/` and `e2e/block-editor-redesign.spec.ts`. Native IPC/enforcement validation is still a separate gate.

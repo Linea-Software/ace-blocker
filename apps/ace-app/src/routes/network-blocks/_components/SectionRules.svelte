@@ -6,7 +6,7 @@
     import * as m from "$lib/paraglide/messages.js";
     import type { UserDefinedRulesDelta } from "$lib/deltas/user-defined-rules-delta.svelte.ts";
     import type { TempId } from "$lib/deltas/common";
-    import { websiteHostname } from "./website-input";
+    import { websiteHostname, parseWebsiteList } from "./website-input";
 
     let {
         delta,
@@ -20,6 +20,9 @@
 
     let domainInput = $state("");
     let regexInput = $state("");
+    let bulkInput = $state("");
+    let bulkOpen = $state(false);
+    let showAllWebsites = $state(false);
 
     let domainValidation = $derived.by(() => {
         const input = domainInput.trim();
@@ -44,6 +47,7 @@
             type: rule.ruleType,
         })),
     );
+    const bulkParsed = $derived(parseWebsiteList(bulkInput, activeRules.filter((item) => item.type === "domain").map((item) => item.rule)));
     let domainRules = $derived(
         activeRules.filter((rule) => rule.type === "domain"),
     );
@@ -55,6 +59,12 @@
         if (!domainValidation.domain) return;
         delta.addRule(domainValidation.domain, "domain");
         domainInput = "";
+    }
+
+    function addBulkRules() {
+        for (const site of bulkParsed.websites) delta.addRule(site, "domain");
+        bulkInput = "";
+        bulkOpen = false;
     }
 
     function addRegexRule() {
@@ -116,7 +126,7 @@
 
     {#if domainRules.length > 0}
         <div class="border-border divide-border divide-y border-y">
-            {#each domainRules as item (item.id)}
+            {#each (showAllWebsites ? domainRules : domainRules.slice(0, 4)) as item (item.id)}
                 <div class="group flex min-w-0 items-center gap-2 py-2">
                     <code
                         class="min-w-0 flex-1 truncate font-mono text-xs"
@@ -140,9 +150,34 @@
                 </div>
             {/each}
         </div>
+        {#if domainRules.length > 4}
+            <button type="button" class="text-sm font-medium underline underline-offset-4"
+                onclick={() => (showAllWebsites = !showAllWebsites)}>
+                {showAllWebsites ? m.block_show_less_sites() : m.block_show_more_sites({ count: domainRules.length - 4 })}
+            </button>
+        {/if}
     {:else}
         <p class="text-muted-foreground text-xs">{m.no_rules_added()}</p>
     {/if}
+
+    <div class="border-border border-t pt-3">
+        <button type="button" class="text-sm font-medium underline underline-offset-4"
+            aria-expanded={bulkOpen} onclick={() => (bulkOpen = !bulkOpen)}>
+            {m.block_bulk_add_title()}
+        </button>
+        {#if bulkOpen}
+            <div class="mt-3 space-y-2">
+                <textarea class="bg-card border-border w-full rounded-sm border p-3 text-sm"
+                    rows="4" bind:value={bulkInput}
+                    placeholder={m.block_bulk_add_hint()} disabled={disabled}
+                    aria-label={m.block_bulk_add_title()}></textarea>
+                <p class="text-muted-foreground text-xs">{bulkParsed.websites.length} · {bulkParsed.skipped.length} {m.block_bulk_skipped()}</p>
+                <Button onclick={addBulkRules} disabled={disabled || bulkParsed.websites.length === 0}>
+                    {m.block_bulk_add_action()}
+                </Button>
+            </div>
+        {/if}
+    </div>
 
     <details class="border-border border-t pt-3">
         <summary

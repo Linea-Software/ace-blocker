@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { websiteHostname } from "./website-input";
+import { websiteHostname, parseWebsiteList } from "./website-input";
 
 describe("websiteHostname", () => {
     it.each([
@@ -22,5 +22,21 @@ describe("websiteHostname", () => {
         "*.example.com",
     ])("rejects invalid website %s", (input) => {
         expect(websiteHostname(input)).toBeNull();
+    });
+});
+
+describe("parseWebsiteList", () => {
+    it("normalizes pasted links, whitespace and comma-separated domains", () => {
+        expect(parseWebsiteList(
+            "https://Instagram.com/reels\nreddit.com, youtube.com x.com",
+            [],
+        )).toEqual({
+            websites: ["instagram.com", "reddit.com", "youtube.com", "x.com"],
+            skipped: [],
+        });
+    });
+    it("skips duplicates, known domains and invalid entries", () => {
+        expect(parseWebsiteList("a.com\na.com invalid https://b.com/p", ["a.com"]))
+            .toEqual({ websites: ["b.com"], skipped: ["a.com", "a.com", "invalid"] });
     });
 });
