@@ -682,7 +682,11 @@ impl AceProxy {
                     .domains(VPN_EXTENSION_DOMAINS)
                     .action(RuleAction::Block),
             )
-            // 5. Browser-only MITM: route browsers TCP 80/443 through proxy.
+            // 5. Deny the audited encrypted extension relay port for protected
+            //    browsers. Do not block all alternative ports: browsers also
+            //    use them for legitimate web and non-web traffic.
+            .add_rule(browser_https_proxy_relay_guard(&protected_browsers))
+            // 6. Browser-only MITM: route browsers TCP 80/443 through proxy.
             .add_rule(
                 Rule::new(protected_browsers)
                     .ports("80;443")
@@ -691,7 +695,7 @@ impl AceProxy {
             )
             // Browser QUIC goes only to the local HTTP/3 listener; unsupported
             // or denied handshakes fall back to inspected TCP, never direct UDP.
-            // 6. Catch-all: allow remaining traffic directly. On Linux the
+            // 7. Catch-all: allow remaining traffic directly. On Linux the
             //    relay is SO_MARKed and returns to the normal RPDB (including a
             //    user VPN); on Windows WFP ensures protected applications cannot
             //    escape ACE by selecting another network interface.
@@ -713,7 +717,7 @@ impl AceProxy {
             .wrap_err("Failed to build ace-tun")?;
 
         info!(
-            "ace-tun configured with 6 rules (platform route guard enabled; protected-browser \
+            "ace-tun configured with 7 rules (platform route guard enabled; protected-browser \
              QUIC selectively blocked through H3; IPv4 + available IPv6), forwarding to 127.0.0.1:{} (deferred start)",
             listen_port
         );

@@ -92,6 +92,8 @@ mod platform;
 mod proxy;
 mod rule;
 mod state;
+#[cfg(any(test, target_os = "windows"))]
+mod wfp_policy;
 
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -231,9 +233,10 @@ impl TunRedirectBuilder {
 
     /// Enable or disable IPv6 interception (default enabled).
     ///
-    /// When disabled, the adapter carries no IPv6 address or routes, so IPv6
-    /// traffic continues to use the physical interface **uninspected**. Leave
-    /// this on unless you are debugging.
+    /// When disabled, the adapter carries no IPv6 address or routes. On Windows,
+    /// WFP still denies external IPv6 connections from protected browsers,
+    /// while preserving local IPv6 and leaving unprotected apps unaffected.
+    /// Leave interception on unless you are debugging.
     pub fn ipv6(mut self, enable: bool) -> Self {
         self.ipv6 = enable;
         self
@@ -636,6 +639,30 @@ mod tests {
         };
 
         assert!(!ipv6_interception_enabled(true, &iface));
+    }
+
+    #[test]
+    fn wfp_ipv6_guard_remains_when_physical_ipv6_appears_after_startup() {
+        use crate::wfp_policy::{FilterStep, filter_steps};
+
+        let startup_iface = PhysicalInterface {
+            v4_index: Some(3),
+            v6_index: None,
+        };
+        let later_iface = PhysicalInterface {
+            v4_index: Some(3),
+            v6_index: Some(7),
+        };
+        let capture_at_start = ipv6_interception_enabled(true, &startup_iface);
+        assert!(!capture_at_start);
+        assert!(ipv6_interception_enabled(true, &later_iface));
+
+        // Existing WFP filters are not reinstalled when routes change: the
+        // startup policy must already block the newly reachable IPv6 internet.
+        let installed_steps: Vec<_> = filter_steps(capture_at_start).collect();
+        assert!(installed_steps.contains(&FilterStep::PermitLocalV6));
+        assert!(installed_steps.contains(&FilterStep::BlockOtherV6));
+        assert!(!installed_steps.contains(&FilterStep::PermitTunV6));
     }
 
     #[test]

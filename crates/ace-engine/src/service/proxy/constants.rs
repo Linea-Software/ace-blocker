@@ -93,6 +93,23 @@ pub fn browser_processes() -> String {
 /// names.
 pub const LOCAL_PROXY_PROCESSES: &[&str] = &["tor.exe", "torservice.exe", "obfs4proxy.exe"];
 
+/// Destination TCP ports confirmed to be used by an HTTPS proxy embedded in
+/// browser VPN extensions. An opaque HTTPS proxy tunnel cannot be inspected
+/// merely by forwarding it through our selective origin-HTTPS MITM proxy.
+///
+/// Deliberately narrow: browsers legitimately use non-80/443 ports for both
+/// web and other protocols. Adding ports requires a false-positive review.
+/// HTTPS proxies on 443 remain a separate unsolved interception problem.
+pub const BROWSER_HTTPS_PROXY_RELAY_TCP_PORTS: &str = "4443";
+
+/// The exact guard installed by AceProxy, exposed locally for policy tests.
+pub(super) fn browser_https_proxy_relay_guard(protected_browsers: &str) -> ace_tun::Rule {
+    ace_tun::Rule::new(protected_browsers)
+        .ports(BROWSER_HTTPS_PROXY_RELAY_TCP_PORTS)
+        .protocol(ace_tun::RuleProtocol::Tcp)
+        .action(ace_tun::RuleAction::Block)
+}
+
 /// Known VPN/proxy extension relay domains. DNS-attributed browser traffic
 /// to these hosts is blocked as defense in depth; this list is not complete,
 /// and encrypted DNS, IP endpoints, and rotating relays can evade it.
@@ -117,6 +134,94 @@ pub const VPN_EXTENSION_DOMAINS: &str = "*.protonvpn.com;*.windscribe.com;*.brow
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn alternative_https_proxy_port_guard_preserves_other_traffic() {
+        use ace_tun::{Rule, RuleAction, RuleProtocol, RuleSet};
+        use std::net::IpAddr;
+
+        let protected = browser_processes();
+        let rules = RuleSet::new(&[
+            Rule::new("*")
+                .hosts("127.0.0.1;::1")
+                .action(RuleAction::Direct),
+            browser_https_proxy_relay_guard(&protected),
+            Rule::new(protected)
+                .ports("80;443")
+                .protocol(RuleProtocol::Tcp)
+                .action(RuleAction::Proxy),
+            Rule::new("*").action(RuleAction::Direct),
+        ]);
+
+        for ip in ["203.0.113.17", "2001:db8::17"] {
+            let address: IpAddr = ip.parse().unwrap();
+            for browser in ["chrome.exe", "firefox.exe", "brave.exe"] {
+                assert_eq!(
+                    rules.evaluate(browser, address, 4443, false, None).action,
+                    RuleAction::Block,
+                    "{browser} must not use an opaque HTTPS proxy on TCP/4443"
+                );
+                for allowed_web_port in [80, 443] {
+                    assert_eq!(
+                        rules
+                            .evaluate(browser, address, allowed_web_port, false, None)
+                            .action,
+                        RuleAction::Proxy,
+                        "ordinary browser HTTP(S) remains inspected"
+                    );
+                }
+                for other_port in [8080, 8443, 9443] {
+                    assert_eq!(
+                        rules
+                            .evaluate(browser, address, other_port, false, None)
+                            .action,
+                        RuleAction::Direct,
+                        "unrelated alternative ports must not be blindly blocked"
+                    );
+                }
+                assert_eq!(
+                    rules.evaluate(browser, address, 4443, true, None).action,
+                    RuleAction::Direct,
+                    "the relay guard is TCP-only"
+                );
+            }
+            for unprotected in ["curl.exe", "protonvpn.exe", ""] {
+                assert_eq!(
+                    rules
+                        .evaluate(unprotected, address, 4443, false, None)
+                        .action,
+                    RuleAction::Direct,
+                    "non-browser applications and unattributed flows are not denied"
+                );
+            }
+        }
+
+        for ip in ["127.0.0.1", "::1"] {
+            let address: IpAddr = ip.parse().unwrap();
+            assert_eq!(
+                rules
+                    .evaluate("chrome.exe", address, 4443, false, None)
+                    .action,
+                RuleAction::Direct,
+                "loopback development services must stay reachable"
+            );
+        }
+
+        #[cfg(target_os = "linux")]
+        assert_eq!(
+            rules
+                .evaluate(
+                    "google-chrome-stable",
+                    "203.0.113.17".parse().unwrap(),
+                    4443,
+                    false,
+                    None
+                )
+                .action,
+            RuleAction::Block,
+            "Linux browser aliases must use the same policy"
+        );
+    }
 
     #[test]
     fn browser_list_keeps_windows_names() {

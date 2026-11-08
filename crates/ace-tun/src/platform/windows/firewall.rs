@@ -24,6 +24,7 @@ use wfp::{
 };
 
 use super::process;
+use crate::wfp_policy::{FilterStep, filter_steps};
 
 const ACE_SUBLAYER_GUID: GUID = GUID {
     data1: 0x62d9_35e7,
@@ -201,14 +202,27 @@ fn add_application_filters(
     tun_luid: u64,
     ipv6: bool,
 ) -> io::Result<()> {
-    add_tunnel_permit(transaction, Layer::ConnectV4, executable, tun_luid, "IPv4")?;
-    add_local_ipv4_permit(transaction, executable)?;
-    add_application_block(transaction, Layer::ConnectV4, executable, "IPv4")?;
-
-    if ipv6 {
-        add_tunnel_permit(transaction, Layer::ConnectV6, executable, tun_luid, "IPv6")?;
-        add_local_ipv6_permit(transaction, executable)?;
-        add_application_block(transaction, Layer::ConnectV6, executable, "IPv6")?;
+    // The flag means "IPv6 is captured by WinTun", NOT "IPv6 needs WFP
+    // enforcement". An IPv4-only host may gain a physical IPv6 route after
+    // startup. Keep the local IPv6 permits and external IPv6 block even when
+    // WinTun has no IPv6 address/routes, so browser traffic fails closed.
+    for step in filter_steps(ipv6) {
+        match step {
+            FilterStep::PermitTunV4 => {
+                add_tunnel_permit(transaction, Layer::ConnectV4, executable, tun_luid, "IPv4")?
+            }
+            FilterStep::PermitLocalV4 => add_local_ipv4_permit(transaction, executable)?,
+            FilterStep::BlockOtherV4 => {
+                add_application_block(transaction, Layer::ConnectV4, executable, "IPv4")?
+            }
+            FilterStep::PermitTunV6 => {
+                add_tunnel_permit(transaction, Layer::ConnectV6, executable, tun_luid, "IPv6")?
+            }
+            FilterStep::PermitLocalV6 => add_local_ipv6_permit(transaction, executable)?,
+            FilterStep::BlockOtherV6 => {
+                add_application_block(transaction, Layer::ConnectV6, executable, "IPv6")?
+            }
+        }
     }
 
     Ok(())
