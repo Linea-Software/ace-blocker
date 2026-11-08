@@ -1,6 +1,8 @@
 """First-install baseline: Free, disabled, always-on starter policies."""
 from pathlib import Path
 import sqlite3
+import hashlib
+import json
 import unittest
 
 MIGRATIONS = Path(__file__).resolve().parents[1] / "migrations"
@@ -41,7 +43,29 @@ class StarterMigrationsTest(unittest.TestCase):
             self.assertEqual(connected, [
                 (BLOCK_IDS[0], "pack-adult-free", 0),
                 (BLOCK_IDS[1], "pack-social-free", 0),
+                (BLOCK_IDS[2], "pack-gambling-free", 0),
+                (BLOCK_IDS[3], "pack-streaming-free", 0),
             ])
+            self.assertEqual(db.execute(
+                "SELECT COUNT(*) FROM user_defined_rules WHERE network_block_id IN (" +
+                ",".join("?" for _ in BLOCK_IDS) + ")", BLOCK_IDS,
+            ).fetchone()[0], 0)
+
+    def test_installer_bundle_contains_usable_verified_free_packs(self):
+        bundle = Path(__file__).resolve().parents[3] / "installer" / "bundled-packs"
+        manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+        packs = {entry["id"]: entry for entry in manifest["packs"]}
+        for id, count in [("pack-gambling-free", 14), ("pack-streaming-free", 9)]:
+            entry = packs[id]
+            file = bundle / entry["file"]
+            data = file.read_bytes()
+            self.assertFalse(entry["requires_pro"])
+            self.assertEqual(hashlib.sha256(data).hexdigest(), entry["sha256"])
+            self.assertEqual(len(data), entry["size_bytes"])
+            self.assertEqual(data[:16], b"SQLite format 3\x00")
+            with sqlite3.connect("file:" + str(file) + "?mode=ro", uri=True) as db:
+                self.assertEqual(db.execute("SELECT COUNT(*) FROM entries").fetchone()[0], count)
+                self.assertEqual(db.execute("SELECT id FROM pack_meta").fetchone()[0], id)
 
     def test_original_tables_have_final_columns(self):
         with sqlite3.connect(":memory:") as db:

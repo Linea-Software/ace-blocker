@@ -1,9 +1,10 @@
 /**
  * DEFAULT NETWORK BLOCKS
  *
- * On fresh installations, the engine seeds four disabled blocks with 24/7
- * schedules. The onboarding wizard enables selected blocks without changing
- * their schedules; existing installations retain their own schedules.
+ * On fresh installations, the engine seeds four disabled Always blocks.
+ * Each starter uses an Ace-managed Free category, including the curated
+ * Gambling and Streaming starter categories. Pro packs are never preselected.
+ * Onboarding explicitly enables selected blocks without changing their modes.
  */
 import { setNetworkBlockEnabled } from "$engine-client";
 import * as m from "$lib/paraglide/messages.js";
@@ -67,7 +68,7 @@ export function getDefaultBlockName(blockId: string, fallback: string): string {
     }
 }
 
-/** Enables a starter block without altering the user's schedule. */
+/** Enables a starter block without altering its activation mode. */
 export async function enableStarterBlock(blockId: string): Promise<void> {
     const { error } = await setNetworkBlockEnabled({
         path: { network_block_id: blockId },

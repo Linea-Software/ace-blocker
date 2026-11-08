@@ -14,54 +14,13 @@ VALUES
 INSERT OR IGNORE INTO site_packs (id, remote_id, name, description, requires_pro, is_ignored, icon)
 VALUES
     ('pack-adult-free', 'pack-adult-free', 'Adult Websites — Free', 'Blocks known adult content websites.', 0, 0, 'adult'),
-    ('pack-social-free', 'pack-social-free', 'Social Media Websites — Free', 'Blocks social media sites.', 0, 0, 'social');
-
--- Starter-specific curated domain rules. These are typed host matches, not
--- unanchored URL regexes; later work can replace them with Free category packs.
-INSERT OR IGNORE INTO user_defined_rules (id, network_block_id, rule, rule_type)
-SELECT
-    lower(
-        hex(randomblob(4)) || '-' ||
-        hex(randomblob(2)) || '-4' ||
-        substr(hex(randomblob(2)), 2) || '-' ||
-        substr('89ab', abs(random()) % 4 + 1, 1) ||
-        substr(hex(randomblob(2)), 2) || '-' ||
-        hex(randomblob(6))
-    ),
-    column1,
-    column2,
-    'domain'
-FROM (
-    VALUES
-        -- Gambling & Betting
-        ('01950000-0000-7000-8000-000000000003', 'bet365.com'),
-        ('01950000-0000-7000-8000-000000000003', 'betway.com'),
-        ('01950000-0000-7000-8000-000000000003', 'betfair.com'),
-        ('01950000-0000-7000-8000-000000000003', 'williamhill.com'),
-        ('01950000-0000-7000-8000-000000000003', 'ladbrokes.com'),
-        ('01950000-0000-7000-8000-000000000003', 'paddypower.com'),
-        ('01950000-0000-7000-8000-000000000003', 'unibet.com'),
-        ('01950000-0000-7000-8000-000000000003', 'bwin.com'),
-        ('01950000-0000-7000-8000-000000000003', 'pokerstars.com'),
-        ('01950000-0000-7000-8000-000000000003', '888casino.com'),
-        ('01950000-0000-7000-8000-000000000003', 'stake.com'),
-        ('01950000-0000-7000-8000-000000000003', 'roobet.com'),
-        ('01950000-0000-7000-8000-000000000003', 'draftkings.com'),
-        ('01950000-0000-7000-8000-000000000003', 'fanduel.com'),
-
-        -- Video & Streaming
-        ('01950000-0000-7000-8000-000000000004', 'youtube.com'),
-        ('01950000-0000-7000-8000-000000000004', 'netflix.com'),
-        ('01950000-0000-7000-8000-000000000004', 'twitch.tv'),
-        ('01950000-0000-7000-8000-000000000004', 'hulu.com'),
-        ('01950000-0000-7000-8000-000000000004', 'disneyplus.com'),
-        ('01950000-0000-7000-8000-000000000004', 'primevideo.com'),
-        ('01950000-0000-7000-8000-000000000004', 'dailymotion.com'),
-        ('01950000-0000-7000-8000-000000000004', 'vimeo.com'),
-        ('01950000-0000-7000-8000-000000000004', 'crunchyroll.com')
-);
+    ('pack-social-free', 'pack-social-free', 'Social Media Websites — Free', 'Blocks social media sites.', 0, 0, 'social'),
+    ('pack-gambling-free', 'pack-gambling-free', 'Gambling Websites — Free', 'Blocks popular gambling and betting sites.', 0, 0, 'gambling'),
+    ('pack-streaming-free', 'pack-streaming-free', 'Streaming Websites — Free', 'Blocks popular video services.', 0, 0, 'streaming');
 
 -- Every preselected category is Free; Pro upgrades are never a dependency.
 INSERT OR IGNORE INTO network_block_to_site_pack (network_block_id, site_pack_id) VALUES
     ('01950000-0000-7000-8000-000000000001', 'pack-adult-free'),
-    ('01950000-0000-7000-8000-000000000002', 'pack-social-free');
+    ('01950000-0000-7000-8000-000000000002', 'pack-social-free'),
+    ('01950000-0000-7000-8000-000000000003', 'pack-gambling-free'),
+    ('01950000-0000-7000-8000-000000000004', 'pack-streaming-free');

@@ -58,6 +58,13 @@ The Network Block editor saves the full draft through one capability-protected
 the entire policy and locks, persists its metadata/rules/schedule/connections
 in one SQLite transaction, then publishes live state after COMMIT. The separate
 quick enable switch and category download are independent explicit actions.
+Starter policies must be seeded only with Free packs from the consolidated
+`0021_seed_default_network_blocks` baseline. Adult, Social, Gambling and
+Streaming all connect to Free site packs; Gambling/Streaming compact packs
+are bundled as offline SQLite artifacts with SHA-256 manifest entries.
+Their release metadata must stay aligned across `ace-hosts`,
+`ace-blocker-site` and `apps/ace-app/src/lib/data/site-packs.json`.
+Never select a Pro pack during first-install seeding.
 Network Blocks now persist an explicit `scheduleMode` (`always`/`scheduled`) independent of Enabled: `always` is the default, `scheduled` requires at least one period, and Lock must never permit `Always -> Scheduled`. See `docs/NETWORK_BLOCK_ACTIVATION.md` for migration, backup and enforcement semantics.
 
 ## AI refactoring: read only what applies

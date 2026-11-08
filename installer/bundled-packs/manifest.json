@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "build_date": "2026-09-02",
-  "generated_at": "2026-09-02T15:56:25.903535800+00:00",
+  "build_date": "2026-11-08",
+  "generated_at": "2026-11-08T00:00:00Z",
   "pack_db_format_version": "1.0",
   "packs": [
     {
@@ -15,6 +15,18 @@
       "entry_count": 182105,
       "built_at": "2026-09-02T00:00:00Z",
       "file": "pack-adult-free/pack.db"
+    },
+    {
+      "id": "pack-gambling-free",
+      "name": "Gambling Websites — Free",
+      "description": "Blocks popular gambling and betting sites.",
+      "requires_pro": false,
+      "content_version": "2026.11.08",
+      "sha256": "95de72ba4d36ef6a889f5af74ac72919e838876de106a35d116cf07e0493f064",
+      "size_bytes": 16384,
+      "entry_count": 14,
+      "built_at": "2026-11-08T00:00:00Z",
+      "file": "pack-gambling-free/pack.db"
     },
     {
       "id": "pack-gaming-free",
@@ -39,6 +51,18 @@
       "entry_count": 83271,
       "built_at": "2026-09-02T00:00:00Z",
       "file": "pack-social-free/pack.db"
+    },
+    {
+      "id": "pack-streaming-free",
+      "name": "Streaming Websites — Free",
+      "description": "Blocks popular video services.",
+      "requires_pro": false,
+      "content_version": "2026.11.08",
+      "sha256": "f18418d8530080b1ec916cf1fc4502acdb221cba2bebbc4e2a968940198cd969",
+      "size_bytes": 16384,
+      "entry_count": 9,
+      "built_at": "2026-11-08T00:00:00Z",
+      "file": "pack-streaming-free/pack.db"
     }
   ]
 }

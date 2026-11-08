@@ -48,6 +48,38 @@
         "domains_count": 33841
     },
     {
+        "id": "pack-gambling-free",
+        "name": "Gambling Websites — Free",
+        "description": "Blocks popular gambling and betting sites.",
+        "requires_pro": false,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/gambling-starter.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 176,
+        "compressed_size_bytes": 972,
+        "domains_count": 14
+    },
+    {
+        "id": "pack-streaming-free",
+        "name": "Streaming Websites — Free",
+        "description": "Blocks popular video services.",
+        "requires_pro": false,
+        "sources": [
+            {
+                "source": "https://github.com/Linea-Software/ace-hosts/releases/latest/download/streaming-starter.txt",
+                "source_type": "url",
+                "format": "standard"
+            }
+        ],
+        "uncompressed_size_bytes": 115,
+        "compressed_size_bytes": 905,
+        "domains_count": 9
+    },
+    {
         "id": "pack-adult-pro",
         "name": "Adult Websites — Pro",
         "description": "Blocks known adult content websites.",

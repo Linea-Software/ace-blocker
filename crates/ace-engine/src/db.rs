@@ -202,7 +202,7 @@ impl EngineDB {
 #[cfg(test)]
 mod migration_seed_tests {
     use super::*;
-    use crate::core::{BlockingResult, NetworkBlockId, SitePackId};
+    use crate::core::{NetworkBlockId, SitePackId};
     use crate::manager::{AccountManager, NetworkManager};
     use crate::settings::Settings;
     use std::sync::Arc;
@@ -220,10 +220,8 @@ mod migration_seed_tests {
     // duplicates them (get_site_pack_by_remote_id → "already exists, skipping").
     const ADULT_PACK: &str = "pack-adult-free";
     const SOCIAL_PACK: &str = "pack-social-free";
-
-    // Number of curated domains 0021 seeds per block.
-    const GAMBLING_RULE_COUNT: usize = 14;
-    const STREAMING_RULE_COUNT: usize = 9;
+    const GAMBLING_PACK: &str = "pack-gambling-free";
+    const STREAMING_PACK: &str = "pack-streaming-free";
 
     fn establish_connection(db_path: &Path) -> SqliteConnection {
         SqliteConnection::establish(db_path.to_str().unwrap())
@@ -237,15 +235,6 @@ mod migration_seed_tests {
             .select(rule)
             .load::<String>(conn)
             .expect("failed to load user defined rules")
-    }
-
-    fn load_all_rule_types_for(conn: &mut SqliteConnection, block_id: &str) -> Vec<String> {
-        use crate::schema_main_db::user_defined_rules::dsl::*;
-        user_defined_rules
-            .filter(network_block_id.eq(block_id))
-            .select(rule_type)
-            .load::<String>(conn)
-            .expect("failed to load user defined rule types")
     }
 
     fn count_pack_connections(conn: &mut SqliteConnection, block_id: &str, pack_id: &str) -> i64 {
@@ -270,15 +259,11 @@ mod migration_seed_tests {
         Settings::set_test_resistance_scripts_dir(sandbox.join("resistance_scripts"));
     }
 
-    fn block_id(block_id: &str) -> NetworkBlockId {
+    fn to_block_id(block_id: &str) -> NetworkBlockId {
         NetworkBlockId::from(uuid::Uuid::parse_str(block_id).unwrap())
     }
 
-    /// Fresh-DB outcome of the consolidated starter seed: pack-backed blocks have no local
-    /// rules, curated blocks keep the same sites as typed domain rules, and the
-    /// free packs exist under the canonical catalog IDs
-    /// (pack-adult-free / pack-social-free), and a manager loaded from this DB
-    /// resolves everything (no dangling pack references — MGR-01).
+    /// The consolidated fresh baseline seeds Free, category-backed policies.
     #[test]
     fn legacy_lock_deadlines_are_migrated_to_absolute_utc_once() {
         let temp = tempfile::tempdir().unwrap();
@@ -367,110 +352,61 @@ mod migration_seed_tests {
     }
 
     #[test]
-    fn seeded_default_blocks_use_packs_and_domain_rules() {
+    fn seeded_default_blocks_use_free_packs_without_custom_rules() {
         set_test_sites_dir();
         let temp_dir = tempfile::tempdir().unwrap();
         let db_path = temp_dir.path().join("test_db.sqlite");
-
-        // A fresh DB runs the consolidated schema and starter seeds.
         let db = Arc::new(EngineDB::from(&db_path).unwrap());
         let mut conn = establish_connection(&db_path);
 
-        // 1. Pack-backed blocks lost their regex lists entirely.
-        assert!(load_all_rules_for(&mut conn, ADULT_BLOCK).is_empty());
-        assert!(load_all_rules_for(&mut conn, SOCIAL_BLOCK).is_empty());
-
-        // 2. The curated blocks kept the SAME domain set as typed domain rules.
-        // These can be enforced from CONNECT hostname metadata without MITM.
-        let gambling_rules = load_all_rules_for(&mut conn, GAMBLING_BLOCK);
-        let streaming_rules = load_all_rules_for(&mut conn, STREAMING_BLOCK);
-        assert_eq!(gambling_rules.len(), GAMBLING_RULE_COUNT);
-        assert_eq!(streaming_rules.len(), STREAMING_RULE_COUNT);
-        assert!(gambling_rules.iter().any(|rule| rule == "stake.com"));
-        assert!(streaming_rules.iter().any(|rule| rule == "youtube.com"));
-        assert!(
-            load_all_rule_types_for(&mut conn, GAMBLING_BLOCK)
-                .iter()
-                .all(|rule_type| rule_type == "domain")
-        );
-        assert!(
-            load_all_rule_types_for(&mut conn, STREAMING_BLOCK)
-                .iter()
-                .all(|rule_type| rule_type == "domain")
-        );
-
-        // 3. The two free packs exist under the canonical IDs (id == remote_id).
+        let starters = [
+            (ADULT_BLOCK, ADULT_PACK),
+            (SOCIAL_BLOCK, SOCIAL_PACK),
+            (GAMBLING_BLOCK, GAMBLING_PACK),
+            (STREAMING_BLOCK, STREAMING_PACK),
+        ];
         let packs = db.get_all_site_packs().unwrap();
-        let adult_pack = packs
-            .iter()
-            .find(|pack| pack.id == ADULT_PACK)
-            .expect("adult content pack must be seeded");
-        assert_eq!(adult_pack.remote_id.as_deref(), Some(ADULT_PACK));
-        assert!(!adult_pack.requires_pro);
-        let social_pack = packs
-            .iter()
-            .find(|pack| pack.id == SOCIAL_PACK)
-            .expect("social media pack must be seeded");
-        assert_eq!(social_pack.remote_id.as_deref(), Some(SOCIAL_PACK));
-        assert!(!social_pack.requires_pro);
+        for (block_id, pack_id) in starters {
+            assert!(load_all_rules_for(&mut conn, block_id).is_empty());
+            let pack = packs
+                .iter()
+                .find(|pack| pack.id == pack_id)
+                .expect("Free preset pack must exist");
+            assert_eq!(pack.remote_id.as_deref(), Some(pack_id));
+            assert!(!pack.requires_pro);
+            assert_eq!(count_pack_connections(&mut conn, block_id, pack_id), 1);
+        }
 
-        // 4. The pack connections exist in the join table.
-        assert_eq!(
-            count_pack_connections(&mut conn, ADULT_BLOCK, ADULT_PACK),
-            1
-        );
-        assert_eq!(
-            count_pack_connections(&mut conn, SOCIAL_BLOCK, SOCIAL_PACK),
-            1
-        );
-
-        // 5. End-to-end through a manager loaded from this DB.
         let account_manager = AccountManager::from(db.clone()).unwrap();
         let manager = NetworkManager::from(db, account_manager).unwrap();
-
-        let gambling_block = manager
-            .get_network_block_from(&block_id(GAMBLING_BLOCK))
-            .expect("gambling block must load");
-        assert_eq!(
-            gambling_block.is_content_blocked(&"https://stake.com/".parse::<http::Uri>().unwrap()),
-            BlockingResult::Blocked
-        );
-        assert_eq!(
-            gambling_block
-                .is_content_blocked(&"https://stake.community/".parse::<http::Uri>().unwrap()),
-            BlockingResult::NotBlocked
-        );
-        assert_eq!(
-            gambling_block
-                .is_content_blocked(&"https://notstake.com/".parse::<http::Uri>().unwrap()),
-            BlockingResult::NotBlocked
-        );
-
-        let social_block = manager
-            .get_network_block_from(&block_id(SOCIAL_BLOCK))
-            .expect("social media block must load");
-        // The pack connection resolved in memory instead of being skipped as
-        // a dangling reference (MGR-01).
-        assert!(social_block.has_site_pack(&SitePackId::try_new(SOCIAL_PACK.to_string()).unwrap()));
+        for (block_id, pack_id) in starters {
+            let block = manager
+                .get_network_block_from(&to_block_id(block_id))
+                .unwrap();
+            assert!(block.has_site_pack(&SitePackId::try_new(pack_id.to_string()).unwrap()));
+        }
     }
 
     #[test]
     fn starter_blocks_are_disabled_and_always_without_redundant_periods() {
         let temp = tempfile::tempdir().unwrap();
         let db = EngineDB::from(&temp.path().join("fresh.sqlite")).unwrap();
-        use crate::schema_main_db::network_blocks::dsl as blocks;
         use crate::schema_main_db::network_block_schedule_entries::dsl as schedule;
+        use crate::schema_main_db::network_blocks::dsl as blocks;
         let mut conn = db.get_db_connection().unwrap();
         for starter in [ADULT_BLOCK, SOCIAL_BLOCK, GAMBLING_BLOCK, STREAMING_BLOCK] {
             let (enabled, schedule_mode): (bool, String) = blocks::network_blocks
                 .filter(blocks::id.eq(starter))
                 .select((blocks::enabled, blocks::schedule_mode))
-                .first(&mut conn).unwrap();
+                .first(&mut conn)
+                .unwrap();
             assert!(!enabled);
             assert_eq!(schedule_mode, "always");
             let periods = schedule::network_block_schedule_entries
                 .filter(schedule::network_block_id.eq(starter))
-                .count().get_result::<i64>(&mut conn).unwrap();
+                .count()
+                .get_result::<i64>(&mut conn)
+                .unwrap();
             assert_eq!(periods, 0);
         }
     }

@@ -34,7 +34,9 @@ Ace Blocker has not shipped. The schema migration which first creates
 schedule timezone directly; no follow-up ALTER migration is necessary.
 Starter policies created by `0021_seed_default_network_blocks` are disabled
 and use `always` without redundant all-day schedule entries. They attach
-only Free categories. Development databases previously migrated using the
+only Free categories, including compact Gambling and Streaming starter packs
+that are shipped in the installer bundle. No starter has custom rules or
+a preselected Pro pack. Development databases previously migrated using the
 removed versions must be backed up and recreated separately; do not delete or
 rewrite live engine data as part of this source change.
 

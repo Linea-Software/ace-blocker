@@ -63,6 +63,28 @@ pub const DEFAULT_PACKS: &[DefaultSitePacks] = &[
             format: SitePackFormat::Standard,
         }],
     },
+    DefaultSitePacks {
+        id: "pack-gambling-free",
+        name: "Gambling Websites — Free",
+        description: "Blocks popular gambling and betting sites.",
+        requires_pro: false,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/gambling-starter.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
+    DefaultSitePacks {
+        id: "pack-streaming-free",
+        name: "Streaming Websites — Free",
+        description: "Blocks popular video services.",
+        requires_pro: false,
+        sources: &[DefaultSitePacksSource {
+            source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/streaming-starter.txt",
+            source_type: SitePackSourceType::Url,
+            format: SitePackFormat::Standard,
+        }],
+    },
     ///////////////
     // PRO LISTS //
     ///////////////

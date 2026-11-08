@@ -6,6 +6,8 @@ const managedCategories: Record<string, string> = {
     "pack-adult-pro": "adult-extended",
     "pack-social-free": "social",
     "pack-gaming-free": "gaming",
+    "pack-gambling-free": "gambling-starter",
+    "pack-streaming-free": "streaming-starter",
     "pack-gambling-pro": "gambling",
     "pack-messaging-pro": "messaging",
     "pack-streaming-pro": "streaming",
@@ -33,6 +35,14 @@ describe("Ace-managed category catalog", () => {
                     format: "standard",
                 },
             ]);
+        }
+    });
+
+    it("keeps starter gambling and streaming packs available to Free users", () => {
+        for (const id of ["pack-gambling-free", "pack-streaming-free"]) {
+            const pack = sitePacks.find((item) => item.id === id);
+            expect(pack?.requires_pro).toBe(false);
+            expect(pack?.domains_count).toBeGreaterThan(0);
         }
     });
 

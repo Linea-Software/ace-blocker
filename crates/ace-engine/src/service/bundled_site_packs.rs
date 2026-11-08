@@ -297,6 +297,13 @@ fn import_bundled_pack(
         return BundledPackAction::Rejected("sha256 checksum mismatch".to_string());
     }
 
+    // Avoid an open/retry loop on malformed non-SQLite payloads. The SHA-256
+    // and file-length checks above have already verified artifact integrity.
+    if !bytes.starts_with(b"SQLite format 3\0") {
+        warn!("bundled pack {} has no SQLite header", entry.id);
+        return BundledPackAction::Rejected("invalid SQLite database header".to_string());
+    }
+
     // 2. The artifact must itself be a usable pack database (opens + non-zero
     //    entries + entry count consistent with the manifest).
     {
@@ -666,20 +673,20 @@ mod tests {
         let all = env.db.get_all_site_packs().unwrap();
         assert_eq!(
             all.len(),
-            3,
-            "two seeded rows + one bundled row — no duplicates"
+            5,
+            "four seeded rows + one bundled row — no duplicates"
         );
     }
 
     #[test]
     fn fills_gap_for_seeded_row_without_data() {
-        // Mirrors a fresh offline install: migration 0022 seeded
+        // Mirrors a fresh offline install: migration 0021 seeded
         // pack-adult-free with no data dir. The bundle must fill the gap on
         // the SAME row and become usable.
         let env = setup();
         assert!(
             env.db.get_site_pack_by_remote_id("pack-adult-free").is_ok(),
-            "0022 seeds pack-adult-free"
+            "0021 seeds pack-adult-free"
         );
 
         let bytes = write_pack_db(
@@ -705,7 +712,7 @@ mod tests {
         // Idempotent: a second pass keeps the now-valid data.
         let report2 = apply_bundled_packs(&env.db);
         assert_eq!(report2.actions[0].1, BundledPackAction::KeptExisting);
-        assert_eq!(env.db.get_all_site_packs().unwrap().len(), 2);
+        assert_eq!(env.db.get_all_site_packs().unwrap().len(), 4);
     }
 
     #[test]

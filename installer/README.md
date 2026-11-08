@@ -203,13 +203,19 @@ manifest is the source of truth; `package.ps1` generates `bundled-packs.wxs` fro
 it during packaging. User-downloaded content under ProgramData is not treated as
 immutable and is preserved across uninstall.
 
-Regenerate the bundle from `ace-engine/` with the existing exporter, for example:
+All four starter policies use Free categories. Gambling and Streaming have
+small curated baseline packs bundled offline (14 and 9 domains) rather than
+Pro-only categories. These packs originate from `ace-hosts/starter/`, and
+their update assets must be published before the exporter can fetch them.
+
+After publishing an `ace-hosts` release containing the starter pack files,
+regenerate the bundle from the unified `ace-blocker/` workspace, for example:
 
 ```powershell
-cargo run --features dev-tools --bin export-site-pack-bundle -- `
-    --catalog ..\ace-app\src\lib\data\site-packs.json `
-    --out-dir ..\ace-installer\bundled-packs `
-    --packs pack-adult-free,pack-social-free,pack-gaming-free `
+cargo run -p ace-engine --features dev-tools --bin export-site-pack-bundle -- `
+    --catalog apps/ace-app/src/lib/data/site-packs.json `
+    --out-dir installer/bundled-packs `
+    --packs pack-adult-free,pack-social-free,pack-gaming-free,pack-gambling-free,pack-streaming-free `
     --build-date YYYY-MM-DD
 ```
 
