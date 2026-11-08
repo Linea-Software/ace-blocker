@@ -21,7 +21,10 @@ route instead of a wide floating Inspector. The `_BlockEditor.svelte`
 file retains the draft's atomic `saveNetworkBlock` and uncertain-result
 reconciliation, but renders in the full page with a sticky commit footer.
 Category selection precedes website rules; the category catalog and long rule
-lists are collapsible. Bulk-pasted URLs must pass `parseWebsiteList` and
+lists are collapsible. Free/Pro badges distinguish similarly named category
+tiers. The UI uses `requiresProForConnection` to match the engine's
+custom-list-is-Pro rule, while preserving removal of already connected Pro
+packs after downgrade. Bulk-pasted URLs must pass `parseWebsiteList` and
 hostname normalization before staging. Never write incremental rule changes
 from the editor: its only ordinary persistence point is Save. Lock controls
 still use the dedicated `_LockModal` and must preserve all engine invariants.

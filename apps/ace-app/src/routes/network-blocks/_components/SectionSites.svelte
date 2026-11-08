@@ -18,6 +18,7 @@
     import {
         getBlockingListDisplayName,
         isAceCategory,
+        requiresProForConnection,
     } from "$lib/utils/category-presentation";
 
     let {
@@ -47,7 +48,8 @@
         [...availableLists].sort((a, b) => {
             const kindOrder = Number(isAceCategory(b)) - Number(isAceCategory(a));
             if (kindOrder !== 0) return kindOrder;
-            if (a.requiresPro !== b.requiresPro) return a.requiresPro ? 1 : -1;
+            if (requiresProForConnection(a) !== requiresProForConnection(b))
+                return requiresProForConnection(a) ? 1 : -1;
             return getBlockingListDisplayName(a).localeCompare(
                 getBlockingListDisplayName(b),
             );
@@ -114,7 +116,7 @@
     }
 
     function toggleList(list: SitePackSchema) {
-        if (list.requiresPro && isFreeUser && !delta.isConnected(list.id)) return;
+        if (requiresProForConnection(list) && isFreeUser && !delta.isConnected(list.id)) return;
 
         if (!list.isSynced) {
             listToDownload = list;
@@ -142,7 +144,8 @@
 
 {#snippet listRow(list: SitePackSchema)}
     {@const isConnected = connectedListIds.includes(list.id)}
-    {@const isProGated = list.requiresPro && isFreeUser && !isConnected}
+    {@const isPremium = requiresProForConnection(list)}
+    {@const isProGated = isPremium && isFreeUser && !isConnected}
     {@const canToggle =
         !isProGated &&
         (!isConnected || !(isLocked && delta.isInitialConnection(list.id)))}
@@ -186,16 +189,24 @@
                     <span class="truncate text-sm font-semibold">
                         {getBlockingListDisplayName(list)}
                     </span>
-                    {#if isProGated}
+                    {#if isPremium}
                         <Badge
                             variant="outline"
                             class="border-border h-4 shrink-0 rounded-sm bg-transparent px-1.5 font-mono text-[11px] text-muted-foreground"
                         >
                             {m.pro_badge()}
                         </Badge>
+                    {:else if isAceCategory(list)}
+                        <Badge variant="outline"
+                            class="border-border h-4 shrink-0 rounded-sm bg-transparent px-1.5 font-mono text-[11px] text-muted-foreground">
+                            {m.pack_access_free()}
+                        </Badge>
                     {/if}
                 </span>
 
+                {#if isConnected && isPremium && isFreeUser}
+                    <span class="text-xs text-muted-foreground">{m.status_pro_required()}</span>
+                {/if}
                 {#if list.description || list.entriesCount || !list.isSynced}
                     <span
                         class="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-2 text-xs"

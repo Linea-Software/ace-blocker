@@ -3,6 +3,7 @@ import {
     getBlockingListDisplayName,
     getBlockingListKind,
     isAceCategory,
+    requiresProForConnection,
 } from "./category-presentation";
 
 describe("category presentation", () => {
@@ -38,6 +39,18 @@ describe("category presentation", () => {
         };
         expect(getBlockingListKind(custom)).toBe("custom-list");
         expect(getBlockingListDisplayName(custom)).toBe(custom.name);
+    });
+
+    it("uses the same Free/Pro connection semantics as the engine", () => {
+        expect(requiresProForConnection({
+            id: "pack-gambling-free", requiresPro: false, isRemote: true,
+        })).toBe(false);
+        expect(requiresProForConnection({
+            id: "pack-gambling-pro", requiresPro: true, isRemote: true,
+        })).toBe(true);
+        expect(requiresProForConnection({
+            id: "custom-123", requiresPro: false, isRemote: false,
+        })).toBe(true);
     });
 
     it("normalizes the adult category to product language", () => {

@@ -34,3 +34,11 @@ export function getBlockingListDisplayName(
 
     return name;
 }
+
+/** Mirrors the engine's entitlement rule when attaching a pack to a block.
+ * Custom Lists require Pro even if their metadata does not set requiresPro. */
+export function requiresProForConnection(
+    pack: Pick<SitePackSchema, "id" | "requiresPro" | "isRemote">,
+): boolean {
+    return pack.requiresPro || !isAceCategory(pack);
+}
