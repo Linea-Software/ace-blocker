@@ -1,39 +1,23 @@
--- Seed the default network blocks that a brand new installation starts with.
---
--- Each starter has a 24/7 schedule from installation but is initially
--- disabled by 0023. Onboarding enables selected blocks independently of their
--- schedules. User-defined schedules can be customized afterward.
---
--- The block IDs are fixed so the app can recognise the seeded blocks and so a
--- re-run of the migration can never duplicate them.
+-- First-install starter policies. This pre-release baseline creates fully
+-- formed starter rows directly, without requiring later repair migrations.
+-- All four are disabled until onboarding explicitly enables the selected ones.
+-- Always means 24/7; no schedule rows are inserted for these policies.
+INSERT INTO network_blocks (id, "name", safe_search, icon, enabled, schedule_mode)
+VALUES
+ ('01950000-0000-7000-8000-000000000001', 'Adult Content', 1, 'adult', 0, 'always'),
+ ('01950000-0000-7000-8000-000000000002', 'Social Media', 0, 'social', 0, 'always'),
+ ('01950000-0000-7000-8000-000000000003', 'Gambling & Betting', 0, 'gambling', 0, 'always'),
+ ('01950000-0000-7000-8000-000000000004', 'Video & Streaming', 0, 'streaming', 0, 'always');
 
-INSERT OR IGNORE INTO network_blocks (id, "name", safe_search, icon) VALUES
-    ('01950000-0000-7000-8000-000000000001', 'Adult Content',      1, 'adult'),
-    ('01950000-0000-7000-8000-000000000002', 'Social Media',       0, 'social'),
-    ('01950000-0000-7000-8000-000000000003', 'Gambling & Betting', 0, 'gambling'),
-    ('01950000-0000-7000-8000-000000000004', 'Video & Streaming',  0, 'streaming');
+-- Free catalog rows are stable so the updater and installed bundle can attach
+-- content by remote_id without orphaning connections.
+INSERT OR IGNORE INTO site_packs (id, remote_id, name, description, requires_pro, is_ignored, icon)
+VALUES
+    ('pack-adult-free', 'pack-adult-free', 'Adult Websites — Free', 'Blocks known adult content websites.', 0, 0, 'adult'),
+    ('pack-social-free', 'pack-social-free', 'Social Media Websites — Free', 'Blocks social media sites.', 0, 0, 'social');
 
--- The fixed entry IDs distinguish schedules seeded on a NEW installation
--- from existing users' own schedules. 00:00–00:00 means all day to the
--- engine, and bitmask 127 covers all seven days.
-INSERT OR IGNORE INTO network_block_schedule_entries
-    (id, network_block_id, start_time, end_time, schedule_days_bitmask)
-SELECT entry_id, block_id, '00:00:00', '00:00:00', 127
-FROM (
-    SELECT '01950000-0000-7000-8000-000000001001' AS entry_id,
-           '01950000-0000-7000-8000-000000000001' AS block_id
-    UNION ALL SELECT '01950000-0000-7000-8000-000000001002', '01950000-0000-7000-8000-000000000002'
-    UNION ALL SELECT '01950000-0000-7000-8000-000000001003', '01950000-0000-7000-8000-000000000003'
-    UNION ALL SELECT '01950000-0000-7000-8000-000000001004', '01950000-0000-7000-8000-000000000004'
-) AS defaults
-WHERE EXISTS (SELECT 1 FROM network_blocks WHERE id = block_id)
-  AND NOT EXISTS (
-      SELECT 1 FROM network_block_schedule_entries
-      WHERE network_block_id = block_id
-  );
-
--- Rule IDs must be UUIDs (the engine parses them as `uuid::Uuid`), so generate a
--- v4 UUID per row instead of hardcoding dozens of literals.
+-- Starter-specific curated domain rules. These are typed host matches, not
+-- unanchored URL regexes; later work can replace them with Free category packs.
 INSERT OR IGNORE INTO user_defined_rules (id, network_block_id, rule, rule_type)
 SELECT
     lower(
@@ -49,42 +33,6 @@ SELECT
     'domain'
 FROM (
     VALUES
-        -- Adult Content
-        ('01950000-0000-7000-8000-000000000001', 'pornhub.com'),
-        ('01950000-0000-7000-8000-000000000001', 'xvideos.com'),
-        ('01950000-0000-7000-8000-000000000001', 'xnxx.com'),
-        ('01950000-0000-7000-8000-000000000001', 'xhamster.com'),
-        ('01950000-0000-7000-8000-000000000001', 'redtube.com'),
-        ('01950000-0000-7000-8000-000000000001', 'youporn.com'),
-        ('01950000-0000-7000-8000-000000000001', 'spankbang.com'),
-        ('01950000-0000-7000-8000-000000000001', 'eporner.com'),
-        ('01950000-0000-7000-8000-000000000001', 'tnaflix.com'),
-        ('01950000-0000-7000-8000-000000000001', 'motherless.com'),
-        ('01950000-0000-7000-8000-000000000001', 'brazzers.com'),
-        ('01950000-0000-7000-8000-000000000001', 'chaturbate.com'),
-        ('01950000-0000-7000-8000-000000000001', 'stripchat.com'),
-        ('01950000-0000-7000-8000-000000000001', 'bongacams.com'),
-        ('01950000-0000-7000-8000-000000000001', 'livejasmin.com'),
-        ('01950000-0000-7000-8000-000000000001', 'onlyfans.com'),
-        ('01950000-0000-7000-8000-000000000001', 'fansly.com'),
-        ('01950000-0000-7000-8000-000000000001', 'rule34.xxx'),
-        ('01950000-0000-7000-8000-000000000001', 'nhentai.net'),
-        ('01950000-0000-7000-8000-000000000001', 'e-hentai.org'),
-
-        -- Social Media
-        ('01950000-0000-7000-8000-000000000002', 'facebook.com'),
-        ('01950000-0000-7000-8000-000000000002', 'instagram.com'),
-        ('01950000-0000-7000-8000-000000000002', 'tiktok.com'),
-        ('01950000-0000-7000-8000-000000000002', 'twitter.com'),
-        ('01950000-0000-7000-8000-000000000002', 'x.com'),
-        ('01950000-0000-7000-8000-000000000002', 'reddit.com'),
-        ('01950000-0000-7000-8000-000000000002', 'snapchat.com'),
-        ('01950000-0000-7000-8000-000000000002', 'threads.net'),
-        ('01950000-0000-7000-8000-000000000002', 'tumblr.com'),
-        ('01950000-0000-7000-8000-000000000002', 'pinterest.com'),
-        ('01950000-0000-7000-8000-000000000002', '9gag.com'),
-        ('01950000-0000-7000-8000-000000000002', 'vk.com'),
-
         -- Gambling & Betting
         ('01950000-0000-7000-8000-000000000003', 'bet365.com'),
         ('01950000-0000-7000-8000-000000000003', 'betway.com'),
@@ -112,3 +60,8 @@ FROM (
         ('01950000-0000-7000-8000-000000000004', 'vimeo.com'),
         ('01950000-0000-7000-8000-000000000004', 'crunchyroll.com')
 );
+
+-- Every preselected category is Free; Pro upgrades are never a dependency.
+INSERT OR IGNORE INTO network_block_to_site_pack (network_block_id, site_pack_id) VALUES
+    ('01950000-0000-7000-8000-000000000001', 'pack-adult-free'),
+    ('01950000-0000-7000-8000-000000000002', 'pack-social-free');

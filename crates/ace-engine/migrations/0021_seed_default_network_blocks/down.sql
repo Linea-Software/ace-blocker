@@ -42,3 +42,7 @@ DELETE FROM network_blocks WHERE id IN (
     '01950000-0000-7000-8000-000000000003',
     '01950000-0000-7000-8000-000000000004'
 );
+
+-- Remove only the pack rows created by this first-install preset. This
+-- migration is for disposable pre-release databases.
+DELETE FROM site_packs WHERE id IN ('pack-adult-free', 'pack-social-free');

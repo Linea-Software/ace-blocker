@@ -205,8 +205,6 @@ mod migration_seed_tests {
     use crate::core::{BlockingResult, NetworkBlockId, SitePackId};
     use crate::manager::{AccountManager, NetworkManager};
     use crate::settings::Settings;
-    use diesel::connection::SimpleConnection;
-    use diesel_migrations::MigrationHarness;
     use std::sync::Arc;
 
     // The four default blocks seeded by 0021; ids must never change (the app
@@ -216,7 +214,7 @@ mod migration_seed_tests {
     const GAMBLING_BLOCK: &str = "01950000-0000-7000-8000-000000000003";
     const STREAMING_BLOCK: &str = "01950000-0000-7000-8000-000000000004";
 
-    // The FREE site packs 0022 connects the pack-backed blocks to. These are
+    // The FREE site packs the baseline connects the pack-backed blocks to. These are
     // the canonical catalog IDs from ace-app/src/lib/data/site-packs.json,
     // seeded with id == remote_id so the content updater recognises and never
     // duplicates them (get_site_pack_by_remote_id → "already exists, skipping").
@@ -224,7 +222,6 @@ mod migration_seed_tests {
     const SOCIAL_PACK: &str = "pack-social-free";
 
     // Number of curated domains 0021 seeds per block.
-    const SOCIAL_RULE_COUNT: usize = 12;
     const GAMBLING_RULE_COUNT: usize = 14;
     const STREAMING_RULE_COUNT: usize = 9;
 
@@ -261,43 +258,6 @@ mod migration_seed_tests {
             .expect("failed to count pack connections")
     }
 
-    fn count_site_packs(conn: &mut SqliteConnection, pack_id: &str) -> i64 {
-        use crate::schema_main_db::site_packs::dsl::*;
-        site_packs
-            .filter(id.eq(pack_id))
-            .count()
-            .get_result::<i64>(conn)
-            .expect("failed to count site packs")
-    }
-
-    /// Applies migrations up to and including 0021 — i.e. the state of a DB
-    /// that has "already run 0021" when 0022 arrives.
-    fn apply_through_0021(conn: &mut SqliteConnection) {
-        loop {
-            let applied = conn
-                .applied_migrations()
-                .expect("failed to read applied migrations");
-            if applied.iter().any(|version| version.to_string() == "0021") {
-                return;
-            }
-            conn.run_next_migration(MIGRATIONS)
-                .expect("failed to run the next migration");
-        }
-    }
-
-    fn apply_through_0022(conn: &mut SqliteConnection) {
-        loop {
-            let applied = conn
-                .applied_migrations()
-                .expect("failed to read applied migrations");
-            if applied.iter().any(|version| version.to_string() == "0022") {
-                return;
-            }
-            conn.run_next_migration(MIGRATIONS)
-                .expect("failed to run the next migration");
-        }
-    }
-
     /// Unit tests must never touch the real ProgramData sites dir
     /// (TESTINFRA-01); point the process-global override at the shared test
     /// dir like the other manager unit tests do.
@@ -314,7 +274,7 @@ mod migration_seed_tests {
         NetworkBlockId::from(uuid::Uuid::parse_str(block_id).unwrap())
     }
 
-    /// Fresh-DB outcome of migration 0022: pack-backed blocks have no local
+    /// Fresh-DB outcome of the consolidated starter seed: pack-backed blocks have no local
     /// rules, curated blocks keep the same sites as typed domain rules, and the
     /// free packs exist under the canonical catalog IDs
     /// (pack-adult-free / pack-social-free), and a manager loaded from this DB
@@ -412,7 +372,7 @@ mod migration_seed_tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let db_path = temp_dir.path().join("test_db.sqlite");
 
-        // A fresh DB runs every migration, including 0022.
+        // A fresh DB runs the consolidated schema and starter seeds.
         let db = Arc::new(EngineDB::from(&db_path).unwrap());
         let mut conn = establish_connection(&db_path);
 
@@ -494,155 +454,24 @@ mod migration_seed_tests {
         assert!(social_block.has_site_pack(&SitePackId::try_new(SOCIAL_PACK.to_string()).unwrap()));
     }
 
-    /// A DB that already ran 0021 upgrades cleanly: the old seeded rows are
-    /// replaced with typed domain rules for the curated blocks, and the pack
-    /// connections appear. A
-    /// re-run of 0022's SQL is idempotent for the seeded rows.
     #[test]
-    fn migration_0022_upgrades_cleanly_from_0021() {
-        set_test_sites_dir();
-        let temp_dir = tempfile::tempdir().unwrap();
-        let db_path = temp_dir.path().join("test_db.sqlite");
-
-        // Simulate a DB that ran only through 0021.
-        let mut conn = establish_connection(&db_path);
-        apply_through_0021(&mut conn);
-
-        // Pre-upgrade state: the unanchored 0021 seeds.
-        let social_rules = load_all_rules_for(&mut conn, SOCIAL_BLOCK);
-        assert_eq!(social_rules.len(), SOCIAL_RULE_COUNT);
-        assert!(social_rules.iter().any(|rule| rule == "x.com"));
-        let gambling_rules = load_all_rules_for(&mut conn, GAMBLING_BLOCK);
-        assert_eq!(gambling_rules.len(), GAMBLING_RULE_COUNT);
-        assert!(gambling_rules.iter().any(|rule| rule == "stake.com"));
-        assert_eq!(
-            count_pack_connections(&mut conn, ADULT_BLOCK, ADULT_PACK),
-            0
-        );
-
-        // Upgrade with the remaining pending migrations (0022).
-        conn.run_pending_migrations(MIGRATIONS).unwrap();
-
-        // Post-upgrade state matches the fresh-DB outcome.
-        assert!(load_all_rules_for(&mut conn, ADULT_BLOCK).is_empty());
-        assert!(load_all_rules_for(&mut conn, SOCIAL_BLOCK).is_empty());
-        let gambling_rules = load_all_rules_for(&mut conn, GAMBLING_BLOCK);
-        assert_eq!(gambling_rules.len(), GAMBLING_RULE_COUNT);
-        assert!(gambling_rules.iter().any(|rule| rule == "stake.com"));
-        assert!(
-            load_all_rule_types_for(&mut conn, GAMBLING_BLOCK)
-                .iter()
-                .all(|rule_type| rule_type == "domain")
-        );
-        assert_eq!(
-            count_pack_connections(&mut conn, ADULT_BLOCK, ADULT_PACK),
-            1
-        );
-        assert_eq!(
-            count_pack_connections(&mut conn, SOCIAL_BLOCK, SOCIAL_PACK),
-            1
-        );
-
-        // Re-running 0022's up.sql (the same SQL a migration replay would
-        // execute) is idempotent: joins and packs are not duplicated and the
-        // curated rules stay typed as domains.
-        conn.batch_execute(include_str!(
-            "../migrations/0022_seed_default_blocks_site_packs/up.sql"
-        ))
-        .unwrap();
-        assert_eq!(
-            count_pack_connections(&mut conn, ADULT_BLOCK, ADULT_PACK),
-            1
-        );
-        assert_eq!(
-            count_pack_connections(&mut conn, SOCIAL_BLOCK, SOCIAL_PACK),
-            1
-        );
-        assert_eq!(count_site_packs(&mut conn, ADULT_PACK), 1);
-        assert_eq!(count_site_packs(&mut conn, SOCIAL_PACK), 1);
-        assert!(
-            load_all_rule_types_for(&mut conn, GAMBLING_BLOCK)
-                .iter()
-                .all(|rule_type| rule_type == "domain")
-        );
-    }
-
-    #[test]
-    fn migration_0023_keeps_existing_blocks_enabled() {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let db_path = temp_dir.path().join("test_db.sqlite");
-        let mut conn = establish_connection(&db_path);
-        apply_through_0022(&mut conn);
-
-        let existing_block_id = uuid::Uuid::now_v7().to_string();
-        conn.batch_execute(&format!(
-            "INSERT INTO network_blocks (id, name, safe_search, icon) VALUES ('{existing_block_id}', 'Existing Block', 0, NULL)"
-        ))
-        .unwrap();
-
-        conn.run_next_migration(MIGRATIONS).unwrap();
-
-        use crate::schema_main_db::network_blocks::dsl::{enabled, id, network_blocks};
-        let is_enabled = network_blocks
-            .filter(id.eq(existing_block_id))
-            .select(enabled)
-            .first::<bool>(&mut conn)
-            .unwrap();
-        assert!(is_enabled);
-    }
-
-    /// 0022's down.sql reverses cleanly: joins, domain rules, and the seeded
-    /// packs are all removed (the original 0021 regex lists are not restored —
-    /// documented in the down.sql itself).
-    #[test]
-    fn migration_0022_down_reverts_cleanly() {
-        set_test_sites_dir();
-        let temp_dir = tempfile::tempdir().unwrap();
-        let db_path = temp_dir.path().join("test_db.sqlite");
-
-        // Fresh DB with every migration applied.
-        let _db = EngineDB::from(&db_path).unwrap();
-        let mut conn = establish_connection(&db_path);
-
-        // Pre-revert state.
-        assert_eq!(
-            count_pack_connections(&mut conn, ADULT_BLOCK, ADULT_PACK),
-            1
-        );
-        assert_eq!(count_site_packs(&mut conn, ADULT_PACK), 1);
-        assert_eq!(
-            load_all_rules_for(&mut conn, GAMBLING_BLOCK).len(),
-            GAMBLING_RULE_COUNT
-        );
-
-        // Revert all migrations newer than 0022, then 0022 itself.
-        // Do not hard-code a count: adding a later schema migration must not
-        // quietly turn this into a test of the wrong down.sql.
-        while conn
-            .applied_migrations()
-            .unwrap()
-            .iter()
-            .any(|version| version.to_string() == "0022")
-        {
-            conn.revert_last_migration(MIGRATIONS).unwrap();
-        }
-
-        // Post-revert state.
-        assert_eq!(
-            count_pack_connections(&mut conn, ADULT_BLOCK, ADULT_PACK),
-            0
-        );
-        assert_eq!(
-            count_pack_connections(&mut conn, SOCIAL_BLOCK, SOCIAL_PACK),
-            0
-        );
-        assert_eq!(count_site_packs(&mut conn, ADULT_PACK), 0);
-        assert_eq!(count_site_packs(&mut conn, SOCIAL_PACK), 0);
-        for block_id in [ADULT_BLOCK, SOCIAL_BLOCK, GAMBLING_BLOCK, STREAMING_BLOCK] {
-            assert!(
-                load_all_rules_for(&mut conn, block_id).is_empty(),
-                "rules for {block_id} must be gone after the revert"
-            );
+    fn starter_blocks_are_disabled_and_always_without_redundant_periods() {
+        let temp = tempfile::tempdir().unwrap();
+        let db = EngineDB::from(&temp.path().join("fresh.sqlite")).unwrap();
+        use crate::schema_main_db::network_blocks::dsl as blocks;
+        use crate::schema_main_db::network_block_schedule_entries::dsl as schedule;
+        let mut conn = db.get_db_connection().unwrap();
+        for starter in [ADULT_BLOCK, SOCIAL_BLOCK, GAMBLING_BLOCK, STREAMING_BLOCK] {
+            let (enabled, schedule_mode): (bool, String) = blocks::network_blocks
+                .filter(blocks::id.eq(starter))
+                .select((blocks::enabled, blocks::schedule_mode))
+                .first(&mut conn).unwrap();
+            assert!(!enabled);
+            assert_eq!(schedule_mode, "always");
+            let periods = schedule::network_block_schedule_entries
+                .filter(schedule::network_block_id.eq(starter))
+                .count().get_result::<i64>(&mut conn).unwrap();
+            assert_eq!(periods, 0);
         }
     }
 }

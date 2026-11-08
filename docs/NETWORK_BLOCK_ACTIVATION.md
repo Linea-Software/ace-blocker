@@ -27,13 +27,16 @@ to Always therefore does not create a shortcut around the Lock.
 The pinned IANA timezone, DST rules, authenticated-time uncertainty,
 independent watchdog service and privileged IPC boundary are unchanged.
 
-## Pre-release migration
+## Pre-release baseline
 
-Migration `0027_network_block_schedule_mode` sets existing rows with at least
-one schedule entry to `scheduled`; rows without entries become `always`.
-That last case changes their former ineffective scheduling behavior and
-must be noted when testing existing developer installations. Backward
-compatibility with older pre-release API formats is not required.
+Ace Blocker has not shipped. The schema migration which first creates
+`network_blocks` now includes `enabled`, `scheduleMode` and the pinned
+schedule timezone directly; no follow-up ALTER migration is necessary.
+Starter policies created by `0021_seed_default_network_blocks` are disabled
+and use `always` without redundant all-day schedule entries. They attach
+only Free categories. Development databases previously migrated using the
+removed versions must be backed up and recreated separately; do not delete or
+rewrite live engine data as part of this source change.
 
 ## QA
 
