@@ -226,6 +226,13 @@
               Source="artifacts\verify-product-signature.ps1" KeyPath="yes" />
       </Component>
 
+      <!-- Explicit administrator opt-in tool; NOT executed by the installer
+           or service. It leaves existing enterprise policies untouched. -->
+      <Component Id="C_BrowserProxyGuardScript" Guid="{29D61269-22BE-4D65-839C-E9EC64858CD1}">
+        <File Id="F_BrowserProxyGuardScript" Name="browser-proxy-extension-policy.ps1"
+              Source="artifacts\browser-proxy-extension-policy.ps1" KeyPath="yes" />
+      </Component>
+
     </ComponentGroup>
 
     <!-- ============================================================ -->
@@ -414,6 +421,18 @@
       Impersonate="no"
       Return="ignore" />
 
+    <!-- An opt-in browser policy must never be orphaned by uninstall.
+         This action is a no-op if the user never enabled the guard, but refuses
+         to remove policies that no longer match ACE's exact owned values.
+         Preserve the guard across MSI major upgrades. -->
+    <CustomAction
+      Id="CA_RemoveBrowserProxyGuard"
+      Directory="System64Folder"
+      ExeCommand="powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File &quot;[INSTALLFOLDER]browser-proxy-extension-policy.ps1&quot; -Action DisableIfOwned"
+      Execute="deferred"
+      Impersonate="no"
+      Return="check" />
+
     <!-- No driver-installation custom actions: wintun.dll registers and
          removes its own kernel component as adapters come and go. The
          `sc create WinDivert64` / `sc delete WinDivert64` pair that used to
@@ -441,8 +460,9 @@
       <Custom Action="CA_StopWatchdog" After="CA_PrepareEngineMaintenance" Condition="REMOVE" />
       <!-- An MSI major upgrade is not a user-requested uninstall. Preserve
            the existing root CAs and their private keys across upgrades. -->
-      <Custom Action="CA_RemoveApiCert" After="CA_StopWatchdog" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="CA_RemoveApiCert" After="CA_RemoveBrowserProxyGuard" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
       <Custom Action="CA_RemoveMitmCert" After="CA_RemoveApiCert" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="CA_RemoveBrowserProxyGuard" After="CA_StopWatchdog" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
 
   </Package>

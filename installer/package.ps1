@@ -159,6 +159,13 @@ if (-not (Test-Path -LiteralPath $VerifierScript)) {
 Copy-Item -LiteralPath $VerifierScript -Destination $Artifacts
 Write-Host "  verify-product-signature.ps1"
 
+$BrowserProxyGuardScript = Join-Path $ScriptDir "browser-proxy-extension-policy.ps1"
+if (-not (Test-Path -LiteralPath $BrowserProxyGuardScript)) {
+    throw "browser-proxy-extension-policy.ps1 is required for optional managed browser protection."
+}
+Copy-Item -LiteralPath $BrowserProxyGuardScript -Destination $Artifacts
+Write-Host "  browser-proxy-extension-policy.ps1 (opt-in)"
+
 Write-Host "`n[2/3] Staging offline site packs..." -ForegroundColor Cyan
 $BundleManifest = Join-Path $BundledPacks "manifest.json"
 if (-not (Test-Path -LiteralPath $BundleManifest)) {
