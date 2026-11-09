@@ -49,6 +49,8 @@ jobs:
         run: bun run test:unit
       - name: Validate signed-release payload and MSI static invariants
         run: python3 -m unittest discover -s tests -p 'test_release_manifest.py'
+      - name: Validate Windows/Linux release candidate artifact policy
+        run: python3 -m unittest discover -s tests -p 'test_release_candidates.py'
 
   native:
     name: Rust checks and tests (${{ matrix.os }})

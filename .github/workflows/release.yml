@@ -322,6 +322,18 @@ jobs:
                   raise SystemExit(f"Candidate provenance/hash mismatch: {platform}")
           PY
           (cd dist && sha256sum *.msi *.tar.gz > SHA256SUMS)
+      - name: Validate complete Windows and Linux release candidates
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          python3 installer/verify_release_candidates.py \
+            --version "$VERSION" \
+            --commit "$GITHUB_SHA" \
+            --repository "$GITHUB_REPOSITORY" \
+            --windows "dist/AceBlocker-$VERSION.msi" \
+            --linux "dist/AceBlocker-$VERSION-linux-x64.tar.gz" \
+            --windows-manifest dist/release-candidate-windows.json \
+            --linux-manifest dist/release-candidate-linux.json
       - name: Create or update draft release (never publish automatically)
         env:
           GH_TOKEN: ${{ github.token }}

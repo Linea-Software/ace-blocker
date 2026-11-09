@@ -43,6 +43,19 @@ named `v<version>`. It never publishes that release automatically.
   and this document.
 - **Both:** `SHA256SUMS` covers the MSI and Linux tarball.
 
+The draft-assembly job also runs `installer/verify_release_candidates.py`.
+It refuses to create a draft if either platform file is absent, if the
+version/commit/hash provenance differs, if the MSI header is not a valid
+compound-file header, or if the Linux archive is structurally unsafe or
+missing required executables, scripts or bundled content. This is a release
+**candidate** gate, not a proof of Authenticode signature or installation
+safety. Its offline regression tests run in ordinary desktop CI.
+
+**GitHub Actions downloads each workflow artifact as a ZIP**, but the Linux
+deliverable *inside* that ZIP is still `.tar.gz`. Keep that tarball for
+Linux: tar/gzip support is more broadly available than the optional `unzip`
+utility. On the website upload the inner tarball, not GitHub's outer ZIP.
+
 The individual GitHub Actions artifacts are retained for 14 days; the draft
 release keeps a copy of both assets and the manifests. Neither workflow
 builds or ships a macOS executable.
