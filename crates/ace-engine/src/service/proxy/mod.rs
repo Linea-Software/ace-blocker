@@ -6,10 +6,12 @@
 //! it to this proxy. It replaces an earlier WinDivert packet-interception layer
 //! whose per-packet process attribution leaked HTTP/3 traffic and ignored IPv6.
 
+mod blocked_attempts;
 mod constants;
 mod csp;
 mod injection;
 
+use blocked_attempts::BlockedAttemptRecorder;
 use constants::*;
 
 use std::collections::HashSet;
@@ -50,6 +52,7 @@ use ace_tun::{ConnectionInfo, Rule, RuleAction, RuleProtocol, TunRedirect};
 pub struct ProxyAdapter {
     pub network_manager: Arc<RwLock<NetworkManager>>,
     pub account_manager: AccountManager,
+    blocked_attempts: Arc<BlockedAttemptRecorder>,
     /// Hosts whose current Ace policy genuinely requires decrypted HTTP.
     /// CONNECT inspection refreshes this before the interception decider runs.
     pub interception_hosts: Arc<StdRwLock<HashSet<String>>>,
@@ -62,16 +65,6 @@ impl ProxyAdapter {
             normalize_proxy_host(host).as_str(),
             "localhost" | "127.0.0.1" | "::1"
         )
-    }
-
-    async fn record_blocked_attempt(&self) {
-        // Diesel is synchronous. Do not hold the global policy write lock (or
-        // block a Tokio worker) while persisting a traffic counter.
-        let db = self.network_manager.read().await.get_db();
-        let _ = tokio::task::spawn_blocking(move || {
-            db.increment_blocked_attempts(chrono::Utc::now().date_naive())
-        })
-        .await;
     }
 
     fn set_interception_required(&self, host: &str, required: bool) {
@@ -172,7 +165,7 @@ impl RequestInspector for ProxyAdapter {
         self.set_interception_required(host, requires_interception);
 
         if blocking_result.is_blocked() {
-            self.record_blocked_attempt().await;
+            self.blocked_attempts.record();
             // CONNECT is outside the origin's TLS session. To make
             // Clear-Site-Data effective, deliver the block response inside
             // browser-side TLS, with no upstream connection permitted.
@@ -319,7 +312,7 @@ impl RequestInspector for ProxyAdapter {
 
             // ── Block check ─────────────────────────────────────────
             if !matches!(blocking_result, crate::core::BlockingResult::NotBlocked) {
-                self.record_blocked_attempt().await;
+                self.blocked_attempts.record();
                 return RequestAction::Respond(Self::blocked_response());
             }
         }
@@ -720,6 +713,7 @@ impl AceProxy {
         let adapter = Arc::new(ProxyAdapter {
             network_manager,
             account_manager,
+            blocked_attempts: Arc::new(BlockedAttemptRecorder::default()),
             interception_hosts,
         });
 
@@ -736,6 +730,11 @@ impl AceProxy {
     /// Start the proxy and block until it stops or encounters a fatal error.
     pub async fn start(&self) -> Result<()> {
         let cert_dir = Settings::get_cert_dir();
+        // One event-driven worker handles statistics for every browser protocol.
+        // It is independent of network enforcement and never holds up a 404.
+        let statistics_db = self.adapter.network_manager.read().await.get_db();
+        let statistics_worker =
+            tokio::spawn(self.adapter.blocked_attempts.clone().persist(statistics_db));
 
         #[allow(unused_mut)]
         // `run()` provisions both Ace certificates, including Firefox-specific
@@ -787,6 +786,7 @@ impl AceProxy {
                 if let Err(error) = readiness {
                     proxy_handle.abort();
                     let _ = proxy_handle.await;
+                    statistics_worker.abort();
                     return Err(error);
                 }
             },
@@ -796,6 +796,7 @@ impl AceProxy {
                     Ok(Err(error)) => error.wrap_err("mitm-proxy failed before becoming ready"),
                     Err(error) => eyre::eyre!("mitm-proxy task failed before becoming ready: {error}"),
                 };
+                statistics_worker.abort();
                 return Err(error);
             }
         }
@@ -893,6 +894,9 @@ impl AceProxy {
                 error!("Failed to stop ace-tun: {:?}", error);
             }
         }
+
+        // Counts are disposable; do not delay shutdown for a final flush.
+        statistics_worker.abort();
 
         if let Some(error) = proxy_exit_error {
             return Err(error);
@@ -1770,6 +1774,7 @@ mod tests {
         let adapter = ProxyAdapter {
             network_manager: manager.clone(),
             account_manager,
+            blocked_attempts: Arc::new(BlockedAttemptRecorder::default()),
             interception_hosts: Arc::new(StdRwLock::new(HashSet::new())),
         };
         (manager, adapter)
