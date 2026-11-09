@@ -1,18 +1,15 @@
 use tracing::{info, warn};
 
 use crate::{
-    manager::NetworkManagerOpErr, manager::resistance::PunishmentIntensity, settings::Settings,
+    manager::NetworkManagerOpErr, settings::Settings,
 };
 
 use super::NetworkManager;
 
 /// Machine-readable enforcement status for Resistance Mode.
 ///
-/// The engine never reports `operational` merely because the master setting
-/// is enabled: scripts must be loaded, eligible for injection, and a
-/// non-`none` intensity must be configured. Priority order when multiple
-/// conditions fail: `disabled` > `not_pro` > `scripts_missing` >
-/// `scripts_invalid` > `no_scripts_enabled` > `intensity_none`.
+/// Operational status requires a loaded, enabled script and Pro eligibility.
+/// Priority: disabled > not_pro > scripts_missing > scripts_invalid > no_scripts_enabled.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
@@ -30,8 +27,6 @@ pub enum EnforcementStatus {
     ScriptsInvalid,
     /// Scripts are installed but every script is disabled.
     NoScriptsEnabled,
-    /// Static intensity is `none` — configured but intentionally not friction.
-    IntensityNone,
 }
 
 impl NetworkManager {
@@ -81,10 +76,6 @@ impl NetworkManager {
             return EnforcementStatus::NoScriptsEnabled;
         }
 
-        if engine.get_intensity() == PunishmentIntensity::None {
-            return EnforcementStatus::IntensityNone;
-        }
-
         EnforcementStatus::Operational
     }
 
@@ -119,7 +110,6 @@ impl NetworkManager {
         &self,
         enabled: bool,
         lock: &crate::core::Lock,
-        intensity: PunishmentIntensity,
     ) -> Result<(), NetworkManagerOpErr> {
         // Clean up expired lock before persisting — an ActiveUntilLockEnd lock
         // whose end time has passed should be stored as Inactive.
@@ -142,7 +132,6 @@ impl NetworkManager {
                 enabled,
                 lock_state,
                 lock_end,
-                static_intensity: intensity.to_string(),
                 scripts_version: self.resistance_mode.scripts_version.clone(),
             })?;
         Ok(())
@@ -163,7 +152,6 @@ impl NetworkManager {
         self.persist_resistance_mode_settings(
             enabled,
             &next_lock,
-            self.resistance_mode.get_intensity(),
         )?;
         self.resistance_mode.enabled = enabled;
         self.resistance_mode.lock = next_lock;
@@ -204,31 +192,8 @@ impl NetworkManager {
         self.persist_resistance_mode_settings(
             self.resistance_mode.enabled,
             &lock,
-            self.resistance_mode.get_intensity(),
         )?;
         self.resistance_mode.lock = lock;
-        Ok(())
-    }
-
-    pub fn set_resistance_mode_type(
-        &mut self,
-        mode: crate::manager::resistance::punishment::PunishmentMode,
-    ) -> Result<(), NetworkManagerOpErr> {
-        if self.resistance_mode.is_locked() {
-            return Err(NetworkManagerOpErr::ResistanceModeIsLocked);
-        }
-
-        // v1 beta: static mode only (MGR-24) — there is no dynamic variant.
-        let crate::manager::resistance::punishment::PunishmentMode::Static { intensity } = mode;
-        self.persist_resistance_mode_settings(
-            self.resistance_mode.enabled,
-            &self.resistance_mode.lock,
-            intensity,
-        )?;
-        self.resistance_mode
-            .set_punishment(crate::manager::resistance::Punishment::new_static(
-                intensity,
-            ));
         Ok(())
     }
 
@@ -740,17 +705,7 @@ mod tests {
         assert!(manager.set_resistance_mode_lock(lock).is_err());
         assert!(!manager.is_resistance_mode_locked());
 
-        assert!(
-            manager
-                .set_resistance_mode_type(crate::manager::resistance::PunishmentMode::Static {
-                    intensity: PunishmentIntensity::Medium,
-                },)
-                .is_err()
-        );
-        assert_eq!(
-            manager.resistance_mode.get_intensity(),
-            PunishmentIntensity::None
-        );
+
     }
 
     #[test]
@@ -974,13 +929,9 @@ mod tests {
             EnforcementStatus::NotPro
         );
 
-        // Pro + enabled → intensity_none (static None is not friction, so
-        // not operational).
+        // Pro + enabled + an enabled script is operational.
         manager.set_debug_pro_policy(super::super::DebugProPolicy::Pro);
-        assert_eq!(
-            manager.resistance_enforcement_status(),
-            EnforcementStatus::IntensityNone
-        );
+        assert_eq!(manager.resistance_enforcement_status(), EnforcementStatus::Operational);
 
         // All scripts disabled → no_scripts_enabled.
         manager
@@ -994,18 +945,7 @@ mod tests {
             .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), true)
             .unwrap();
 
-        // Non-None static intensity + enabled script + Pro → operational.
-        manager
-            .set_resistance_mode_type(
-                crate::manager::resistance::punishment::PunishmentMode::Static {
-                    intensity: PunishmentIntensity::Medium,
-                },
-            )
-            .unwrap();
-        assert_eq!(
-            manager.resistance_enforcement_status(),
-            EnforcementStatus::Operational
-        );
+        assert_eq!(manager.resistance_enforcement_status(), EnforcementStatus::Operational);
 
         // Startup-style scenarios: a fresh manager whose tree never loaded.
         // (a) No catalog file on disk → scripts_missing.

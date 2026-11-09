@@ -6,7 +6,6 @@
         getResistanceModeSettings,
         setResistanceModeEnabled,
         setResistanceModeLock,
-        setResistanceModeType,
         setScriptEnabled,
         downloadResistanceScripts,
         type ScriptInfo,
@@ -18,7 +17,6 @@
     import { LockKeyhole } from "@lucide/svelte";
     import { toast } from "svelte-sonner";
     import StatusCard from "./_components/StatusCard.svelte";
-    import ResistanceMeter, { type ResistanceLevel } from "$lib/components/ace/domain/ResistanceMeter.svelte";
     import ScriptSections from "./_components/ScriptSections.svelte";
     import TimeLockDialog from "./_components/TimeLockDialog.svelte";
     import PageLayout from "$lib/components/PageLayout.svelte";
@@ -51,7 +49,7 @@
     // ─── Data loading ────────────────────────────────────────────────
     async function refresh() {
         const seq = ++refreshSeq;
-        if (!engineOnline || !mounted) return;
+        if (!engineOnline || !mounted || (isMutating && settings)) return;
         // Polling an already-loaded view should not flash a loading state.
         if (!settings) loading = true;
         loadError = false;
@@ -163,93 +161,67 @@
         );
     }
 
-    async function handleSelectResistanceLevel(level: ResistanceLevel) {
-        if (isMutating || isLocked || !settings?.enabled) return;
-        isMutating = true;
-
-        const { error } = await setResistanceModeType({
-            body: { type: "static", intensity: level },
-        });
-        isMutating = false;
-        if (error) {
-            showMutationError(error);
-            return;
-        }
-
-        await refresh();
-        toast.success(m.domain_policies_updated({ domain: m.intensity_level() }));
-    }
-
     async function handleToggleScript(script: ScriptInfo) {
+        if (isMutating || !engineOnline || !isPro) return;
         if (isLocked && script.isEnabled) {
             toast.error(m.locked_one_way_notice());
             return;
         }
+        isMutating = true;
         const next = !script.isEnabled;
-        const original = script.isEnabled;
-        // Optimistic update with rollback.
-        scripts = scripts.map((s) =>
-            s.id === script.id ? { ...s, isEnabled: next } : s,
-        );
+        scripts = scripts.map((s) => s.id === script.id ? { ...s, isEnabled: next } : s);
         const { error } = await setScriptEnabled({
             path: { script_id: script.id },
             body: { enabled: next },
         });
         if (error) {
-            scripts = scripts.map((s) =>
-                s.id === script.id ? { ...s, isEnabled: original } : s,
-            );
+            scripts = scripts.map((s) => s.id === script.id ? { ...s, isEnabled: script.isEnabled } : s);
             showMutationError(error);
-            return;
+        } else {
+            toast.success(next ? m.script_activated({ name: script.name }) : m.script_deactivated({ name: script.name }));
         }
-        toast.success(
-            next
-                ? m.script_activated({ name: script.name })
-                : m.script_deactivated({ name: script.name }),
-        );
-        void refresh();
+        isMutating = false;
+        await refresh();
     }
 
-    async function handleToggleDomain(domain: string, enabled: boolean) {
-        if (isLocked) {
+    async function handleToggleGroup(group: ScriptInfo[], enabled: boolean) {
+        if (isMutating || !engineOnline || !isPro) return;
+        if (isLocked && !enabled) {
             toast.error(m.locked_one_way_notice());
             return;
         }
-        const targets = scripts.filter(
-            (s) => (s.domain || "Global") === domain && s.isEnabled !== enabled,
-        );
-        if (targets.length === 0) return;
+        const targets = group.filter((s) => s.isEnabled !== enabled);
+        if (!targets.length) return;
+        isMutating = true;
+        const ids = new Set(targets.map((s) => s.id));
         const original = new Map(targets.map((s) => [s.id, s.isEnabled]));
-        scripts = scripts.map((s) =>
-            (s.domain || "Global") === domain ? { ...s, isEnabled: enabled } : s,
-        );
-        const results = await Promise.all(
-            targets.map(async (s) => {
-                const { error } = await setScriptEnabled({
-                    path: { script_id: s.id },
-                    body: { enabled },
-                });
-                return { id: s.id, ok: !error };
-            }),
-        );
-        const failed = results.filter((r) => !r.ok);
-        if (failed.length > 0) {
-            const failedIds = new Set(failed.map((f) => f.id));
-            scripts = scripts.map((s) =>
-                failedIds.has(s.id)
-                    ? { ...s, isEnabled: original.get(s.id) ?? s.isEnabled }
-                    : s,
-            );
+        scripts = scripts.map((s) => ids.has(s.id) ? { ...s, isEnabled: enabled } : s);
+
+        const failed = new Set<string>();
+        // Keep write operations bounded rather than flooding the engine's RPC channel.
+        for (let i = 0; i < targets.length; i += 6) {
+            const chunk = targets.slice(i, i + 6);
+            const responses = await Promise.all(chunk.map(async (script) => ({
+                id: script.id,
+                result: await setScriptEnabled({path: {script_id: script.id}, body: {enabled}}),
+            })));
+            for (const item of responses) {
+                if (item.result.error) failed.add(item.id);
+            }
+        }
+        if (failed.size) {
+            scripts = scripts.map((s) => failed.has(s.id) ? { ...s, isEnabled: original.get(s.id) ?? s.isEnabled } : s);
             toast.error(countMessage(
-                failed.length,
+                failed.size,
                 m.items_failed_to_update_zero,
                 m.items_failed_to_update_one,
-                () => m.items_failed_to_update({ count: failed.length }),
+                () => m.items_failed_to_update({count:failed.size}),
             ));
         } else {
-            toast.success(m.domain_policies_updated({ domain }));
+            toast.success(m.domain_policies_updated({domain: m.resistance_mode()}));
         }
-        void refresh();
+        isMutating = false;
+        await refresh();
     }
 
     async function handleSync() {
@@ -355,6 +327,11 @@
                 </div>
             {/if}
 
+            <section class="rounded-md border border-border bg-card px-5 py-4">
+                <h2 class="font-semibold text-lg">{m.resistance_mode()}</h2>
+                <p class="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">{m.resistance_examples_body()}</p>
+            </section>
+
             <StatusCard
                 {settings}
                 {engineOnline}
@@ -364,16 +341,6 @@
                 controlsDisabled={controlsDisabled}
                 inFlight={isMutating}
                 onToggle={handleToggleEnabled}
-            />
-
-            <ResistanceMeter
-                enabled={isPro && (settings?.enabled ?? false)}
-                currentIntensity={isPro ? (settings?.currentIntensity ?? "none") : "none"}
-                locked={isPro && isLocked}
-                disabled={controlsDisabled || !settings || !settings.enabled}
-                proRequired={!isPro}
-                inFlight={isMutating}
-                onSelect={handleSelectResistanceLevel}
             />
 
             <div class="coverage-ledger">
@@ -394,8 +361,9 @@
                         {isPro}
                         locked={isLocked}
                         syncing={isSyncing}
+                        busy={isMutating}
                         onToggleScript={handleToggleScript}
-                        onToggleDomain={handleToggleDomain}
+                        onToggleGroup={handleToggleGroup}
                         onSync={handleSync}
                     />
                 {/if}

@@ -179,18 +179,14 @@ export type DashboardSnapshotResponse = {
 
 export type DebugProPolicy = 'Pro' | 'Free' | 'Default';
 
-export type DebugResistanceLevel = 'None' | 'Low' | 'Medium' | 'High' | 'Extreme' | 'Default';
-
 /**
  * Machine-readable enforcement status for Resistance Mode.
  *
  * The engine never reports `operational` merely because the master setting
  * is enabled: scripts must be loaded, eligible for injection, and a
- * non-`none` intensity must be configured. Priority order when multiple
- * conditions fail: `disabled` > `not_pro` > `scripts_missing` >
- * `scripts_invalid` > `no_scripts_enabled` > `intensity_none`.
+ * at least one intervention must be enabled.
  */
-export type EnforcementStatus = 'operational' | 'disabled' | 'not_pro' | 'scripts_missing' | 'scripts_invalid' | 'no_scripts_enabled' | 'intensity_none';
+export type EnforcementStatus = 'operational' | 'disabled' | 'not_pro' | 'scripts_missing' | 'scripts_invalid' | 'no_scripts_enabled';
 
 export type EngineBackup = {
     customSitePacks: Array<BackupSitePack>;
@@ -276,27 +272,12 @@ export type Percentage = number;
 /**
  * Represents the resistance intensity levels.
  */
-export type PunishmentIntensity = 'none' | 'low' | 'medium' | 'high' | 'extreme';
-
-/**
- * The intensity scale is a static, user-configured level. There is no
- * automatic escalation/de-escalation ladder: the dynamic mode (and the whole
- * tracking pipeline that fed it) has been removed (MGR-24).
- */
-export type PunishmentMode = {
-    intensity?: PunishmentIntensity;
-    type: 'static';
-};
-
 export type RenameNetworkBlockRequest = {
     newName: string;
 };
 
 export type ResistanceModeSettings = {
-    /**
-     * Currently effective intensity (static intensity)
-     */
-    currentIntensity: PunishmentIntensity;
+
     enabled: boolean;
     /**
      * Whether enforcement is operational right now, plus a stable reason.
@@ -305,10 +286,7 @@ export type ResistanceModeSettings = {
     isLocked: boolean;
     lockEnd?: string | null;
     lockState: LockState;
-    /**
-     * Current mode (static only in v1 beta)
-     */
-    mode: PunishmentMode;
+
     /**
      * Whether the user is currently eligible under the Pro state (cached).
      */
@@ -329,15 +307,7 @@ export type ResistanceModeSettings = {
      * Installed scripts version (from the last successful download).
      */
     scriptsVersion?: string | null;
-    /**
-     * Static mode intensity
-     */
-    staticIntensity: PunishmentIntensity;
-};
 
-export type ResistanceModeTypeResponse = {
-    currentIntensity: PunishmentIntensity;
-    mode: PunishmentMode;
 };
 
 export type ScheduleEntrySchema = {
@@ -713,39 +683,6 @@ export type ResetTosData = {
 export type ResetTosResponses = {
     /**
      * TOS and privacy policy acceptance has been reset
-     */
-    200: unknown;
-};
-
-export type GetDebugResistanceLevelData = {
-    body?: never;
-    path?: never;
-    query?: never;
-};
-
-export type GetDebugResistanceLevelResponses = {
-    /**
-     * Current debug resistance level
-     */
-    200: DebugResistanceLevel;
-};
-
-export type GetDebugResistanceLevelResponse = GetDebugResistanceLevelResponses[keyof GetDebugResistanceLevelResponses];
-
-export type SetDebugResistanceLevelData = {
-    body?: never;
-    path: {
-        /**
-         * The debug resistance level to set
-         */
-        level: DebugResistanceLevel;
-    };
-    query?: never;
-};
-
-export type SetDebugResistanceLevelResponses = {
-    /**
-     * Debug resistance level set successfully
      */
     200: unknown;
 };
@@ -1403,47 +1340,6 @@ export type GetResistanceModeSettingsResponses = {
 };
 
 export type GetResistanceModeSettingsResponse = GetResistanceModeSettingsResponses[keyof GetResistanceModeSettingsResponses];
-
-export type GetResistanceModeTypeData = {
-    body?: never;
-    path?: never;
-    query?: never;
-};
-
-export type GetResistanceModeTypeResponses = {
-    /**
-     * Get current resistance mode type
-     */
-    200: ResistanceModeTypeResponse;
-};
-
-export type GetResistanceModeTypeResponse = GetResistanceModeTypeResponses[keyof GetResistanceModeTypeResponses];
-
-export type SetResistanceModeTypeData = {
-    body: PunishmentMode;
-    path?: never;
-    query?: never;
-};
-
-export type SetResistanceModeTypeErrors = {
-    /**
-     * Invalid mode type or unsupported mode (dynamic is not available in v1 beta)
-     */
-    400: unknown;
-    /**
-     * Resistance mode is locked
-     */
-    403: unknown;
-};
-
-export type SetResistanceModeTypeResponses = {
-    /**
-     * Set resistance mode type
-     */
-    200: ResistanceModeTypeResponse;
-};
-
-export type SetResistanceModeTypeResponse = SetResistanceModeTypeResponses[keyof SetResistanceModeTypeResponses];
 
 export type DeleteScheduleEntryData = {
     body?: never;

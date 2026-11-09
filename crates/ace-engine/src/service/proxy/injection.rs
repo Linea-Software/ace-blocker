@@ -51,7 +51,6 @@ fn modify_meta_csp_with_nonce(doc: &Document, nonce: &str) {
 /// * `is_pro` - Whether the user has pro status
 /// * `scripts` - List of script contents to inject (from NetworkManager)
 /// * `nonce` - CSP nonce to add to script tags
-/// * `intensity` - The current resistance intensity level
 ///
 /// # Returns
 /// Modified HTML content with injected scripts
@@ -61,7 +60,6 @@ pub fn inject_scripts_with_nonce(
     is_pro: bool,
     scripts: &[String],
     nonce: &str,
-    intensity: &str,
 ) -> String {
     if !is_pro {
         return html_content;
@@ -71,28 +69,10 @@ pub fn inject_scripts_with_nonce(
         return html_content;
     }
 
-    info!(
-        "Injecting {} scripts for host: {} with intensity {} and CSP nonce",
-        scripts.len(),
-        host,
-        intensity
-    );
+    info!("Injecting {} interventions for host: {} with CSP nonce", scripts.len(), host);
 
     let doc = Document::from(html_content);
     modify_meta_csp_with_nonce(&doc, nonce);
-
-    let resistance_values = injected_script_tag(
-        nonce,
-        "setup",
-        &format!(
-            r#"
-            window.__BOREDOM_INTENSITY__ = '{}';
-            console.log('Boredom engine setup successfully')
-        "#,
-            intensity
-        ),
-    );
-    doc.select("head").append_html(resistance_values);
 
     for script in scripts {
         let wrapped_script = injected_script_tag(nonce, "script", script);
@@ -111,7 +91,6 @@ mod tests {
         let html = r#"<!DOCTYPE html><html><head><title>Test</title></head><body></body></html>"#;
         let scripts = vec!["console.log('test');".to_string()];
         let nonce = "abc123";
-        let intensity = "high";
 
         let result = inject_scripts_with_nonce(
             "example.com",
@@ -119,14 +98,13 @@ mod tests {
             true,
             &scripts,
             nonce,
-            intensity,
         );
 
         assert!(result.contains(r#"nonce="abc123""#));
         assert!(result.contains("console.log('test');"));
-        assert!(result.contains("window.__BOREDOM_INTENSITY__ = 'high'"));
-        assert_eq!(result.matches("data-ace-resistance=").count(), 2);
-        assert_eq!(result.matches(SCRIPT_NODE_CLEANUP_PRELUDE).count(), 2);
+        assert!(!result.contains("__BOREDOM_INTENSITY__"));
+        assert_eq!(result.matches("data-ace-resistance=").count(), 1);
+        assert_eq!(result.matches(SCRIPT_NODE_CLEANUP_PRELUDE).count(), 1);
         assert!(
             result.rfind(SCRIPT_NODE_CLEANUP_PRELUDE).unwrap()
                 < result.find("console.log('test');").unwrap()
@@ -146,7 +124,6 @@ mod tests {
             true,
             &scripts,
             "abc123",
-            "high",
         );
 
         let result_doc = Document::from(result);
@@ -169,7 +146,6 @@ mod tests {
             true,
             &scripts,
             "abc123",
-            "high",
         );
 
         let result_doc = Document::from(result);
@@ -186,7 +162,6 @@ mod tests {
         let html = r#"<!DOCTYPE html><html><head><title>Test</title></head><body></body></html>"#;
         let scripts = vec!["console.log('test');".to_string()];
         let nonce = "abc123";
-        let intensity = "high";
 
         let result = inject_scripts_with_nonce(
             "example.com",
@@ -194,7 +169,6 @@ mod tests {
             false,
             &scripts,
             nonce,
-            intensity,
         );
 
         assert_eq!(result, html);
@@ -205,7 +179,6 @@ mod tests {
         let html = r#"<!DOCTYPE html><html><head><title>Test</title></head><body></body></html>"#;
         let scripts: Vec<String> = vec![];
         let nonce = "abc123";
-        let intensity = "high";
 
         let result = inject_scripts_with_nonce(
             "example.com",
@@ -213,7 +186,6 @@ mod tests {
             true,
             &scripts,
             nonce,
-            intensity,
         );
 
         assert_eq!(result, html);

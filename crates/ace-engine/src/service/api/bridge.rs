@@ -71,17 +71,6 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)
         }
-        "getDebugResistanceLevel" => no_arg_call!(client.get_debug_resistance_level(capability)),
-        "setDebugResistanceLevel" => {
-            let level: crate::manager::network::DebugResistanceLevel =
-                serde_json::from_value(args.get("level").cloned().unwrap_or(Value::Null))
-                    .map_err(bad_args)?;
-            let result = client
-                .set_debug_resistance_level(capability, level)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
         "hideFiles" => no_arg_call!(client.hide_files(capability)),
         "showFiles" => no_arg_call!(client.show_files(capability)),
         "getUpdateCheckInterval" => no_arg_call!(client.get_update_check_interval(capability)),
@@ -483,17 +472,6 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
                     .map_err(bad_args)?;
             let result = client
                 .delete_user_rule(capability, user_rule_id)
-                .await
-                .map_err(transport_error)??;
-            serde_json::to_value(result).map_err(transport_error)
-        }
-        "getResistanceModeType" => no_arg_call!(client.get_resistance_mode_type(capability)),
-        "setResistanceModeType" => {
-            let mode: crate::manager::resistance::punishment::PunishmentMode =
-                serde_json::from_value(args.get("mode").cloned().unwrap_or(Value::Null))
-                    .map_err(bad_args)?;
-            let result = client
-                .set_resistance_mode_type(capability, mode)
                 .await
                 .map_err(transport_error)??;
             serde_json::to_value(result).map_err(transport_error)

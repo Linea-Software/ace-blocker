@@ -76,7 +76,6 @@ diesel::table! {
         enabled -> Bool,
         lock_state -> Text,
         lock_end -> Nullable<Text>,
-        static_intensity -> Text,
         scripts_version -> Nullable<Text>,
     }
 }

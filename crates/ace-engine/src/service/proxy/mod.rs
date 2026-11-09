@@ -442,7 +442,7 @@ impl ResponseInspector for ProxyAdapter {
         {
             // ── Resistance master switch ──────────────────────────
             // When resistance mode is disabled, no scripts and no
-            // window.__BOREDOM_INTENSITY__ may be injected.
+            // site interventions may be injected.
             let resistance_enabled = {
                 let manager = self.network_manager.read().await;
                 manager.is_resistance_mode_enabled()
@@ -451,13 +451,7 @@ impl ResponseInspector for ProxyAdapter {
                 return ResponseAction::Continue;
             }
 
-            let (scripts, intensity) = {
-                let manager = self.network_manager.read().await;
-                (
-                    manager.get_resistance_scripts_of(host),
-                    manager.get_effective_intensity(),
-                )
-            };
+            let scripts = self.network_manager.read().await.get_resistance_scripts_of(host);
             if scripts.is_empty() {
                 return ResponseAction::Continue;
             }
@@ -508,7 +502,6 @@ impl ResponseInspector for ProxyAdapter {
                 is_pro,
                 &scripts,
                 &nonce,
-                &intensity.to_string(),
             );
 
             // The body is now context-specific (Resistance Mode state + CSP
@@ -1597,11 +1590,6 @@ mod tests {
     #[tokio::test]
     async fn synthetic_block_tunnel_exits_when_resistance_inspection_remains() {
         let (manager, adapter) = adapter_with_resistance(true).await;
-        manager
-            .write()
-            .await
-            .get_resistance_mode_mut()
-            .set_intensity(crate::manager::resistance::PunishmentIntensity::Medium);
         let authority: http::uri::Authority = "example.com:443".parse().unwrap();
         // This origin is no longer blocked but still needs TLS inspection for
         // Resistance scripts. An ordinary intercepted tunnel may stay open;

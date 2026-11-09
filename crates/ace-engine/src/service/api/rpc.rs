@@ -114,15 +114,6 @@ pub trait EngineControl {
         capability: Option<String>,
         policy: crate::manager::network::DebugProPolicy,
     ) -> Result<RpcResult<()>, CallError>;
-    async fn get_debug_resistance_level(
-        &self,
-        capability: Option<String>,
-    ) -> Result<RpcResult<crate::manager::network::DebugResistanceLevel>, CallError>;
-    async fn set_debug_resistance_level(
-        &self,
-        capability: Option<String>,
-        level: crate::manager::network::DebugResistanceLevel,
-    ) -> Result<RpcResult<()>, CallError>;
     async fn hide_files(&self, capability: Option<String>) -> Result<RpcResult<()>, CallError>;
     async fn show_files(&self, capability: Option<String>) -> Result<RpcResult<()>, CallError>;
     async fn get_update_check_interval(
@@ -345,16 +336,6 @@ pub trait EngineControl {
         capability: Option<String>,
         user_rule_id: uuid::Uuid,
     ) -> Result<RpcResult<()>, CallError>;
-    async fn get_resistance_mode_type(
-        &self,
-        capability: Option<String>,
-    ) -> Result<RpcResult<ResistanceModeTypeResponse>, CallError>;
-    async fn set_resistance_mode_type(
-        &self,
-        capability: Option<String>,
-        #[serde(with = "crate::service::api::schemas::punishment_mode_wire")]
-        mode: crate::manager::resistance::punishment::PunishmentMode,
-    ) -> Result<RpcResult<ResistanceModeTypeResponse>, CallError>;
 }
 
 pub struct EngineRpc {
@@ -561,55 +542,6 @@ impl EngineControl for EngineRpc {
             }
             Ok(
                 super::operations_dev::set_debug_pro_policy(self.state.clone(), policy)
-                    .await
-                    .map_err(Into::into),
-            )
-        }
-    }
-
-    async fn get_debug_resistance_level(
-        &self,
-        capability: Option<String>,
-    ) -> Result<RpcResult<crate::manager::network::DebugResistanceLevel>, CallError> {
-        #[cfg(not(debug_assertions))]
-        {
-            let _ = capability;
-            return Ok(Err(RpcError::internal(
-                "developer operations are not available in release builds",
-            )));
-        }
-        #[cfg(debug_assertions)]
-        {
-            if let Err(error) = self.check_capability(capability.as_deref(), false) {
-                return Ok(Err(error));
-            }
-            Ok(
-                super::operations_dev::get_debug_resistance_level(self.state.clone())
-                    .await
-                    .map_err(Into::into),
-            )
-        }
-    }
-
-    async fn set_debug_resistance_level(
-        &self,
-        capability: Option<String>,
-        level: crate::manager::network::DebugResistanceLevel,
-    ) -> Result<RpcResult<()>, CallError> {
-        #[cfg(not(debug_assertions))]
-        {
-            let _ = capability;
-            return Ok(Err(RpcError::internal(
-                "developer operations are not available in release builds",
-            )));
-        }
-        #[cfg(debug_assertions)]
-        {
-            if let Err(error) = self.check_capability(capability.as_deref(), true) {
-                return Ok(Err(error));
-            }
-            Ok(
-                super::operations_dev::set_debug_resistance_level(self.state.clone(), level)
                     .await
                     .map_err(Into::into),
             )
@@ -1446,34 +1378,6 @@ impl EngineControl for EngineRpc {
         )
     }
 
-    async fn get_resistance_mode_type(
-        &self,
-        capability: Option<String>,
-    ) -> Result<RpcResult<ResistanceModeTypeResponse>, CallError> {
-        if let Err(error) = self.check_capability(capability.as_deref(), false) {
-            return Ok(Err(error));
-        }
-        Ok(
-            super::operations_user_rules::get_resistance_mode_type(self.state.clone())
-                .await
-                .map_err(Into::into),
-        )
-    }
-
-    async fn set_resistance_mode_type(
-        &self,
-        capability: Option<String>,
-        mode: crate::manager::resistance::punishment::PunishmentMode,
-    ) -> Result<RpcResult<ResistanceModeTypeResponse>, CallError> {
-        if let Err(error) = self.check_capability(capability.as_deref(), true) {
-            return Ok(Err(error));
-        }
-        Ok(
-            super::operations_user_rules::set_resistance_mode_type(self.state.clone(), mode)
-                .await
-                .map_err(Into::into),
-        )
-    }
 }
 
 #[cfg(test)]
@@ -1556,45 +1460,8 @@ mod remoc_tests {
         assert_eq!(snapshot.blocks.len(), 1);
         assert_eq!(snapshot.blocks[0].block.id, created.network_block.id);
         assert_eq!(
-            serde_json::to_value(&snapshot).unwrap()["resistanceModeSettings"]["mode"],
-            serde_json::json!({"type": "static", "intensity": "none"})
-        );
-
-        drop(client);
-        tokio::time::timeout(Duration::from_secs(5), server)
-            .await
-            .expect("server shutdown deadline")
-            .unwrap();
-    }
-
-    #[tokio::test]
-    async fn resistance_mode_type_round_trips_over_remoc() {
-        let (_temp, state) = state();
-        let (client, server) = client(state).await;
-        let current = client
-            .get_resistance_mode_type(None)
-            .await
-            .expect("deserialize resistance mode")
-            .expect("get resistance mode");
-        assert_eq!(
-            serde_json::to_value(current.mode).unwrap(),
-            serde_json::json!({"type": "static", "intensity": "none"})
-        );
-
-        let updated = client
-            .set_resistance_mode_type(
-                Some("test-256-bit-capability".to_owned()),
-                PunishmentMode::Static {
-                    intensity: PunishmentIntensity::High,
-                },
-            )
-            .await
-            .expect("deserialize updated resistance mode")
-            .expect("set resistance mode");
-        assert_eq!(updated.current_intensity, PunishmentIntensity::High);
-        assert_eq!(
-            serde_json::to_value(updated.mode).unwrap(),
-            serde_json::json!({"type": "static", "intensity": "high"})
+            serde_json::to_value(&snapshot).unwrap()["resistanceModeSettings"]["enabled"],
+            false
         );
 
         drop(client);

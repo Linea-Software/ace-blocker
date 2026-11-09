@@ -18,10 +18,6 @@ export const rpcParameters = {
   "setDebugProPolicy": [
     "policy"
   ],
-  "getDebugResistanceLevel": [],
-  "setDebugResistanceLevel": [
-    "level"
-  ],
   "hideFiles": [],
   "showFiles": [],
   "getUpdateCheckInterval": [],
@@ -139,10 +135,6 @@ export const rpcParameters = {
   ],
   "deleteUserRule": [
     "user_rule_id"
-  ],
-  "getResistanceModeType": [],
-  "setResistanceModeType": [
-    "mode"
   ],
   "createSitePack": [
     "payload"

@@ -6,4 +6,4 @@ pub mod signed_entitlement;
 pub use account::AccountManager;
 pub use network::NetworkManager;
 pub use network::error::NetworkManagerOpErr;
-pub use resistance::{PunishmentIntensity, PunishmentMode, ResistanceModeManager};
+pub use resistance::ResistanceModeManager;

@@ -5,14 +5,7 @@ CREATE TABLE resistance_mode_settings (
     lock_state TEXT NOT NULL DEFAULT "inactive",
     lock_end TEXT,
 
-    -- Static settings
-    static_intensity TEXT NOT NULL DEFAULT "none",
-
     scripts_version TEXT,
-
-    -- CONSTRAINT: Intensity types must be valid
-    CONSTRAINT valid_static_intensity_type
-        CHECK (static_intensity IN ("none", "low", "medium", "high", "extreme")),
 
     -- CONSTRAINT: Lock type must valid
     CONSTRAINT valid_lock_type

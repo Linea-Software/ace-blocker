@@ -19,7 +19,7 @@ pub mod user_defined;
 
 use crate::core::SafeSearchEnforcement;
 use crate::core::common::injectable_scripts::InjectableScriptTree;
-use crate::manager::resistance::{PunishmentIntensity, PunishmentMode, ResistanceModeManager};
+use crate::manager::resistance::ResistanceModeManager;
 use http;
 use std::{
     collections::{HashMap, HashSet},
@@ -47,16 +47,6 @@ pub enum DebugProPolicy {
     Default,
 }
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
-pub enum DebugResistanceLevel {
-    None,
-    Low,
-    Medium,
-    High,
-    Extreme,
-    Default,
-}
-
 /// Owns the live policy shared by the local API and proxy.
 ///
 /// Site-pack handles can be shared between blocks. The service protects this
@@ -72,15 +62,13 @@ pub struct NetworkManager {
     /// replayed resyncs of the same pack from running duplicates.
     in_flight_site_pack_syncs: Arc<Mutex<HashSet<SitePackId>>>,
 
-    /// Manages resistance mode including scripts, settings, and static intensity
+    /// Manages resistance mode including scripts, settings, and lock
     resistance_mode: ResistanceModeManager,
 
     account_manager: AccountManager,
     safe_search_enforcements: HashMap<String, SafeSearchEnforcement>,
     #[cfg(debug_assertions)]
     debug_pro_policy: DebugProPolicy,
-    #[cfg(debug_assertions)]
-    debug_resistance_level: DebugResistanceLevel,
 }
 
 impl NetworkManager {
@@ -121,8 +109,6 @@ impl NetworkManager {
             safe_search_enforcements: Self::load_safe_search_enforcements(&db)?,
             #[cfg(debug_assertions)]
             debug_pro_policy: DebugProPolicy::Default,
-            #[cfg(debug_assertions)]
-            debug_resistance_level: DebugResistanceLevel::Default,
         };
 
         Ok(manager)
@@ -139,8 +125,6 @@ impl NetworkManager {
             safe_search_enforcements: HashMap::new(),
             #[cfg(debug_assertions)]
             debug_pro_policy: DebugProPolicy::Default,
-            #[cfg(debug_assertions)]
-            debug_resistance_level: DebugResistanceLevel::Default,
         }
     }
 
@@ -184,16 +168,6 @@ impl NetworkManager {
         }
     }
 
-    #[cfg(debug_assertions)]
-    pub fn set_debug_resistance_level(&mut self, level: DebugResistanceLevel) {
-        self.debug_resistance_level = level;
-    }
-
-    #[cfg(debug_assertions)]
-    pub fn get_debug_resistance_level(&self) -> DebugResistanceLevel {
-        self.debug_resistance_level
-    }
-
     pub fn is_pro_user_cached(&self) -> bool {
         #[cfg(debug_assertions)]
         match self.debug_pro_policy {
@@ -212,19 +186,6 @@ impl NetworkManager {
             DebugProPolicy::Default => {}
         }
         self.account_manager.is_pro().await
-    }
-
-    pub fn get_effective_intensity(&self) -> PunishmentIntensity {
-        #[cfg(debug_assertions)]
-        match self.debug_resistance_level {
-            DebugResistanceLevel::None => return PunishmentIntensity::None,
-            DebugResistanceLevel::Low => return PunishmentIntensity::Low,
-            DebugResistanceLevel::Medium => return PunishmentIntensity::Medium,
-            DebugResistanceLevel::High => return PunishmentIntensity::High,
-            DebugResistanceLevel::Extreme => return PunishmentIntensity::Extreme,
-            DebugResistanceLevel::Default => {}
-        }
-        self.resistance_mode.get_intensity()
     }
 
     pub async fn set_api_key(&self, key: crate::core::ApiKey) -> Result<(), NetworkManagerOpErr> {
@@ -281,8 +242,6 @@ impl NetworkManager {
         let needs_scripts = !inspect_request
             && !needs_safe_search
             && self.resistance_mode.enabled
-            && self.resistance_mode.get_intensity()
-                != crate::manager::resistance::PunishmentIntensity::None
             && self.has_scripts_of(&host)
             && self.is_pro_user_cached();
 
@@ -588,43 +547,21 @@ impl NetworkManager {
         Ok(block)
     }
 
-    /// Loads the resistance manager from the database.
-    ///
-    /// v1 beta ships static mode only (MGR-24): the persisted row carries a
-    /// single `static_intensity`; there is no dynamic ladder or usage history
-    /// to reconstruct.
+    /// Loads the resistance master switch and its lock. Script settings live
+    /// independently in script_states and are loaded separately.
     fn load_resistance_manager(
         db: &Arc<EngineDB>,
     ) -> Result<ResistanceModeManager, NetworkManagerOpErr> {
-        let mut resistance_manager = ResistanceModeManager::new_static(PunishmentIntensity::None);
-
-        {
-            let settings = db.get_resistance_mode_settings()?;
-            let static_intensity = settings
-                .static_intensity
-                .parse::<PunishmentIntensity>()
-                .map_err(|error| NetworkManagerOpErr::InternalError {
-                    message: format!("Invalid persisted resistance intensity: {error}"),
-                })?;
-
-            let mode = PunishmentMode::Static {
-                intensity: static_intensity,
-            };
-
-            let mut punishment = resistance_manager.get_punishment().clone();
-            punishment.mode = mode;
-            punishment.static_intensity = static_intensity;
-            resistance_manager.set_punishment(punishment);
-            resistance_manager.scripts_version = settings.scripts_version.clone();
-            resistance_manager.enabled = settings.enabled;
-            resistance_manager.lock =
-                crate::core::Lock::from_raw(settings.lock_state, settings.lock_end).map_err(
-                    |error| NetworkManagerOpErr::InternalError {
-                        message: format!("Invalid persisted resistance lock: {error}"),
-                    },
-                )?;
-        }
-
+        let mut resistance_manager = ResistanceModeManager::default();
+        let settings = db.get_resistance_mode_settings()?;
+        resistance_manager.scripts_version = settings.scripts_version;
+        resistance_manager.enabled = settings.enabled;
+        resistance_manager.lock =
+            crate::core::Lock::from_raw(settings.lock_state, settings.lock_end).map_err(
+                |error| NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid persisted resistance lock: {error}"),
+                },
+            )?;
         Ok(resistance_manager)
     }
 
@@ -751,15 +688,8 @@ mod tests {
         let temp = tempdir().unwrap();
         let db = Arc::new(EngineDB::from(&temp.path().join("invalid-resistance.sqlite")).unwrap());
         let mut connection = db.get_db_connection().unwrap();
-        connection
-            .batch_execute("PRAGMA ignore_check_constraints = ON; UPDATE resistance_mode_settings SET static_intensity = 'invalid'; PRAGMA ignore_check_constraints = OFF;")
-            .unwrap();
-        drop(connection);
-        assert!(NetworkManager::load_resistance_manager(&db).is_err());
-
-        let mut connection = db.get_db_connection().unwrap();
         connection.batch_execute(
-            "PRAGMA ignore_check_constraints = ON; UPDATE resistance_mode_settings SET static_intensity = 'none', lock_state = 'bogus'; PRAGMA ignore_check_constraints = OFF;"
+            "PRAGMA ignore_check_constraints = ON; UPDATE resistance_mode_settings SET lock_state = 'bogus'; PRAGMA ignore_check_constraints = OFF;"
         ).unwrap();
         drop(connection);
         assert!(NetworkManager::load_resistance_manager(&db).is_err());

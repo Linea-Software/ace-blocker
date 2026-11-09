@@ -35,22 +35,6 @@ pub(super) async fn set_debug_pro_policy(
     Ok(())
 }
 
-pub(super) async fn get_debug_resistance_level(
-    app_state: AppState,
-) -> Result<crate::manager::network::DebugResistanceLevel, ApiError> {
-    let manager = app_state.network_manager.read().await;
-    Ok(manager.get_debug_resistance_level())
-}
-
-pub(super) async fn set_debug_resistance_level(
-    app_state: AppState,
-    level: crate::manager::network::DebugResistanceLevel,
-) -> Result<(), ApiError> {
-    let mut manager = app_state.network_manager.write().await;
-    manager.set_debug_resistance_level(level);
-    Ok(())
-}
-
 #[cfg(target_os = "windows")]
 pub(super) async fn hide_files() -> Result<(), ApiError> {
     use crate::platform::set_file_hide;

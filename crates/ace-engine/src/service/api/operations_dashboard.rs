@@ -123,8 +123,6 @@ pub(super) async fn get_dashboard_snapshot(
     // ── Resistance mode settings ──
     let resistance_mode_settings = {
         let engine = manager.get_resistance_mode();
-        let punishment = engine.get_punishment();
-        let current_intensity = manager.get_effective_intensity();
         let entries = engine.script_tree.get_all_script_entries();
 
         Some(ResistanceModeSettings {
@@ -135,9 +133,6 @@ pub(super) async fn get_dashboard_snapshot(
                 .lock
                 .get_end_time()
                 .map(|dt: chrono::DateTime<chrono::Local>| dt.naive_local().to_string()),
-            mode: punishment.mode,
-            current_intensity,
-            static_intensity: punishment.static_intensity,
             scripts_version: engine.scripts_version.clone(),
             scripts_loaded: !entries.is_empty(),
             scripts_total: entries.len() as u32,

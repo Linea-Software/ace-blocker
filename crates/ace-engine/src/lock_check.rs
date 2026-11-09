@@ -306,7 +306,6 @@ mod tests {
             enabled: true,
             lock_state: "inactive".to_string(),
             lock_end: None,
-            static_intensity: "medium".to_string(),
             scripts_version: None,
         })
         .unwrap();
@@ -343,7 +342,6 @@ mod tests {
             enabled: true,
             lock_state: "active_until_lock_end".to_string(),
             lock_end: Some(later(48)),
-            static_intensity: "high".to_string(),
             scripts_version: None,
         })
         .unwrap();
@@ -370,7 +368,6 @@ mod tests {
             enabled: true,
             lock_state: "active_until_lock_end".to_string(),
             lock_end: Some(later(-2)),
-            static_intensity: "low".to_string(),
             scripts_version: None,
         })
         .unwrap();

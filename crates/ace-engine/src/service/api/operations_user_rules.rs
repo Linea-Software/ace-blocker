@@ -51,32 +51,3 @@ pub(super) async fn delete_user_rule(
     Ok(())
 }
 
-pub(super) async fn get_resistance_mode_type(
-    state: AppState,
-) -> Result<ResistanceModeTypeResponse, ApiError> {
-    let manager = state.network_manager.read().await;
-
-    let resistance_mode = manager.get_resistance_mode();
-
-    Ok(ResistanceModeTypeResponse {
-        mode: resistance_mode.get_mode(),
-        current_intensity: resistance_mode.get_intensity(),
-    })
-}
-
-pub(super) async fn set_resistance_mode_type(
-    state: AppState,
-    mode: crate::manager::resistance::punishment::PunishmentMode,
-) -> Result<ResistanceModeTypeResponse, ApiError> {
-    let mode = mode;
-
-    let mut manager = state.network_manager.write().await;
-
-    manager.set_resistance_mode_type(mode)?;
-
-    let resistance_mode = manager.get_resistance_mode();
-    Ok(ResistanceModeTypeResponse {
-        mode: resistance_mode.get_mode(),
-        current_intensity: resistance_mode.get_intensity(),
-    })
-}

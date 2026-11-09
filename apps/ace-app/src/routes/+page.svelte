@@ -61,11 +61,8 @@
 
     const resistanceLabel = $derived.by(() => {
         if (!dashboardStore.engineEnabled) return m.status_off();
-        if (dashboardStore.currentIntensity === "extreme") return m.intensity_maximum();
-        if (dashboardStore.currentIntensity === "high") return m.intensity_high();
-        if (dashboardStore.currentIntensity === "medium") return m.intensity_medium();
-        if (dashboardStore.currentIntensity === "low") return m.intensity_low();
-        return m.status_off();
+        if (dashboardStore.resistanceStatus === "operational") return m.status_on_operational();
+        return m.status_on_degraded();
     });
 
     function transitionTime(value: Date): string {

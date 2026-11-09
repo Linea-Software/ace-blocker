@@ -1,19 +1,9 @@
 import { getDashboardSnapshot } from "$engine-client";
 import {
-    type PunishmentIntensity,
-    type PunishmentMode,
+    type EnforcementStatus,
     type NetworkBlockSchema,
     type NetworkBlockSnapshot,
 } from "$engine-client";
-
-/** Mapping from resistance intensity to artificial page load delay in milliseconds. */
-const INTENSITY_LAG_MS: Record<PunishmentIntensity, number> = {
-    none: 0,
-    low: 100,
-    medium: 300,
-    high: 600,
-    extreme: 2000,
-};
 
 class DashboardStore {
     isLoading = $state(true);
@@ -29,10 +19,7 @@ class DashboardStore {
     engineEnabled = $state(false);
     isLocked = $state(false);
     lockEndRaw = $state<string | null>(null);
-    currentIntensity = $state<PunishmentIntensity>("none");
-    lagMs = $state<number>(0);
-    friction = $state<{ delay: boolean }>({ delay: false });
-    mode = $state<PunishmentMode>({ type: "static" });
+    resistanceStatus = $state<EnforcementStatus>("disabled");
 
     constructor() {}
 
@@ -71,10 +58,7 @@ class DashboardStore {
             this.engineEnabled = settings.enabled;
             this.isLocked = settings.isLocked;
             this.lockEndRaw = settings.lockEnd || null;
-            this.mode = settings.mode;
-            this.currentIntensity = settings.currentIntensity;
-            this.lagMs = INTENSITY_LAG_MS[settings.currentIntensity];
-            this.friction = { delay: false };
+            this.resistanceStatus = settings.enforcementStatus;
         }
 
         this.isLoading = false;

@@ -4,9 +4,7 @@ use crate::service::api::{AppState, error::ApiError, schemas::*};
 pub(super) async fn get_resistance_mode_settings(state: AppState) -> ResistanceModeSettings {
     let manager = state.network_manager.read().await;
     let engine = manager.get_resistance_mode();
-    let punishment = engine.get_punishment();
 
-    let current_intensity = manager.get_effective_intensity();
 
     let entries = engine.script_tree.get_all_script_entries();
     let scripts_total = entries.len() as u32;
@@ -20,9 +18,6 @@ pub(super) async fn get_resistance_mode_settings(state: AppState) -> ResistanceM
             .lock
             .get_end_time()
             .map(|dt: chrono::DateTime<chrono::Local>| dt.to_rfc3339()),
-        mode: punishment.mode,
-        current_intensity,
-        static_intensity: punishment.static_intensity,
         scripts_version: engine.scripts_version.clone(),
         scripts_loaded: !entries.is_empty(),
         scripts_total,

@@ -52,7 +52,7 @@ pub struct ScriptEntry {
     pub domain: String,
     #[serde(default)]
     pub content: String,
-    #[serde(default = "default_enabled")]
+    #[serde(rename = "defaultEnabled", alias = "enabled", default = "default_enabled")]
     pub enabled: bool,
 }
 

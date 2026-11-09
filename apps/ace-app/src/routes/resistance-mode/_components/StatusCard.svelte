@@ -46,9 +46,6 @@
         if (settings.enforcementStatus === "no_scripts_enabled") {
             return m.reason_no_scripts_enabled();
         }
-        if (settings.enforcementStatus === "intensity_none") {
-            return m.reason_intensity_none();
-        }
         return m.status_on_degraded_description();
     });
 

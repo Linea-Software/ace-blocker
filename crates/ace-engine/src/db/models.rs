@@ -22,7 +22,6 @@ pub struct ResistanceModeSettingsModel {
     pub enabled: bool,
     pub lock_state: String,
     pub lock_end: Option<String>,
-    pub static_intensity: String,
     pub scripts_version: Option<String>,
 }
 
