@@ -26,19 +26,9 @@
     let { data }: { data: PageData } = $props();
 
 
-    function blockPriority(block: (typeof data.blocks)[number]): number {
-        if (block.enabled && block.isActive) return 0;
-        if (block.lockState.state !== "inactive") return 1;
-        if (block.scheduleMode === "scheduled") return 2;
-        return 3;
-    }
-
+    // Keep the list stable when a block is enabled, disabled or changes state.
     const blocks = $derived(
-        [...data.blocks].sort(
-            (a, b) =>
-                blockPriority(a) - blockPriority(b) ||
-                a.name.localeCompare(b.name),
-        ),
+        [...data.blocks].sort((a, b) => a.name.localeCompare(b.name)),
     );
 
     onMount(() => {
