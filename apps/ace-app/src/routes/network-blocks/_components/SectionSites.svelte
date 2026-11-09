@@ -32,7 +32,6 @@
     } = $props();
 
     let searchQuery = $state("");
-    let browseOpen = $state(false);
 
     let downloadModalOpen = $state(false);
     let listToDownload = $state<SitePackSchema | null>(null);
@@ -239,37 +238,21 @@
     </button>
 {/snippet}
 
-<div class="space-y-5" id="sites">
+<div class="space-y-4" id="sites">
     <section class="space-y-3" aria-labelledby="categories-heading">
-        <div>
-            <h3
-                id="categories-heading"
-                class="font-condensed text-base font-semibold text-foreground"
-            >
-                {m.site_packs()}
-            </h3>
-            <p class="text-muted-foreground mt-0.5 text-xs">
-                {m.categories_description()}
-            </p>
+        <div class="flex flex-wrap items-end justify-between gap-2">
+            <div>
+                <h3 id="categories-heading" class="font-condensed text-lg font-semibold text-foreground">
+                    {m.site_packs()}
+                </h3>
+                <p class="text-muted-foreground mt-1 text-[13px]">{m.categories_description()}</p>
+            </div>
+            <span class="text-muted-foreground text-[13px]">
+                {m.block_wizard_category_count({count:selectedLists.filter(isAceCategory).length})}
+            </span>
         </div>
-
-        <div class="selected-categories">
-            {#each selectedLists as selected (selected.id)}
-                {@render listRow(selected)}
-            {:else}
-                <p class="text-muted-foreground text-sm">{m.block_need_targets()}</p>
-            {/each}
-        </div>
-        <button type="button" class="browse-categories" aria-expanded={browseOpen} onclick={() => (browseOpen = !browseOpen)}>
-            {browseOpen ? m.close() : m.block_categories_toggle()}
-        </button>
-
-        {#if browseOpen}
         <div class="relative">
-            <Search
-                class="text-muted-foreground/60 absolute top-1/2 left-3 size-4 -translate-y-1/2"
-                aria-hidden="true"
-            />
+            <Search class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" aria-hidden="true" />
             <Input
                 placeholder={m.search_lists_placeholder()}
                 bind:value={searchQuery}
@@ -277,63 +260,40 @@
                 aria-label={m.search_lists_placeholder()}
             />
         </div>
-
-        {#if filteredLists.length === 0}
-            <p class="text-muted-foreground py-2 text-sm">
-                {m.no_lists_found()}
-            </p>
-        {:else if filteredCategories.length > 0}
-            <div class="space-y-1">
-                {#each filteredCategories.filter((item) => !item.requiresPro) as list (list.id)}
+        {#if filteredCategories.length === 0}
+            <p class="text-muted-foreground py-3 text-sm">{m.no_lists_found()}</p>
+        {:else}
+            <div class="space-y-1.5">
+                {#each filteredCategories.filter((item) => !requiresProForConnection(item)) as list (list.id)}
+                    {@render listRow(list)}
+                {/each}
+                {#each filteredCategories.filter((item) => requiresProForConnection(item) && (!isFreeUser || connectedListIds.includes(item.id))) as list (list.id)}
                     {@render listRow(list)}
                 {/each}
             </div>
-            {#if filteredCategories.some((item) => item.requiresPro)}
+            {#if isFreeUser && filteredCategories.some((item) => requiresProForConnection(item) && !connectedListIds.includes(item.id))}
                 <details class="pro-categories">
                     <summary>{m.pro_badge()} · {m.block_categories_toggle()}</summary>
-                    <div class="space-y-1 pt-3">
-                        {#each filteredCategories.filter((item) => item.requiresPro) as list (list.id)}
+                    <div class="space-y-1.5 pt-3">
+                        {#each filteredCategories.filter((item) => requiresProForConnection(item) && !connectedListIds.includes(item.id)) as list (list.id)}
                             {@render listRow(list)}
                         {/each}
                     </div>
                 </details>
             {/if}
-        {:else}
-            <p class="text-muted-foreground py-1 text-xs">
-                {m.no_categories_found()}
-            </p>
         {/if}
-    {/if}
     </section>
-
-    {#if browseOpen && filteredLists.length > 0}
-        <section
-            class="border-border space-y-3 border-t pt-5"
-            aria-labelledby="custom-lists-heading"
-        >
+    {#if filteredCustomLists.length > 0}
+        <section class="border-border space-y-3 border-t pt-5" aria-labelledby="custom-lists-heading">
             <div>
-                <h3
-                    id="custom-lists-heading"
-                    class="font-condensed text-sm font-semibold text-foreground"
-                >
-                    {m.custom_lists()}
-                </h3>
-                <p class="text-muted-foreground mt-0.5 text-xs">
-                    {m.custom_lists_description()}
-                </p>
+                <h3 id="custom-lists-heading" class="font-condensed text-base font-semibold text-foreground">{m.custom_lists()}</h3>
+                <p class="text-muted-foreground mt-1 text-[13px]">{m.custom_lists_description()}</p>
             </div>
-
-            {#if filteredCustomLists.length > 0}
-                <div class="space-y-1">
-                    {#each filteredCustomLists as list (list.id)}
-                        {@render listRow(list)}
-                    {/each}
-                </div>
-            {:else}
-                <p class="text-muted-foreground text-xs">
-                    {m.no_custom_lists_found()}
-                </p>
-            {/if}
+            <div class="space-y-1.5">
+                {#each filteredCustomLists as list (list.id)}
+                    {@render listRow(list)}
+                {/each}
+            </div>
         </section>
     {/if}
 </div>
@@ -439,17 +399,6 @@
 
 
 <style>
-    .selected-categories { display: grid; gap: 6px; }
-    .browse-categories {
-        min-height: 40px;
-        padding: 0 13px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        background: var(--card);
-        font-size: 13px;
-        font-weight: 600;
-    }
-    .browse-categories:hover { background: var(--muted); }
     .pro-categories {
         border-top: 1px solid var(--border);
         padding-top: 12px;

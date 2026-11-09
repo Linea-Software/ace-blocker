@@ -8,7 +8,13 @@
 
     let { data }: { data: PageData } = $props();
     let lockOpen = $state(false);
+    let editorStep = $state<0 | 1 | 2>(0);
     const returnToList = () => goto(resolve("/network-blocks"));
+    // Deep links from the Network Blocks list go directly to the requested section.
+    $effect(() => {
+        if (typeof window !== "undefined" &&
+            new URLSearchParams(window.location.search).get("section") === "schedule") editorStep = 1;
+    });
 
     function handleLock() {
         if (data.block) lockOpen = true;
@@ -28,7 +34,7 @@
 {:else}
     <BlockEditor
         block={data.block}
-        initialSection={new URLSearchParams(typeof window !== "undefined" ? window.location.search : "").get("section") === "schedule" ? "schedule" : "blocking"}
+        bind:step={editorStep}
         onClose={returnToList}
         onProtect={handleLock}
         onSave={() => { void returnToList(); }}
@@ -41,7 +47,7 @@
     onSave={() => invalidateAll()}
     onEditSchedule={() => {
         lockOpen = false;
-        document.getElementById("block-when")?.scrollIntoView({ block: "start" });
+        editorStep = 1;
     }}
 />
 

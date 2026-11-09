@@ -14,6 +14,34 @@ the first 16 characters. Schedules are separate civil-time windows whose
 IANA timezone is pinned by the engine, never inferred from the live Windows
 system timezone after policy creation. See `../../docs/TRUSTED_TIME_FUTURE.md`.
 
+## Guided Network Block editor (2026-11-09)
+
+The full-page Create/Edit editor at `/network-blocks/editor` now uses three
+directly navigable steps: **Content → Schedule → Review**. Draft changes in
+all steps remain in the existing `UserDefinedRulesDelta`,
+`SitePacksConnectionDelta`, and `ScheduleChanges` until the single
+`saveNetworkBlock` RPC on Review. Do not turn step navigation or category
+selection into incremental RPC writes.
+
+Content highlights Ace Categories first: available Free categories appear
+immediately, Pro categories are discoverable in a collapsed catalog, and
+selected Pro categories remain visible. Custom Lists are separate.
+**Manage individual websites** opens a subordinate list editor with domain
+normalization, bulk input, filtering and 20-row pagination (no tag cloud).
+A visible shortcut at the top reaches the panel without requiring users to
+discover the long page scroll.
+
+Schedule continues to reuse the proven weekly coverage/lock validation
+components; deep links with `section=schedule` open that step directly.
+Review owns the block name, aggregate policy summary and optional post-save
+lock entry. Activation is currently informational: the atomic save RPC
+creates enabled blocks and preserves existing enablement; changing enablement
+would require the separate `setNetworkBlockEnabled` operation and must not
+be falsely presented as part of that transaction. Do not auto-lock during
+creation. Preserve edit safety on partial read failures and uncertain RPC
+acknowledgments. Test using `e2e/block-editor-redesign.spec.ts` and the
+native desktop screenshot; browser fixtures have no engine IPC.
+
 ## Network Block editor redesign (2026-11-08)
 
 Create/Edit Network Block now uses the dedicated `/network-blocks/editor`

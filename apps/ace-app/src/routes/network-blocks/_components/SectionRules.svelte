@@ -22,7 +22,9 @@
     let regexInput = $state("");
     let bulkInput = $state("");
     let bulkOpen = $state(false);
-    let showAllWebsites = $state(false);
+    let websiteSearch = $state("");
+    let websitePage = $state(0);
+    const WEBSITES_PER_PAGE = 20;
 
     let domainValidation = $derived.by(() => {
         const input = domainInput.trim();
@@ -51,6 +53,14 @@
     let domainRules = $derived(
         activeRules.filter((rule) => rule.type === "domain"),
     );
+    const filteredWebsites = $derived(domainRules.filter(item =>
+        item.rule.toLowerCase().includes(websiteSearch.trim().toLowerCase())
+    ));
+    const websitePages = $derived(Math.max(1, Math.ceil(filteredWebsites.length / WEBSITES_PER_PAGE)));
+    const displayedWebsitePage = $derived(Math.min(websitePage, websitePages - 1));
+    const visibleWebsites = $derived(filteredWebsites.slice(
+        displayedWebsitePage * WEBSITES_PER_PAGE, (displayedWebsitePage + 1) * WEBSITES_PER_PAGE
+    ));
     let regexRules = $derived(
         activeRules.filter((rule) => rule.type === "regex"),
     );
@@ -125,8 +135,17 @@
     </div>
 
     {#if domainRules.length > 0}
+        {#if domainRules.length > 5}
+            <Input
+                placeholder={m.block_websites_search()}
+                aria-label={m.block_websites_search()}
+                value={websiteSearch}
+                oninput={(event) => { websiteSearch = event.currentTarget.value; websitePage = 0; }}
+                class="bg-card h-10 rounded-sm"
+            />
+        {/if}
         <div class="border-border divide-border divide-y border-y">
-            {#each (showAllWebsites ? domainRules : domainRules.slice(0, 4)) as item (item.id)}
+            {#each visibleWebsites as item (item.id)}
                 <div class="group flex min-w-0 items-center gap-2 py-2">
                     <code
                         class="min-w-0 flex-1 truncate font-mono text-xs"
@@ -150,11 +169,23 @@
                 </div>
             {/each}
         </div>
-        {#if domainRules.length > 4}
-            <button type="button" class="text-sm font-medium underline underline-offset-4"
-                onclick={() => (showAllWebsites = !showAllWebsites)}>
-                {showAllWebsites ? m.block_show_less_sites() : m.block_show_more_sites({ count: domainRules.length - 4 })}
-            </button>
+        {#if domainRules.length > WEBSITES_PER_PAGE || websiteSearch.trim()}
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-muted-foreground text-xs">{m.block_websites_showing({ count: visibleWebsites.length, total: filteredWebsites.length })}</p>
+                {#if websitePages > 1}
+                    <div class="flex items-center gap-2">
+                        <Button size="sm" variant="outline" disabled={displayedWebsitePage === 0}
+                            onclick={() => (websitePage = Math.max(0, displayedWebsitePage - 1))}>
+                            {m.block_websites_prev()}
+                        </Button>
+                        <span class="text-muted-foreground text-xs">{m.block_websites_page({page:displayedWebsitePage + 1,pages:websitePages})}</span>
+                        <Button size="sm" variant="outline" disabled={displayedWebsitePage >= websitePages - 1}
+                            onclick={() => (websitePage = displayedWebsitePage + 1)}>
+                            {m.block_websites_next()}
+                        </Button>
+                    </div>
+                {/if}
+            </div>
         {/if}
     {:else}
         <p class="text-muted-foreground text-xs">{m.no_rules_added()}</p>
