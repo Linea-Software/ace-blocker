@@ -220,7 +220,11 @@ async fn stage_verified_msi(
             .content_length()
             .is_some_and(|size| size > MAX_PACKAGE_BYTES)
         {
-            return Err(Box::new(UpdateError::PackageTooLarge));
+            // Keep the async block's error type erased so `?` can propagate
+            // reqwest and I/O failures as well as update validation errors.
+            return Err(Box::<dyn std::error::Error + Send + Sync>::from(
+                UpdateError::PackageTooLarge,
+            ));
         }
         let mut total_bytes = 0u64;
         while let Some(chunk) = response.chunk().await? {
