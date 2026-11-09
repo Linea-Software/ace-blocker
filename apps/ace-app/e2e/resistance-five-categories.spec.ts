@@ -42,58 +42,56 @@ async function mountResistanceFixture(page: Page, locked = false) {
 
 test("Resistance starts with all five categories collapsed and no extra grouping", async ({ page }) => {
     const fixture = await mountResistanceFixture(page);
-    const categories = fixture.locator('[data-testid^="rm-category-"]:not([data-testid="rm-category-list"])');
+    const categories = fixture.locator('[data-testid^="rm-category-"]:not([data-testid="rm-category-list"]):not([data-testid^="rm-category-disclosure-"])');
     await expect(categories).toHaveCount(5);
     for (const id of ["feeds", "video", "visual", "interruptions", "captcha"]) {
         const category = fixture.getByTestId("rm-category-" + id);
-        await expect(category.locator("> button")).toHaveAttribute("aria-expanded", "false");
+        await expect(category.getByTestId("rm-category-disclosure-" + id)).toHaveAttribute("aria-expanded", "false");
     }
-    await expect(fixture.locator('[data-testid^="rm-select-all-"]')).toHaveCount(0);
+    await expect(fixture.locator('[data-testid^="rm-select-all-"]')).toHaveCount(5);
+    await expect(fixture.getByTestId("rm-select-all-captcha")).toHaveAttribute("aria-checked", "false");
+    await expect(fixture.locator('[data-testid="rm-site-row"]')).toHaveCount(0);
     await fixture.screenshot({ path: "test-results/resistance-five-categories-closed.png" });
 });
 
-test("select-all checkbox shows mixed state and CAPTCHA only allows individual choices", async ({ page }) => {
+test("collapsed category checkbox toggles without opening details, including opt-in CAPTCHA", async ({ page }) => {
     const fixture = await mountResistanceFixture(page);
     const captcha = fixture.getByTestId("rm-category-captcha");
-    await captcha.locator("> button").click();
-    await expect(captcha.locator("> button")).toHaveAttribute("aria-expanded", "true");
-    await expect(captcha.getByText("Simulated CAPTCHA")).toHaveCount(0); // site is still collapsed
-    await expect(captcha.locator('[data-testid^="rm-select-all-"]')).toHaveCount(0);
-    await captcha.getByRole("button", { name: /youtube.com/ }).click();
-    await expect(captcha.getByText("Simulated CAPTCHA")).toBeVisible();
+    const captchaCheckbox = captcha.getByTestId("rm-select-all-captcha");
+    await expect(captchaCheckbox).toHaveAttribute("aria-checked", "false");
+    await captchaCheckbox.click();
+    await expect(captcha.getByTestId("rm-category-disclosure-captcha")).toHaveAttribute("aria-expanded", "false");
+    await expect(captcha.getByText("Simulated CAPTCHA")).toHaveCount(0);
 
     const feeds = fixture.getByTestId("rm-category-feeds");
-    await feeds.locator("> button").click();
-    await expect(captcha.locator("> button")).toHaveAttribute("aria-expanded", "false");
-    await fixture.screenshot({ path: "test-results/resistance-five-categories-open.png" });
     const aggregate = feeds.getByTestId("rm-select-all-feeds");
     await expect(aggregate).toHaveAttribute("aria-checked", "mixed");
     await aggregate.click();
-
+    await expect(feeds.getByTestId("rm-category-disclosure-feeds")).toHaveAttribute("aria-expanded", "false");
+    await expect(fixture.locator('[data-testid="rm-site-row"]')).toHaveCount(0);
     const result = await page.evaluate(() => (window as any).__resistanceBulkActions);
-    expect(result).toEqual([{
-        ids: ["reddit_hide_recommendations", "reddit_hide_feed"],
-        enabled: true,
-    }]);
+    expect(result).toEqual([
+        { ids: ["youtube_random_captcha"], enabled: true },
+        { ids: ["reddit_hide_recommendations", "reddit_hide_feed"], enabled: true },
+    ]);
+    await fixture.screenshot({ path: "test-results/resistance-five-categories-open.png" });
 });
 
 test("a checked category checkbox clears the selected interventions when unlocked", async ({ page }) => {
     const fixture = await mountResistanceFixture(page);
-    await fixture.getByTestId("rm-category-visual").locator("> button").click();
     const all = fixture.getByTestId("rm-select-all-visual");
     await expect(all).toHaveAttribute("aria-checked", "true");
     await expect(all).toBeEnabled();
     await all.click();
+    await expect(fixture.getByTestId("rm-category-disclosure-visual")).toHaveAttribute("aria-expanded", "false");
     const result = await page.evaluate(() => (window as any).__resistanceBulkActions);
     expect(result).toEqual([{ ids: ["youtube_grayscale"], enabled: false }]);
 });
 
 test("a Time Lock allows adding interventions but prevents clearing a complete category", async ({ page }) => {
     const fixture = await mountResistanceFixture(page, true);
-    await fixture.getByTestId("rm-category-visual").locator("> button").click();
     await expect(fixture.getByTestId("rm-select-all-visual")).toBeDisabled();
 
-    await fixture.getByTestId("rm-category-feeds").locator("> button").click();
     const partial = fixture.getByTestId("rm-select-all-feeds");
     await expect(partial).toHaveAttribute("aria-checked", "mixed");
     await expect(partial).toBeEnabled();

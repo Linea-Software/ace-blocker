@@ -91,64 +91,67 @@
         <div class="grid gap-2" data-testid="rm-category-list">
             {#each sections as section (section.kind)}
                 {@const open = expandedKind === section.kind}
+                {@const allSelected = section.totalCount > 0 && section.selectedCount === section.totalCount}
+                {@const partiallySelected = section.selectedCount > 0 && !allSelected}
                 <div class="overflow-hidden rounded-md border border-border bg-card" data-testid={"rm-category-" + section.kind}>
-                    <button
-                        type="button"
-                        class="flex min-h-24 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-[-3px]"
-                        aria-expanded={open}
-                        aria-label={m.interventions_expand_category({category:title(section.kind)})}
-                        onclick={() => { expandedKind = open ? null : section.kind; expandedSite = null; }}
-                    >
-                        <span class="flex size-10 shrink-0 items-center justify-center rounded bg-muted text-foreground">
-                            {#if section.kind === "feeds"}<ListFilter size={21} aria-hidden="true" />
-                            {:else if section.kind === "video"}<PlaySquare size={21} aria-hidden="true" />
-                            {:else if section.kind === "visual"}<Palette size={21} aria-hidden="true" />
-                            {:else if section.kind === "interruptions"}<Hourglass size={21} aria-hidden="true" />
-                            {:else}<ShieldQuestionMark size={21} aria-hidden="true" />{/if}
-                        </span>
-                        <span class="min-w-0 flex-1">
-                            <strong class="block text-base font-semibold">{title(section.kind)}</strong>
-                            <span class="mt-1 block text-sm leading-snug text-muted-foreground">{description(section.kind)}</span>
-                        </span>
-                        <span class="shrink-0 font-mono text-xs text-muted-foreground">{section.selectedCount}/{section.totalCount}</span>
-                        {#if open}<ChevronUp size={17} aria-hidden="true" />{:else}<ChevronDown size={17} aria-hidden="true" />{/if}
-                    </button>
+                    <div class="flex items-stretch">
+                        <button
+                            type="button"
+                            data-testid={"rm-category-disclosure-" + section.kind}
+                            class="flex min-h-24 min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-[-3px]"
+                            aria-expanded={open}
+                            aria-label={m.interventions_expand_category({category:title(section.kind)})}
+                            onclick={() => { expandedKind = open ? null : section.kind; expandedSite = null; }}
+                        >
+                            <span class="flex size-10 shrink-0 items-center justify-center rounded bg-muted text-foreground">
+                                {#if section.kind === "feeds"}<ListFilter size={21} aria-hidden="true" />
+                                {:else if section.kind === "video"}<PlaySquare size={21} aria-hidden="true" />
+                                {:else if section.kind === "visual"}<Palette size={21} aria-hidden="true" />
+                                {:else if section.kind === "interruptions"}<Hourglass size={21} aria-hidden="true" />
+                                {:else}<ShieldQuestionMark size={21} aria-hidden="true" />{/if}
+                            </span>
+                            <span class="min-w-0 flex-1">
+                                <strong class="block text-base font-semibold">{title(section.kind)}</strong>
+                                <span class="mt-1 block text-sm leading-snug text-muted-foreground">{description(section.kind)}</span>
+                            </span>
+                            <span class="shrink-0 font-mono text-xs text-muted-foreground">{section.selectedCount}/{section.totalCount}</span>
+                            {#if open}<ChevronUp size={17} aria-hidden="true" />{:else}<ChevronDown size={17} aria-hidden="true" />{/if}
+                        </button>
+                        {#if onToggleGroup}
+                            <div class="flex shrink-0 items-center border-l border-border/70">
+                                <label
+                                    for={"rm-select-all-" + section.kind}
+                                    class="flex min-h-16 w-14 cursor-pointer items-center justify-center has-[button:disabled]:cursor-not-allowed sm:w-16"
+                                    title={m.interventions_select_all_category({category:title(section.kind)})}
+                                >
+                                    <Checkbox
+                                        id={"rm-select-all-" + section.kind}
+                                        data-testid={"rm-select-all-" + section.kind}
+                                        class="size-5"
+                                        checked={allSelected}
+                                        indeterminate={partiallySelected}
+                                        disabled={!editable || section.totalCount === 0 || (locked && allSelected)}
+                                        aria-label={m.interventions_select_all_category({category:title(section.kind)})}
+                                        onCheckedChange={(checked) => {
+                                            // Mixed means select remaining. Time Lock forbids
+                                            // disabling enabled interventions from the header.
+                                            const enable = partiallySelected || checked;
+                                            if (locked && !enable) return;
+                                            onToggleGroup?.(section.sites.flatMap(site => site.scripts), enable);
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        {/if}
+                    </div>
 
                     {#if open}
                         <div class="border-t border-border px-4 pb-2">
                             {#if section.totalCount === 0}
                                 <p class="py-4 text-sm text-muted-foreground">{m.interventions_empty_category()}</p>
                             {:else}
-                                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border py-2 text-xs text-muted-foreground">
+                                <div class="flex min-h-11 items-center border-b border-border py-2 text-xs text-muted-foreground">
                                     <span>{m.interventions_sites_count({count:section.sites.length})}</span>
-                                    {#if section.kind !== "captcha" && onToggleGroup}
-                                        {@const allSelected = section.selectedCount === section.totalCount}
-                                        {@const partiallySelected = section.selectedCount > 0 && !allSelected}
-                                        <div class="flex min-h-11 items-center gap-3">
-                                            <label
-                                                for={"rm-select-all-" + section.kind}
-                                                class="cursor-pointer select-none text-xs text-foreground"
-                                            >
-                                                {m.interventions_select_all()}
-                                            </label>
-                                            <Checkbox
-                                                id={"rm-select-all-" + section.kind}
-                                                data-testid={"rm-select-all-" + section.kind}
-                                                class="size-5"
-                                                checked={allSelected}
-                                                indeterminate={partiallySelected}
-                                                disabled={!editable || (locked && allSelected)}
-                                                aria-label={m.interventions_select_all_category({category:title(section.kind)})}
-                                                onCheckedChange={(checked) => {
-                                                    // Mixed means "select the remaining"; the next
-                                                    // click on a complete set means "clear".
-                                                    const enable = partiallySelected || checked;
-                                                    if (locked && !enable) return;
-                                                    onToggleGroup?.(section.sites.flatMap((site) => site.scripts), enable);
-                                                }}
-                                            />
-                                        </div>
-                                    {/if}
                                 </div>
                                 {#each section.sites as site (site.domain)}
                                     {@const siteKey = section.kind + ":" + site.domain}

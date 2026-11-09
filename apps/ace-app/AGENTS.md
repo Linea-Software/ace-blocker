@@ -352,9 +352,12 @@ The onboarding flow runs in three parts, all rendered from `src/routes/+layout.s
   limits**, and **Verifications (CAPTCHA)**. All categories begin collapsed;
   avoid extra supergroups or reintroducing global intensity levels.
 - `src/routes/resistance-mode/_components/ScriptSections.svelte` shows a
-  three-state category checkbox (empty/mixed/checked) for the first four
-  categories. Simulated CAPTCHA challenges are opt-in **per script only**;
-  never add a bulk-activation checkbox to their category.
+  three-state category checkbox (empty/mixed/checked) directly in the
+  collapsed header of **all five** categories. The checkbox is a separate
+  click/keyboard target from the disclosure button: selection never expands
+  a category. CAPTCHA interventions are opt-in by default in boredom-engine's
+  catalog, but the header checkbox can explicitly enable all CAPTCHA scripts.
+  Never overwrite an existing user's saved selections to enforce defaults.
 - A Time Lock forbids disabling already enabled interventions, including
   clearing a fully selected category. It still permits enabling more.
 - Resistance script catalog updates belong to

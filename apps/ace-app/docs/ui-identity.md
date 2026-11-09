@@ -229,9 +229,12 @@ delays and limits; and simulated verifications (CAPTCHA). All start collapsed.
 The five categories are the sole top level; do not group them under additional
 headings or add another disclosure layer.
 
-Inside a category, expose intervention selections by site. A three-state bulk
-checkbox shows none, some, or all selected for each category except CAPTCHA,
-which is intentionally per-intervention opt-in. Time Locks prevent clearing
+The five categories each expose an always-visible, three-state checkbox on
+its header, independent from the expand button. Selecting a whole category
+must **not** require opening the category or browsing its sites. Inside the
+category, expose additional intervention selection by site. CAPTCHA scripts
+default to off in fresh catalog installations but may be enabled as a group
+with their checkbox; existing user preferences take precedence. Time Locks prevent clearing
 or weakening protected selections, but permit adding more. Distinguish
 configured selections from operational enforcement. The scripts update action
 and installed version maintenance belong in Settings, not this page.

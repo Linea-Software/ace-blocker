@@ -238,7 +238,7 @@ test("Resistance logos use the bundled brand colors", async ({ page }) => {
             },
         });
     });
-    await page.locator('[data-testid="rm-category-feeds"] > button').click();
+    await page.getByTestId("rm-category-disclosure-feeds").click();
     await expect(page.locator('[data-site-brand-icon="FF0000"]')).toBeVisible();
     await expect(page.locator('[data-site-brand-icon="FF4500"]')).toBeVisible();
     await expect(page.locator('[data-site-brand-icon="FF0000"]')).toHaveCSS(
@@ -276,7 +276,7 @@ test("Free users can inspect Resistance interventions without changing them", as
         });
     });
     await expect(page.locator('[data-testid="rm-category-feeds"]')).toBeVisible();
-    await page.locator('[data-testid="rm-category-feeds"] > button').click();
+    await page.getByTestId("rm-category-disclosure-feeds").click();
     await page.getByRole("button", { name: "Show interventions for youtube.com" }).click();
     await expect(page.locator('[data-testid="rm-script-switch"]')).toBeDisabled();
 });
