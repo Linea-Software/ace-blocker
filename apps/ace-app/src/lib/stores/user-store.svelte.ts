@@ -224,6 +224,13 @@ class UserStore {
                 // endpoints or credentials directly from the WebView.
                 const { error } = await triggerContentUpdate();
                 if (!this.isPro) return;
+                if (error?.code === "content_update_unavailable") {
+                    // The release server is offline. Nothing was updated, so
+                    // keep the installed content and leave the sync retryable.
+                    console.warn("Pro content update unavailable; using installed content.");
+                    this.nextProContentAttempt = Date.now() + 60_000;
+                    return;
+                }
                 // The engine may have registered new official packs even
                 // when one archive failed to download. Refresh open views
                 // after every completed pass, including partial failures.
@@ -233,7 +240,11 @@ class UserStore {
             } catch (error) {
                 // Keep the confirmed entitlement even if content is offline;
                 // a later account refresh can retry without hammering the server.
-                console.error("Could not refresh Pro content:", error);
+                if (error instanceof TypeError) {
+                    console.warn("Pro content update connection unavailable; retrying later.");
+                } else {
+                    console.error("Could not refresh Pro content:", error);
+                }
                 this.nextProContentAttempt = Date.now() + 60_000;
             }
         })();

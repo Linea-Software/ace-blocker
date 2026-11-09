@@ -674,8 +674,30 @@ impl ContentUpdateService {
 pub enum SitePackUpdateError {
     #[error("Failed to fetch site list info: {0}")]
     FetchError(String),
+    /// Release discovery is unavailable, but installed content can still be used.
+    #[error("Release metadata temporarily unavailable: {0}")]
+    ReleaseUnavailable(String),
     #[error("Failed to update site list: {0}")]
     UpdateError(String),
+}
+
+/// Distinguish temporary server/transport outages from local DB failures and
+/// malformed responses, which must still be reported as internal errors.
+fn classify_release_check_error(error: eyre::Report) -> SitePackUpdateError {
+    use crate::ace_server_api::ApiOpError;
+
+    let retryable = error
+        .downcast_ref::<ApiOpError<serde_json::Value>>()
+        .is_some_and(|error| match error {
+            ApiOpError::Transport(transport) => transport.is_retryable(),
+            ApiOpError::Api(response) => response.is_retryable(),
+        });
+
+    if retryable {
+        SitePackUpdateError::ReleaseUnavailable(error.to_string())
+    } else {
+        SitePackUpdateError::FetchError(format!("update check failed: {error}"))
+    }
 }
 
 /// Convenience type for a shareable [`ContentUpdateService`] behind a `tokio` mutex.
@@ -696,9 +718,10 @@ pub(crate) async fn run_update_pass(
     let _single_flight = gate.lock().await;
 
     // 1. Fetch fresh metadata — no manager lock.
-    service.check_for_updates().await.map_err(|error| {
-        SitePackUpdateError::FetchError(format!("update check failed: {error}"))
-    })?;
+    service
+        .check_for_updates()
+        .await
+        .map_err(classify_release_check_error)?;
 
     // Publish fetched metadata immediately: a later staging failure must not
     // strand the shared cache on an obsolete release after the DB timestamp advanced.
@@ -781,6 +804,40 @@ pub async fn run_background_update_loop(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn release_check_distinguishes_offline_from_internal_errors() {
+        use crate::ace_server_api::{ApiOpError, HttpError};
+
+        let offline = eyre::Report::new(ApiOpError::<serde_json::Value>::Transport(
+            HttpError::Timeout,
+        ));
+        assert!(matches!(
+            classify_release_check_error(offline),
+            SitePackUpdateError::ReleaseUnavailable(_)
+        ));
+
+        let unavailable = eyre::Report::new(ApiOpError::<serde_json::Value>::Api(
+            crate::ace_server_api::ApiError {
+                status: 503,
+                headers: reqwest::header::HeaderMap::new(),
+                body: String::new(),
+                raw_body: vec![],
+                typed: None,
+                parse_error: None,
+            },
+        ));
+        assert!(matches!(
+            classify_release_check_error(unavailable),
+            SitePackUpdateError::ReleaseUnavailable(_)
+        ));
+
+        let internal = eyre::eyre!("database failed to save last update timestamp");
+        assert!(matches!(
+            classify_release_check_error(internal),
+            SitePackUpdateError::FetchError(_)
+        ));
+    }
 
     #[tokio::test]
     async fn connected_missing_pack_is_selected_once_even_when_version_matches() {

@@ -131,7 +131,12 @@ pub(super) async fn trigger_content_update(state: AppState) -> Result<(), ApiErr
         &state.account_manager,
     )
     .await
-    .map_err(|error| ApiError::Internal(format!("Content update failed: {error}")))
+    .map_err(|error| match error {
+        crate::service::content_updater::SitePackUpdateError::ReleaseUnavailable(message) => {
+            ApiError::ContentUpdateUnavailable(message)
+        }
+        error => ApiError::Internal(format!("Content update failed: {error}")),
+    })
 }
 
 pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {

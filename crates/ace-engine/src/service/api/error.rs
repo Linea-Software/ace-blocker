@@ -17,6 +17,10 @@ pub enum ApiError {
     ProPlanRequired,
     #[error("Internal error: {0}")]
     Internal(String),
+    /// A content refresh could not reach the release server; the locally
+    /// installed packs remain usable and the client may retry later.
+    #[error("Content updates temporarily unavailable: {0}")]
+    ContentUpdateUnavailable(String),
     /// The item cannot be deleted because it is in use by other resources.
     #[error("Conflict: {0}")]
     Conflict(String),
@@ -58,6 +62,7 @@ impl ApiError {
             ApiError::BadRequest(_) => "bad_request",
             ApiError::ProPlanRequired => "pro_plan_required",
             ApiError::Internal(_) => "internal",
+            ApiError::ContentUpdateUnavailable(_) => "content_update_unavailable",
             ApiError::Conflict(_) => "conflict",
             ApiError::Unauthorized(_) => "unauthorized",
             ApiError::Locked(_) => "locked",
@@ -79,6 +84,7 @@ impl ApiError {
             ApiError::BadRequest(_) => 400,
             ApiError::ProPlanRequired => 403,
             ApiError::Internal(_) => 500,
+            ApiError::ContentUpdateUnavailable(_) => 503,
             ApiError::Unauthorized(_) => 401,
             ApiError::Locked(_) => 423,
             ApiError::ResistanceLocked(_) => 403,
@@ -99,6 +105,7 @@ impl ApiError {
             ApiError::BadRequest(msg) => msg.clone(),
             ApiError::ProPlanRequired => "Ace Blocker Pro plan required".to_string(),
             ApiError::Internal(msg) => msg.clone(),
+            ApiError::ContentUpdateUnavailable(msg) => msg.clone(),
             ApiError::Unauthorized(msg) => msg.clone(),
             ApiError::Locked(msg) => msg.clone(),
             ApiError::ResistanceLocked(msg) => msg.clone(),
@@ -175,5 +182,17 @@ impl From<String> for ApiError {
 impl From<&str> for ApiError {
     fn from(error: &str) -> Self {
         ApiError::Internal(error.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn offline_content_update_has_stable_retryable_error_code() {
+        let error = ApiError::ContentUpdateUnavailable("offline".to_string());
+        assert_eq!(error.code(), "content_update_unavailable");
+        assert_eq!(error.status(), 503);
     }
 }

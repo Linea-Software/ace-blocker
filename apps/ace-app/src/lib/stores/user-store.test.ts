@@ -82,6 +82,46 @@ describe("Pro activation content refresh", () => {
         }
     });
 
+    it("keeps Pro and installed content while release metadata is offline, then retries", async () => {
+        const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+        const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+        try {
+            vi.mocked(triggerContentUpdate).mockResolvedValueOnce({
+                error: {
+                    code: "content_update_unavailable",
+                    status: 503,
+                    error: "release metadata temporarily unavailable",
+                },
+            } as Awaited<ReturnType<typeof triggerContentUpdate>>);
+            vi.mocked(refreshAccount).mockResolvedValue(accountResponse(true));
+            vi.mocked(getAccountInfo).mockResolvedValue(accountResponse(true));
+
+            await store.refreshAfterLoginOrEntitlementChange();
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(store.isPro).toBe(true);
+            expect(store.proContentRevision).toBe(0);
+            expect(triggerContentUpdate).toHaveBeenCalledTimes(1);
+            expect(warn).toHaveBeenCalledOnce();
+            expect(errorLog).not.toHaveBeenCalled();
+
+            await store.refreshAfterLoginOrEntitlementChange();
+            expect(triggerContentUpdate).toHaveBeenCalledTimes(1);
+
+            await vi.advanceTimersByTimeAsync(60_001);
+            await store.refreshAfterLoginOrEntitlementChange();
+            await Promise.resolve();
+            await Promise.resolve();
+            expect(triggerContentUpdate).toHaveBeenCalledTimes(2);
+            expect(store.isPro).toBe(true);
+            expect(store.proContentRevision).toBe(1);
+        } finally {
+            warn.mockRestore();
+            errorLog.mockRestore();
+        }
+    });
+
     it("syncs again if a previously active Pro account is reactivated", async () => {
         vi.mocked(refreshAccount).mockResolvedValue(accountResponse(true));
         await store.refreshAfterLoginOrEntitlementChange();
