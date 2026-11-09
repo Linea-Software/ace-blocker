@@ -14,6 +14,17 @@ the first 16 characters. Schedules are separate civil-time windows whose
 IANA timezone is pinned by the engine, never inferred from the live Windows
 system timezone after policy creation. See `../../docs/TRUSTED_TIME_FUTURE.md`.
 
+## Network Block card icons (2026-11-09)
+
+`NetworkPolicy.svelte` displays the saved block icon using the shared
+`getPackIcon` slug map (which also supports legacy icon identifiers).
+When no custom icon is selected, both the card and the editor's icon picker
+show the neutral Lucide Globe. Keep icons small and monochromatic; the amber
+state rail, activation switch and lock treatment—not the icon—communicate
+enforcement and protection. The icon is decorative (`aria-hidden`) and
+must never replace the block's readable name or state. See
+`e2e/network-policy-icons.spec.ts` for custom/default/legacy icon coverage.
+
 ## Guided Network Block editor (2026-11-09)
 
 The full-page Create/Edit editor at `/network-blocks/editor` now uses three

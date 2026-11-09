@@ -8,10 +8,11 @@
     import { getLocale } from "$lib/paraglide/runtime";
     import { localizationStore } from "$lib/stores/localization.svelte";
     import { onMount } from "svelte";
-    import { Eye, Lock, LockOpen, Pencil, Trash2, Ellipsis } from "@lucide/svelte";
+    import { Eye, Globe, Lock, LockOpen, Pencil, Trash2, Ellipsis } from "@lucide/svelte";
     import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
     import LockSeal from "./LockSeal.svelte";
     import { findNextScheduleTransition } from "$lib/utils/schedule-transitions";
+    import { getPackIcon } from "$lib/utils/pack-icons";
 
     export type NetworkPolicyModel = NetworkBlockSchema & {
         lockInfo?: NetworkListLockSchema | null;
@@ -54,6 +55,9 @@
     // inactive. Only the engine's isLocked flag should disable editing.
     const locked = $derived(policy.lockState.state !== "inactive");
     const lockedNow = $derived(policy.isLocked);
+    // A missing custom icon is a neutral website symbol, never an enforcement status.
+    // Reuse the same icon slug mapping as the block editor, including legacy keys.
+    const PolicyIcon = $derived(policy.icon ? getPackIcon(policy.icon) : Globe);
     const hasSchedule = $derived(policy.scheduleMode === "always" || (policy.schedules?.length ?? 0) > 0);
 
     const stateLabel = $derived.by(() => {
@@ -220,12 +224,19 @@
                 <div class="state-line">
                     <span class="state-word">{stateLabel}</span>
                 </div>
-                <h2>{policy.name}</h2>
-                <div class:unscheduled-copy={!hasSchedule} class="schedule-copy">
-                    <span>{scheduleText}</span>
-                    {#if transitionText}
-                        <span class="transition-copy">{transitionText}</span>
-                    {/if}
+                <div class="policy-name-row">
+                    <span class="policy-icon" data-testid="network-policy-icon" aria-hidden="true">
+                        <PolicyIcon size={21} strokeWidth={1.75} />
+                    </span>
+                    <div class="policy-name-content">
+                        <h2>{policy.name}</h2>
+                        <div class:unscheduled-copy={!hasSchedule} class="schedule-copy">
+                            <span>{scheduleText}</span>
+                            {#if transitionText}
+                                <span class="transition-copy">{transitionText}</span>
+                            {/if}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -386,6 +397,30 @@
     .identity {
         min-width: 0;
         flex: 1;
+    }
+
+    .policy-name-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .policy-name-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .policy-icon {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--muted);
+        color: var(--foreground);
     }
 
     .state-line {
@@ -625,6 +660,8 @@
     }
 
     @container page (max-width: 480px) {
+        .policy-name-row { gap: 10px; }
+        .policy-icon { width: 36px; height: 36px; flex-basis: 36px; }
         .schedule-copy {
             align-items: flex-start;
             flex-direction: column;

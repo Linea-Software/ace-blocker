@@ -3,7 +3,7 @@
     import { Input } from "$lib/components/ui/input/index.js";
     import { Switch } from "$lib/components/ui/switch/index.js";
     import * as m from "$lib/paraglide/messages.js";
-    import { Shield } from "@lucide/svelte";
+    import { Globe } from "@lucide/svelte";
     import IconPicker from "$lib/components/IconPicker.svelte";
 
     let {
@@ -60,7 +60,7 @@
                     <IconPicker
                         bind:selectedIcon={icon}
                         bind:open={showIconPicker}
-                        fallbackIcon={Shield}
+                        fallbackIcon={Globe}
                         size="sm"
                     />
                     <span class="text-muted-foreground min-w-0 truncate text-sm">
