@@ -65,8 +65,11 @@ pub struct EngineBackup {
     pub version: String,
     pub custom_site_packs: Vec<BackupSitePack>,
     pub network_blocks: Vec<BackupNetworkBlock>,
-    // the scripts ids are normal strings
+    // Script IDs are stable. Preserve both overrides: an intervention may
+    // default to disabled (opt-in), so exporting only disabled IDs loses it.
     pub deactivated_resistance_scripts: Vec<String>,
+    #[serde(default)]
+    pub activated_resistance_scripts: Vec<String>,
 }
 
 use chrono::Weekday;
@@ -152,12 +155,16 @@ impl NetworkManager {
             backup_network_blocks.push(net_block_backup);
         }
 
-        let deactivated_resistance_scripts: Vec<_> = self
-            .db
-            .get_all_script_states()?
-            .into_iter()
-            .filter(|state| !state.enabled)
-            .map(|state| state.script_id)
+        let script_states = self.db.get_all_script_states()?;
+        let deactivated_resistance_scripts = script_states
+            .iter()
+            .filter(|s| !s.enabled)
+            .map(|s| s.script_id.clone())
+            .collect();
+        let activated_resistance_scripts = script_states
+            .iter()
+            .filter(|s| s.enabled)
+            .map(|s| s.script_id.clone())
             .collect();
 
         Ok(EngineBackup {
@@ -165,6 +172,7 @@ impl NetworkManager {
             custom_site_packs: backup_custom_site_packs,
             network_blocks: backup_network_blocks,
             deactivated_resistance_scripts,
+            activated_resistance_scripts,
         })
     }
 
@@ -366,6 +374,30 @@ impl NetworkManager {
 
         // Script state writes do not weaken locked policies: the same lock
         // checks remain authoritative for changes during normal operation.
+        // Reject any backup that would turn off a locked, currently enabled
+        // intervention. This must run before writing any script override.
+        if self.resistance_mode.is_locked() {
+            for script_id in &backup.deactivated_resistance_scripts {
+                if let Ok(id) = ScriptId::try_new(script_id.clone()) {
+                    if self
+                        .resistance_mode
+                        .script_tree
+                        .get_script_by_id(&id)
+                        .is_some_and(|entry| entry.enabled)
+                    {
+                        return Err(NetworkManagerOpErr::ResistanceModeIsLocked);
+                    }
+                }
+            }
+        }
+        for script_id in backup.activated_resistance_scripts {
+            let script_id = ScriptId::try_new(script_id).map_err(|error| {
+                NetworkManagerOpErr::InternalError {
+                    message: format!("Invalid script ID in backup: {error}"),
+                }
+            })?;
+            self.db.set_script_state(script_id.as_ref(), true)?;
+        }
         for script_id in backup.deactivated_resistance_scripts {
             let script_id = ScriptId::try_new(script_id).map_err(|error| {
                 NetworkManagerOpErr::InternalError {
@@ -503,6 +535,7 @@ mod tests {
             custom_site_packs: vec![],
             network_blocks: vec![block],
             deactivated_resistance_scripts: vec![],
+            activated_resistance_scripts: vec![],
         };
         manager.import_backup(backup).await.unwrap();
         let restored = manager
@@ -532,6 +565,7 @@ mod tests {
             custom_site_packs: vec![],
             network_blocks: vec![block],
             deactivated_resistance_scripts: vec![],
+            activated_resistance_scripts: vec![],
         };
         assert!(manager.import_backup(backup).await.is_err());
         assert!(
@@ -610,6 +644,7 @@ mod tests {
             custom_site_packs: vec![],
             network_blocks: vec![backup_block(raw_id, "Replacement")],
             deactivated_resistance_scripts: vec![],
+            activated_resistance_scripts: vec![],
         };
         backup.network_blocks[0]
             .schedules
@@ -677,6 +712,7 @@ mod tests {
                 invalid_second,
             ],
             deactivated_resistance_scripts: vec![],
+            activated_resistance_scripts: vec![],
         };
         assert!(manager.import_backup(backup).await.is_err());
         assert_eq!(
@@ -719,6 +755,7 @@ mod tests {
             }],
             network_blocks: vec![],
             deactivated_resistance_scripts: vec![],
+            activated_resistance_scripts: vec![],
         };
 
         assert!(manager.import_backup(backup).await.is_err());
@@ -758,6 +795,7 @@ mod tests {
             }],
             network_blocks: vec![],
             deactivated_resistance_scripts: vec![],
+            activated_resistance_scripts: vec![],
         };
 
         assert!(manager.import_backup(backup).await.is_err());
@@ -785,6 +823,7 @@ mod tests {
             custom_site_packs: vec![],
             network_blocks: vec![backup_block(*block_id.as_ref(), "Unwanted replacement")],
             deactivated_resistance_scripts: vec![],
+            activated_resistance_scripts: vec![],
         };
 
         manager.import_backup(backup).await.unwrap();

@@ -220,13 +220,13 @@ Locked state must visibly reduce/close editability, not merely add a tiny padloc
 
 ### Resistance
 
-Resistance is a signature Ace surface.
+Resistance is a signature Ace surface built around **independent interventions**.
 
-Do not use a generic segmented-control intensity picker as the primary visual.
-
-The Off → Low → Medium → High → Maximum progression should visually communicate increasing friction/constraint while remaining accessible.
-
-Also expose what sites/scripts are affected.
+Never show a global intensity/severity slider: one no longer exists in the engine.
+Display a short concrete explanation, then four compact categories: feeds and
+navigation, videos, visual stimulation, and deliberate interruptions. Reveal
+per-site checkboxes progressively; distinguish configured selections from
+operational enforcement. Timed locks prevent turning off existing interventions.
 
 ### Categories
 
@@ -243,7 +243,7 @@ Prefer a week/time matrix or timeline that shows enforcement periods spatially a
 The first design-system components to solve well are:
 
 1. `NetworkPolicy`
-2. `ResistanceMeter`
+2. `ScriptSections (independent intervention browser)`
 3. `LockSeal`
 4. `ScheduleTimeline` / `WeekGrid`
 5. `EngineState`
@@ -352,7 +352,7 @@ These create the recurring visual language.
 Examples:
 
 - NetworkPolicy
-- ResistanceMeter
+- ScriptSections (independent intervention browser)
 - LockSeal
 - SitePackRow
 - EngineState

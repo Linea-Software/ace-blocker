@@ -250,6 +250,35 @@ test("Resistance logos use the bundled brand colors", async ({ page }) => {
     );
 });
 
+test("Free users can inspect Resistance interventions without changing them", async ({ page }) => {
+    await page.goto("/getting-started");
+    await page.evaluate(async () => {
+        const svelteModule = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const [{ mount }, { default: ScriptSections }] = await Promise.all([
+            import(/* @vite-ignore */ svelteModule),
+            import(/* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.svelte"),
+        ]);
+        const host = document.createElement("div");
+        document.body.append(host);
+        mount(ScriptSections, {
+            target: host,
+            props: {
+                scripts: [{ id: "youtube_hide_feed", domain: "youtube.com", name: "Hide feed", description: "Hide recommended videos", isEnabled: true }],
+                settings: { enabled: false, enforcementStatus: "not_pro" },
+                engineOnline: true,
+                isPro: false,
+                locked: false,
+                onToggleScript: () => { throw new Error("Free toggles must not mutate"); },
+                onToggleGroup: () => { throw new Error("Free bulk toggles must not mutate"); },
+                onSync: () => {},
+            },
+        });
+    });
+    await expect(page.locator('[data-testid="rm-category-feeds"]')).toBeVisible();
+    await page.getByRole("button", { name: "Show interventions for youtube.com" }).click();
+    await expect(page.locator('[data-testid="rm-script-switch"]')).toBeDisabled();
+});
+
 test("Custom List icon picker stays inside the window and above dialog footer", async ({ page }) => {
     await page.setViewportSize({ width: 880, height: 720 });
     await page.goto("/site-packs");

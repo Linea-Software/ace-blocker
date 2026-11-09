@@ -144,13 +144,13 @@
                                         >
                                             <span class="flex size-6 shrink-0 items-center justify-center">
                                                 {#if site.icon}
-                                                    <span class="inline-flex size-5 items-center justify-center [&_svg]:size-5" data-site-brand-icon={site.icon.hex} style:color={site.icon.hex.toUpperCase() === "000000" ? "var(--foreground)" : "#" + site.icon.hex} aria-hidden="true">
+                                                    <span class="inline-flex size-5 items-center justify-center [&_svg]:size-5 [&_svg]:fill-current" data-site-brand-icon={site.icon.hex} style:color={site.icon.hex.toUpperCase() === "000000" ? "var(--foreground)" : "#" + site.icon.hex} aria-hidden="true">
                                                         {@html site.icon.svg}
                                                     </span>
                                                 {:else}<Globe size={19} aria-hidden="true" />{/if}
                                             </span>
                                             <span class="min-w-0 flex-1 truncate text-sm font-medium">{site.domain}</span>
-                                            <span class="font-mono text-xs text-muted-foreground">{site.activeCount}/{site.totalCount}</span>
+                                            <span class="font-mono text-xs text-muted-foreground">{site.selectedCount}/{site.totalCount}</span>
                                             {#if siteOpen}<ChevronUp size={15} aria-hidden="true" />{:else}<ChevronDown size={15} aria-hidden="true" />{/if}
                                         </button>
                                         {#if siteOpen}

@@ -1,95 +1,39 @@
-# Resistance Mode Policies (v2.2 - "Strict Ladder" Update)
+# Resistance: independent interventions
 
-> ## ⚠️ Removal notice (2026-09-02)
->
-> The escalation ladder documented below is **historical**. On 2026-09-02 the
-> dynamic escalation/de-escalation engine, the probation fields, and the
-> usage-report pipeline that fed them were **removed** (tracking removal).
-> Resistance Mode now ships as a v1 beta with **static intensity only**:
->
-> - `POST /resistance-mode/type` accepts only `{"type":"static", ...}`; the
->   `PunishmentMode::Dynamic` variant no longer exists (a raw `dynamic`
->   payload fails deserialization).
-> - Persisted settings carry only `static_intensity` and `scripts_version`;
->   there are no probation or last-evaluated-date columns.
-> - No usage data source exists anywhere: tracking scripts were removed from
->   the boredom-engine, the site, and the engine, and the `/report/usage`
->   receivers are gone.
-> - The ladder sections below are kept as a dated design record only; they do
->   not describe shipped behavior.
+The Resistance feature makes supported websites less distracting without blocking access to them. This feature is Pro-gated but the configuration can be shown to Free users as a read-only preview.
 
-This document outlines the operational logic and intensity levels for the Resistance Mode.
+## Policy model
 
-## Core Architecture: The Escalation Ladder
+There is **no global intensity or severity scale**. Every intervention has one stable catalog `@id`, one predictable behavior, and its own enabled/disabled state. Behavior-changing parameters (scroll caps, video quality, buffering delays, grayscale strength) are fixed within the corresponding script.
 
-The system now enforces a strict sequential escalation path. **Users cannot skip tiers.** Surpassing any threshold simply promotes the user to the _next immediate tier_, at which point all usage counters and probation timers are reset to zero.
+- The `resistance_mode_settings` row stores `enabled`, lock information and `scripts_version`. It does **not** store a mode or intensity.
+- The `script_states` table stores explicit overrides keyed by permanent script ID.
+- The catalog field `defaultEnabled` supplies the default when no override exists. Visual degradation, delays, CAPTCHA and scrolling limits start **off**; ordinary distraction-removal actions can start **on**.
+- Catalog updates preserve explicit overrides by ID, including IDs temporarily missing from the current catalog.
+- A Time Lock prevents disabling Resistance and prevents turning **off** an existing intervention; enabling additional interventions is permitted.
+- Changes to enabled interventions take effect on newly loaded documents. They are not retroactively removed from an already injected page.
 
-### Intensity Levels
+## Enforcement, eligibility and status
 
-```typescript
-export enum Intensity {
-  None = "none", // Zero Punishment: Full speed, no friction.
-  Low = "low", // Standard UX: Subtle Latency/Friction (Entry warning).
-  Medium = "medium", // Intermittent Latency (10-20% lag).
-  High = "high", // Heavy Friction (40-60% lag, Grayscale).
-  Extreme = "extreme", // Maximum Stress (80% lag, layout shifts, font obfuscation).
-}
-```
+Injection requires an enabled master switch, Pro entitlement, a valid downloaded catalog, and at least one enabled script for the requested host. The proxy injects only the relevant, enabled scripts as nonce-bearing inline tags and rewrites CSP when permitted. It does not inject any global intensity variable.
 
-```
+The `enforcementStatus` reasons, in priority order, are:
 
----
+1. `disabled` — master switch off.
+2. `not_pro` — license ineligible.
+3. `scripts_missing` — no catalog installed.
+4. `scripts_invalid` — catalog failed to load.
+5. `no_scripts_enabled` — all interventions disabled.
+6. `operational` — eligible, enabled, valid scripts loaded.
 
-## State Transition Logic
+`operational` describes overall readiness, not guaranteed success on every browser/site: CSP, network tunnels, and site changes can prevent an individual script from applying. The UI distinguishes *configured* from *currently operational*.
 
-Transitions are evaluated daily based on time spent on restricted domains. When a tier is escalated, the user begins Day 1 of the new tier with 0 accumulated minutes.
+## API and backup
 
-### 0. None Intensity (The "Focus" State)
+The client uses `getResistanceModeSettings`, `getAllScripts`, `setResistanceModeEnabled`, `setScriptEnabled`, `setResistanceModeLock` and `downloadResistanceScripts`. The previous mode/intensity and developer intensity override RPCs are removed.
 
-The baseline state for disciplined usage. No multi-day tracking is required here, only a daily tripwire.
+Local backups preserve both `deactivatedResistanceScripts` and `activatedResistanceScripts`; a backup cannot turn off a currently enabled intervention while Resistance is locked. The current remote cloud-backup contract cannot store enabled opt-in overrides: a lossy export is rejected, with local export offered instead.
 
-- **Escalation**: If **Daily Usage > 45m**, transition immediately to **Low**.
-- **Maintenance**: Remains **None** indefinitely as long as daily usage is **≤ 45m**.
+## Regression checks
 
-### 1. Low Intensity (The Warning)
-
-The first layer of friction. The system now tracks both a daily spike and a multi-day creep.
-
-- **Escalation (To Medium)**:
-- **Daily Tripwire**: Usage **> 45m** in a single day.
-- **Multi-Day Tripwire**: Cumulative usage **> 90m** across 3 days.
-
-- **De-escalation (To None)**: Transition back to **None** after **1 day** with usage **≤ 15m**.
-- **Maintenance**: Remains **Low** if usage stays below the escalation thresholds.
-
-### 2. Medium Intensity (The Squeeze)
-
-The friction becomes actively annoying. Thresholds tighten.
-
-- **Escalation (To High)**:
-- **Daily Tripwire**: Usage **> 30m** in a single day.
-- **Multi-Day Tripwire**: Cumulative usage **> 75m** across 3 days.
-
-- **Maintenance (Reset)**: If usage exceeds **20m** on any single day (but stays under the 30m escalation tripwire), the current probation timer resets to Day 1.
-- **De-escalation (To Low)**: Transition to **Low** only after **2 consecutive days** with usage **≤ 15m**.
-
-### 3. High Intensity (The Chokehold)
-
-The web becomes thoroughly unpleasant to navigate. The system affords very little leniency.
-
-- **Escalation (To Extreme)**:
-- **Daily Tripwire**: Usage **> 20m** in a single day.
-- **Multi-Day Tripwire**: Cumulative usage **> 45m** across 3 days.
-
-- **Maintenance (Reset)**: If usage exceeds **15m** on any single day, the current probation timer resets to Day 1.
-- **De-escalation (To Medium)**: Transition to **Medium** only after **4 consecutive days** with usage **≤ 10m**.
-
-### 4. Extreme Intensity (Maximum Punishment)
-
-The engine makes targeted apps practically unsuitable for use. There is no further escalation, only a grueling path out.
-
-- **Probation Lock**: Minimum **8 Days**. The intensity cannot be lowered during this period.
-- **Maintenance (Reset)**: If usage is **> 15m** on _any single day_, the 8-day lock completely **resets to Day 1**.
-- **De-escalation (To High)**: Transition to **High** only after completing **8 consecutive days** with usage **≤ 15m** per day.
-
-```
+Run `cargo test -p ace-engine --lib` for persistence, lock and proxy checks, `bun run check` and `bun run test:unit` from `apps/ace-app`, and `bun run build && bun run test:smoke` in `boredom-engine`. Confirm categories, per-site toggles, Free previews, Time Lock one-way semantics, and content reloading after switching interventions.

@@ -451,7 +451,11 @@ impl ResponseInspector for ProxyAdapter {
                 return ResponseAction::Continue;
             }
 
-            let scripts = self.network_manager.read().await.get_resistance_scripts_of(host);
+            let scripts = self
+                .network_manager
+                .read()
+                .await
+                .get_resistance_scripts_of(host);
             if scripts.is_empty() {
                 return ResponseAction::Continue;
             }
@@ -496,13 +500,7 @@ impl ResponseInspector for ProxyAdapter {
             modify_csp_headers_with_nonce(res.headers_mut(), &nonce);
 
             // Inject scripts
-            let new_html = inject_scripts_with_nonce(
-                host,
-                html_string,
-                is_pro,
-                &scripts,
-                &nonce,
-            );
+            let new_html = inject_scripts_with_nonce(host, html_string, is_pro, &scripts, &nonce);
 
             // The body is now context-specific (Resistance Mode state + CSP
             // nonce). Never let a browser cache this modified top-level response
@@ -1589,7 +1587,7 @@ mod tests {
 
     #[tokio::test]
     async fn synthetic_block_tunnel_exits_when_resistance_inspection_remains() {
-        let (manager, adapter) = adapter_with_resistance(true).await;
+        let (_manager, adapter) = adapter_with_resistance(true).await;
         let authority: http::uri::Authority = "example.com:443".parse().unwrap();
         // This origin is no longer blocked but still needs TLS inspection for
         // Resistance scripts. An ordinary intercepted tunnel may stay open;
@@ -1887,7 +1885,7 @@ mod tests {
         let body = String::from_utf8_lossy(res.body());
         assert!(
             !body.contains("__BOREDOM_INTENSITY__"),
-            "disabled resistance mode must not inject the intensity marker"
+            "disabled resistance mode must not inject legacy configuration"
         );
         assert!(!body.contains("console.log('boom')"));
         assert!(
@@ -1922,7 +1920,7 @@ mod tests {
             "enabled resistance mode must not be blocked"
         );
         let body = String::from_utf8_lossy(res.body());
-        assert!(body.contains("window.__BOREDOM_INTENSITY__"));
+        assert!(!body.contains("__BOREDOM_INTENSITY__"));
         assert!(body.contains("console.log('boom')"));
         assert_eq!(
             res.headers().get(http::header::CACHE_CONTROL).unwrap(),

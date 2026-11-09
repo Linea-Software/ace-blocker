@@ -191,6 +191,7 @@ export type EnforcementStatus = 'operational' | 'disabled' | 'not_pro' | 'script
 export type EngineBackup = {
     customSitePacks: Array<BackupSitePack>;
     deactivatedResistanceScripts: Array<string>;
+    activatedResistanceScripts?: Array<string>;
     networkBlocks: Array<BackupNetworkBlock>;
     version: string;
 };

@@ -52,7 +52,7 @@ export function getSiteIcon(domain: string): { svg: string; hex: string } | null
 export type ScriptGroup = {
     domain: string;
     scripts: ScriptInfo[];
-    activeCount: number;
+    selectedCount: number;
     totalCount: number;
     icon: { svg: string; hex: string } | null;
 };
@@ -70,7 +70,7 @@ export function groupScripts(scripts: ScriptInfo[]): ScriptGroup[] {
         .map(([domain, items]) => ({
             domain,
             scripts: items,
-            activeCount: items.filter((item) => item.isEnabled).length,
+            selectedCount: items.filter((item) => item.isEnabled).length,
             totalCount: items.length,
             icon: getSiteIcon(domain),
         }))

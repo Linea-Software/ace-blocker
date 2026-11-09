@@ -58,7 +58,7 @@
                 getAllScripts(),
                 getResistanceModeSettings(),
             ]);
-            if (seq !== refreshSeq) return;
+            if (seq !== refreshSeq || (isMutating && settings)) return;
             if (scriptsRes.error || settingsRes.error || !scriptsRes.data || !settingsRes.data) {
                 throw new Error("Resistance data unavailable");
             }
@@ -328,7 +328,7 @@
             {/if}
 
             <section class="rounded-md border border-border bg-card px-5 py-4">
-                <h2 class="font-semibold text-lg">{m.resistance_mode()}</h2>
+                <h2 class="font-semibold text-lg">{m.resistance_examples_title()}</h2>
                 <p class="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">{m.resistance_examples_body()}</p>
             </section>
 
@@ -344,17 +344,7 @@
             />
 
             <div class="coverage-ledger">
-                {#if !isPro}
-                    <section class="coverage-locked" data-testid="rm-coverage-locked">
-                        <h2>{m.covered_sites_title()}</h2>
-                        <p>{m.covered_sites_hint()}</p>
-                        <div class="coverage-locked-note">
-                            <LockKeyhole size={14} aria-hidden="true" />
-                            <span>{m.resistance_coverage_pro_locked()}</span>
-                        </div>
-                    </section>
-                {:else}
-                    <ScriptSections
+                <ScriptSections
                         {scripts}
                         {settings}
                         {engineOnline}
@@ -365,8 +355,7 @@
                         onToggleScript={handleToggleScript}
                         onToggleGroup={handleToggleGroup}
                         onSync={handleSync}
-                    />
-                {/if}
+                />
             </div>
         </div>
     {/if}
@@ -482,8 +471,7 @@
         min-width: 0;
     }
 
-    .pro-gate h2,
-    .coverage-locked h2 {
+    .pro-gate h2 {
         margin: 0;
         font-family: "IBM Plex Sans Condensed", sans-serif;
         font-size: 19px;
@@ -502,8 +490,7 @@
         color: var(--muted-foreground);
     }
 
-    .pro-gate p,
-    .coverage-locked p {
+    .pro-gate p {
         margin: 5px 0 0;
         color: var(--muted-foreground);
         font-size: 13px;
@@ -513,15 +500,6 @@
     .coverage-ledger {
         padding-top: 7px;
         border-top: 1px solid var(--border);
-    }
-
-    .coverage-locked-note {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        margin-top: 13px;
-        color: var(--muted-foreground);
-        font-size: 13px;
     }
 
     @container page (max-width: 560px) {

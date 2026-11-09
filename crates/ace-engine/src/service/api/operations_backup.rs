@@ -65,6 +65,15 @@ pub(super) async fn export_backup_to_cloud(state: AppState) -> Result<(), ApiErr
         ));
     }
 
+    // The current server contract stores only disabled script IDs. With
+    // opt-in interventions, dropping enabled overrides would lose settings.
+    if !backup.activated_resistance_scripts.is_empty() {
+        return Err(ApiError::BadRequest(
+            "Cloud backup cannot preserve enabled opt-in interventions yet; use local export"
+                .into(),
+        ));
+    }
+
     let client = AceServerClient::new_http_client(Some(&api_key));
 
     use crate::ace_server_api::types::*;
@@ -257,6 +266,7 @@ pub(super) async fn import_backup_from_cloud(state: AppState) -> Result<(), ApiE
             })
             .collect(),
         deactivated_resistance_scripts: backup.deactivated_resistance_mode_scripts,
+        activated_resistance_scripts: vec![],
     };
 
     let mut manager = state.network_manager.write().await;

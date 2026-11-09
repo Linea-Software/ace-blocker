@@ -17,7 +17,7 @@ export const INTERVENTION_KINDS: readonly InterventionKind[] = [
  */
 export function classifyIntervention(script: Pick<ScriptInfo, "id">): InterventionKind {
     const id = script.id.toLowerCase();
-    if (/captcha|delay|buffer|friction|wait|slow/.test(id)) return "interruptions";
+    if (/captcha|delay|buffer|friction|wait|slow|limit_scrolling|scroll_limit/.test(id)) return "interruptions";
     if (/grayscale|desaturat|low_quality|media_quality|downgrade/.test(id)) return "visual";
     if (/short|reel|spotlight|autoplay|video|stream|playback/.test(id)) return "video";
     return "feeds";

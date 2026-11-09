@@ -1,8 +1,6 @@
 use tracing::{info, warn};
 
-use crate::{
-    manager::NetworkManagerOpErr, settings::Settings,
-};
+use crate::{manager::NetworkManagerOpErr, settings::Settings};
 
 use super::NetworkManager;
 
@@ -149,10 +147,7 @@ impl NetworkManager {
         } else {
             crate::core::Lock::default()
         };
-        self.persist_resistance_mode_settings(
-            enabled,
-            &next_lock,
-        )?;
+        self.persist_resistance_mode_settings(enabled, &next_lock)?;
         self.resistance_mode.enabled = enabled;
         self.resistance_mode.lock = next_lock;
         Ok(())
@@ -189,10 +184,7 @@ impl NetworkManager {
             return Err(NetworkManagerOpErr::ResistanceModeIsLocked);
         }
 
-        self.persist_resistance_mode_settings(
-            self.resistance_mode.enabled,
-            &lock,
-        )?;
+        self.persist_resistance_mode_settings(self.resistance_mode.enabled, &lock)?;
         self.resistance_mode.lock = lock;
         Ok(())
     }
@@ -704,8 +696,6 @@ mod tests {
             crate::core::Lock::from(crate::core::LockState::ActiveUntilLockEnd { end: future });
         assert!(manager.set_resistance_mode_lock(lock).is_err());
         assert!(!manager.is_resistance_mode_locked());
-
-
     }
 
     #[test]
@@ -811,54 +801,22 @@ mod tests {
             ("grayscale", "Grayscale", "grayscale.js"),
             ("captcha", "Captcha", "captcha.js"),
         ]);
-
         manager.reload_scripts().unwrap();
-        manager
-            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), false)
-            .unwrap();
-        manager
-            .set_script_enabled(&ScriptId::try_new("captcha").unwrap(), false)
-            .unwrap();
-
-        // Export captures the deactivated ids.
+        let grayscale = ScriptId::try_new("grayscale").unwrap();
+        let captcha = ScriptId::try_new("captcha").unwrap();
+        manager.set_script_enabled(&grayscale, false).unwrap();
+        // Explicitly selected opt-in overrides must survive exports too.
+        manager.set_script_enabled(&captcha, true).unwrap();
         let backup = manager.export_backup().unwrap();
-        assert_eq!(backup.deactivated_resistance_scripts.len(), 2);
-        assert!(
-            backup
-                .deactivated_resistance_scripts
-                .contains(&"grayscale".to_string())
-        );
-        assert!(
-            backup
-                .deactivated_resistance_scripts
-                .contains(&"captcha".to_string())
-        );
+        assert_eq!(backup.deactivated_resistance_scripts, vec!["grayscale"]);
+        assert_eq!(backup.activated_resistance_scripts, vec!["captcha"]);
 
-        // Flip both back on, then import the backup: states must round-trip
-        // and be applied after the reload-from-catalog.
-        manager
-            .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), true)
-            .unwrap();
-        manager
-            .set_script_enabled(&ScriptId::try_new("captcha").unwrap(), true)
-            .unwrap();
-        assert!(all_enabled(&manager));
-
+        manager.set_script_enabled(&grayscale, true).unwrap();
+        manager.set_script_enabled(&captcha, false).unwrap();
         manager.import_backup(backup).await.unwrap();
-
         let tree = &manager.get_resistance_mode().script_tree;
-        assert!(
-            !tree
-                .get_script_by_id(&ScriptId::try_new("grayscale").unwrap())
-                .unwrap()
-                .enabled
-        );
-        assert!(
-            !tree
-                .get_script_by_id(&ScriptId::try_new("captcha").unwrap())
-                .unwrap()
-                .enabled
-        );
+        assert!(!tree.get_script_by_id(&grayscale).unwrap().enabled);
+        assert!(tree.get_script_by_id(&captcha).unwrap().enabled);
     }
 
     // ── v1 beta regression tests ────────────────────────────────────
@@ -931,7 +889,10 @@ mod tests {
 
         // Pro + enabled + an enabled script is operational.
         manager.set_debug_pro_policy(super::super::DebugProPolicy::Pro);
-        assert_eq!(manager.resistance_enforcement_status(), EnforcementStatus::Operational);
+        assert_eq!(
+            manager.resistance_enforcement_status(),
+            EnforcementStatus::Operational
+        );
 
         // All scripts disabled → no_scripts_enabled.
         manager
@@ -945,7 +906,10 @@ mod tests {
             .set_script_enabled(&ScriptId::try_new("grayscale").unwrap(), true)
             .unwrap();
 
-        assert_eq!(manager.resistance_enforcement_status(), EnforcementStatus::Operational);
+        assert_eq!(
+            manager.resistance_enforcement_status(),
+            EnforcementStatus::Operational
+        );
 
         // Startup-style scenarios: a fresh manager whose tree never loaded.
         // (a) No catalog file on disk → scripts_missing.

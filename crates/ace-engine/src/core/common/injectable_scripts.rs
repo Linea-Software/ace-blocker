@@ -52,7 +52,11 @@ pub struct ScriptEntry {
     pub domain: String,
     #[serde(default)]
     pub content: String,
-    #[serde(rename = "defaultEnabled", alias = "enabled", default = "default_enabled")]
+    #[serde(
+        rename = "defaultEnabled",
+        alias = "enabled",
+        default = "default_enabled"
+    )]
     pub enabled: bool,
 }
 
@@ -274,6 +278,26 @@ impl InjectableScriptTree {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn intervention_defaults_are_read_from_the_catalog() {
+        let entry: ScriptEntry = serde_json::from_value(serde_json::json!({
+            "id": "youtube_random_captcha", "path": "com/youtube/captcha.js",
+            "name": "Captcha", "description": "An opt-in interruption",
+            "version": "1.0.0", "defaultEnabled": false
+        }))
+        .unwrap();
+        assert!(!entry.enabled, "opt-in actions must not silently activate");
+        let legacy: ScriptEntry = serde_json::from_value(serde_json::json!({
+            "id": "youtube_remove_shorts", "path": "com/youtube/shorts.js",
+            "name": "Shorts", "description": "Remove shorts", "version": "1.0.0"
+        }))
+        .unwrap();
+        assert!(
+            legacy.enabled,
+            "older catalogs retain their historical default"
+        );
+    }
 
     #[test]
     fn test_script_inheritance() {
