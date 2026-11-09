@@ -6,7 +6,7 @@ import { defineConfig } from "@playwright/test";
  */
 export default defineConfig({
     testDir: "e2e",
-    testMatch: /(getting-started|help|ui-friction|block-editor-redesign|network-policy-icons)\.spec\.ts/,
+    testMatch: /(getting-started|help|ui-friction|block-editor-redesign|network-policy-icons|resistance-five-categories)\.spec\.ts/,
     use: {
         baseURL: process.env.PW_E2E_BASE_URL ?? "http://localhost:1420",
     },

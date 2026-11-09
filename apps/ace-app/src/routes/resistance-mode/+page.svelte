@@ -7,7 +7,6 @@
         setResistanceModeEnabled,
         setResistanceModeLock,
         setScriptEnabled,
-        downloadResistanceScripts,
         type ScriptInfo,
         type ResistanceModeSettings,
     } from "$engine-client";
@@ -30,7 +29,6 @@
     let loadError = $state(false);
     let mounted = $state(false);
     let isMutating = $state(false);
-    let isSyncing = $state(false);
     let lockDialogOpen = $state(false);
     let pageVisible = $state(true);
 
@@ -224,19 +222,6 @@
         await refresh();
     }
 
-    async function handleSync() {
-        if (isSyncing) return;
-        isSyncing = true;
-        const { error } = await downloadResistanceScripts();
-        isSyncing = false;
-        if (error) {
-            showMutationError(error);
-            return;
-        }
-        toast.success(m.scripts_sync_success());
-        await refresh();
-    }
-
     async function handleCommitLock(isoEnd: string) {
         if (isMutating) return;
         isMutating = true;
@@ -350,11 +335,9 @@
                         {engineOnline}
                         {isPro}
                         locked={isLocked}
-                        syncing={isSyncing}
                         busy={isMutating}
                         onToggleScript={handleToggleScript}
                         onToggleGroup={handleToggleGroup}
-                        onSync={handleSync}
                 />
             </div>
         </div>

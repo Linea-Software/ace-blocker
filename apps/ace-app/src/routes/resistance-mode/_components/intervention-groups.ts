@@ -1,13 +1,14 @@
 import type { ScriptInfo } from "$engine-client";
 import { groupScripts, type ScriptGroup } from "./script-groups";
 
-export type InterventionKind = "feeds" | "video" | "visual" | "interruptions";
+export type InterventionKind = "feeds" | "video" | "visual" | "interruptions" | "captcha";
 
 export const INTERVENTION_KINDS: readonly InterventionKind[] = [
     "feeds",
     "video",
     "visual",
     "interruptions",
+    "captcha",
 ];
 
 /**
@@ -17,7 +18,8 @@ export const INTERVENTION_KINDS: readonly InterventionKind[] = [
  */
 export function classifyIntervention(script: Pick<ScriptInfo, "id">): InterventionKind {
     const id = script.id.toLowerCase();
-    if (/captcha|delay|buffer|friction|wait|slow|limit_scrolling|scroll_limit/.test(id)) return "interruptions";
+    if (/captcha/.test(id)) return "captcha";
+    if (/delay|buffer|friction|wait|slow|limit_scrolling|scroll_limit/.test(id)) return "interruptions";
     if (/grayscale|desaturat|low_quality|media_quality|downgrade/.test(id)) return "visual";
     if (/short|reel|spotlight|autoplay|video|stream|playback/.test(id)) return "video";
     return "feeds";

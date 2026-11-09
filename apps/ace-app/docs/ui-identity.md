@@ -223,10 +223,18 @@ Locked state must visibly reduce/close editability, not merely add a tiny padloc
 Resistance is a signature Ace surface built around **independent interventions**.
 
 Never show a global intensity/severity slider: one no longer exists in the engine.
-Display a short concrete explanation, then four compact categories: feeds and
-navigation, videos, visual stimulation, and deliberate interruptions. Reveal
-per-site checkboxes progressively; distinguish configured selections from
-operational enforcement. Timed locks prevent turning off existing interventions.
+Show a short concrete explanation and **five** compact, equally ranked
+categories: feeds and suggestions; videos and playback; visual stimulation;
+delays and limits; and simulated verifications (CAPTCHA). All start collapsed.
+The five categories are the sole top level; do not group them under additional
+headings or add another disclosure layer.
+
+Inside a category, expose intervention selections by site. A three-state bulk
+checkbox shows none, some, or all selected for each category except CAPTCHA,
+which is intentionally per-intervention opt-in. Time Locks prevent clearing
+or weakening protected selections, but permit adding more. Distinguish
+configured selections from operational enforcement. The scripts update action
+and installed version maintenance belong in Settings, not this page.
 
 ### Categories
 

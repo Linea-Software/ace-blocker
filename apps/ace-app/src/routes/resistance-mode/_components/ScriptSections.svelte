@@ -1,28 +1,26 @@
 <script lang="ts">
     import * as m from "$lib/paraglide/messages.js";
-    import { Button } from "$lib/components/ui/button";
     import { Switch } from "$lib/components/ui/switch";
-    import { ChevronDown, ChevronUp, Download, Globe, TriangleAlert, ListFilter, PlaySquare, Palette, Hourglass, LockKeyhole } from "@lucide/svelte";
+    import { Checkbox } from "$lib/components/ui/checkbox";
+    import { ChevronDown, ChevronUp, Download, Globe, TriangleAlert, ListFilter, PlaySquare, Palette, Hourglass, ShieldQuestionMark, LockKeyhole } from "@lucide/svelte";
     import type { ScriptInfo, ResistanceModeSettings } from "$engine-client";
     import { groupInterventions, type InterventionKind } from "./intervention-groups";
 
     let {
-        scripts, settings, engineOnline, isPro, locked, syncing = false, busy = false,
-        onToggleScript, onToggleGroup, onSync,
+        scripts, settings, engineOnline, isPro, locked, busy = false,
+        onToggleScript, onToggleGroup,
     }: {
         scripts: ScriptInfo[];
         settings: ResistanceModeSettings | null;
         engineOnline: boolean;
         isPro: boolean;
         locked: boolean;
-        syncing?: boolean;
         busy?: boolean;
         onToggleScript: (script: ScriptInfo) => void;
         onToggleGroup?: (scripts: ScriptInfo[], enabled: boolean) => void;
-        onSync: () => void;
     } = $props();
 
-    let expandedKind = $state<InterventionKind | null>("feeds");
+    let expandedKind = $state<InterventionKind | null>(null);
     let expandedSite = $state<string | null>(null);
     const sections = $derived(groupInterventions(scripts));
     const selected = $derived(scripts.filter((script) => script.isEnabled).length);
@@ -36,6 +34,7 @@
             case "video": return m.interventions_video();
             case "visual": return m.interventions_visual();
             case "interruptions": return m.interventions_interruptions();
+            case "captcha": return m.interventions_captcha();
         }
     }
     function description(kind: InterventionKind): string {
@@ -44,6 +43,7 @@
             case "video": return m.interventions_video_desc();
             case "visual": return m.interventions_visual_desc();
             case "interruptions": return m.interventions_interruptions_desc();
+            case "captcha": return m.interventions_captcha_desc();
         }
     }
 </script>
@@ -81,9 +81,9 @@
                 <strong>{missing ? m.scripts_empty_title() : m.scripts_invalid_title()}</strong>
                 <p class="text-sm text-muted-foreground">{missing ? m.scripts_empty_description() : m.scripts_invalid_description()}</p>
             </div>
-            <Button data-testid="rm-sync-scripts" disabled={syncing || !isPro} onclick={onSync}>
-                {syncing ? m.syncing_scripts() : m.sync_scripts_button()}
-            </Button>
+            <a href="/settings#resistance-scripts-update" class="text-sm underline underline-offset-4 hover:text-foreground">
+                {m.interventions_manage_scripts_in_settings()}
+            </a>
         </div>
     {:else if scripts.length === 0}
         <p class="p-5 text-sm text-muted-foreground">{m.error_scripts_unavailable()}</p>
@@ -103,7 +103,8 @@
                             {#if section.kind === "feeds"}<ListFilter size={21} aria-hidden="true" />
                             {:else if section.kind === "video"}<PlaySquare size={21} aria-hidden="true" />
                             {:else if section.kind === "visual"}<Palette size={21} aria-hidden="true" />
-                            {:else}<Hourglass size={21} aria-hidden="true" />{/if}
+                            {:else if section.kind === "interruptions"}<Hourglass size={21} aria-hidden="true" />
+                            {:else}<ShieldQuestionMark size={21} aria-hidden="true" />{/if}
                         </span>
                         <span class="min-w-0 flex-1">
                             <strong class="block text-base font-semibold">{title(section.kind)}</strong>
@@ -120,14 +121,32 @@
                             {:else}
                                 <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border py-2 text-xs text-muted-foreground">
                                     <span>{m.interventions_sites_count({count:section.sites.length})}</span>
-                                    {#if onToggleGroup && editable}
-                                        <div class="flex items-center gap-4">
-                                            <button type="button" class="underline underline-offset-4 disabled:opacity-40" disabled={section.selectedCount === section.totalCount} onclick={() => onToggleGroup?.(section.sites.flatMap(site => site.scripts),true)}>
-                                                {m.interventions_enable_all()}
-                                            </button>
-                                            <button type="button" class="underline underline-offset-4 disabled:opacity-40" disabled={locked || section.selectedCount === 0} onclick={() => onToggleGroup?.(section.sites.flatMap(site => site.scripts),false)}>
-                                                {m.interventions_disable_all()}
-                                            </button>
+                                    {#if section.kind !== "captcha" && onToggleGroup}
+                                        {@const allSelected = section.selectedCount === section.totalCount}
+                                        {@const partiallySelected = section.selectedCount > 0 && !allSelected}
+                                        <div class="flex min-h-11 items-center gap-3">
+                                            <label
+                                                for={"rm-select-all-" + section.kind}
+                                                class="cursor-pointer select-none text-xs text-foreground"
+                                            >
+                                                {m.interventions_select_all()}
+                                            </label>
+                                            <Checkbox
+                                                id={"rm-select-all-" + section.kind}
+                                                data-testid={"rm-select-all-" + section.kind}
+                                                class="size-5"
+                                                checked={allSelected}
+                                                indeterminate={partiallySelected}
+                                                disabled={!editable || (locked && allSelected)}
+                                                aria-label={m.interventions_select_all_category({category:title(section.kind)})}
+                                                onCheckedChange={(checked) => {
+                                                    // Mixed means "select the remaining"; the next
+                                                    // click on a complete set means "clear".
+                                                    const enable = partiallySelected || checked;
+                                                    if (locked && !enable) return;
+                                                    onToggleGroup?.(section.sites.flatMap((site) => site.scripts), enable);
+                                                }}
+                                            />
                                         </div>
                                     {/if}
                                 </div>
@@ -179,11 +198,8 @@
     {/if}
 
     {#if scripts.length && !missing && !invalid}
-        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-muted-foreground" data-testid="rm-operational-details">
-            <span>{settings?.scriptsVersion ? m.last_scripts_update({version: settings.scriptsVersion}) : m.scripts_never_updated()}</span>
-            <Button size="sm" variant="outline" disabled={!editable || syncing} onclick={onSync} data-testid="rm-sync-scripts">
-                {syncing ? m.syncing_scripts() : m.sync_scripts_button()}
-            </Button>
-        </div>
+        <p class="pt-2 text-xs text-muted-foreground" data-testid="rm-operational-details">
+            {settings?.scriptsVersion ? m.last_scripts_update({version: settings.scriptsVersion}) : m.scripts_never_updated()}
+        </p>
     {/if}
 </section>

@@ -11,6 +11,7 @@
     import LanguageSection from "./_LanguageSection.svelte";
     import BackupSection from "./_BackupSection.svelte";
     import ProductUpdateSection from "./_ProductUpdateSection.svelte";
+    import ResistanceScriptsUpdateSection from "./_ResistanceScriptsUpdateSection.svelte";
     import LicenseSection from "./_LicenseSection.svelte";
     import DebugSection from "./_DebugSection.svelte";
 
@@ -86,6 +87,8 @@
         <LicenseSection />
         <div class="settings-rule" aria-hidden="true"></div>
         <ProductUpdateSection />
+        <div class="settings-rule" aria-hidden="true"></div>
+        <ResistanceScriptsUpdateSection />
         {#if showDebugSettings}
             <div class="settings-rule" aria-hidden="true"></div>
             <DebugSection />

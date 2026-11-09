@@ -347,11 +347,22 @@ The onboarding flow runs in three parts, all rendered from `src/routes/+layout.s
 
 ### Resistance Mode UI
 
-- **Intensity**: Static intensity only (v1 beta; dynamic escalation was
-  removed on 2026-09-02). The resistance-mode page uses an
-  `IntensitySelector` that calls `setResistanceModeType` with
-  `{ type: "static", intensity }`.
-- **Intensity Mapping**: "Maximum" in the UI corresponds to the `extreme` intensity level in the engine.
+- Resistance uses five independent, top-level intervention categories: **Feeds and
+  suggestions**, **Videos and playback**, **Visual stimulation**, **Delays and
+  limits**, and **Verifications (CAPTCHA)**. All categories begin collapsed;
+  avoid extra supergroups or reintroducing global intensity levels.
+- `src/routes/resistance-mode/_components/ScriptSections.svelte` shows a
+  three-state category checkbox (empty/mixed/checked) for the first four
+  categories. Simulated CAPTCHA challenges are opt-in **per script only**;
+  never add a bulk-activation checkbox to their category.
+- A Time Lock forbids disabling already enabled interventions, including
+  clearing a fully selected category. It still permits enabling more.
+- Resistance script catalog updates belong to
+  `/settings#resistance-scripts-update` in `_ResistanceScriptsUpdateSection.svelte`,
+  not in the day-to-day Resistance configuration. The installed version is
+  informational and no update action is presented inside Resistance.
+- Verify `bun run check`, `bun run test:unit`, and the browser fixtures in
+  `e2e/resistance-five-categories.spec.ts` after changing these controls.
 
 ## Documentation
 
