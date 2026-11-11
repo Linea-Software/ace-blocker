@@ -1,17 +1,10 @@
 # Ace App P1 native IPC and security verification gate (AA-07 / AA-10)
 
-Status (2026-10-22): **native verification blocked** because CodexPro CAP
-has no registered disposable Windows VM image. The Tauri adapter now denies
-WebView `shutdown` calls before reading the engine capability; Rust unit
-tests cover the denial, but installed-system security checks have not run.
+Status (2026-10-22): **native verification blocked**. CodexPro CAP has no registered disposable Windows VM image. The Tauri adapter rejects WebView `shutdown` calls before it reads the engine capability. Rust unit tests verify this rejection. Security tests on an installed system have not run.
 
 ## Scope and safety
 
-Execute **only on an isolated, disposable Windows VM** with an Ace Blocker
-test installer and synthetic data. Snapshot the VM before every destructive
-service/installer scenario. Do not use an active developer workstation or
-production configuration. Preserve the LocalSystem engine/watchdog services,
-capability credential privacy, named-pipe ACLs and lock-aware uninstall gate.
+Run these tests **only on an isolated, disposable Windows VM**. Use an Ace Blocker test installer and synthetic data. Take a VM snapshot before each destructive service or installer test. Do not use an active developer workstation. Do not use a production configuration. Keep the engine and watchdog as LocalSystem services. Protect the capability credential. Keep the named-pipe ACLs and the lock-aware uninstall gate.
 See `docs/IPC_ARCHITECTURE.md` and `TECH_DEBT_BACKLOG.md#td-001`.
 
 ## Required native cases
@@ -29,19 +22,8 @@ See `docs/IPC_ARCHITECTURE.md` and `TECH_DEBT_BACKLOG.md#td-001`.
 | WebView surface | Try an arbitrary `invoke("engine_call", {op:"shutdown",args:{}})` | **After implementation:** a normal WebView request must fail with `status: 403` and `code: desktop_operation_forbidden` before engine connection; confirm in installed Tauri runtime |
 | Browser enforcement | Start browser before engine and after engine; lock and restart services | Enforcement and proxy safeguards remain active independently from UI |
 
-For every case: log VM image/snapshot ID, test commit, executable hashes,
-command/steps, expected and observed status/code, and redacted console output.
-Never log capability bytes. Keep independently executable service/watchdog/
-installer checks in their owning test suites rather than copying privileged
-logic into the WebView.
+For each case, record the VM image and snapshot IDs. Record the test commit and executable hashes. Record the commands and steps. Record the expected and observed status and code. Keep a redacted copy of the console output. Never record capability bytes. Keep service, watchdog, and installer tests in their own test suites. Do not copy privileged logic into the WebView.
 
 ## Approved AA-10 restriction and pending native validation
 
-The owner approved option A on 2026-10-22. The Tauri adapter now
-rejects `shutdown` in both `engine_call` and `engine_stream`, before reading
-the installation capability or connecting to the engine. The public Svelte
-SDK and operation map no longer expose it. The privileged engine bridge and
-independently authenticated `--request-shutdown` installer path remain intact.
-Two focused Rust unit tests passed for WebView denial and ordinary calls.
-**Native locked/unlocked VM verification is still required before AA-10 can
-be described as security-verified.**
+The owner approved option A on 2026-10-22. The Tauri adapter rejects `shutdown` in `engine_call` and `engine_stream`. It rejects the operation before it reads the installation capability or connects to the engine. The public Svelte SDK and operation map do not expose `shutdown`. The privileged engine bridge remains intact. The independently authenticated installer path, `--request-shutdown`, also remains intact. Two focused Rust unit tests passed. They cover WebView denial and ordinary calls. **AA-10 is not security-verified until locked and unlocked tests pass on a native Windows VM.**
