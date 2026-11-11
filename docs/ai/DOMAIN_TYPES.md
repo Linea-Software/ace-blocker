@@ -1,36 +1,36 @@
 # Domain types, validation, and trust boundaries
 
-Use during audits and refactors touching Rust entities, persisted data, IPC payloads, or TypeScript state. Refer to [REFACTORING_PLAYBOOK.md](REFACTORING_PLAYBOOK.md) and [BOUNDARIES_AND_ABSTRACTIONS.md](BOUNDARIES_AND_ABSTRACTIONS.md).
+Use this guide for audits and refactors that affect Rust entities, stored data, IPC payloads, or TypeScript state. Also read [REFACTORING_PLAYBOOK.md](REFACTORING_PLAYBOOK.md) and [BOUNDARIES_AND_ABSTRACTIONS.md](BOUNDARIES_AND_ABSTRACTIONS.md).
 
 ## The question is semantic, not syntactic
 
-A `String`, `u32`, or `boolean` is appropriate when it is genuinely unconstrained data. A dedicated type is justified when it represents a **domain identity**, a value with important invariants, a unit/clock interpretation, a secret, or a pair of values that would be easy to mix up. Never introduce a branded/newtype wrapper only to increase the number of types.
+Use `String`, `u32`, or `boolean` for data without special constraints. Use a domain type for an identity, a value with important rules, a unit or clock meaning, a secret, or values that can be confused. Do not add a branded type or newtype only to increase type count.
 
-Before proposing a new type, establish:
-- The specific invalid states or mix-ups that currently remain representable.
-- Who owns the meaning and validation rule; whether one existing standard/library type already models it.
-- Which boundaries accept untrusted/raw input (UI forms, storage, remote APIs, RPC, files).
-- Which operations should remain fallible, and which invariants must survive serialization, persistence, and round trips.
-- Whether migration would change the public wire format, stored representation, normalization, error behavior, or compatibility. Those changes require their own approval and tests.
+Before you propose a new type, identify:
+- Invalid states or mistaken value combinations that the current code permits.
+- The owner of the meaning and validation rule. Check whether a standard or library type already models it.
+- Boundaries that accept untrusted input: UI forms, storage, remote APIs, RPC, and files.
+- Operations that can fail. Identify rules that must survive serialization, persistence, and round trips.
+- Any change to wire formats, stored values, normalization, errors, or compatibility. Get separate approval and tests for these changes.
 
 ### Rust
 
-The existing example is `crates/ace-engine/src/core/common/domain_types.rs`: it uses `nutype` for `RemoteSitePackId`, `Sha256Digest`, `BundleSchemaVersion`, and `ApiKey`, with explicit validation. `ApiKey` deliberately avoids ordinary `Debug`/`Display` implementations so secrets are harder to log. Use existing patterns instead of adding a competing validation framework.
+See `crates/ace-engine/src/core/common/domain_types.rs`. It uses `nutype` and explicit validation for `RemoteSitePackId`, `Sha256Digest`, `BundleSchemaVersion`, and `ApiKey`. `ApiKey` does not implement ordinary `Debug` or `Display` because these could expose secrets. Use these patterns. Do not add a competing validation framework.
 
-- Keep constructors/private fields controlled. Parse or `TryFrom` untrusted values **once at the owning boundary**, then pass validated types internally.
-- Reuse established types such as `url::Url`, `Uuid`, `chrono` types, and existing project IDs **where appropriate**. A web URL does not automatically need a custom wrapper around a string; a `SitePackSourceUrl` might if it has stricter product rules.
-- Never weaken a valid domain type to a raw primitive for convenience; likewise avoid redundant wrappers around values whose invariants already live in a suitable type.
-- Model meaningful states with enums and associated data when this prevents invalid combinations; avoid booleans and magic integers with ambiguous meaning.
-- Validate at ingress even if the sender had a TypeScript type. Rust's authorization and business rules remain authoritative.
-- Treat (de)serialization as a trust boundary: prove invalid data is rejected and that the on-wire/DB representation stays compatible. A typed field is not proof of secure deserialization or authorization.
+- Control constructors and private fields. Parse or `TryFrom` untrusted values **once at the boundary that owns them**. Then use validated types inside the system.
+- Use established types such as `url::Url`, `Uuid`, `chrono` types, and existing project IDs when they fit. Do not wrap every URL string. Use a specific `SitePackSourceUrl` only if product rules require more checks.
+- Do not replace a valid domain type with a raw primitive for convenience. Do not wrap a value again when an existing type already enforces its rules.
+- Use enums and associated data for states that must not be combined. Avoid unclear booleans and magic integers.
+- Validate data when it enters Rust, even if TypeScript already assigned a type. Rust controls authorization and business rules.
+- Treat serialization and deserialization as trust boundaries. Test rejection of invalid data. Test compatibility of the wire and DB forms. A typed field alone does not prove secure deserialization or authorization.
 
 ### Svelte/TypeScript
 
-- Static TypeScript types and `as` casts are **not runtime validation**. Use existing Zod patterns at genuinely untrusted boundaries where runtime validation is required; derive TypeScript types from the validated schema when appropriate.
-- A branded TypeScript type distinguishes identities at compile time but does not validate raw input automatically. Constructors/parsers must enforce invariants when data first enters the trusted part of the app.
-- Do not validate every prop, local variable or already-validated in-process value with Zod. Avoid duplicate schemas that can drift away from the existing Rust/remoc contracts.
-- Keep UI-editing strings as strings while incomplete (for example, a URL being typed). Convert to the domain type only at submit/commit, producing a visible validation error without changing the meaning of partially entered input.
-- Keep domain types close to their owning feature. A shared types folder is not automatically the right place for every new type.
+- TypeScript types and `as` casts do **not validate input at runtime**. Use existing Zod patterns for untrusted input that needs runtime checks. Derive TypeScript types from the schema when useful.
+- A TypeScript brand separates identities during compilation. It does not validate input. Validate through constructors or parsers when data first enters trusted app code.
+- Do not validate every prop, local variable, or already validated value with Zod. Do not duplicate Rust/remoc schemas that can become inconsistent.
+- Keep unfinished form input as strings. For example, let the user type a partial URL. Convert to a domain value only at submit or commit. Show a validation error without changing the partial input.
+- Put domain types near their owning feature. Do not move every type to a shared types folder.
 
 ## Practical design examples
 
@@ -44,6 +44,6 @@ The existing example is `crates/ace-engine/src/core/common/domain_types.rs`: it 
 
 ## Review / regression requirements
 
-Check both valid and invalid inputs, normalization, round-trip serialization, persisted historical values, error compatibility, and authorization/secret exposure. For any proposal to change a type used in remoc, Tauri, DB migrations, or the external API, enumerate consumers and require an explicitly approved contract change rather than folding it into a behavior-preserving refactor.
+Check valid and invalid inputs, normalization, round-trip serialization, old stored values, error compatibility, and authorization or secret exposure. List consumers before you change a type used by remoc, Tauri, DB migrations, or an external API. Require explicit approval for a contract change. Do not hide it in a behavior-preserving refactor.
 
-The review question is: **what real class of mistakes becomes impossible, at what concrete cost?** Reject the new type if the answer is only "stronger typing looks cleaner."
+Ask: **Which real mistakes will this type prevent, and what will it cost?** Reject the type if the only benefit is cleaner-looking type declarations.
