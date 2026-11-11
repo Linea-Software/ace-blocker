@@ -1,27 +1,27 @@
-## 📋 Legenda Stato Avanzamento
-❌ DA INIZIARE | 🟡 IN CORSO | ✅ FINITO
+## 📋 Progress status legend
+❌ NOT STARTED | 🟡 IN PROGRESS | ✅ COMPLETE
 
 ---
 
-## Fase 1: integrazione degli script
- - ❌ creare una tabella per il database dell'engine che rappresenti gli script attivi
- - ❌ aggiungere all'engine e al client delle API per comunicare gli script attivi e modificare tale categoria
- - ❌ integrazione CDN per la distribuzione degli script
+## Phase 1: Script integration
+ - ❌ Add an engine database table that records active scripts.
+ - ❌ Add engine and client APIs to read and change active script settings.
+ - ❌ Integrate a CDN to distribute scripts.
 
-## Fase 2: sito e server
- - ❌ creazione di un'interfaccia grafica che publicizzi il prodotto
- - ❌ integrazione better auth nel server
- - ❌ integrazione di dodopayments nel server
+## Phase 2: Website and server
+ - ❌ Create a graphical interface to promote the product.
+ - ❌ Integrate Better Auth into the server.
+ - ❌ Integrate DodoPayments into the server.
 
-## Fase 3: licenza
- - ✅ creazione di un metodo per marcare il computer di chi ha ricevuto il trial period
- - ❌ aggiunta di un'API nel server per richiedere la licenza del prodotto, che poi verrà verificata tramite dodopayments
- - ❌ controllo nel client se l'utente è PRO o meno
+## Phase 3: License
+ - ✅ Add a method to identify computers that received a trial period.
+ - ❌ Add a server API to request a product license and verify it through DodoPayments.
+ - ❌ Add a client check for Pro status.
 
-## Fase 4: CDN
- - ❌ creazione CDN su BunnyCDN per la distribuzione mondiale
+## Phase 4: CDN
+ - ❌ Set up BunnyCDN for worldwide distribution.
 
 
-## Appendice A:
- ### Ora e giorno
- - Non appena verrà acceso il computer oppure quando l'interfaccia del network cambia, l'engine farà richiesta al server di microsoft per l'orario
+## Appendix A:
+ ### Date and time
+ - On computer startup or a network interface change, request the time from a Microsoft server.
