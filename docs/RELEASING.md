@@ -1,8 +1,8 @@
 # Desktop CI and release candidates
 
-ACE's unified desktop repository is `ace-blocker`. The website, Android app,
-and host-list pipeline have their own release policies and are not part of this
-workflow.
+ACE's unified desktop repository is `ace-blocker`.
+This workflow does not include the website, Android app, or host-list pipeline.
+Those projects have separate release policies.
 
 ## Continuous integration
 
@@ -16,8 +16,8 @@ manual dispatch:
   resource-intensive site-pack integration tests; run it separately before
   public releases rather than saturating every pull-request runner.
 
-The Linux runners install the native dependencies required by Tauri 2/WebKitGTK.
-The pipeline intentionally has no macOS job.
+Linux runners install the native dependencies for Tauri 2 and WebKitGTK.
+The pipeline does not include macOS.
 
 Dependabot checks the root Cargo workspace, `apps/ace-app/bun.lock`, and
 GitHub Actions weekly. Dependency updates remain pull requests subject to CI;
@@ -25,15 +25,15 @@ they are not auto-merged.
 
 ## Building release candidates
 
-Manually run **Desktop release candidates (Windows and Linux)** from
-`main` with a three-part `version` (e.g. `0.3.0`). The workflow now rejects
+Run **Desktop release candidates (Windows and Linux)** manually from `main`.
+Specify a three-part `version`, such as `0.3.0`. The workflow now rejects
 versions not already aligned in the engine, watchdog, release verifier,
 Tauri Rust/config and Svelte package manifests; the MSI packaging version
 alone is not authoritative.
 
-After **both** builds succeed, the workflow checks the artifact hashes and
-commit provenance and creates (or updates) a **draft prerelease** on GitHub
-named `v<version>`. It never publishes that release automatically.
+After **both** builds pass, the workflow checks artifact hashes and commit provenance.
+It then creates or updates a GitHub **draft prerelease** named `v<version>`.
+It never publishes the release automatically.
 
 - **Windows x64:** `AceBlocker-<version>.msi` using WiX 4, plus a
   `release-candidate-windows.json` provenance manifest.
@@ -47,22 +47,20 @@ The draft-assembly job also runs `installer/verify_release_candidates.py`.
 It refuses to create a draft if either platform file is absent, if the
 version/commit/hash provenance differs, if the MSI header is not a valid
 compound-file header, or if the Linux archive is structurally unsafe or
-missing required executables, scripts or bundled content. This is a release
-**candidate** gate, not a proof of Authenticode signature or installation
-safety. Its offline regression tests run in ordinary desktop CI.
+missing required executables, scripts or bundled content. This gate checks release **candidates**.
+It does not prove Authenticode signing or installation safety. Its offline regression tests run in ordinary desktop CI.
 
 **GitHub Actions downloads each workflow artifact as a ZIP**, but the Linux
-deliverable *inside* that ZIP is still `.tar.gz`. Keep that tarball for
-Linux: tar/gzip support is more broadly available than the optional `unzip`
-utility. On the website upload the inner tarball, not GitHub's outer ZIP.
+deliverable *inside* that ZIP is still `.tar.gz`. Keep the Linux tarball. Tar and gzip are more widely available than `unzip`.
+Upload the inner tarball to the website, not GitHub's outer ZIP.
 
 The individual GitHub Actions artifacts are retained for 14 days; the draft
 release keeps a copy of both assets and the manifests. Neither workflow
 builds or ships a macOS executable.
 
-The optional `stage_on_site` switch is **Windows only**, now requires a
-valid code-signing certificate pinned by `ACE_RELEASE_PUBLISHER_CERT_SHA256`,
-and sends the MSI to the website's staged ingestion endpoint. The workflow
+The optional `stage_on_site` switch works **only on Windows**.
+It requires a valid signing certificate pinned by `ACE_RELEASE_PUBLISHER_CERT_SHA256`.
+It sends the MSI to the website's staged ingestion endpoint. The workflow
 cannot sign it by itself: configure an approved signing service first.
 See `docs/PRODUCT_UPDATES.md` for the independently signed release envelope,
 public build keys, updater status and remaining privileged installer gates. It requires the repository variable
@@ -71,8 +69,8 @@ not publish the staged MSI.
 
 ## Linux installation candidate — manual test systems only
 
-Linux is currently distributed as a **tarball**, not a .deb, .rpm, AppImage,
-or an unattended installer. Its archive is built on Ubuntu 24.04 for x86-64,
+The current Linux distribution is a **tarball**.
+It is not a .deb, .rpm, AppImage, or unattended installer. Its archive is built on Ubuntu 24.04 for x86-64,
 so other distributions and older glibc versions are not guaranteed compatible.
 The binaries depend on the system's WebKitGTK 4.1 and related desktop libraries.
 
@@ -92,9 +90,8 @@ The helper installs all binaries and bundled packs under root-owned
 launcher/icon under `/usr/local/share`. It creates a dedicated `ace-blocker`
 local group with group-readable (not world-readable) capability credentials in
 the root-owned `/usr/local/share/AceBlocker` directory, and enrolls the user
-identified by `SUDO_USER`. That user must log out and back in before the App
-can authenticate; without `SUDO_USER`, enroll the intended desktop account
-in that group explicitly. The installer also installs the allowlisted
+identified by `SUDO_USER`. That user must log out and sign in again before the App can authenticate.
+If `SUDO_USER` is absent, explicitly add the intended desktop account to the group. The installer also installs the allowlisted
 `ace-redirect` desktop callback handler and attempts to make it the default
 `aceblocker://` handler for `SUDO_USER`. Verify in the *desktop user's*
 session with `xdg-mime query default x-scheme-handler/aceblocker` (expected:
@@ -122,8 +119,8 @@ databases and tokens. Never upgrade by replacing the binaries alone.
 
 Determine the live data path from the Engine journal. Before changing binaries,
 obtain a successful authenticated, lock-aware shutdown and stop the Watchdog
-within its confirmed maintenance lease. **If either protected service remains
-active or maintenance fails, abort; do not force-stop it.**
+within its confirmed maintenance lease. **If either protected service remains active or maintenance fails, stop.
+Do not force-stop either service.**
 
 With both services inactive, run the included helper, specifying the actual
 old data path (the path below is an example):
@@ -141,7 +138,8 @@ start Watchdog and Engine. Do not run `install.sh` on existing installations.
 
 ## Before publishing any draft release
 
-A successful build is **not** proof of release safety. Verify at least:
+A successful build does **not** prove release safety.
+Complete at least these checks:
 
 1. Windows clean MSI install/upgrade/uninstall on a disposable VM, service
    permissions, named-pipe ACLs, capability-token and certificate ACLs across
@@ -154,7 +152,7 @@ A successful build is **not** proof of release safety. Verify at least:
    security review findings in `docs/SECURITY_AUDIT_2026-10-26.md` and
    `docs/SECURITY_AUDIT_FOLLOWUP_2026-10-26.md`.
 
-Do **not** publish the draft to end users solely because CI passes. Native
+Do **not** publish the draft to users based only on passing CI. Native
 Windows/Linux integration and security tests are separate release gates.
 
 ## Signed Pro entitlements in development and release
@@ -185,5 +183,5 @@ Pro leases expire after at most 24 hours, with another 72 hours allowed for
 intermittent offline use. Previously active blocking protections remain enabled
 when a subscription expires; new Pro operations need valid entitlements.
 
-DodoPayments intentionally remains in **test_mode** for release builds until a
-future explicit product decision changes the billing environment.
+DodoPayments stays in **test_mode** for release builds.
+Changing the billing environment requires an explicit product decision.
