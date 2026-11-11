@@ -1,17 +1,17 @@
 # Local IPC architecture
 
-Ace Blocker's local control plane uses **remoc 0.20.4** on OS-native byte
-streams: **interprocess 2.4.x Windows Named Pipes** on Windows, a Unix-domain
-socket on Linux. The engine and watchdog remain independent privileged
-services; the Tauri frontend runs as an unprivileged user-session process.
+Ace Blocker uses **remoc 0.20.4** over native OS byte streams for local control.
+Windows uses **interprocess 2.4.x Windows Named Pipes**. Linux uses a Unix-domain socket.
+The engine and watchdog remain independent privileged services.
+The Tauri frontend runs without elevated privileges in the user session.
 
 ## Control plane
 
 - Engine listener: `\\.\pipe\AceBlockerEngineControlV1` on Windows;
   `/run/ace-blocker-control/engine-control.sock` on Linux.
 - `crates/ace-engine/src/service/api/rpc.rs` declares the 64 typed remoc RPC
-  operations. They call transport-independent `operations_*.rs` modules,
-  preserving lock checks, cloud authorization, shutdown and backup.
+  operations. The operations call transport-independent `operations_*.rs` modules.
+  These modules preserve lock checks, cloud authorization, shutdown, and backup.
 - `service/api/transport.rs` establishes remoc connections and serves
   independent clients. There is **no HTTP control listener, OpenAPI service,
   TLS bypass, port discovery or HTTP fallback** in the production runtime.
@@ -21,8 +21,8 @@ services; the Tauri frontend runs as an unprivileged user-session process.
 - `apps/ace-app/src/lib/engine-client/` is a stable Svelte facade. Site pack
   progress uses typed Rust events over remoc and Tauri Channels, with no SSE
   framing or bytes-to-JSON decoder.
-- The unprivileged Tauri UI opens public Pro/sign-in URLs in the desktop user's
-  browser session. No UI entry point relies on the privileged Engine to launch a browser.
+- The Tauri UI opens public Pro and sign-in URLs in the desktop user's browser.
+  The privileged Engine does not launch browsers for the UI.
   The installed Linux `ace-blocker-handler.desktop` dispatches only the
   `aceblocker://` callback to `ace-redirect`, which reads the same canonical
   Linux capability path as Tauri and the Engine and accepts only the allowlisted
@@ -36,28 +36,25 @@ read/write only; no remote clients. Only the pipe owner receives the additional
 create-instance permission needed by `interprocess` to accept subsequent
 connections. In production, the LocalSystem service owns the pipe; a manual
 user-mode launch can likewise accept connections without granting this right
-to other authenticated users. **Pipe access is not authorization**: every
-modifying RPC verifies the installation capability before entering the existing
-handler. A successful handshake must never be treated as proof the client is
-the genuine Ace App.
-The current install-level token defends against arbitrary WebView requests,
-but it does **not** cryptographically attest executable identity: another
-user-session process that obtains that token could impersonate the application.
+to other authenticated users. **Pipe access is not authorization.** Each modifying RPC verifies the installation
+capability before it calls the handler. A successful handshake does not prove
+that the client is the genuine Ace App.
+The installation token protects against arbitrary WebView requests.
+It does **not** cryptographically verify executable identity.
+Another user-session process can impersonate the app if it obtains the token.
 Do not advertise executable attestation as an existing protection.
 
 As of 2026-11-06, `export_backup` also requires the installation capability:
 the payload includes policy names, rules and schedules. Other read-only
-operations retain their established authorization behavior. A capability
-readable by another Windows account is still not executable attestation and
-requires separate multi-user DACL/identity verification on the installed MSI.
+operations retain their established authorization behavior. A capability readable by another Windows account does not attest executable identity.
+Verify multi-user DACL and identity behavior with the installed MSI.
 The trusted-time floor and schedule IANA state are owned by the engine and do
 not create another IPC listener.
 
 On Linux both Engine and App resolve shared data and the capability token from
 the canonical `/usr/local/share/AceBlocker` path, ignoring differences in
-XDG_DATA_DIRS between systemd and the user desktop session. Pre-existing
-alternate XDG paths require explicit maintenance to migrate, not silent data
-replacement.
+XDG_DATA_DIRS between systemd and the user desktop session. Migrate existing alternate XDG paths through explicit maintenance.
+Do not replace data silently.
 
 On Linux the root-owned control directory is traversable (0755), its socket
 accepts local clients (0666), and privileged operations still require the
@@ -66,9 +63,8 @@ runtime directory (0700) and root-only watchdog socket (0600).
 
 ### Watchdog
 
-The independent Windows LocalSystem watchdog service keeps its original
-SYSTEM-only pipe ACL and confirms the client PID matches the SCM-owned
-AceEngine process. The watchdog and engine use remoc typed heartbeat challenge,
+The independent Windows LocalSystem watchdog keeps its SYSTEM-only pipe ACL.
+It checks that the client PID matches the SCM-owned AceEngine process. The watchdog and engine use remoc typed heartbeat challenge,
 response, and bounded maintenance messages. The separate Linux watchdog
 uses the Unix socket and confirms the systemd service MainPID. The original
 recovery state machine and watchdog lease validation remain authoritative.
@@ -89,8 +85,8 @@ recovery state machine and watchdog lease validation remain authoritative.
 - External website authentication, update traffic, and the MITM/blocking proxy
   deliberately remain HTTP(S).
 
-Native Svelte debugging requires the Tauri runtime; Vite alone cannot access
-the Named Pipe. Obsolete HTTP-mocked browser E2E suites have been removed. The
+Native Svelte debugging requires Tauri. Vite alone cannot access the Named Pipe.
+Obsolete browser E2E suites that mock HTTP have been removed. The
 remaining static browser tests do not validate IPC. Native Tauri/Windows
 service and installer validation are still required for release.
 
