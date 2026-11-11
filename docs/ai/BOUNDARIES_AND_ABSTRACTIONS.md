@@ -1,10 +1,10 @@
 # Architecture boundaries and abstraction policy
 
-Use with [REFACTORING_PLAYBOOK.md](REFACTORING_PLAYBOOK.md). This document guides **design choices during audits and scoped refactors**; it is not a license to reorganize the workspace or change runtime contracts.
+Read [REFACTORING_PLAYBOOK.md](REFACTORING_PLAYBOOK.md) with this guide. Use these rules for design decisions during audits and small refactors. Do not use them to reorganize the workspace or change runtime contracts.
 
 ## Start with the actual ownership map
 
-Read the relevant code and call sites before enforcing any proposed dependency direction. The following identifies existing responsibilities, not a claim that every existing import already satisfies an ideal graph.
+Read the code and its call sites before you propose a dependency direction. The table identifies current responsibilities. It does not claim that all imports follow an ideal dependency graph.
 
 | Area | Owns | Boundary to protect |
 | --- | --- | --- |
@@ -23,35 +23,35 @@ See [IPC_ARCHITECTURE.md](../IPC_ARCHITECTURE.md) for the authoritative current 
 
 ## Decision rule for a new dependency
 
-Before introducing a cross-feature import, a shared helper, an additional crate, or a central store, answer:
+Answer these questions before you add a cross-feature import, shared helper, crate, or central store:
 
-1. **Who owns this behavior/data?** Identify the domain or feature whose semantics change when the requirement changes.
-2. **Why must these units know each other?** Name the actual use case and the narrow contract required. A convenient import is not a design reason.
-3. **Can the caller depend on a small public interface or value instead of implementation internals?** Keep validation, authorization and ownership at the authoritative boundary.
-4. **Does sharing reflect one stable concept, or only similar-looking code?** If two features can evolve independently, prefer local implementations over premature coupling.
-5. **What will this link cost?** Trace call sites, direction of imports, effect on tests, change propagation, and runtime privilege boundaries.
-6. **How will the boundary be tested?** Prefer a focused contract/regression test and an enforceable dependency check where tooling permits.
+1. **Who owns this behavior or data?** Name the domain or feature that controls its meaning.
+2. **Why must these units depend on each other?** Name the use case and the smallest necessary contract. Convenience alone is not a reason.
+3. **Can the caller use a small public interface or value?** Do not expose implementation details. Keep validation, authorization, and ownership at the correct boundary.
+4. **Is this one stable concept?** Similar code is not enough. Keep separate implementations when features can change independently.
+5. **What does the dependency cost?** Check call sites, import direction, test impact, change propagation, and privilege boundaries.
+6. **How will tests protect the boundary?** Prefer focused contract and regression tests. Add dependency checks where tools permit.
 
-Do not create a universal `common`, `utils`, `base`, `service`, generic repository, or event bus merely to remove duplication. Extract shared code only when semantics, lifetime, ownership, validation rules, and likely future changes **really are shared**. Some duplication is safer than the wrong abstraction. Equally, do not split every module into a separate crate: use a crate boundary only for a meaningful independently owned API, runtime isolation, dependency constraint, or build/testing benefit.
+Do not add a universal `common`, `utils`, `base`, `service`, generic repository, or event bus only to remove repeated code. Share code only when semantics, lifetime, ownership, validation, and expected changes are shared. Some duplication is safer than incorrect coupling. Do not put every module in its own crate. Add a crate boundary only when it gives a clear API, isolation, dependency, or build/test benefit.
 
 ## Frontend-specific boundaries
 
-- Route-specific components and state stay near the route by default. Share a component only when multiple consumers need the **same contract**, not merely similar markup.
-- Prefer local `$state`/`$derived` and explicit props/callbacks for local presentation. Introduce shared stores only for truly shared application state with defined lifecycle and ownership; avoid `$effect` chains that synchronize duplicate state.
-- The engine's authoritative policy state remains in Rust. UI snapshots and optimistic form state must not become a competing source of truth for enforcement.
-- New engine operations go through the existing `engine-client` facade → Tauri adapter → typed remoc contract, with relevant authorization and error/stream behavior preserved.
-- Keep generated Paraglide content, the external Ace Server client, and typed RPC contracts separate from application-specific business logic. Never patch generated outputs as a refactoring shortcut.
+- Keep route-specific components and state near their route by default. Share a component only when multiple callers need the **same contract**, not merely similar markup.
+- Use local `$state` and `$derived` with explicit props and callbacks for local presentation. Use a shared store only for shared application state with clear ownership and lifetime. Avoid `$effect` chains that copy state between stores.
+- Keep policy state authoritative in Rust. Do not let UI snapshots or optimistic forms control enforcement.
+- Route new engine operations through `engine-client` → Tauri adapter → typed remoc. Keep authorization, error handling, and stream behavior unchanged.
+- Keep generated Paraglide content, the external Ace Server client, and typed RPC contracts separate from business logic. Do not edit generated output to simplify a refactor.
 
 ## Rust-specific boundaries
 
-- Place domain rules near the relevant domain concept; keep infrastructure adaptors, persistence and transport mapping at their boundaries.
-- Preserve existing newtypes and fallible conversions instead of passing raw strings/integers through unrelated layers (see [DOMAIN_TYPES.md](DOMAIN_TYPES.md)).
-- Introduce traits when there is a concrete alternate implementation, test seam, or dependency inversion requirement; not for every struct or one-off helper.
-- Do not casually change visibility to `pub`, move behavior into a global manager, or make unrelated crates depend on `ace-engine` implementation details.
-- The independent engine/watchdog processes and capability-protected remoc contract outrank any suggested modularity cleanup.
+- Keep domain rules near the domain concept. Keep infrastructure adapters, persistence, and transport mapping at their boundaries.
+- Use existing newtypes and fallible conversions. Do not pass raw strings or integers through unrelated layers. See [DOMAIN_TYPES.md](DOMAIN_TYPES.md).
+- Add a trait only for a real alternate implementation, test boundary, or dependency inversion. Do not add one for each struct or helper.
+- Do not make code `pub` without a reason. Do not move unrelated behavior into a global manager. Do not make other crates depend on internal `ace-engine` details.
+- Keep independent engine and watchdog processes. Keep the capability-protected remoc boundary. These requirements take priority over module cleanup.
 
 ## Architecture audit and escalation
 
-For the **affected scope**, record the before/after import or call relationship and any newly crossed boundaries. Investigate dependency cycles, fan-in/fan-out, oversized coordinating modules, broad `pub` APIs, and changes requiring edits across unrelated areas. These are **signals**, not absolute thresholds: a long cohesive file can be healthier than five artificially coupled abstractions. Automated graph checks are useful only after the intended ownership/direction has been decided.
+For the **affected scope**, record dependency and call relationships before and after the change. Identify each new boundary crossing. Examine cycles, fan-in and fan-out, large coordinating modules, broad `pub` APIs, and changes that affect unrelated areas. Treat these as signals, not automatic limits. A long, cohesive file can be better than several coupled abstractions. Use automated graph checks only after you define intended ownership and import direction.
 
-**Stop and propose a separate architectural decision** if the smallest fix requires reversing dependency direction, new cross-process communication, a new shared crate/protocol, moving enforcement authority, or a large public contract/data migration. Record the owner, options, rejected alternatives, contract, consequences and needed tests in the relevant backlog item (or a concise architectural decision note) before implementation. Never silently make these decisions inside a cleanup patch.
+**Stop and request a separate architecture decision** if the smallest fix reverses dependency direction, adds cross-process communication, adds a shared crate or protocol, moves enforcement authority, or needs a large contract or data migration. Record the owner, options, rejected alternatives, contract, effects, and tests in the backlog or a short decision note. Do not make this decision as part of a cleanup patch.
