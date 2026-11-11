@@ -2,9 +2,9 @@
 
 ## Status and security boundary
 
-**This is a bounded implementation, not a completed unattended installer.**
-The following works in the current source tree (with production signing and
-endpoint configuration still required):
+**The implementation is limited. It does not include an unattended installer.**
+The current source tree supports the functions below.
+Production signing and endpoint configuration are still required:
 
 - `ace-update-security` authenticates Ed25519 release envelopes using a
   public key pinned at compile time; compares strict stable SemVer numerically;
@@ -36,23 +36,22 @@ endpoint configuration still required):
   version. Only a correctly Authenticode-signed and pinned MSI may be staged
   on the website. Unapproved releases remain GitHub drafts.
 
-**Not implemented or not enabled:** stopping the services for installation,
-one-time authorization of a locked upgrade, privileged MSI execution, durable
-transaction journal, cross-process install mutex, database snapshot and
-post-install enforcement health checks/recovery. The
+**Not implemented or enabled:** service shutdown for installation; one-time locked-upgrade
+authorization; privileged MSI execution; durable transaction journal;
+cross-process install mutex; database snapshot; post-install enforcement checks and recovery. The
 `ace-update-security::UpdateCoordinator` models phases and single-flight in
 memory, but is **not** yet a privileged authorization capability or reboot-
-durable journal. No automatic MSI execution happens in the current build.
-Do not publish or advertise the product as auto-installing at this stage.
+durable journal. The current build never executes an MSI automatically.
+Do not advertise automatic installation at this stage.
 
-No previously released product or legacy migration path exists. There is no
-pre-release version-bridge requirement. This does **not** allow a first public
-release to permit unsigned or arbitrary lock-breaking upgrades.
+There is no previously released product or legacy migration path.
+No pre-release version bridge is required.
+The first public release must still reject unsigned upgrades and unauthorized lock-breaking upgrades.
 
 ## Exact release manifest contract
 
-A trusted HTTPS Ace Blocker release endpoint must serve an envelope with
-these string fields. The inspected website checkout currently exposes
+A trusted HTTPS Ace Blocker release endpoint must return an envelope
+with these string fields. The inspected website checkout currently exposes
 `GET /api/v1/releases/latest` in
 `ace-blocker-site/src/lib/server/api/routers/releases.ts`, but that is
 **unsigned installer-version metadata**, not this contract. No signed feed
@@ -89,15 +88,15 @@ The base64 payload is JSON with camelCase property names:
 }
 ```
 
-**Example only:** no publication path above is guaranteed to exist.
+**Example only:** The publication path above is not guaranteed to exist.
 The envelope's `key_id` selects the *embedded* trust key, not a network-
 supplied key; only `ace-stable-v1` is accepted. Unknown fields, unknown
 channels, prereleases, incorrect OS/architecture, insecure URLs, absent/
 invalid signatures, wrong hashes, wrong pinned publisher identities, and
 downgrades are all rejected.
 
-A replay of a *previously* authorized release can be prevented relative to
-the installed version and a caller-supplied version floor. A privileged,
+The installed version and caller-supplied version floor can prevent replay
+of a *previously* authorized release. A privileged,
 durable floor is required before install is enabled to block a revoked
 version on devices that skipped newer releases. The current engine uses
 the installed version as the floor: it **does not** persist a revocation
@@ -116,13 +115,12 @@ Only **public** trust material is embedded into Windows builds:
 - `ACE_RELEASE_PUBLISHER_CERT_SHA256` — SHA-256 fingerprint of the
   **exact code-signing certificate** that signs the MSI.
 
-If any are missing or invalid, discovery/install stays disabled. A publisher
-certificate rotation or Ed25519 key rotation needs an explicitly reviewed
-trust-root transition. The release pipeline does not obtain or store an
+If any value is missing or invalid, discovery and installation stay disabled.
+Review trust-root transitions before rotating the publisher certificate or Ed25519 key. The release pipeline does not obtain or store an
 Ed25519 private key or code-signing PFX.
 
-A production signing service/HSM must Authenticode-sign the final MSI before
-any checksum/manifest is computed. At a trusted Windows signing stage, run:
+A production signing service or HSM must Authenticode-sign the final MSI.
+Compute checksums and manifests only after signing. At a trusted Windows signing stage, run:
 
 ```powershell
 .\installer\verify-product-signature.ps1 -MsiPath "AceBlocker-VERSION.msi" -ExpectedPublisherCertSha256 "APPROVED_CERT_SHA256"
@@ -149,8 +147,8 @@ python3 installer/release_manifest.py assemble \
   --key-id ace-stable-v1 --output out/release-envelope.json
 ```
 
-The `assemble` command checks the encoding/shape, **not the cryptographic
-validity** of an externally supplied signature. Independently verify the
+The `assemble` command validates encoding and structure.
+It does **not** verify the cryptographic validity of an external signature. Independently verify the
 signature against the approved public key and the signed MSI's Authenticode
 identity before manually publishing the envelope on the website. An
 authenticated manifest is necessary but not enough for automatic
@@ -161,8 +159,8 @@ installation.
 The existing MSI requires `CA_CheckLocks` for `REMOVE`, including the removal
 half of `RemoveExistingProducts`, and uses the lock-aware authenticated
 shutdown request. An active lock therefore still refuses the major upgrade.
-**Do not** simply skip `CA_CheckLocks` on `UPGRADINGPRODUCTCODE`: a third-
-party MSI could provide the same UpgradeCode and abuse that MSI property.
+**Do not** bypass `CA_CheckLocks` for `UPGRADINGPRODUCTCODE`.
+A third-party MSI could reuse the UpgradeCode and misuse that MSI property.
 
 Before enabling automatic install, introduce a separately vetted, minimal
 LocalSystem installer orchestrator. It must re-open and re-verify a
@@ -182,8 +180,8 @@ only SCM `RUNNING`. On unrepairable post-install failure, keep the journal at
 `RecoveryRequired`; do not claim success. Do not promise binary rollback
 after irreversible data migrations.
 
-The staged MSI directory is **cache only**. Hash/Authenticode success there is
-not permission to execute it. An installer must re-verify after securely
+The staged MSI directory is **only a cache**.
+A successful hash and Authenticode check does not authorize execution. An installer must re-verify after securely
 opening the file immediately before execution; ordinary-user path writes,
 file replacement and reparse-point races must be independently assessed on
 Windows. Linux product auto-upgrades are not implemented in this Windows MSI
@@ -233,4 +231,4 @@ workstream.
 - [ ] Engine/watchdog recovery, concurrent requests, disk full, invalid DB
       migration, download interruption and clock jumps.
 
-No Windows VM or interactive Windows test is performed here.
+No Windows VM or interactive Windows tests were performed for this work.
