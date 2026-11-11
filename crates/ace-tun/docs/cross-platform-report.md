@@ -1,8 +1,8 @@
-# Making `ace-tun` Cross-Platform
+# Cross-platform support for `ace-tun`
 
 **Date:** 2026-08-23
-**Scope:** Analysis of the current Windows-only implementation, per-OS research, a
-recommended architecture, and a phased migration plan.
+**Scope:** Analyze the original Windows-only implementation. Review support for
+each OS. Recommend an architecture and a phased migration plan.
 **References:** the `ace-tun` source itself, a fresh clone of
 [tun-rs](https://github.com/tun-rs/tun-rs) (v2.8.8, at
 `ace-tun/thirdparty/tun-rs-reference/`), Linux kernel sources
@@ -13,16 +13,16 @@ and platform documentation.
 
 ## 1. Executive summary
 
-`ace-tun` is a transparent-redirect layer: it creates a virtual adapter, pulls
-the machine's traffic into it with split-default routes, terminates each flow in
-a userland TCP/IP stack, and decides per flow (by owning process + rule set) to
-proxy it, relay it directly, or drop it.
+`ace-tun` redirects traffic transparently. It creates a virtual adapter.
+Split-default routes send the computer's traffic to that adapter. A user-mode
+TCP/IP stack terminates each flow. The owning process and rules determine
+whether ACE proxies, relays, or drops the flow.
 
-**The good news: roughly two thirds of the crate is already platform-agnostic.**
-The netstack, rule engine, DNS snoop cache, proxy client, callbacks, state, and
-the whole `TunRedirect` lifecycle live on top of the `ipstack` crate (which is
-portable by design — it just needs an `AsyncRead + AsyncWrite` framed packet
-device). Those modules compile unchanged on any OS.
+**Approximately two thirds of the crate is already platform-independent.**
+The netstack, rule engine, DNS cache, proxy client, callbacks, state, and
+`TunRedirect` lifecycle use the portable `ipstack` crate. That crate needs
+only a framed-packet device that implements `AsyncRead + AsyncWrite`.
+These modules compile without changes on other operating systems.
 
 **The Windows-specific surface is small and well-contained** — five modules:
 
@@ -35,16 +35,17 @@ device). Those modules compile unchanged on any OS.
 | `device.rs` | blocking WinTun session → tokio async device (reader thread) |
 | `build.rs` | copies `wintun.dll` next to binaries (already Windows-gated) |
 
-Everything else — flow decisions, QUIC policy, fail-open behaviour, DNS
-snooping, HTTP CONNECT/SOCKS5 relay, watchdog teardown — ports over as-is.
+The existing implementation already separates flow decisions, QUIC policy,
+fail-open behavior, DNS inspection, HTTP CONNECT/SOCKS5 relay, and watchdog
+shutdown. These functions can move to other platforms without changes.
 
-**Recommendation: do not adopt `tun-rs` wholesale.** It is a good reference and
-a good device-creation library, but its Windows path is *worse* than what
-`ace-tun` already has (it configures addresses via `netsh`, loads `wintun.dll`
-without the signed-bundle story, and does no process attribution, no loop-guard
-pinning, and no routing policy). The right shape is: keep ace-tun's own
-architecture, add a thin per-OS backend behind a small internal trait, and use
-`tun-rs` (or raw fds) only as the Linux/macOS device layer.
+**Recommendation: do not replace the full implementation with `tun-rs`.**
+`tun-rs` is useful as a reference and device library. Its Windows backend
+uses `netsh` to configure addresses. It does not provide ACE's signed-DLL
+bundling, process attribution, socket loop protection, or routing policy.
+Keep the existing `ace-tun` architecture. Add a small internal interface
+with a separate backend for each OS. Use `tun-rs` or raw file descriptors
+only for the Linux and macOS device layer.
 
 Effort estimate (experienced Rust engineer): **Linux ~1–1.5 weeks**,
 **macOS ~2–3 weeks** (process attribution and routing are the hard parts),
@@ -80,10 +81,9 @@ app ──routes──▶ [adapter+netcfg] ──▶ [device] ──▶ [ipstack
 | `device.rs` | ⚠️ | The `AsyncRead/AsyncWrite` contract is portable; the backend is WinTun. |
 | `build.rs` | ⚠️ | Already no-ops off Windows; nothing to do. |
 
-The important architectural fact: **`ipstack::IpStack::new(cfg, device)` takes
-any `AsyncRead + AsyncWrite` that frames one IP packet per read/write** — that
-is exactly what `TunDevice` provides today. Swapping the backend under that
-interface is the smallest possible change.
+**`ipstack::IpStack::new(cfg, device)` accepts any `AsyncRead + AsyncWrite`
+device that frames one IP packet per read or write.** The current `TunDevice`
+meets this contract. Replacing only its backend minimizes the change.
 
 ---
 
@@ -113,12 +113,12 @@ and Linux TSO/GSO offload + multi-queue. Its Linux device layer is high quality
 | Linux | **netlink rtnetlink** (`RTM_NEWADDR` / `RTM_NEWROUTE`). Rust crates: `rtnetlink` (rust-netlink) or `netlink-packet-route` + `netlink-sys`. Alternative: `netconfig-rs` (used by tun-rs, netlink-based on Linux). Avoid shelling to `ip` — same "no output parsing" argument as the README's case against `netsh`. |
 | macOS | No netlink. Two options: (a) `SIOCAIFADDR`/`SIOCSIFMTU`/`SIOCSIFFLAGS` ioctls for addresses (what tun-rs does) + the `/sbin/route` command for routes (what `route_manager` does — the same approach WireGuard's macOS client uses), or (b) SystemConfiguration APIs (`SCDynamicStoreCopy`…) for routes, which is heavier and still undocumented-ish. Pragmatic choice: **ioctls + `route` command**, wrapped with strict error checking. |
 
-**The split-default trick ports unchanged to every OS.** `0.0.0.0/1` +
-`128.0.0.0/1` (and `::/1` + `8000::/1`) are more specific than any `/0`
-default route, so longest-prefix match wins and teardown is "delete my four
-routes". On Linux the routes are `dev tun0` with no gateway (point-to-point),
-exactly like the zero next-hop rows ace-tun already creates. On macOS:
-`route add -net 0.0.0.0/1 -interface utunN` etc.
+**Split-default routing works on each target OS.** Routes `0.0.0.0/1` and
+`128.0.0.0/1` (and `::/1` and `8000::/1`) have longer prefixes than a
+`/0` default route. They win longest-prefix selection. Shutdown removes the
+four routes. Linux uses `dev tun0` with no gateway for point-to-point
+routing. This matches ACE's zero next-hop entries. macOS uses commands such
+as `route add -net 0.0.0.0/1 -interface utunN`.
 
 One Windows-only concept disappears on Unix: **interface metric**. Windows needs
 `SetIpInterfaceEntry` to force metric 1; on Linux the `/1` vs `/0` prefix-length
@@ -142,9 +142,9 @@ full table):
 | macOS | `IP_BOUND_IF` (= 25) | **host** | plain `int` ifindex; xnu `in_pcbbind` path |
 | macOS | `IPV6_BOUND_IF` (= 125) | **host** | plain `int` ifindex |
 
-So the "v4 network order, v6 host order" rule that is correct on Windows is
-**wrong on Linux** (v6 is also network order there). The per-OS byte-order
-encoder must move into the platform backend and be unit-tested per target.
+Windows uses network byte order for IPv4 and host byte order for IPv6.
+**Linux uses network byte order for both families.** The platform backend
+must select the byte order. Unit tests must cover each OS.
 
 Bonus Linux difference: Linux's `IP_UNICAST_IF` returns `EADDRNOTAVAIL` if the
 ifindex doesn't exist (an *error*), whereas Windows silently pins to a
@@ -156,7 +156,8 @@ either way. Linux alternative: `SO_BINDTODEVICE` (name-based, needs
 
 ### 3.4 Process attribution — the genuinely hard part
 
-The whole product depends on "which process owns this flow". Per OS:
+The product must identify the process that owns each flow. Each OS has a
+different method:
 
 **Linux — netlink sock_diag (the `ss` mechanism).**
 `NETLINK_SOCK_DIAG` + `inet_diag_req_v2` returns, per socket, the socket *inode*
@@ -196,17 +197,17 @@ rules would not work there. That is a product decision, not an engineering one.
 | Linux | `CAP_NET_ADMIN` (root usually) | `capget`, or just attempt `TUNSETIFF` and map `EPERM` → a clear error |
 | macOS | root (euid 0) | `geteuid() == 0` |
 
-The existing `Error::NotElevated` degrades gracefully in the engine (it logs
-"running WITHOUT traffic interception" and retries in the background) — keep
-that contract, just compute the predicate per OS.
+The engine handles `Error::NotElevated` without stopping. It logs
+"running WITHOUT traffic interception" and retries in the background.
+Keep this behavior. Check privileges separately for each OS.
 
 ### 3.6 Teardown / hard-kill safety — already portable
 
-On Linux and macOS, a non-persistent TUN interface is destroyed when the last
-fd closes, and the kernel drops routes whose interface vanishes. That is the
-same property WinTun gives on Windows: **SIGKILL restores connectivity by
-itself**. No new watchdog logic needed; the existing watchdog + `Drop` paths
-are correct as-is.
+On Linux and macOS, closing the last file descriptor removes a nonpersistent
+TUN interface. The kernel removes routes that use that interface. WinTun
+provides the same behavior on Windows. **SIGKILL alone restores connectivity**
+under this route-only design. The existing watchdog and `Drop` paths are
+sufficient. Section 8 describes later firewall safeguards.
 
 ### 3.7 Known-gaps parity check
 
@@ -237,8 +238,9 @@ the snoop still populates the cache. Loopback DNS is already handled by the
 
 ## 4. Recommended architecture
 
-Keep the crate's current shape; introduce one `platform` module with four small
-backends behind it. Do **not** restructure `netstack`/`rule`/`dns`/`proxy`.
+Keep the current crate structure. Add a `platform` module with four small
+backends. Do **not** change the structure of `netstack`, `rule`, `dns`, or
+`proxy`.
 
 ### 4.1 Proposed module layout
 
@@ -436,9 +438,9 @@ unchanged.
 
 ## 8. Status and verified corrections (2026-08-23)
 
-Phase 0 (platform refactor) and Phase 1 (Linux) are implemented; see the git
-log. Two claims in the analysis above were **corrected during implementation**
-(both verified against kernel 6.18 sources and live in Docker/WSL2):
+Phase 0 (platform refactoring) and Phase 1 (Linux) are complete. See the Git
+log. Implementation corrected two earlier claims. The team checked both
+corrections against Linux kernel 6.18 sources and in Docker/WSL2:
 
 ### 8.1 Linux loop prevention evolved from interface pinning to policy routing
 
@@ -451,8 +453,8 @@ capture table and continue through the normal policy database, including a user
 VPN. This removes the stale-interface problem and reduces the required Linux
 privilege set to `CAP_NET_ADMIN`.
 
-The old byte-order discussion remains useful historical context, but Linux no
-longer uses either `IP_UNICAST_IF` or `SO_BINDTODEVICE` for ACE relay sockets.
+The byte-order discussion remains historical evidence. Linux relay sockets
+no longer use `IP_UNICAST_IF` or `SO_BINDTODEVICE`.
 
 ### 8.2 Linux TCP attribution needs the flow's remote endpoint
 
@@ -487,15 +489,14 @@ lookup hashes on `dport`/`dst` and scores `sk_dport == sport`,
 
 ### 8.4 macOS (Phase 2) — implemented, compiled, not yet run on hardware
 
-The macOS backend (`src/platform/macos/`) is implemented behind the same
-seams as Linux. It compiles and passes clippy for both `x86_64-apple-darwin`
-and `aarch64-apple-darwin` (checked from the Windows development machine; test
-binaries cannot be linked without a macOS SDK). **Nothing has been run on a
-real Mac** — the items marked *needs a Mac* below are the first things to
-verify there. The struct layouts and ioctl numbers were transcribed from the
-macOS 14 xnu sources (linked in §7) and are pinned by compile-time assertions
-and unit tests; the `pcblist_n` parser tests construct synthetic tables and
-must be run with `cargo test` on a Mac.
+The macOS backend in `src/platform/macos/` uses the same interfaces as
+Linux. It compiles and passes Clippy for `x86_64-apple-darwin` and
+`aarch64-apple-darwin` on the Windows development computer. Linking test
+binaries requires a macOS SDK. **No tests have run on a real Mac.** Test
+the items marked *needs a Mac* first. The code uses structure layouts and
+ioctl numbers from macOS 14 xnu sources (see Section 7). Compile-time
+assertions and unit tests check these definitions. The `pcblist_n` parser
+tests use synthetic tables. Run them with `cargo test` on a Mac.
 
 - **Device** (`adapter.rs`) — utun via the `com.apple.net.utun_control` kernel
   control (socket + `CTLIOCGINFO` + `connect` with unit 0, which makes the
@@ -538,7 +539,7 @@ must be run with `cargo test` on a Mac.
 - **Privilege** — `geteuid() == 0`, mapped to `Error::NotElevated`; `EPERM`
   from the control socket is mapped the same way as a second line of defense.
 
-Untested-on-hardware caveats: `route` stderr strings, `so_last_pid` semantics
-for UDP (unconnected sockets attribute to the last sender), and the
-`IP_BOUND_IF` loop-guard behaviour on a real network. The report's §3.3 table
-stands as written for macOS (`IP_BOUND_IF`, host order for both families).
+Hardware tests are still required. Check `route` stderr strings. Check
+`so_last_pid` for UDP: unconnected sockets identify the last sender. Check
+`IP_BOUND_IF` loop protection on a real network. The Section 3.3 macOS
+values remain valid: `IP_BOUND_IF` uses host order for both families.
