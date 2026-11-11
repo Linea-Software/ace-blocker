@@ -1,46 +1,62 @@
-# Ace Blocker Desktop — localizzazione con LLM
+<a id="ace-blocker-desktop--localizzazione-con-llm"></a>
+# Ace Blocker Desktop — LLM localization workflow
 
-Questa guida integra il playbook condiviso `ace-blocker-site/docs/LLM_LOCALIZATION_WORKFLOW.md` quando entrambi i repository sono aperti nello stesso workspace. Rimane utilizzabile anche quando il sito non è disponibile.
+This guide supplements `ace-blocker-site/docs/LLM_LOCALIZATION_WORKFLOW.md` when both repositories are available.
+You can also use this guide without the website repository.
 
-## Come operare
+<a id="come-operare"></a>
+## Procedure
 
-1. Considerare `apps/ace-app/messages/en.json` la fonte di partenza; prima di tradurre leggere la schermata e il comportamento reale. Per ogni batch usare una feature completa (20–50 chiavi), non parole isolate.
-2. Definire lingua e variante regionale, glossario, tono e contesto. L'app è uno strumento operativo: italiano naturale, frasi dirette, niente moralismi, calchi, enfasi commerciale o sinonimi arbitrari.
-3. Tradurre con LLM in JSON mantenendo identiche chiavi, variabili `{name}` / `{count}` / `{version}`, tag, URL, formati e fatti. Mantenere esplicite conseguenze e limitazioni del prodotto.
-4. Usare una seconda chiamata LLM **indipendente** per confrontare EN, output e schermata; correggere significato errato, lessico non idiomatico, incoerenze e troncamenti. Non trattare la retrotraduzione automatica come approvazione.
-5. Revisionare con un madrelingua; controllo obbligatorio per lock, scadenze, orari e fusi, rimozioni irreversibili, stati di protezione, dati, download e aggiornamenti. Convalidare testo in app con dati e dimensioni reali.
-6. Salvare soltanto nei `messages/{locale}.json` richiesti, senza riordinare inutilmente il resto. Eseguire dalla directory `apps/ace-app` i comandi `bun run i18n:audit` (**valida riferimenti EN, non copertura del locale**) e `bun run check`, oltre ai test applicabili. Annotare modello/versione, data, autore revisione e chiavi rimaste dubbie.
+1. Use `apps/ace-app/messages/en.json` as the source catalog. Inspect the actual screen and behavior before translation. Use complete features of 20–50 keys per batch, not isolated words.
+2. Specify the target language and region, glossary, tone, and context. The app is an operational tool. Use natural Italian and direct sentences. Avoid moralizing, calques, sales language, and arbitrary synonyms.
+3. Translate into JSON with an LLM. Keep keys, `{name}` / `{count}` / `{version}` variables, tags, URLs, formats, and facts unchanged. State product consequences and limits explicitly.
+4. Use a second, **independent** LLM call to compare English, translated output, and the screen. Correct meaning, unnatural vocabulary, inconsistent terms, and truncation. Do not treat automatic back-translation as approval.
+5. Obtain a native-speaker review. Review locks, deadlines, times and time zones, irreversible deletions, protection states, data, downloads, and updates. Check text in the app with real dimensions and representative data.
+6. Save changes only to the requested `messages/{locale}.json` files. Do not reorder unrelated entries. Run `bun run i18n:audit` and `bun run check` from `apps/ace-app`. The audit **checks EN references, not locale coverage**. Run applicable tests. Record the model/version, date, reviewer, and unresolved keys.
 
-## Glossario minimo da approvare
+<a id="glossario-minimo-da-approvare"></a>
+## Minimum glossary for approval
 
-- **Network Block**: configurazione di blocco dei siti o categorie secondo regole e orari; candidato IT `blocco di rete`.
-- **Lock / time-lock**: protezione che impedisce di indebolire le regole; **non** blocca siti aggiuntivi. Candidati IT `blocco delle modifiche` / `protezione delle regole` a seconda del contesto; non confonderlo con Network Block.
-- **Schedule**: quando vengono applicati i filtri; candidati IT `programmazione` / `orari programmati`.
-- **Resistance Mode**: misure che introducono attrito sui siti supportati; non è un Network Block. Nome tradotto da concordare.
-- **Category / Site Pack**: elenco di siti; scaricarlo da solo non attiva il filtro. Distinguere dalle liste personalizzate.
-- **Ace Blocker / Pro**: mantenere i nomi commerciali.
+- **Network Block:** A configuration that blocks sites or categories according to rules and times. Proposed Italian term: `blocco di rete`.
+- **Lock / time-lock:** Protection against changes that weaken rules. It does **not** block additional sites. Proposed Italian terms: `blocco delle modifiche` / `protezione delle regole`, depending on context. Do not confuse Lock with Network Block.
+- **Schedule:** The times when filters apply. Proposed Italian terms: `programmazione` / `orari programmati`.
+- **Resistance Mode:** Measures that add friction on supported sites. It is not a Network Block. Agree on the translated name.
+- **Category / Site Pack:** A list of sites. Downloading the list alone does not activate filtering. Distinguish categories from custom lists.
+- **Ace Blocker / Pro:** Keep the commercial names unchanged.
 
-Il glossario è una **proposta**, non una traduzione già approvata. Uniformarlo a quello delle FAQ, della UI e del checkout del sito prima della pubblicazione. Un esempio critico in `control_lock_help_detail`: evitare il letterale “il blocco blocca...”; esprimere chiaramente che il vincolo protegge le modifiche ma non amplia la lista dei siti filtrati.
+The glossary is a **proposal**, not an approved translation.
+Align it with website FAQ, UI, and checkout terminology before publication.
+For `control_lock_help_detail`, avoid the literal “il blocco blocca...”.
+Explain that Lock protects changes but does not expand the list of filtered sites.
 
-## Stato iniziale verificato (2026-11-06)
+<a id="stato-iniziale-verificato-2026-11-06"></a>
+## Verified initial state (2026-11-06)
 
-La configurazione Paraglide ha `en`, `de`, `it`, `es`, `fr`, `pt` e `pt-BR`. In `messages/en.json` ci sono 720 chiavi; `it.json` ne contiene 13 e gli altri locali 0. Il conteggio è uno snapshot, non copertura di UI. Evitare di considerare le lingue già pronte solo perché dichiarate in `project.inlang/settings.json`.
+Paraglide configures `en`, `de`, `it`, `es`, `fr`, `pt`, and `pt-BR`.
+The initial `messages/en.json` contained 720 keys, and `it.json` contained 13.
+The other locales contained 0 keys. These counts are a snapshot, not verified UI coverage.
+Do not mark a language complete only because it is declared in `project.inlang/settings.json`.
 
-## Stato dopo la prima implementazione (2026-11-06)
+<a id="stato-dopo-la-prima-implementazione-2026-11-06"></a>
+## State after the first implementation (2026-11-06)
 
-Dopo lo snapshot iniziale, il catalogo EN/IT dell'app contiene 731 chiavi per
-lingua (incluse le etichette accessibili e il controllo lingua). Lo stato delle
-altre lingue non è stato esteso: il selettore mostra solo Sistema, EN e IT; un
-sistema operativo configurato in un locale senza traduzione usa l'inglese.
-Questo **non** certifica una revisione madrelingua o una validazione legale:
-riservare un'ulteriore verifica editoriale a vincoli, date e privacy.
+After the initial snapshot, the app's English and Italian catalogs each contained 731 keys.
+This includes accessibility labels and language controls.
+Other locales were not expanded. The selector shows only Sistema, EN, and IT.
+If the operating system uses an untranslated locale, the app falls back to English.
+This does **not** certify native-speaker review or legal validation.
+Complete an additional editorial review of locks, dates, and privacy.
 
-## Checklist finale
+<a id="checklist-finale"></a>
+## Final checklist
 
-- JSON valido, chiavi e placeholder conservati; nessuna affermazione funzionale inventata.
-- Frasi brevi e idiomatiche viste nello schermo reale; niente truncation critica, date/numeri/plurali appropriati al locale.
-- Revisione competente per stringhe ad alto rischio e terminologia coerente col sito.
-- Compilazione e controlli superati, screenshot/verifica visuale delle schermate principali.
-- Lista delle chiavi da rivedere e glossario aggiornati insieme alla PR.
+- Verify valid JSON, unchanged keys and placeholders, and no invented feature claims.
+- Check concise, idiomatic text on actual screens. Prevent critical truncation. Use locale-correct dates, numbers, and plurals.
+- Obtain qualified review of high-risk strings and consistent website terminology.
+- Verify compilation, checks, tests, and visual screenshots of principal screens.
+- Include the unresolved-key list and updated glossary in the same PR.
 
-La skill condivisa `.agents/skills/i18n-localization/SKILL.md` è utile per la parte _tecnica_ (chiavi, placeholder, fallback, RTL), non sostituisce questa guida editoriale. In particolare il codebase usa Paraglide con `m.nome_chiave()` e Bun, non gli esempi generici React/Next o npm delle skill comunitarie.
+The shared `.agents/skills/i18n-localization/SKILL.md` helps with *technical* localization: keys, placeholders, fallbacks, and RTL.
+It does not replace this editorial workflow.
+The codebase uses Paraglide with `m.nome_chiave()` and Bun.
+Do not follow generic React/Next or npm examples from community skills.
