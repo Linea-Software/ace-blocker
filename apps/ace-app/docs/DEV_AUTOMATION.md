@@ -1,29 +1,33 @@
-# Native UI inspection with WebdriverIO
+# Inspect the native UI with WebdriverIO
 
-ACE uses the WebdriverIO Tauri service to interact with its real desktop WebView, including native Tauri APIs and the normal, policy-checked engine IPC. A plain browser on `localhost:1420` does not provide that IPC.
+ACE uses the WebdriverIO Tauri service to test its actual desktop WebView.
+Tests can use native Tauri APIs and the normal engine IPC that checks policies.
+A browser at `localhost:1420` does not provide this IPC.
 
-## Run
+## Run the native smoke test
 
-From `ace-blocker/apps/ace-app`:
+Run these steps from `ace-blocker/apps/ace-app`:
 
 1. Install dependencies with `bun install --frozen-lockfile`.
-2. Launch the usual debug app with `bun run tauri dev`. On Linux it also builds and registers the account callback receiver before starting Vite on port 1420. This builds `target/debug/ace-app` as usual.
-3. In another terminal, run `bun run test:native`. WDIO launches a **second** copy of the debug binary using its embedded WebDriver driver.
-4. Review the smoke test in `e2e/native/read-only.smoke.spec.ts`. It navigates between screens and saves a screenshot as `ace-native-ui-smoke.png` in the system temp directory.
+2. Start the debug app with `bun run tauri dev`. On Linux, startup also builds and registers the account callback receiver before Vite starts on port 1420. The command builds `target/debug/ace-app`.
+3. Open another terminal and run `bun run test:native`. WDIO starts a **second** instance of the debug binary with its embedded WebDriver driver.
+4. Read `e2e/native/read-only.smoke.spec.ts`. This test opens different screens and saves `ace-native-ui-smoke.png` in the system temporary directory.
 
-The wiring lives in `wdio.conf.ts`, `src/hooks.client.ts`, `src-tauri/src/lib.rs` and `src-tauri/capabilities/default.json`.
+The integration uses `wdio.conf.ts`, `src/hooks.client.ts`,
+`src-tauri/src/lib.rs`, and `src-tauri/capabilities/default.json`.
 
 ## Linux browser login callback during development
 
-The public website returns sign-in to ACE with an `aceblocker://account/api-key`
-URL. The Linux release installer registers a handler under `/opt/ace-blocker`,
-but the development Vite startup now builds the debug receiver and registers
-it automatically as the **desktop user** when started via `bun run tauri dev`.
-If registration fails, Vite stops with an explicit error instead of leaving the
-browser sign-in callback broken. No root privileges are requested.
+The public website returns users to ACE through an `aceblocker://account/api-key` URL.
+The Linux release installer registers its handler under `/opt/ace-blocker`.
+During development, `bun run tauri dev` builds the debug receiver.
+It also registers the receiver automatically for the **desktop user**.
+If registration fails, Vite stops and shows an error.
+This prevents a silent failure of the browser login callback.
+The registration process does not request root privileges.
 
-To re-register a checkout manually, run these commands as the **desktop user**,
-not as root:
+To register the checkout callback again, run these commands as the **desktop user**.
+Do not run them as root.
 
 ```sh
 # From the ace-blocker repository root:
@@ -34,31 +38,36 @@ xdg-mime query default x-scheme-handler/aceblocker
 # Expected: ace-blocker-dev-handler.desktop
 ```
 
-The helper registers a user-scoped `.desktop` entry that invokes the debug
-`ace-redirect` binary. It intentionally uses an **unquoted, safe absolute
-path** so that both GIO and the generic `xdg-open` fallback used by
-Niri/Wayland resolve it correctly. It never overwrites a working production
-handler, starts/stops services, or edits the engine database.
+The helper registers a user-scoped `.desktop` entry.
+This entry starts the debug `ace-redirect` binary.
+The helper uses an **unquoted, safe absolute path**.
+This lets GIO and the `xdg-open` fallback on Niri/Wayland find the receiver.
+The helper does not overwrite a working production handler.
+It does not start or stop services.
+It does not edit the engine database.
 
-For a callback dispatch smoke test (safe: no key and no account mutation):
+Use this command to test callback dispatch without an API key or account change:
 
 ```sh
 xdg-open 'aceblocker://account/invalid-test-route'
 ```
 
-An exit status of 0 with a message that the route is *not in the forward
-allowlist* is expected: the launcher was found and the engine callback
-receiver correctly rejected an unsafe URL. Do **not** test with a made-up
-`apiKey`; using the allowed endpoint with a key can change the actual
-account.
+The expected result is exit status 0 and a message that the route is *not in the forward allowlist*.
+This result means that the launcher was found and the engine callback receiver rejected an unsafe URL.
+Do **not** test with an invented `apiKey`.
+A key on the allowed endpoint can change the real account.
 
-**Separate authorization requirement:** the unprivileged callback receiver
-must be allowed to read the installation capability from
-`/usr/local/share/AceBlocker/capability.token`. If the helper warns that
-this file is unreadable, apply the same restricted `ace-blocker` group
-ownership/membership model as the release installer (with administrator
-approval); do **not** make the token world-readable. The following is the
-intended group setup for a disposable development host:
+### Authorization for the callback receiver
+
+The unprivileged callback receiver must read the installation capability from
+`/usr/local/share/AceBlocker/capability.token`.
+
+If the helper reports that this file is not readable, use the restricted
+`ace-blocker` group ownership and membership model from the release installer.
+Get administrator approval before you change protected permissions.
+Do **not** make the capability token readable by all users.
+
+Use these commands only for the intended group setup on a disposable development host:
 
 ```sh
 sudo groupadd --system --force ace-blocker
@@ -70,17 +79,34 @@ sudo usermod -aG ace-blocker "$USER"
 test -r /usr/local/share/AceBlocker/capability.token && echo 'ACE callback access OK'
 ```
 
-Changing protected installation permissions must be a deliberate
-administrator action; the registration helper will only diagnose this
-condition. An auth callback still requires a running Engine and its existing
-capability enforcement; registration alone does not prove a full login.
+Only an administrator may approve changes to protected installation permissions.
+The registration helper only reports permission problems.
+A callback also needs a running Engine and its existing capability checks.
+Successful registration does not prove that a complete login works.
 
-## Debug and release isolation
+## Keep debug and release separate
 
-Rust registers `tauri-plugin-wdio` and `tauri-plugin-wdio-webdriver` only under `#[cfg(debug_assertions)]`; no release binary registers them. The guest JS adapter is imported only under Vite's `import.meta.env.DEV` and the Tauri environment, so a production bundle does not include it. No additional Cargo features, environment flags, Tauri configurations or HTTP engine interfaces are introduced.
+Rust registers `tauri-plugin-wdio` and `tauri-plugin-wdio-webdriver`
+only with `#[cfg(debug_assertions)]`.
+Release binaries do not register these plugins.
+The guest JavaScript adapter loads only when Vite has `import.meta.env.DEV`
+and the app runs in Tauri.
+Production bundles do not include this adapter.
+This integration does not add Cargo features, environment flags, Tauri
+configurations, or an HTTP engine interface.
 
-The WebDriver server is started by the test runner, not by an ordinary debug session. It can execute code in the app WebView, so do not expose an active test session to remote clients. A test clicking a UI control can mutate real settings: use read-only smoke tests on the developer instance, disposable test profiles for mutation tests, and disposable VM validation for native security and lock behavior. WDIO does not bypass engine authorization, lock restrictions or watchdog protection.
+The test runner starts the WebDriver server.
+An ordinary debug session does not start it.
+WebDriver can execute code in the app WebView.
+Do not give remote clients access to an active test session.
 
-If native tests fail after changing Rust code, rebuild the debug binary first. On Linux, WebKitGTK runtime dependencies may be needed.
+A test that clicks a UI control can change real settings.
+Use read-only smoke tests on the developer instance.
+Use disposable test profiles for tests that change state.
+Use disposable VM validation for native security and lock behavior.
+WDIO does not bypass engine authorization, lock restrictions, or watchdog protection.
+
+If native tests fail after a Rust change, rebuild the debug binary.
+Linux can also need WebKitGTK runtime dependencies.
 
 References: https://tauri.app/develop/tests/webdriver/ and https://webdriver.io/docs/desktop-testing/tauri/plugin-setup .
