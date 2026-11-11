@@ -1,8 +1,8 @@
 # Ace Engine Update Policy
 
-> **Historical design note (pre-remoc):** The local REST endpoints, port routing and restart scripts below describe a former design, not the current engine control contract. For current typed remoc RPC on Named Pipes/Unix sockets and the running updater, see `docs/IPC_ARCHITECTURE.md`, `src/service/api/` and `src/service/content_updater.rs`.
+> **Historical design note (pre-remoc):** The local REST endpoints, port routing, and restart scripts below describe a former design. They are not the current engine control contract. For current remoc RPC over Named Pipes/Unix sockets and the running updater, see `docs/IPC_ARCHITECTURE.md`, `src/service/api/`, and `src/service/content_updater.rs`.
 
-This document defines the comprehensive update strategy for all updatable assets in the Ace Engine ecosystem: **site packs**, **resistance scripts**, **ace-engine** (the engine binary), and **ace-app** (the client UI).
+This document defines the update strategy for four Ace Engine assets: **site packs**, **resistance scripts**, **ace-engine** (engine binary), and **ace-app** (client UI).
 
 ---
 
@@ -30,7 +30,7 @@ This document defines the comprehensive update strategy for all updatable assets
 
 ## Overview & Scope
 
-The Ace Engine manages four distinct types of updatable assets, divided into two scopes based on whether they require a service interruption:
+Ace Engine manages four asset types in two groups. The groups differ by whether an update interrupts the service:
 
 ```
 +----------------------------------------------+
@@ -44,21 +44,21 @@ The Ace Engine manages four distinct types of updatable assets, divided into two
 +-------------------+--------------------------+
 ```
 
-- **Content Updates**: Can be applied at runtime without interrupting the proxy or API service. Data is swapped atomically in memory.
-- **Binary Updates**: Require a graceful shutdown of the engine process, replacement of the executable on disk, and a clean restart that re-enables the system proxy.
+- **Content Updates**: Apply during runtime without stopping the proxy or API service. Swap data atomically in memory.
+- **Binary Updates**: Shut down the engine gracefully. Replace the executable on disk. Restart the engine and re-enable the system proxy.
 
 ### Server as Source of Truth
 
-The **Ace Blocker server** (`aceblocker.com` in release, `localhost:5173` in debug) is the canonical source for all version metadata and download URLs. The engine communicates with the server through the generated `ace_server_api::HttpClient` (located in `src/ace_server_api/`), wrapped by `AceServerClient` (`src/service/clients/ace_server_client.rs`).
+The **Ace Blocker server** is the canonical source of version metadata and download URLs. Release uses `aceblocker.com`; debug uses `localhost:5173`. The engine uses generated `ace_server_api::HttpClient` (`src/ace_server_api/`). `AceServerClient` (`src/service/clients/ace_server_client.rs`) wraps this client.
 
-Three key endpoints serve the update flow:
+These endpoints support the update flow:
 
 | Endpoint | Used For |
 |----------|----------|
 | `GET /api/v1/releases/latest` | Bulk version metadata for **all** assets: engine installer, resistance scripts, and site lists. Returns `GetLatestReleasesVersionDataResponse`. |
 | `GET /api/v1/scripts/resistance-mode` | Download URL + version for the latest resistance scripts zip. Returns `GetResistanceModeScriptsResponse { url, version }`. |
 
-The `ContentUpdateService` in `src/service/updater.rs` already consumes `GET /api/v1/releases/latest` to drive all version comparisons. The `download_resistance_scripts()` method in `NetworkManager` uses the dedicated script endpoint to fetch the actual zip bundle.
+`ContentUpdateService` in `src/service/updater.rs` uses `GET /api/v1/releases/latest` to compare versions. `NetworkManager::download_resistance_scripts()` uses the dedicated scripts endpoint to download the ZIP bundle.
 
 ---
 
@@ -79,29 +79,24 @@ The `ContentUpdateService` in `src/service/updater.rs` already consumes `GET /ap
 
 ### Site Packs
 
-**Update Mechanism**: Per-pack version comparison against the server's metadata
-(semver-style dotted comparison, `ContentUpdateService::version_is_newer`).
+**Update Mechanism**: Compare each pack version with server metadata.
+Use `ContentUpdateService::version_is_newer` for semver-style dotted comparison.
 
 **Flow** (staging + atomic commit; see `src/service/content_updater.rs` and
 `docs/review/architecture-implementation-2026-09.md`):
 
-1. `ContentUpdateService::get_site_packs_to_update()` compares local versions
-   (from the `site_packs` table) against `GetLatestReleasesVersionDataResponse.site_packs`.
-2. **Staging (no manager lock)**: for each pack where the remote version is
-   newer, the backup archive is downloaded to a unique temp file (bounded
-   size, timeouts), the SQLite database entry is extracted into a staging
-   directory with traversal protection, and the staged database is validated
-   (must open and contain entries).
-3. **Commit (manager write lock)**: the pack directory is swapped atomically
-   (live → old, staged → live, with rollback on failure) and the new version
-   is persisted on the **same** `site_packs` row. The pack UUID never
-   changes, so network-block references and join rows stay valid.
-4. On failure at any point, the previous valid pack remains in place and
-   fully usable.
+1. `ContentUpdateService::get_site_packs_to_update()` compares local `site_packs` versions with `GetLatestReleasesVersionDataResponse.site_packs`.
+2. **Staging (no manager lock)**: For each newer remote pack, download its backup archive to a unique temporary file.
+   Enforce download size and time limits. Extract the SQLite database into a staging directory with traversal protection.
+   Verify that the database opens and contains entries.
+3. **Commit (manager write lock)**: Swap the pack directory atomically (live → old, staged → live).
+   Roll back the swap if it fails. Save the new version in the **same** `site_packs` row.
+   Keep the pack UUID unchanged to preserve network-block references and join rows.
+4. If any step fails, keep the previous valid pack available for use.
 
-**Versioning**: Server versions should follow semver. Comparison uses a
-dotted numeric comparator (`1.9` < `1.10`) with a string fallback for
-non-numeric segments.
+**Versioning**: Server versions should follow semver.
+Compare dotted numeric segments (`1.9` < `1.10`).
+Use a string fallback for nonnumeric segments.
 
 **Offline bundled packs (installer seeds)**: the Windows installer ships a
 small set of Free site packs under `[INSTALLFOLDER]\bundled-packs\` together
@@ -111,46 +106,42 @@ dev bin — see the monorepo report
 the network manager is constructed, `service::bundled_site_packs::apply_bundled_packs`
 imports them so a fresh **offline** install has no "ghost" packs:
 
-- The manifest and each artifact's SHA-256 are validated; corrupt or
-  schema-incompatible bundles are rejected safely (nothing is registered or
-  imported, startup never fails).
+- Verify the manifest and each artifact's SHA-256.
+  Reject corrupt or schema-incompatible bundles without registering or importing data.
+  Do not fail startup because of these bundles.
 - Precedence: `valid newer downloaded pack → valid bundled pack →
   unavailable`. A row already backed by usable local rules is kept unless the
   bundled content version is a strictly-newer bundle-style (`YYYY.MM.DD`)
   version; versions from the server that are not bundle-style are never
   overwritten (the bundle only fills gaps). Packs the user ignored are never
   resurrected.
-- Packs installed from the bundle are marked with a `.bundled` marker file
-  next to `pack.db`; any engine directory swap (online update / user resync)
-  replaces the whole directory and clears the marker.
+- Mark packs installed from the bundle with a `.bundled` file beside `pack.db`.
+  Online updates and user resync replace the whole directory and clear the marker.
 - Online, the normal per-pack version flow then updates bundled rows like any
   other pack (a bundled row records its content version, so a newer server
   release is picked up by `version_is_newer`).
 
 ### Resistance Scripts
 
-**Update Mechanism**: Version string comparison + directory existence check.
+**Update Mechanism**: Compare version strings and check whether the directory exists.
 
 **Flow**:
-1. `ContentUpdateService::resistance_scripts_require_update()` compares `resistance_mode_settings.scripts_version` against `GetLatestReleasesVersionDataResponse.resistance.version`.
-2. **Staging (no manager lock)**: the bundle is downloaded (SHA-256 verified,
-   bounded size, retries) and extracted into a staging directory with
-   traversal protection; the `scripts-data.json` catalog must be present.
-3. **Commit (manager write lock)**: the scripts directory is swapped
-   atomically (live → old, staged → live), `reload_scripts()` rebuilds the
-   in-memory tree (falling back to the previous tree on parse failure), and
-   the new version is persisted to memory **and** SQLite only after
-   everything succeeded.
+1. `ContentUpdateService::resistance_scripts_require_update()` compares `resistance_mode_settings.scripts_version` with `GetLatestReleasesVersionDataResponse.resistance.version`.
+2. **Staging (no manager lock)**: Download the bundle with SHA-256 verification, size limits, and retries.
+   Extract it to a staging directory with traversal protection.
+   Require the `scripts-data.json` catalog.
+3. **Commit (manager write lock)**: Swap the scripts directory atomically (live → old, staged → live).
+   Run `reload_scripts()` to rebuild the in-memory tree. Restore the previous tree if parsing fails.
+   Save the new version to memory **and** SQLite only after all steps succeed.
 
 ### Tracking Scripts
 
-**Removed (2026-09-02)**: usage/tracking scripts are not an updatable
-asset. The tracking-script bundle, the `GET /api/v1/scripts/tracking`
-endpoint, the `tracking` field in the latest-release payload, the
-`tracking_scripts_need_update` response field, and the
-`tracking_script_version` settings column were all removed; nothing in the
-engine downloads or applies a tracking bundle. See the tracking-removal
-implementation report for the full deletion map.
+**Removed (2026-09-02)**: Usage and tracking scripts are no longer updatable assets.
+The tracking-script bundle and `GET /api/v1/scripts/tracking` endpoint were removed.
+The latest-release `tracking` field and `tracking_scripts_need_update` response field were removed.
+The `tracking_script_version` settings column was also removed.
+The engine does not download or apply tracking bundles.
+See the tracking-removal implementation report for the complete deletion map.
 
 ### Atomicity & Rollback
 
@@ -165,26 +156,27 @@ implementation report for the full deletion map.
 
 ### Engine Self-Update
 
-**Not implemented.** The `UpdateManager` state machine was removed as unwired
-dead code (SIMP-02) — no production caller existed, and
-`GET /system/update/check` reports `available: false` honestly. Engine
-self-update is future work; the sections below describe the intended (never
-implemented) design and are kept only as a reference.
+**Not implemented.** The `UpdateManager` state machine was removed as unused code (SIMP-02).
+No production caller existed. `GET /system/update/check` reports `available: false`.
+Engine self-update remains future work.
+The following sections describe the intended design, which was never implemented.
 
-Reasons the engine cannot update itself in-place while running:
+The running engine cannot replace itself in place for these reasons:
 
-1. **Proxy must be shut down cleanly**: The system proxy must be disabled (`sysproxy`), ports released, and active connections drained gracefully.
-2. **Certificate continuity**: The Root CA certificate must remain valid and trusted across versions.
-3. **Database consistency**: All in-memory state must be flushed to SQLite before the process exits.
+1. **Proxy shutdown**: Disable the system proxy (`sysproxy`). Release ports and drain active connections gracefully.
+2. **Certificate continuity**: Keep the Root CA certificate valid and trusted across versions.
+3. **Database consistency**: Write all in-memory state to SQLite before process exit.
 
 ### Certificate Forward-Compatibility
 
-The Root CA certificate is generated on first run (in `install_certificate()` within `src/service/proxy.rs`) and installed into the machine's trust store. To ensure seamless updates:
+`install_certificate()` in `src/service/proxy.rs` generates the Root CA certificate on first run.
+The engine installs it in the machine trust store.
+For update compatibility, preserve these requirements:
 
-- **Validity Period**: The CA certificate is valid for **100 years** from the generation date (computed dynamically via `chrono::Utc::now()` in `install_certificate()` within `src/service/proxy.rs`). The `not_before` and `not_after` dates are calculated relative to the current system time at generation, ensuring no certificate regeneration is needed for the foreseeable lifetime of the product.
-- **Persistence**: The certificate (`ace_ca.pem`) and private key (`ace_ca.key`) are stored in `{app_dir}/certs/` and are never deleted during updates.
-- **Compatibility Gating**: The server's release metadata includes a `cert_generation_version` field. If a future engine version requires a new certificate (e.g., algorithm change), the `ContentUpdateService` will flag this and require explicit user confirmation.
-- **If cert regeneration is ever required**, the engine will:
+- **Validity Period**: The CA certificate stays valid for **100 years** after generation. `install_certificate()` in `src/service/proxy.rs` uses `chrono::Utc::now()` to calculate this period. It sets `not_before` and `not_after` relative to the system time at generation. This avoids certificate regeneration during the expected product lifetime.
+- **Persistence**: Store the certificate (`ace_ca.pem`) and private key (`ace_ca.key`) in `{app_dir}/certs/`. Never delete them during updates.
+- **Compatibility Gating**: Server release metadata includes `cert_generation_version`. If a new engine version requires a new certificate, `ContentUpdateService` flags it. Require explicit user confirmation.
+- **If certificate regeneration becomes necessary**, the engine will:
   1. Generate the new CA **alongside** the old one (never delete the old cert).
   2. Expose a `requires_cert_reinstall: true` flag in the update check response.
   3. The ace-app must display a dedicated UI guiding the user to re-trust the new certificate.
@@ -219,13 +211,13 @@ The Root CA certificate is generated on first run (in `install_certificate()` wi
 
 1. **Check**: `ContentUpdateService::get_latest_installer_version()` compares `env!("CARGO_PKG_VERSION")` against the server's `GetLatestReleasesVersionDataResponse.installer.version`. Semver comparison.
 
-2. **Certificate Compatibility Check**: Before downloading, verify that the new version does not require a certificate regeneration (via `cert_generation_version` in release metadata).
+2. **Certificate Compatibility Check**: Before download, check `cert_generation_version` in release metadata. Determine whether the new version requires certificate regeneration.
 
-3. **Download**: Fetch the new binary from the CDN URL provided by the server's release endpoint. Stream the download to a temporary file.
+3. **Download**: Get the new binary from the CDN URL in the server release response. Stream it to a temporary file.
 
-4. **Verify**: Check the SHA-256 checksum (and code signature, on Windows) against the values provided in the release metadata.
+4. **Verify**: Compare the SHA-256 checksum with release metadata. On Windows, also verify the code signature.
 
-5. **Stage**: Write the verified binary to `ace-engine.new.exe` in the same directory as the running executable. On Windows, the running `.exe` cannot be deleted but CAN be renamed, so this staging approach works.
+5. **Stage**: Write the verified binary as `ace-engine.new.exe` beside the running executable. Windows cannot delete a running `.exe`, but it can rename it.
 
 6. **Prepare Restart Script**: Write a platform-specific script that:
    - Waits for the old process to fully exit (polling loop).
@@ -233,7 +225,7 @@ The Root CA certificate is generated on first run (in `install_certificate()` wi
    - Renames `ace-engine.new.exe` → `ace-engine.exe`.
    - Launches the new `ace-engine.exe` with the same arguments.
 
-7. **Notify ace-app**: The API returns `{ state: "ready", requires_restart: true }`. The ace-app can then offer the user a "Restart Now" button.
+7. **Notify ace-app**: Return `{ state: "ready", requires_restart: true }` from the API. The app can then show a "Restart Now" button.
 
 8. **Graceful Shutdown** (triggered by `POST /system/shutdown`):
    - Disable system proxy via `sysproxy::Sysproxy::set_system_proxy()`.
@@ -263,13 +255,13 @@ start "" "%ENGINE_DIR%\ace-engine.exe"
 del "%~f0"
 ```
 
-The engine spawns this script as a detached process just before exiting, passing its own PID so the script can wait for the exit to complete.
+Before exit, the engine starts this script as a detached process. It passes its PID so the script can detect engine exit.
 
 ---
 
 ## Ace App Update Notification
 
-The engine itself does **not** update ace-app — the app is responsible for its own binary update. However, the engine **facilitates** the update by exposing version information through the API.
+The engine does **not** update ace-app. The app updates its own binary. The engine provides version information through the API.
 
 - The engine polls the server for the latest ace-app version and includes it in `GET /system/update/check`.
 - The response provides the `download_url` and `checksum` for the latest ace-app installer.
@@ -344,7 +336,7 @@ All new endpoints are under the `/system` route group (`src/service/api/route_sy
 
 ### `GET /system/update/check`
 
-Returns the current update status for all assets.
+Return the current update status for all assets.
 
 **Response**:
 ```json
@@ -375,7 +367,7 @@ Returns the current update status for all assets.
 
 ### `POST /system/update/engine`
 
-Initiates the engine binary download and staging process.
+Start the engine binary download and staging process.
 
 **Response (202 Accepted)**:
 ```json
@@ -387,7 +379,7 @@ Initiates the engine binary download and staging process.
 
 ### `GET /system/update/engine/status`
 
-Polls the current state of the engine update process.
+Read the current engine update state.
 
 **Response**:
 ```json
@@ -398,11 +390,11 @@ Polls the current state of the engine update process.
 }
 ```
 
-When `state` is `"ready"`, the ace-app should prompt the user to restart.
+When `state` is `"ready"`, ace-app should prompt the user to restart the engine.
 
 ### `POST /system/shutdown`
 
-Performs a graceful shutdown of the engine.
+Shut down the engine gracefully.
 
 - Disables the system proxy.
 - Flushes all pending database writes.
@@ -411,13 +403,13 @@ Performs a graceful shutdown of the engine.
 
 ### `POST /system/update/content`
 
-Triggers an immediate content update check and applies all pending content updates. Returns the same `content` portion of the update check response.
+Check for content updates immediately and apply all pending updates. Return the `content` part of the update check response.
 
 ---
 
 ## Implementation Plan
 
-The following is the recommended implementation order, building on the existing `ContentUpdateService` in `src/service/updater.rs` and the new `UpdateManager` in `src/manager/update/`:
+Follow this implementation order. It uses `ContentUpdateService` in `src/service/updater.rs` and `UpdateManager` in `src/manager/update/`:
 
 ### Phase 1: Refactor ContentUpdateService (DONE)
 
@@ -456,9 +448,9 @@ The following is the recommended implementation order, building on the existing 
 
 ## Data Structures
 
-These are the key types used by the update subsystem.  The implementations
-live in [`src/manager/update/`] (binary updates) and
-[`src/service/updater.rs`] (content updates).
+These types define the update subsystem.
+Binary update implementations are in [`src/manager/update/`].
+Content update implementations are in [`src/service/updater.rs`].
 
 ### `UpdateState` (in `src/manager/update/state.rs`)
 
