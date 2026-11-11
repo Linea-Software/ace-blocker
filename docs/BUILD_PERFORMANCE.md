@@ -1,8 +1,8 @@
 # Build performance audit (2026-11-01)
 
-This audit covers the independent `ace-blocker` workspace and Tauri/SvelteKit
-app. The numbers below are resolved dependency-graph entries, **not cold-build
-seconds**; they are not claims about how many minutes the CI saves.
+This audit covers the independent `ace-blocker` workspace and its Tauri/SvelteKit app.
+The values count resolved dependency-graph entries, **not cold-build seconds**.
+They do not measure CI time savings.
 
 | Metric | Before | After |
 | --- | ---: | ---: |
@@ -11,10 +11,10 @@ seconds**; they are not claims about how many minutes the CI saves.
 | `ace-engine` Linux normal + build graph entries | 470 | 411 |
 | `ace-app` Linux normal + build graph entries | 646 | 570 |
 
-Use `cargo tree -p ace-engine --target x86_64-unknown-linux-gnu -e normal,build`
-(and the equivalent command for `ace-app`) to inspect the production graph.
-`cargo tree -d` shows duplicates; the lockfile contains platform-specific,
-optional, and test dependencies that are not all compiled at once.
+Run `cargo tree -p ace-engine --target x86_64-unknown-linux-gnu -e normal,build`
+to inspect the engine production graph. Run the equivalent command for `ace-app`.
+Use `cargo tree -d` to find duplicate dependencies. The lockfile also lists
+platform-specific, optional, and test dependencies. These do not all compile together.
 
 ## Official Cargo guidance and profile decision
 
@@ -29,22 +29,22 @@ optional, and test dependencies that are not all compiled at once.
 - [Cargo timings](https://doc.rust-lang.org/cargo/reference/timings.html)
   shows slow compilation units, duplicate versions and blocked parallelism.
 
-**No Cargo profile settings were changed.** Dev already disables dependency
-debug info. Rust's default `opt-level = 0` favors fast debug builds, but ACE
-uses `opt-level = 1` for dependencies, which could improve runtime test speed.
-Changing it without representative evidence would be speculative. Release's
-`opt-level = "z"` and `lto = "thin"` prioritize compact shipped artifacts;
-changing them would be a product tradeoff. Windows already uses `lld-link.exe`.
+**No Cargo profile settings changed.** The dev profile already disables dependency debug information.
+Rust's default `opt-level = 0` favors short debug builds. ACE uses `opt-level = 1`
+for dependencies, which can improve test runtime. Do not change this setting
+without representative measurements. The release settings `opt-level = "z"` and
+`lto = "thin"` favor smaller shipped artifacts. Changes require a product decision.
+Windows already uses `lld-link.exe`.
 
-The official guide also suggests `debug = "line-tables-only"` for *workspace*
-code when backtraces are useful. Here `debug = false` remains intact; no
-nightly compiler flags, experimental backend, or linker tweaks were added.
+The official guide suggests `debug = "line-tables-only"` for *workspace* code
+when backtraces are necessary. This audit keeps `debug = false`.
+It adds no nightly flags, experimental backends, or linker changes.
 
 ## CI and measurements
 
 - Frontend assets are built once, uploaded, and reused by both native jobs.
-  The prerequisite can increase the critical path even as it reduces duplicate
-  work; check GitHub Actions workflow *wall clock*, not aggregate CPU time.
+  This prerequisite can extend the critical path while it reduces duplicate work.
+  Measure GitHub Actions workflow *wall clock* time, not total CPU time.
 - PRs retain Rust all-target checks and existing selected tests. Release-profile
   validation runs on `main` and manual dispatch instead of every PR.
 - A separate non-PR job runs the opt-in proxy CLI and HTTP/3 tests.
@@ -55,18 +55,16 @@ nightly compiler flags, experimental backend, or linker tweaks were added.
 
 ## Deferred architectural decision: separate the Tauri RPC client
 
-Tauri currently imports the entire `ace-engine` package to access the typed
-`service::api::bridge`, `RpcError` and site-pack streaming status. This can
-pull networking, SQLite and proxy dependencies into the Tauri graph even
-though Tauri cannot run the enforcement service. An engine-independent typed
-RPC client/contract crate could reduce this cost, but it is not a safe
-manifest-only change.
+Tauri imports the full `ace-engine` package for the typed `service::api::bridge`,
+`RpcError`, and site-pack streaming status. This can add networking, SQLite,
+and proxy dependencies to Tauri. Tauri cannot run the enforcement service.
+A separate typed RPC client/contract crate could reduce the build cost.
+This change requires more than a manifest edit.
 
 Today, `rpc.rs` combines the remoc trait and privileged server implementation;
 `bridge.rs` dispatches typed methods and imports engine core/manager types;
 `schemas.rs` re-exports core types; `transport.rs` owns both client connects
-and server listeners. Extraction requires explicit ownership, serialization
-compatibility and cross-process testing.
+and server listeners. Extraction requires defined ownership, compatible serialization, and cross-process tests.
 
 **Proposed ownership:** a protocol crate owns wire DTOs and the typed remoc
 trait; Tauri owns only the client-side transport, capability-file reading and
@@ -81,5 +79,4 @@ and Linux sockets, assert WebView shutdown remains denied, and compare
 
 Per `docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md`, adding a shared crate/protocol
 and reversing dependency direction require a **separate architectural
-decision**. This audit records the proposal but does not make that unapproved
-high-risk change as part of dependency cleanup.
+decision**. This audit records the proposal. It does not make the unapproved architectural change.
