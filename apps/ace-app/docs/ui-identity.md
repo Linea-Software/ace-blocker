@@ -1,22 +1,29 @@
-# Ace App — UI Identity and Rebuild Brief
+# Ace App — UI identity and rebuild brief
 
 Status: **approved target direction** for the next Ace desktop frontend.
 
-This document is the local source of truth for visual and interaction work in `ace-app`. It complements the project-level brief at `../docs/ai/UI_IDENTITY.md`.
+This document defines the local visual and interaction rules for `ace-app`.
+It adds to the project-level brief at `../docs/ai/UI_IDENTITY.md`.
 
 ## 1. Objective
 
-Rebuild Ace App so it feels like a dedicated desktop control instrument rather than a web dashboard inside a Tauri shell.
+Rebuild Ace App as a dedicated desktop control instrument.
+Do not make it look like a web dashboard inside Tauri.
 
 The product thesis is:
 
 > **Configure once. Hold the line.**
 
-Ace exists so a decision made in a rational moment can still be enforced in a weak moment. The UI should make configuration calm and clear, and make enforcement/commitment feel structurally real.
+Ace enforces decisions that users make when they can think clearly.
+These decisions must continue to apply when the user is tempted to change them.
+Make configuration calm and clear.
+Make enforcement and commitment visible in the structure of the UI.
 
 Recognition target:
 
-> Remove the Ace logo and product name from a screenshot. The app should still be recognizable from its palette, typography, geometry, state treatment, and signature domain components.
+> Remove the Ace logo and product name from a screenshot.
+> The app must still be recognizable by its colors, typography, geometry,
+> state indicators, and product-specific components.
 
 ## 2. Technical foundation
 
@@ -33,40 +40,43 @@ Keep:
 - Vitest;
 - Playwright.
 
-Use **Bits UI as the preferred headless/accessibility primitive layer** for new Ace-owned UI.
+Use **Bits UI as the preferred headless and accessibility component layer** for new Ace-owned UI.
 
-The existing codebase contains shadcn-svelte components built on top of the same primitive ecosystem. Treat those as **legacy implementation**, not as the visual design system for the rebuild.
+The existing code includes shadcn-svelte components.
+These components use the same basic component ecosystem.
+Treat them as **legacy implementation**, not the new visual design system.
 
 Rules:
 
-- Do not add a new shadcn component simply to get a default-styled UI during the rebuild.
-- Reusing a legacy shadcn component is acceptable while maintaining an old screen.
-- New design-system components should own their Ace styling and API.
-- Prefer headless behavior + Ace CSS over copying generic shadcn composition.
-- Tailwind is an implementation tool; it is not the design language.
+- Do not add a new shadcn component only to get its default style.
+- You can reuse a legacy shadcn component when you maintain an old screen.
+- New design-system components must own their Ace styles and APIs.
+- Prefer headless component behavior and Ace CSS over generic shadcn layouts.
+- Use Tailwind as an implementation tool. Do not use it as the visual design language.
 
-The engine API is a stable boundary for this frontend redesign. Do not change engine contracts merely to make the UI easier unless a task explicitly authorizes an API change.
+The engine API is a stable boundary for the frontend redesign.
+Do not change engine contracts only to simplify the UI.
+Change these contracts only when the task expressly permits an API change.
 
 ## 3. Mandatory design skills
 
-For any task that creates, redesigns, or materially alters visible UI:
+For work that creates, redesigns, or materially changes visible UI:
 
 1. Read this document.
 2. Use `frontend-design`.
 3. Use `ui-ux-pro-max`.
-4. For Svelte implementation, use:
-    - `svelte-code-writer`;
-    - `svelte-core-bestpractices`;
-    - `svelte-components`;
-    - `svelte-runes` when reactive state is involved.
-5. Use `web-design-guidelines` for a final standards/accessibility review when applicable.
-6. Verify meaningful visual changes with actual screenshots/browser/Tauri UI.
+4. For Svelte code, use `svelte-code-writer`, `svelte-core-bestpractices`, and `svelte-components`.
+   Also use `svelte-runes` when reactive state is involved.
+5. Use `web-design-guidelines` for the final standards and accessibility review when applicable.
+6. Check important visual changes in actual screenshots, a browser, or the Tauri UI.
 
-`design-taste-frontend` can be used as an anti-template critique pass, but it explicitly is not a dashboard or multi-step product-UI skill. It must not replace product-specific UX reasoning.
+You can use `design-taste-frontend` to identify generic UI patterns.
+This skill does not replace dashboard or multi-step product-UI design.
+Always use product-specific UX reasoning.
 
 ## 4. Visual thesis
 
-Read Ace as a **disciplined personal enforcement instrument**.
+Make Ace look like a **disciplined personal enforcement instrument**.
 
 Qualities:
 
@@ -79,7 +89,8 @@ Qualities:
 - calm when idle;
 - uncompromising at commitment boundaries.
 
-Useful references: industrial controls, measuring equipment, technical signage, durable tools, editorial information design.
+Useful references include industrial controls, measuring equipment, technical
+signage, durable tools, and editorial information design.
 
 Avoid:
 
@@ -116,53 +127,55 @@ Avoid:
 
 Signal amber means **attention, intervention, enforcement, or commitment**.
 
-Do not make every primary button amber. Ordinary edits/actions can remain monochrome. Signal is reserved for actions/states where Ace changes what the machine will allow or where the user is committing to enforcement.
-
-Decorative feature colors are not part of the Ace language.
+Do not make every primary button amber.
+Ordinary edit actions can be monochrome.
+Use Signal when Ace changes what the machine permits or when users commit to enforcement.
+Do not use decorative feature colors in the Ace visual language.
 
 ## 6. Typography
 
-Target:
+Use:
 
-- **IBM Plex Sans** — normal UI;
-- **IBM Plex Sans Condensed** — page titles and strong state labels;
-- **IBM Plex Mono** — times, durations, counts, schedules, machine/status data.
+- **IBM Plex Sans** for normal UI text;
+- **IBM Plex Sans Condensed** for page titles and important state labels;
+- **IBM Plex Mono** for times, durations, counts, schedules, and machine or status data.
 
-Do not use monospace as generic “tech” decoration.
+Do not use monospace only as technical decoration.
 
 Avoid:
 
 - all-caps eyebrow labels;
-- excessive tracking;
-- giant marketing-style display type inside the desktop app;
-- relying on weight alone to create hierarchy.
+- excessive letter spacing;
+- large marketing-style display text inside the desktop app;
+- hierarchy based only on font weight.
 
 ## 7. Geometry and surfaces
 
-Target radii:
+Target corner radii:
 
 - controls: 4–6 px;
 - panels: 6–8 px;
 - large structural surfaces: <= 8 px.
 
-Use pills only for true compact states/metadata.
+Use pills only for true compact states or metadata.
 
-Ace-owned domain components may use a subtle notched/cut-corner signature. It should appear on important product objects, not every container.
+Ace-owned domain components can use a small notched or cut-corner detail.
+Use this detail on important product objects, not on every container.
 
-Prefer borders, rails, rules, tonal surfaces, and inset regions over floating cards and shadows.
-
-The app should feel **assembled**, not floated.
+Prefer borders, rails, rules, tonal surfaces, and inset regions.
+Avoid floating cards and large shadows.
+The app must feel **assembled**, not floated.
 
 ## 8. Application shell
 
 Target shell:
 
-- a thin navigation rail, roughly 64–72 px;
-- main workspace;
-- contextual right-side inspector when editing/selecting a domain object;
-- global engine/enforcement state that remains easy to see.
+- a thin navigation rail, approximately 64–72 px;
+- a main workspace;
+- a right-side contextual inspector when a domain object is selected or edited;
+- global engine and enforcement status that remains easy to see.
 
-Avoid rebuilding the current broad web-style sidebar.
+Do not rebuild the broad, web-style sidebar.
 
 Suggested top-level navigation:
 
@@ -173,39 +186,43 @@ Suggested top-level navigation:
 - Guide
 - Settings
 
-The exact labels may change after UX testing, but the information architecture should remain compact.
+UX tests can change the exact labels.
+Keep the information architecture compact.
 
 ### Contextual inspector
 
-Prefer a contextual inspector for lightweight object inspection and quick edits. The Network Block policy editor is deliberately a full-page route: its contents, schedule, and lock controls need more room than an inspector affords. Categories and Custom Lists retain inspectors.
+Use a contextual inspector for lightweight object details and quick edits.
+The Network Block policy editor is a full-page route by design.
+Its content, schedule, and lock controls need more space than an inspector.
+Keep inspectors for Categories and Custom Lists.
 
-Reserve dialogs for:
+Use dialogs for:
 
 - destructive actions;
-- commitment/lock actions;
+- commitment and lock actions;
 - unusual multi-step operations.
 
 ## 9. Page archetypes
 
-Different product concepts should not all become `PageHeader + Card grid`.
+Do not make all product concepts use `PageHeader + Card grid`.
 
 ### Control
 
-The home view is a **state board**, not a KPI dashboard.
+The home screen is a **state board**, not a KPI dashboard.
 
-It should answer:
+It must answer:
 
 1. Is Ace working?
-2. What is being enforced right now?
+2. What is Ace enforcing now?
 3. What changes next?
 
-Active policies and upcoming schedule transitions are more important than generic metric cards.
+Show active policies and upcoming schedule changes before generic metric cards.
 
 ### Blocks
 
 Network Blocks are **policy objects**.
 
-Each block should visibly combine:
+Show these facts for each block:
 
 - name;
 - current state;
@@ -214,78 +231,100 @@ Each block should visibly combine:
 - lock state;
 - next relevant transition.
 
-Use a strong state rail or equivalent structural indicator.
-
-Locked state must visibly reduce/close editability, not merely add a tiny padlock badge.
+Use a strong state rail or a similar structural indicator.
+For a locked block, visibly limit editing.
+Do not show only a small padlock badge.
 
 ### Resistance
 
-Resistance is a signature Ace surface built around **independent interventions**.
+Resistance is an Ace-specific screen for **independent interventions**.
 
-Never show a global intensity/severity slider: one no longer exists in the engine.
-Show a short concrete explanation and **five** compact, equally ranked
-categories: feeds and suggestions; videos and playback; visual stimulation;
-delays and limits; and simulated verifications (CAPTCHA). All start collapsed.
-The five categories are the sole top level; do not group them under additional
-headings or add another disclosure layer.
+Do not show a global intensity or severity slider.
+The engine no longer has this setting.
+Give a short, concrete explanation.
+Show exactly **five** categories with equal priority:
 
-The five categories each expose an always-visible, three-state checkbox on
-its header, independent from the expand button. Selecting a whole category
-must **not** require opening the category or browsing its sites. Inside the
-category, expose additional intervention selection by site. CAPTCHA scripts
-default to off in fresh catalog installations but may be enabled as a group
-with their checkbox; existing user preferences take precedence. Time Locks prevent clearing
-or weakening protected selections, but permit adding more. Distinguish
-configured selections from operational enforcement. The scripts update action
-and installed version maintenance belong in Settings, not this page.
+- feeds and suggestions;
+- videos and playback;
+- visual stimulation;
+- delays and limits;
+- simulated verifications (CAPTCHA).
+
+Start all five categories collapsed.
+Use only these five top-level categories.
+Do not add supergroups, extra headings, or another disclosure layer.
+
+Each category header has an always-visible, three-state checkbox.
+Keep this checkbox separate from the expand button.
+Users must be able to select an entire category without opening it or browsing sites.
+Within a category, show additional intervention choices for each site.
+
+CAPTCHA scripts are off by default in a new catalog installation.
+Users can enable all CAPTCHA scripts with the category checkbox.
+Do not overwrite existing user choices with these defaults.
+Time Locks prevent users from clearing or weakening protected selections.
+Time Locks still permit users to add interventions.
+Show the difference between configured selections and active enforcement.
+Put script updates and installed-version maintenance in Settings, not on this page.
 
 ### Categories
 
-Categories are Ace-provided curated sets of known sites. Custom Lists are user-imported domain collections. Present both as a dense, scannable catalog/inventory with Categories first and Custom Lists clearly secondary; prefer rows/table-like structure with an inspector over marketing cards.
+Categories are curated sets of known websites provided by Ace.
+Custom Lists are domain lists imported by the user.
+Show both in a dense, easy-to-scan catalog or inventory.
+Show Categories first and Custom Lists as a separate secondary group.
+Prefer rows or tables with an inspector over marketing cards.
 
-The engine continues to model both as Site Packs. That name belongs to the implementation boundary, not the normal product vocabulary.
+The engine still represents both types as Site Packs.
+Use Site Packs at the implementation boundary.
+Use Categories and Custom Lists in normal product text.
 
 ### Schedule
 
-Prefer a week/time matrix or timeline that shows enforcement periods spatially and immediately.
+Prefer a weekly time matrix or timeline.
+Show enforcement periods by their position in the week or day.
 
 ## 10. Signature components
 
-The first design-system components to solve well are:
+Design these components first:
 
 1. `NetworkPolicy`
 2. `ScriptSections (independent intervention browser)`
 3. `LockSeal`
 4. `ScheduleTimeline` / `WeekGrid`
 5. `EngineState`
-6. `SitePackRow` (internal component name; renders Categories and Custom Lists)
+6. `SitePackRow` (internal name; displays Categories and Custom Lists)
 7. `Inspector`
 
-If these are distinctive and coherent, most of the application will inherit identity naturally.
+Make these components distinctive and consistent.
+Other screens can use their common visual structure.
 
 ## 11. Lock interaction
 
-Locking is a high-consequence action and deserves deliberate ceremony.
+Locking has important consequences.
+Require a deliberate commitment action.
 
-A dedicated commitment surface should clearly state:
+A lock surface must clearly show:
 
-- how long the lock lasts;
-- what cannot be changed while locked;
-- when editability returns.
+- the lock duration;
+- what the user cannot change while the lock is active;
+- when the user can edit again.
 
-A hold-to-confirm action is acceptable for a real lock/commitment, approximately long enough to feel intentional but not punitive. Do not apply hold-to-confirm to ordinary actions.
+A hold-to-confirm action is acceptable for a real lock or commitment.
+Make the hold long enough to be deliberate, but not punitive.
+Do not require hold-to-confirm for ordinary actions.
 
 ## 12. Motion
 
 Typical duration: 120–180 ms.
 
-Motion should explain structural change:
+Use motion to explain a change in structure:
 
-- inspector opens;
-- policy expands;
-- lock seal closes;
-- schedule snaps;
-- state rail changes.
+- an inspector opens;
+- a policy expands;
+- a lock seal closes;
+- a schedule snaps into place;
+- a state rail changes.
 
 Avoid:
 
@@ -293,40 +332,41 @@ Avoid:
 - bouncy motion;
 - ambient pulse;
 - decorative section entrances;
-- animation for “premium feel.”
+- animation added only for a “premium feel.”
 
-Respect reduced-motion.
+Respect reduced-motion settings.
 
 ## 13. Copy and terminology
 
-Clarity wins over brand cleverness.
+Use clear terms before unusual brand language.
 
-A small repeated vocabulary can reinforce the product when it remains obvious:
+These repeated terms are possible product vocabulary:
 
 - Armed — possible global enforcement state;
-- Engage resistance — possible resistance action;
+- Engage resistance — possible Resistance action;
 - Hold to lock — commitment action.
 
-Do not rename familiar actions merely for personality. “Save changes” is better than an obscure branded verb.
+Do not rename familiar actions only to make them sound special.
+Use “Save changes” instead of an unclear branded verb.
 
 ## 14. Anti-patterns
 
-Do not introduce as default:
+Do not use these patterns as defaults:
 
 - generic rounded card grids;
 - gradient washes;
 - blurred blobs;
 - glassmorphism;
 - giant soft shadows;
-- rounded icon tile beside every title;
+- rounded icon tiles beside every title;
 - tiny uppercase eyebrow labels;
 - decorative rainbow feature colors;
 - pills everywhere;
 - arrows everywhere;
 - premium glows;
-- cybersecurity shield/hex/terminal motifs.
+- cybersecurity shield, hexagon, or terminal motifs.
 
-## 15. Architecture of the component system
+## 15. Component system architecture
 
 Use three layers.
 
@@ -342,7 +382,7 @@ Examples:
 - Tooltip
 - Scroller
 
-These should be accessible, restrained, and mostly boring.
+These components must be accessible, restrained, and visually simple.
 
 ### Ace structural components
 
@@ -356,7 +396,7 @@ Examples:
 - CommitBar
 - WeekGrid
 
-These create the recurring visual language.
+These components create the common Ace visual structure.
 
 ### Domain components
 
@@ -369,36 +409,39 @@ Examples:
 - EngineState
 - ScheduleTimeline
 
-These carry the strongest identity.
+These components carry the clearest Ace identity.
 
-Do not try to make the generic `Button` component carry the entire brand.
+Do not make the generic `Button` component carry the entire brand.
 
 ## 16. Accessibility and validation
 
-Distinctive must not mean difficult.
+A distinctive design must also be easy to use.
 
 Required:
 
 - keyboard navigation;
-- visible focus;
+- visible keyboard focus;
 - semantic controls;
 - correct labels;
 - sufficient contrast in both themes;
 - reduced-motion support;
-- no state conveyed by color alone;
-- target sizes appropriate for desktop input;
-- readable zoom/scaling behavior.
+- no state that relies only on color;
+- target sizes suitable for desktop input;
+- readable UI with zoom or scaling.
 
-Before considering a major visual task complete:
+Before you complete a major visual task:
 
-- run the relevant Svelte checks;
-- use the Svelte autofixer on changed Svelte files;
-- inspect the result visually;
+- run the applicable Svelte checks;
+- run the Svelte autofixer on changed Svelte files;
+- inspect the rendered result;
 - review representative light and dark states;
-- test at least active/inactive/locked/error/offline states when the component supports them.
+- test active, inactive, locked, error, and offline states when the component supports them.
 
 ## 17. Migration principle
 
-The current app may be replaced incrementally or substantially, but preserve the stable engine boundary and business semantics.
+You can replace the current app in stages or through a larger rebuild.
+Preserve the stable engine boundary and product behavior in both cases.
 
-Do not create a transitional “new Ace” layer that simply wraps the old generic card language. When a screen is migrated, it should move toward the target system rather than retain the visual assumptions of the old one.
+Do not build a “new Ace” layer that only wraps the old generic card layout.
+When you migrate a screen, move it toward this approved design system.
+Do not retain its old visual assumptions by default.
