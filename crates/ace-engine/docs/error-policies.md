@@ -1,9 +1,8 @@
 # Error Handling Policies
 
-This document outlines the strategies for handling errors in the Ace Engine
-codebase.  We use **[eyre](https://docs.rs/eyre)** as the primary error
-reporting library, layered on top of **[thiserror](https://docs.rs/thiserror)**
-for structured, matchable error variants at module boundaries.
+This document defines error-handling rules for Ace Engine.
+Use **[eyre](https://docs.rs/eyre)** for error reports.
+Use **[thiserror](https://docs.rs/thiserror)** for structured error variants at module boundaries.
 
 ---
 
@@ -35,26 +34,24 @@ for structured, matchable error variants at module boundaries.
 └──────────────────────────────────────────────────┘
 ```
 
-- **`thiserror`** is used at **module boundaries** where callers need to
-  programmatically distinguish error cases (e.g., mapping `NetworkBlockIsLocked`
-  → HTTP 423).
-- **`eyre`** is used everywhere else — wiring, glue code, background tasks,
-  one-shot CLI tools.  `eyre::Report` wraps any `std::error::Error` (including
-  `thiserror` enums), so the two layers compose seamlessly.
+- Use **`thiserror`** at **module boundaries** when callers must distinguish error cases.
+  Example: map `NetworkBlockIsLocked` → HTTP 423.
+- Use **`eyre`** for wiring, glue code, background tasks, and one-shot CLI tools.
+  `eyre::Report` wraps any `std::error::Error`, including `thiserror` enums.
+  Both error layers can work together.
 
 ---
 
 ## 🎨 Setup
 
-`color-eyre` should be installed once at the top of every binary entry-point
-(`main()` or `run()`):
+Install `color-eyre` once in each binary entry point (`main()` or `run()`):
 
 ```rust
 color_eyre::install()?;
 ```
 
-This enables automatic `Backtrace` capture and pretty-printed error output.
-Library code (`src/lib.rs`) should **not** call `install()` — only binaries.
+This enables automatic `Backtrace` capture and readable error output.
+Do **not** call `install()` from library code (`src/lib.rs`). Call it only from binaries.
 
 ---
 
@@ -75,7 +72,7 @@ fn do_work() -> Result<()> {
 
 ### 2. Adding context at every fallible boundary
 
-Every `?` that crosses an abstraction boundary **must** carry context:
+Add context to every `?` that crosses an abstraction boundary:
 
 ```rust
 // ❌  bad — no context, backtrace points at generic "connection refused"
@@ -132,20 +129,20 @@ db.migrate()
 
 - Replace `Box<dyn std::error::Error>` return types in `run()`, `setup()`, etc.
   with `eyre::Result<T>`.
-- Replace `.expect()` / `.unwrap()` with `.wrap_err("...")?` so the process
-  exits with a backtrace instead of a bare panic message.
+- Replace `.expect()` and `.unwrap()` with `.wrap_err("...")?`.
+  This lets the process exit with a backtrace instead of only a panic message.
 
 ### Phase 2 — internal wiring
 
 - Convert functions that currently return `Result<T, String>` or
   `Result<T, Box<dyn Error>>` to `eyre::Result<T>`.
-- Preserve existing `thiserror` enums (`ApiError`, `NetworkManagerOpErr`,
-  `DBError`) — they stay as the structured layer.
+- Preserve existing `thiserror` enums (`ApiError`, `NetworkManagerOpErr`, `DBError`).
+  They remain the structured error layer.
 
 ### Phase 3 — tool binaries
 
-- `src/bin/gen_sites_list.rs` and similar one-shot tools should use
-  `eyre::Result<T>` throughout, with `color_eyre::install()` at the top.
+- Use `eyre::Result<T>` throughout `src/bin/gen_sites_list.rs` and similar one-shot tools.
+  Call `color_eyre::install()` at their entry points.
 
 ---
 
@@ -153,8 +150,8 @@ db.migrate()
 
 When a fatal error occurs:
 
-1. **Log** — `error!(%report, "shutting down")` with the `%report` format
-   specifier captures the full eyre chain + backtrace.
+1. **Log** — Call `error!(%report, "shutting down")`.
+   The `%report` specifier captures the full eyre chain and backtrace.
 2. **Cleanup** — disable system proxy, stop background tasks, close DB.
 3. **User notification** — if running as a service, show a system notification.
 4. **Exit** — `std::process::exit(1)`.
@@ -169,11 +166,11 @@ Every REST API error response has the shape:
 { "error": "human-readable message", "code": "stable_machine_code" }
 ```
 
-- `code` is **stable across versions** — clients must switch on `code`, never
-  on the message text or (alone) on the HTTP status.
+- Keep `code` **stable across versions**. Clients must use `code` for decisions.
+  Do not use message text or HTTP status alone.
 - Internal paths, secrets, and stack traces are never included in `error`.
-- Malformed JSON bodies produce `code: "invalid_request_body"` (via the
-  `ValidatedJson` extractor) instead of axum's plain-text 400.
+- For malformed JSON, return `code: "invalid_request_body"` through `ValidatedJson`.
+  Do not return axum's plain-text 400.
 
 ### Stable codes
 
