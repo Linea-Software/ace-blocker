@@ -33,4 +33,4 @@ The system does not enforce machine fingerprints or device quotas. A technically
 2. Signature alteration, key swapping, missing feature grants, expiration and clock rollback all deny local Pro.
 3. Logging out or changing account clears the previous cached lease immediately.
 4. Forged `requiresPro: false`, remote IDs, imported backup attachments, and premium resync requests cannot create unpaid capabilities.
-5. Failed webhook writes are retryable; duplicate and stale events do not reactivate cancelled entitlements.
+5. Failed webhook writes are retryable; duplicate and stale events do not reactivate canceled entitlements.
