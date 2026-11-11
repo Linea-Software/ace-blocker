@@ -1,14 +1,14 @@
 # Site-pack lock invariant (canonical rule)
 
-This is the single source of truth for the engine's site-pack lock rule. It is
-implemented by `NetworkManager::is_site_pack_locked`
-(`ace-engine/src/manager/network/site_pack.rs`) and enforced server-side on
-every operation that could delete or weaken a site pack. Do not inline your
-own copy of the predicate.
+This document defines the engine's canonical site-pack lock rule.
+`NetworkManager::is_site_pack_locked` implements the rule in
+`ace-engine/src/manager/network/site_pack.rs`.
+The engine enforces this rule for every operation that could delete or weaken a site pack.
+Do not duplicate the predicate.
 
 ## The rule
 
-A site pack `P` is **locked** at a point in time `t` iff:
+A site pack `P` is **locked** at time `t` only when all these conditions apply:
 
 1. `P` exists locally (a row is loaded in memory), **and**
 2. `P` is synchronized (`is_synced()` is true — its `pack.db` is loaded; a
@@ -18,16 +18,14 @@ A site pack `P` is **locked** at a point in time `t` iff:
    is active while `now <= end`; `ActiveDuringSchedule` is active only while the
    block's schedule matches).
 
-Everything else is *unlocked*: missing packs, unsynced packs, and packs that
-only unlocked blocks reference.
+All other packs are *unlocked*. This includes missing packs, unsynced packs, and packs referenced only by unlocked blocks.
 
 ## Why the `is_synced` conjunct
 
-An unsynced remote pack (e.g. after a cache clear) has no data to protect and
-must stay downloadable. If it were locked, the `resync` action would be refused
-and the pack could never acquire data — including for a locked block that
-already references it. Locking an unsynced pack would therefore *weaken*
-enforcement instead of protecting it.
+An unsynced remote pack has no data to protect, for example after a cache clear.
+Keep this pack downloadable. Otherwise, the lock would reject `resync`.
+The pack could not receive data, even when a locked block already references it.
+Locking an unsynced pack would therefore *weaken* enforcement.
 
 ## Enforced operations
 
@@ -39,12 +37,12 @@ enforcement instead of protecting it.
 | HTTP delete while pack is *in use* by an unlocked block | HTTP 409, code `conflict` (must disconnect from the block first) |
 | Delete/resync/source-delete while a sync stream is running | `SitePackBusy` → HTTP 409, code `conflict` |
 
-The lock state is re-evaluated under the manager write lock at mutation time,
-so a stale frontend cannot race a lock change: a forbidden attempt always
-receives a stable machine-readable code, never a silent success.
+Re-evaluate lock state under the manager write lock before each mutation.
+A stale frontend cannot bypass a lock change.
+Return a stable machine-readable code for each forbidden operation. Never report silent success.
 
 ## API exposure
 
-`GET /site-lists` returns each pack's `isLocked` (evaluated at request time) so
-the app can disable the delete/resync controls. The engine enforces the rule
-regardless of UI state.
+`GET /site-lists` returns each pack's `isLocked`, evaluated at request time.
+The app uses this value to disable delete and resync controls.
+The engine enforces the rule independently of UI state.
