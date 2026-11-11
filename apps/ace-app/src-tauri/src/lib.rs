@@ -1,3 +1,4 @@
+mod device_link;
 use ace_engine::service::api::bridge;
 use ace_engine::service::api::rpc::RpcError;
 use serde_json::Value;
@@ -104,6 +105,7 @@ async fn engine_stream(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default()
+        .manage(device_link::DeviceLinkState::default())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(
@@ -133,7 +135,10 @@ pub fn run() {
             engine_call,
             engine_stream,
             app_version,
-            system_locale
+            system_locale,
+            device_link::device_link_start,
+            device_link::device_link_poll,
+            device_link::device_link_cancel
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -14,6 +14,7 @@
     import * as m from "$lib/paraglide/messages.js";
     import { cn } from "$lib/utils.js";
     import { openAccountPage } from "$lib/utils/account-browser";
+    import { goto } from "$app/navigation";
     import { engineStore } from "$lib/stores/engine.svelte";
 
     let { isLogoutConfirmOpen = $bindable(false) } = $props();
@@ -23,9 +24,10 @@
     let isActivationModalOpen = $state(false);
 
     async function handleSignIn() {
-        if (await openAccountPage("sign-in")) {
-            isActivationModalOpen = false;
-        }
+        // The native HTTPS device flow starts from Settings → License.
+        // Never trigger a browser-to-app protocol handoff here.
+        isActivationModalOpen = false;
+        await goto("/settings");
     }
 
     async function handleUpgrade() {

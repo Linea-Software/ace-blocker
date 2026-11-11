@@ -14,7 +14,7 @@ export function getAccountPageUrl(
 ): string {
     const origin = debug ? "http://localhost:5173" : "https://aceblocker.com";
     const pathname = page === "pro" ? "/get-pro" : "/signin";
-    return `${origin}${pathname}?origin=aceblocker`;
+    return `${origin}${pathname}`;
 }
 
 export const ACCOUNT_PAGE_URLS: Record<AccountPage, string> = {

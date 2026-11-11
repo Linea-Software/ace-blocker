@@ -4,15 +4,85 @@
     import { KeyRound, CircleCheck, Crown } from "@lucide/svelte";
     import UpgradeToProButton from "$lib/components/UpgradeToProButton.svelte";
     import { openAccountPage } from "$lib/utils/account-browser";
+    import { invoke, isTauri } from "@tauri-apps/api/core";
+    import { openUrl } from "@tauri-apps/plugin-opener";
+    import { onDestroy } from "svelte";
 
     const isPro = $derived(userStore.isPro);
     let openingSignIn = $state(false);
+    let linkCode = $state<string | null>(null);
+    let linkMessage = $state<string | null>(null);
+    let linkActive = $state(false);
+    let linkFailure = $state(false);
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+    let generation = 0;
+
+    type Start = {userCode: string; verificationUri: string; interval: number; expiresIn: number};
+    type Poll = {state: "pending"|"slow_down"|"linked"|"expired"|"consumed"; retryAfter: number};
+
+    function queuePoll(seconds: number, cycle: number) {
+        pollTimer = setTimeout(async () => {
+            if (generation !== cycle || !linkActive) return;
+            try {
+                const reply = await invoke<Poll>("device_link_poll");
+                if (generation !== cycle) return;
+                if (reply.state === "linked") {
+                    linkActive = false;
+                    linkCode = null;
+                    linkMessage = m.device_link_success();
+                    void userStore.refreshAfterLoginOrEntitlementChange();
+                } else if (reply.state === "pending" || reply.state === "slow_down") {
+                    queuePoll(Math.max(reply.retryAfter, 5), cycle);
+                } else {
+                    linkActive = false;
+                    linkCode = null;
+                    linkMessage = m.device_link_expired();
+                    linkFailure = true;
+                }
+            } catch {
+                if (generation !== cycle) return;
+                linkActive = false;
+                linkCode = null;
+                linkMessage = m.device_link_failed();
+                linkFailure = true;
+            }
+        }, seconds * 1000);
+    }
+
+    function stopLink() {
+        generation++;
+        if (pollTimer) clearTimeout(pollTimer);
+        pollTimer = undefined;
+        linkActive = false;
+        linkCode = null;
+        if (isTauri()) void invoke("device_link_cancel").catch(() => {});
+    }
+
+    onDestroy(stopLink);
 
     async function signIn() {
-        if (openingSignIn) return;
+        if (openingSignIn || linkActive) return;
         openingSignIn = true;
+        linkFailure = false;
+        linkMessage = null;
         try {
-            await openAccountPage("sign-in");
+            if (!isTauri()) {
+                await openAccountPage("sign-in");
+                return;
+            }
+            const info = await invoke<Start>("device_link_start");
+            linkCode = info.userCode;
+            linkActive = true;
+            const cycle = ++generation;
+            try {
+                await openUrl(info.verificationUri);
+            } catch {
+                linkMessage = m.device_link_open_browser_failed({url: info.verificationUri});
+            }
+            queuePoll(info.interval, cycle);
+        } catch {
+            linkMessage = m.device_link_failed();
+            linkFailure = true;
         } finally {
             openingSignIn = false;
         }
@@ -53,14 +123,27 @@
                 <button
                     type="button"
                     class="sign-in-action"
-                    disabled={openingSignIn}
+                    disabled={openingSignIn || linkActive}
                     onclick={signIn}
                 >
-                    {m.already_purchased()}
+                    {m.device_link_start()}
                 </button>
             </div>
         {/if}
     </div>
+    {#if linkActive || linkMessage}
+        <div class="device-link-panel" role="status" aria-live="polite">
+            {#if linkCode}
+                <p class="font-semibold">{m.device_link_title()}</p>
+                <p class="mt-1">{m.device_link_instructions()}</p>
+                <p class="device-link-code" aria-label={m.device_link_code()}>{linkCode}</p>
+                <p>{m.device_link_waiting()}</p>
+                <button type="button" class="sign-in-action" onclick={stopLink}>{m.device_link_cancel()}</button>
+            {:else if linkMessage}
+                <p class:device-link-error={linkFailure}>{linkMessage}</p>
+            {/if}
+        </div>
+    {/if}
 </section>
 
 <style>
@@ -190,4 +273,8 @@
             grid-column: 2;
         }
     }
+
+    .device-link-panel { border: 1px solid var(--border); border-left: 3px solid var(--ace-amber, #ffb000); padding: 12px 14px; font-size: 13px; line-height: 1.5; background: var(--card); }
+    .device-link-code { margin: 12px 0; font: 600 20px/1.4 "IBM Plex Mono", monospace; letter-spacing: .04em; overflow-wrap: anywhere; }
+    .device-link-error { color: var(--destructive); }
 </style>

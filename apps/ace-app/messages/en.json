@@ -797,5 +797,15 @@
     "settings_resistance_scripts_updating": "Updating…",
     "settings_resistance_scripts_pro_required": "A Pro plan is required to update Resistance scripts.",
     "settings_resistance_scripts_engine_offline": "Connect to the engine to update Resistance scripts.",
-    "settings_resistance_scripts_status_unavailable": "Could not read the current script status."
+    "settings_resistance_scripts_status_unavailable": "Could not read the current script status.",
+    "device_link_start": "Connect account",
+    "device_link_waiting": "Waiting for approval in your browser…",
+    "device_link_code": "Confirmation code",
+    "device_link_instructions": "Enter this code on the secure Ace Blocker website, then approve the device.",
+    "device_link_success": "Account connected. License verification is updating.",
+    "device_link_expired": "The code expired or was already used. Please start again.",
+    "device_link_failed": "Could not connect the account. Try again.",
+    "device_link_cancel": "Cancel linking",
+    "device_link_title": "Connect your desktop securely",
+    "device_link_open_browser_failed": "Could not open the authorization page. Open this address in your browser: {url}"
 }

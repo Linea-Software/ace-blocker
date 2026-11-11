@@ -24,16 +24,16 @@ describe("account browser handoff", () => {
 
     it("uses the local website in debug and the public website in release builds", () => {
         expect(getAccountPageUrl("pro", true)).toBe(
-            "http://localhost:5173/get-pro?origin=aceblocker",
+            "http://localhost:5173/get-pro",
         );
         expect(getAccountPageUrl("sign-in", true)).toBe(
-            "http://localhost:5173/signin?origin=aceblocker",
+            "http://localhost:5173/signin",
         );
         expect(getAccountPageUrl("pro", false)).toBe(
-            "https://aceblocker.com/get-pro?origin=aceblocker",
+            "https://aceblocker.com/get-pro",
         );
         expect(getAccountPageUrl("sign-in", false)).toBe(
-            "https://aceblocker.com/signin?origin=aceblocker",
+            "https://aceblocker.com/signin",
         );
         expect(ACCOUNT_PAGE_URLS.pro).toBe(getAccountPageUrl("pro"));
     });
@@ -45,12 +45,12 @@ describe("account browser handoff", () => {
         expect(openUrl).toHaveBeenCalledWith(ACCOUNT_PAGE_URLS.pro);
     });
 
-    it("sign-in includes the origin required for deep-link activation", async () => {
+    it("opens sign-in without automatically triggering an external protocol", async () => {
         vi.mocked(isTauri).mockReturnValue(true);
 
         expect(await openAccountPage("sign-in")).toBe(true);
         expect(openUrl).toHaveBeenCalledWith(ACCOUNT_PAGE_URLS["sign-in"]);
-        expect(ACCOUNT_PAGE_URLS["sign-in"]).toContain("origin=aceblocker");
+        expect(ACCOUNT_PAGE_URLS["sign-in"]).not.toContain("origin=aceblocker");
     });
 
     it("uses a regular browser tab outside Tauri", async () => {

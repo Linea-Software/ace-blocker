@@ -1,5 +1,12 @@
 If the Svelte MCP server is connected, use its documentation tools for Svelte 5 and SvelteKit work. If unavailable, rely on the official documentation, repository source and checks; do not claim to have called a missing tool.
 
+## Browser-prompt-free account linking (2026-11-11)
+
+- The default account/license activation starts in `src/routes/settings/_LicenseSection.svelte`: clicking **Connect account** invokes native Tauri `device_link_start`, shows the human code, and opens `/connect` as ordinary HTTPS. The Rust process (`src-tauri/src/device_link.rs`) keeps the raw device secret and redeemed key private, polls with a short timeout, and calls engine remoc `setApiKey` with the OS-held capability. The WebView sees only user code, state and retry delay; it never receives the API key.
+- Never implement this through a local web HTTP port, JS-stored API key, or service shutdown/restart. The engine remains the credential owner. Browser-originated links and checkout completion must not automatically invoke `aceblocker://`; website fallback remains manual only for old desktop versions.
+- Rust native URL constants use loopback HTTP only in debug, HTTPS aceblocker.com in release. No redirects are followed when retrieving a challenge/token. Corresponding server schema and endpoints are in `ace-blocker-site/docs/DEVICE_LINKING.md`.
+- Verify `cargo check -p ace-app --lib`, `cd apps/ace-app && bun run check && bun run test:unit`, and server device-link unit/browser tests. Account linking requires a valid and verified browser session.
+
 ## Self-Maintenance (IMPORTANT)
 
 - **Maintain Context**: You MUST automatically edit this `AGENTS.md` file whenever significant changes occur in the project (e.g., new tools added, new core documentation links found, project structure changes, or new patterns established). Keep this document up-to-date as the "Source of Truth" for your behavior in this project.
