@@ -1,33 +1,30 @@
 # Browser-proxy extension enforcement (Windows preview)
 
-**Status:** Implemented as an opt-in policy guard. Windows/browser live tests are
-still required before claiming a fully closed VPN-extension bypass.
+**Status:** The opt-in policy guard is implemented. Live Windows browser tests
+are still required. Do not claim that the guard prevents every VPN-extension bypass.
 
 For the Linux equivalent, see `docs/LINUX_BROWSER_PROXY_ENFORCEMENT.md`.
 
 ## Why this exists
 
-HTTPS browser proxy extensions such as Proton VPN, Windscribe and NordVPN send
-a browser connection to a TLS-encrypted proxy. The original destination is
-inside the encrypted CONNECT tunnel. WinTun and WFP can capture the connection
-and still see only the proxy identity, not the originally requested blocked
-website. Routing, DNS, TLS SNI, and a blocklist of known VPN domains are not a
-complete solution.
+HTTPS browser proxy extensions, such as Proton VPN, Windscribe, and NordVPN,
+connect the browser to a TLS-encrypted proxy. The encrypted CONNECT tunnel hides
+the original destination. WinTun and WFP can capture the connection but can
+identify only the proxy. They cannot identify the requested blocked website.
+Routing, DNS, TLS SNI, and known VPN-domain lists cannot solve this problem alone.
 
-Ace also has a narrowly targeted TCP/4443 deny rule for protected browsers
-based on audited extension behavior, and WFP retains an IPv6 browser block
-even when IPv6 capture was unavailable at startup. Neither alone fixes
-generic HTTPS proxies on 443.
+Ace also denies TCP/4443 for protected browsers based on audited extension behavior.
+WFP keeps the IPv6 browser block if IPv6 capture is unavailable at startup.
+Neither control prevents all HTTPS proxy bypasses on TCP/443.
 
 ## Opt-in strict browser proxy guard
 
-The MSI packages browser-proxy-extension-policy.ps1 in the Ace Blocker
-installation directory. It does **not** automatically activate this script:
-doing so without consent can break corporate proxies and legitimate privacy
-extensions.
+The MSI includes `browser-proxy-extension-policy.ps1` in the Ace Blocker
+installation directory. It does **not** enable the script automatically.
+Without consent, the guard could disrupt corporate proxies and legitimate privacy extensions.
 
-From an elevated **64-bit Windows PowerShell** console, run the script in
-Program Files / Ace Blocker with:
+Run the script from **64-bit Windows PowerShell** in the Ace Blocker installation directory.
+Elevation is required for changes. Select one of these actions:
 
 - Action Status (read-only; no elevation needed)
 - Action Enable -IUnderstand (writes managed browser policy)
@@ -49,9 +46,9 @@ ProxyMode to direct and locks Firefox Proxy mode to none. Firefox's
 blocked_permissions feature requires Firefox 153 or later; Firefox's Proxy
 lock works on older releases.
 
-The script rejects pre-existing extension and proxy management policies
-instead of taking ownership of them. It scans loaded user hives, but cannot
-prove anything about unloaded hives or cloud-managed policies. Its journal is
+The script rejects existing extension and proxy management policies.
+It does not take ownership of these policies. It scans loaded user hives.
+It cannot verify unloaded hives or cloud-managed policies. Its journal is
 stored in protected ProgramData/LineaSoftware/AceBlocker. Interrupted enables
 can be undone, while Disable refuses to erase values altered by other tools.
 Verify effective policy by restarting browsers and reviewing chrome://policy,
@@ -62,11 +59,11 @@ the active-lock gate. It does not clear the policy during major upgrades.
 A conflicting or unrecognized owned policy makes uninstall fail safe rather
 than silently removing other policy values.
 
-Tradeoffs: this affects all users of managed Chrome/Edge/Firefox on the
-computer, not just active ACE blocks. It disables browser proxy extensions,
-legitimate proxy servers and potentially corporate configurations. It is
-currently manual opt-in: the normal MSI installation alone does **not**
-eliminate the HTTPS-proxy extension bypass.
+**Tradeoffs:** The policy affects all users of managed Chrome, Edge, and Firefox.
+It applies even when ACE blocks are inactive. It disables browser proxy extensions
+and legitimate proxy servers. It can also disrupt corporate configurations.
+The guard requires manual opt-in. Installing the MSI alone does **not** prevent
+the HTTPS-proxy extension bypass.
 
 ## Windows VM verification required
 
@@ -79,9 +76,8 @@ proxy relay ports 443/4443/8443, WSS, IPv6, QUIC, local SOCKS/HTTP helpers,
 browser restart, policy pre-existence, interrupted enable and uninstall.
 
 Collect sanitized browser NetLog and ACE WFP/TUN decision metadata.
-A live browser test is necessary to distinguish loss of hostname visibility
-from any actual route-enforcement bypass. Do not claim proof based only on
-unit tests or static extension manifests.
+Use live browser tests to distinguish hidden hostnames from route-enforcement bypasses.
+Unit tests and static extension manifests do not provide sufficient proof.
 
 ## Remaining limits
 
