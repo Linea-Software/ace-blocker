@@ -1,21 +1,21 @@
-# UniBo HTTP 400 investigation — 2026-09-23
+# UniBo HTTP 400 investigation — September 23, 2026
 
 ## Finding
 
-The intercepted HTTP/2 → HTTP/1.1 forwarding path fails to reconstruct the
-mandatory `Host` header from the request's `:authority`. The request is valid
-when the browser sends it, but the proxy emits invalid HTTP/1.1. UniBo's nginx
-rejects it with 400.
+When the proxy forwards HTTP/2 as HTTP/1.1, it does not create the required
+`Host` header from `:authority`. The browser sends a valid request. The proxy
+then sends invalid HTTP/1.1. The UniBo nginx server rejects this request
+with status 400.
 
-Investigated against source revision `6fcc7cd`, using the in-repository
-`mitm-proxy` crate. The initial investigation did not change production behavior;
-the subsequent repair is described below.
+The investigation used source revision `6fcc7cd` and the repository's
+`mitm-proxy` crate. The first investigation did not change production behavior.
+The Repair section describes the later fix.
 
 ## Evidence
 
 Target: `https://www.unibo.it/it/studiare/vivere-luniversita-e-la-citta/wi-fi/faq-almawifi`.
-The live origin resolved to `137.204.24.208` and negotiated `http/1.1` when
-offered both `h2` and `http/1.1`.
+The live origin resolved to `137.204.24.208`. When the client offered
+`h2` and `http/1.1`, the origin selected `http/1.1`.
 
 | Experiment | Result |
 | --- | --- |
@@ -25,14 +25,14 @@ offered both `h2` and `http/1.1`.
 | HTTP/2 client through the same proxy | 400 Bad Request, 150 body bytes |
 | Same HTTP/2 request with a test-only inspector supplying `Host` from the URI authority | 200 OK, 474573 body bytes |
 
-The proxy tests send all headers supplied in the report, including the Brave
-search referrer, with no cookies or credentials. The experimental inspector
-changes only `Host`. Test helpers disable upstream certificate verification
-for local self-signed origins; the direct curl baseline verified UniBo's
-certificate successfully. This is a reproduction using the embedded proxy,
-not a capture of the user's running Brave/engine connection or policy state.
-The live error contained the same nginx HTML core as the reported response,
-without its optional browser padding comments.
+The proxy tests send all reported headers, including the Brave search referrer.
+They do not send cookies or credentials. The test inspector changes only
+`Host`. The test helpers disable upstream certificate verification for local,
+self-signed origins. The direct curl control verified the UniBo certificate.
+The tests reproduce the issue with the embedded proxy. They do not capture
+the user's active Brave connection, engine connection, or policy state. The
+live error contained the same nginx HTML core as the reported response. It
+did not contain the optional browser-padding comments.
 
 A local TLS origin advertising only HTTP/1.1 captured the proxy's raw output:
 
@@ -47,10 +47,10 @@ referer: https://safe.search.brave.com/
 
 ```
 
-There is no `Host`. The URI authority remains in the absolute request target,
-but that does not remove HTTP/1.1's requirement for the header. A separate
-direct curl control using an absolute request target and a valid `Host`
-returned 200, isolating the missing header as the cause of this 400.
+The request has no `Host` header. The absolute request target still contains
+the URI authority. HTTP/1.1 still requires `Host`. A direct curl control
+sent an absolute request target with a valid `Host` header. It returned 200.
+This result isolates the missing header as the cause of status 400.
 
 ## Code path and underlying design error
 
@@ -67,9 +67,9 @@ returned 200, isolating the missing header as the cause of this 400.
    coerces the HTTP/2 request version to HTTP/1.1 on the wire but does not
    manufacture a `Host` header. The raw capture confirms this behavior.
 
-The missing layer is request normalization for the protocol actually selected
-on the upstream connection. This affects intercepted traffic to other
-HTTP/1.1 origins too. Opaque CONNECT tunnels do not perform this conversion.
+The proxy must normalize a request for the upstream protocol that it selects.
+This error can also affect intercepted traffic to other HTTP/1.1 origins.
+Opaque CONNECT tunnels do not perform this conversion.
 
 RFC references:
 
@@ -84,18 +84,18 @@ RFC references:
 `tests/common/mod.rs::proxy_connect_get` explicitly always sends HTTP/1.1 and
 supplies `Host`, including when called from `proxy_http2.rs`. The shared HTTPS
 origin supports HTTP/2, and several actual HTTP/2 test requests explicitly
-include `Host`. These do not establish the browser-like case of an authority-only
-HTTP/2 request downgraded to an HTTP/1.1-only origin. Unit tests in `util.rs`
-also assert that `ensure_host_header` skips HTTP/2 without testing the later
-downgrade.
+include `Host`. These tests do not cover a browser-like HTTP/2 request with only an authority
+header when the upstream origin supports only HTTP/1.1. Unit tests in
+`util.rs` also verify that `ensure_host_header` skips HTTP/2. They do not
+test the later conversion to HTTP/1.1.
 
 ## Reproduce
 
-Before the repair, the two diagnostic tests failed at the missing-Host and
-HTTP/2-status assertions respectively. The local wire-capture test now runs
-as an ordinary regression test. The live test remains ignored by default
-because it contacts a public server. It also retains the test-only Host
-control from the original investigation.
+Before the repair, the two diagnostic tests failed. One detected a missing
+`Host` header. The other detected an incorrect HTTP/2 status. The local
+wire-capture test now runs as a regular regression test. The live test is
+ignored by default because it contacts a public server. It retains the
+original test-only `Host` control.
 
 ```sh
 # Local wire capture; needs permission to bind loopback sockets.
@@ -107,24 +107,26 @@ cargo test -p mitm-proxy --test unibo_diagnosis unibo_http2_and_http1_both_succe
 
 ## Repair
 
-`upstream.rs::send_h1` now prepares the request after HTTP/1 has been selected.
-It derives `Host` from the effective URI authority, replacing conflicting or
-duplicate values, and explicitly converts HTTP/2 and HTTP/3 versions to
-HTTP/1.1. An origin-form request retains its existing Host; a request with
-neither authority nor Host returns an error instead of emitting invalid HTTP.
-Existing HTTP/1 versions, upgrade headers, request targets, and bodies remain
-intact. Both first-time TLS negotiation and cached HTTP/1 origin paths pass
-through this boundary, as do plaintext upstream requests.
+`upstream.rs::send_h1` now prepares a request after it selects HTTP/1. It
+creates `Host` from the effective URI authority. It replaces conflicting or
+duplicate values. It converts HTTP/2 and HTTP/3 versions to HTTP/1.1.
+An origin-form request keeps its existing `Host` header. A request without
+an authority or `Host` returns an error. The proxy does not send invalid
+HTTP for that request. The fix preserves existing HTTP/1 versions, upgrade
+headers, request targets, and bodies. New TLS connections, cached HTTP/1
+origin connections, and plaintext upstream requests use this path.
 
-The local proxy reproduction now runs by default. Additional wire-level
-tests exercise HTTP/2 and HTTP/3 downgrades, conflicting and duplicate Host
+The local proxy test now runs by default. Additional wire-level tests cover
+HTTP/2 and HTTP/3 conversion. They cover conflicting or duplicate `Host`
 values, default and non-default ports, and bracketed IPv6 authorities. Other
-tests check HTTP/1 upgrade preservation and HTTP/1.0 origin-form handling.
-The repair applies generally; it adds no site exemption or caller workaround.
+tests check preservation of HTTP/1 upgrades and handling of HTTP/1.0
+origin-form requests. The fix applies to all sites. It adds no site-specific
+exception or caller workaround.
 
-Post-repair validation: the live UniBo comparison returned 200 for HTTP/1.1,
-HTTP/2 without the test inspector, and HTTP/2 with the inspector (474573 body
-bytes each). `cargo test -p mitm-proxy` passed 100 unit/integration tests and
-one doctest, with only the live check ignored by default. The separately run
-live check passed. `cargo clippy -p mitm-proxy --all-targets` completed with
-existing warnings in unchanged code.
+After the repair, the live UniBo comparison returned 200 for HTTP/1.1,
+HTTP/2 without the test inspector, and HTTP/2 with the inspector. Each
+response contained 474573 body bytes. `cargo test -p mitm-proxy` passed
+100 unit and integration tests and one doctest. The live check was the only
+test ignored by default. The separate live check passed.
+`cargo clippy -p mitm-proxy --all-targets` completed. It reported existing
+warnings in unchanged code.
