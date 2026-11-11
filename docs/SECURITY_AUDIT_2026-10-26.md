@@ -1,149 +1,269 @@
-# Ace Blocker — security audit statico (26 ottobre 2026)
+<a id="ace-blocker--security-audit-statico-26-ottobre-2026"></a>
+# Ace Blocker — static security audit (October 26, 2026)
 
-> **Esito del run: INCOMPLETO (security-audit skill, profilo `standard`).** Il documento è un audit **statico, orientato al rischio, dell'intero repository unificato**; non è una certificazione di sicurezza né una validazione end-to-end. Sono state ispezionate le superfici più sensibili e inventariati tutti i 714 file tracciati, **non** lette integralmente tutte le righe di ogni file. Le quattro deleghe di ricognizione indipendente richieste dalla skill sono fallite per indisponibilità del backend NovaGPT; mancano quindi hunter, verifier e critic indipendenti. Non sono stati eseguiti target, test, installer, driver, proxy o servizi: le garanzie richieste dalla skill per un sandbox OS-enforced non sono state dimostrate. Nessuna voce sottostante è classificata `confirmed` o riceve una severity formale finché non viene verificata indipendentemente.
+> **Run result: INCOMPLETE (security-audit skill, `standard` profile).**
+> This is a **static, risk-focused audit of the unified repository**.
+> It is not a security certification or end-to-end verification.
+> Reviewers examined the most sensitive surfaces and inventoried all 714 tracked files.
+> They did **not** read every line of every file.
+> The four independent reconnaissance delegations required by the skill failed because the NovaGPT backend was unavailable.
+> Independent hunters, verifiers, and critics are therefore missing.
+> No target executables, tests, installers, drivers, proxies, or services ran.
+> The OS-enforced sandbox guarantees required by the skill were not demonstrated.
+> No item below is `confirmed` or assigned formal severity without independent verification.
 
-**Repository:** `C:\Projects\ace-project\ace-blocker`  
-**Commit esaminato:** `17c7e36a53374b3d07fb9eaef4f6120cdbbbe9e6` (`main`, working tree pulita prima dell'audit)  
-**Perimetro:** `apps/ace-app`, `crates/ace-engine`, `crates/ace-watchdog`, `crates/ace-watchdog-protocol`, `crates/ace-tun`, `crates/mitm-proxy`, `crates/ace-domain-blocklist`, `installer`, `.github/workflows` e configurazioni/documentazione del repository.  
-**Esclusi:** sito web/account e API cloud esterni (`ace-blocker-site`), app Android, pipeline `ace-hosts`, sorgenti esterne degli script `boredom-engine`, configurazioni effettive delle macchine di produzione e dei provider.  
-**Skill:** `ace-project/.agents/skills/security-audit/SKILL.md`, con companion desktop/IPC, RPC, memory safety, client/browser, web, release/supply-chain e availability.  
-**Esecuzione:** sola lettura del sorgente e comandi di inventario/ricerca; nessun contatto con endpoint o dati reali, nessuna riproduzione offensiva.
+**Repository:** `C:\Projects\ace-project\ace-blocker`
+**Reviewed commit:** `17c7e36a53374b3d07fb9eaef4f6120cdbbbe9e6` (`main`, working tree clean before the audit)
+**Scope:** `apps/ace-app`, `crates/ace-engine`, `crates/ace-watchdog`, `crates/ace-watchdog-protocol`, `crates/ace-tun`, `crates/mitm-proxy`, `crates/ace-domain-blocklist`, `installer`, `.github/workflows`, and repository configuration/documentation.
+**Excluded:** External website/account and cloud APIs (`ace-blocker-site`), Android app, `ace-hosts` pipeline, external `boredom-engine` script sources, and real production/provider configuration.
+**Skill:** `ace-project/.agents/skills/security-audit/SKILL.md` with desktop/IPC, RPC, memory safety, client/browser, web, release/supply-chain, and availability companions.
+**Execution:** Source inspection and inventory/search commands only. No real endpoints or user data were accessed. No offensive reproduction was attempted.
 
-## Sintesi esecutiva
+<a id="sintesi-esecutiva"></a>
+## Executive summary
 
-La maggiore area di rischio osservata è il **confine fra processi normali Windows e componenti che girano come LocalSystem**. La configurazione del MSI rende **potenzialmente leggibile agli utenti standard** la cartella che contiene il token dell'IPC, la chiave API del servizio cloud conservata nel database e la chiave privata della CA di intercettazione TLS. Il token, una volta acquisito, autorizzerebbe richieste remoc normalmente riservate all'app, benché le regole di lock dell'engine costituiscano un controllo distinto che non va presunto aggirabile. In parallelo, un **RPC di esportazione del backup è raggiungibile senza presentare il token**, in base al codice.
+The highest observed risk is the **boundary between ordinary Windows processes and LocalSystem components**.
+The MSI configuration might let **standard users read** the folder that contains the IPC token.
+That folder also contains the cloud API credential in the database and the TLS interception CA private key.
+A client with the token could send remoc requests normally restricted to the app.
+The engine's separate Lock rules still apply. Do **not** assume they can be bypassed.
+The reviewed code also exposes a **backup-export RPC without a token requirement**.
 
-Questi sono **lead prioritari da verificare prima della release** con installazione pulita e identità Windows distinte. Non è corretto concludere che l'installer *effettivamente* conceda l'accesso ai singoli file finché non si osservano gli ACL risultanti, o che una specifica escalation sia stata riprodotta.
+These leads require **priority verification before release** on a clean install with separate Windows identities.
+Do not claim that installed file ACLs actually grant access until you inspect them.
+Do not claim that a privilege escalation has been reproduced.
 
-### Registro delle verifiche prioritarie
+<a id="registro-delle-verifiche-prioritarie"></a>
+### Priority verification register
 
-| ID | Priorità di verifica | Stato | Superficie | Questione da stabilire |
+| ID | Verification priority | Status | Surface | Question to resolve |
 | --- | --- | --- | --- | --- |
-| AB-01 | Prima della release | `needs_validation` | MSI / capability / IPC | Token dell'installazione e credenziale cloud potenzialmente leggibili da altri utenti; token riutilizzabile via pipe |
-| AB-02 | Prima della release | `needs_validation` | CA MITM / filesystem | Chiave privata di una root CA attendibile leggibile da utenti standard |
-| AB-03 | Prima della release | `needs_validation` | remoc RPC / backup | Dati e preferenze del profilo esportabili da altra identità locale senza token |
-| AB-04 | Prima della release | `needs_validation` | URI scheme / account | Callback `aceblocker://` può sostituire l'API key senza essere associato a un login avviato |
-| AB-05 | Successiva, prima della release | `needs_validation` | Named Pipe / lifecycle | Connessioni locali illimitate assorbono risorse del servizio |
-| AB-06 | Successiva, prima della release | `needs_validation` | Import site pack | Sorgenti URL/file elaborate da LocalSystem oltre l'autorità prevista per l'utente |
+| AB-01 | Before release | `needs_validation` | MSI / capability / IPC | Can other users read the installation token and cloud credential and reuse the token through the pipe? |
+| AB-02 | Before release | `needs_validation` | MITM CA / filesystem | Can standard users read the trusted root CA private key? |
+| AB-03 | Before release | `needs_validation` | remoc RPC / backup | Can another local identity export profile data and preferences without a token? |
+| AB-04 | Before release | `needs_validation` | URI scheme / account | Can an `aceblocker://` callback replace the API key without a pending login? |
+| AB-05 | Later, before release | `needs_validation` | Named Pipe / lifecycle | Can unlimited local connections consume service resources? |
+| AB-06 | Later, before release | `needs_validation` | Site-pack import | Can LocalSystem process URL/file sources beyond the intended user authority? |
 
-**Vulnerabilità formalmente confermate con il workflow completo della skill: 0.** Questa cifra indica **mancata conclusione della validazione**, non assenza di problemi.
+**Vulnerabilities formally confirmed through the complete skill workflow: 0.**
+This number means **validation did not finish**. It does not mean the product has no vulnerabilities.
 
-## Confini di fiducia osservati
+<a id="confini-di-fiducia-osservati"></a>
+## Observed trust boundaries
 
-1. **Utente Windows → WebView Tauri → backend Rust → remoc:** il frontend inoltra `engine_call(op,args)` alla parte nativa, che legge `capability.token` e lo allega agli RPC. Il WebView non riceve direttamente il valore; è proibito l'op `shutdown` da WebView (`apps/ace-app/src-tauri/src/lib.rs:25-68,107-113`).
-2. **Altri processi locali → pipe LocalSystem:** il pipe Windows accetta utenti autenticati locali con `accept_remote(false)`; su Linux il socket engine è `0666` (`crates/ace-engine/src/service/api/transport.rs:17-36,66-80`). La capacità è verificata a livello di singolo metodo, non al momento della connessione (`crates/ace-engine/src/service/api/rpc.rs:359-371`).
-3. **Engine LocalSystem → database e filesystem:** backup, impostazioni, script e certificati risiedono nel perimetro dati dell'app. Sono sensibili anche quando il desktop non è aperto.
-4. **Browser → TUN → proxy HTTPS:** solo il traffico browser deve essere decifrato, la verifica TLS upstream è abilitata nelle configurazioni ordinarie; il proxy genera la propria CA e installa la root nello store di fiducia (`crates/ace-engine/src/service/proxy/mod.rs:578-590,676-692,897-919`).
-5. **MSI → SCM/watchdog:** i due servizi LocalSystem hanno policy di recovery e service ACL; la disinstallazione richiede controllo lock e shutdown con lease di manutenzione (`installer/installer.wxs:86-153,373-379,419-436`, `crates/ace-engine/src/service/api/operations_system.rs:105-149`).
+1. **Windows user → Tauri WebView → Rust backend → remoc:** The frontend sends `engine_call(op,args)` to native code. Native code reads `capability.token` and attaches it to RPC requests. The WebView does not receive the token. The WebView cannot request `shutdown` (`apps/ace-app/src-tauri/src/lib.rs:25-68,107-113`).
+2. **Other local processes → LocalSystem pipe:** The Windows pipe accepts local authenticated users with `accept_remote(false)`. The Linux engine socket uses `0666` (`crates/ace-engine/src/service/api/transport.rs:17-36,66-80`). Capability checks run per method, not during connection setup (`crates/ace-engine/src/service/api/rpc.rs:359-371`).
+3. **LocalSystem Engine → database and filesystem:** Backups, settings, scripts, and certificates reside in app data. They remain sensitive when the desktop app is closed.
+4. **Browser → TUN → HTTPS proxy:** Only browser traffic may be decrypted. Normal configurations enable upstream TLS verification. The proxy creates its CA and installs the root into the trust store (`crates/ace-engine/src/service/proxy/mod.rs:578-590,676-692,897-919`).
+5. **MSI → SCM/watchdog:** Two LocalSystem services have recovery policies and service ACLs. Uninstall requires a Lock check and shutdown with a maintenance lease (`installer/installer.wxs:86-153,373-379,419-436`, `crates/ace-engine/src/service/api/operations_system.rs:105-149`).
 
-## AB-01 — File del token IPC e ACL ereditabili
+<a id="ab-01--file-del-token-ipc-e-acl-ereditabili"></a>
+## AB-01 — IPC token file and inherited ACLs
 
-**Traccia statica.** L'MSI imposta sulla cartella `AceProgramDataDir` l'SDDL `D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)`, dove `BU` è il gruppo Users, `GRGX` include lettura e `OICI` abilita ereditarietà (`installer/installer.wxs:209-215`). `Settings::get_capability_token_path()` localizza il token sotto la directory `SharedData` (`crates/ace-engine/src/settings.rs:144-165`); `load_or_create_capability_token` genera 32 byte casuali e li persiste usando `std::fs::write`, senza un override ACL visibile nel percorso esaminato (`settings.rs:168-190`). In release `AppState` utilizza quel token con enforcement attivo (`crates/ace-engine/src/lib.rs:353-359`). Il client Tauri lo legge dal medesimo storage (`apps/ace-app/src-tauri/src/lib.rs:25-38`) e il server lo confronta in modo constant-time sulle chiamate protette (`crates/ace-engine/src/service/api/rpc.rs:359-371`, `security.rs:3-14`).
+**Static evidence:** The MSI sets SDDL `D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)` on `AceProgramDataDir`.
+Here `BU` means Users, `GRGX` includes read access, and `OICI` enables inheritance (`installer/installer.wxs:209-215`).
+`Settings::get_capability_token_path()` puts the token under `SharedData` (`crates/ace-engine/src/settings.rs:144-165`).
+`load_or_create_capability_token` generates 32 random bytes and writes them with `std::fs::write`.
+The reviewed path shows no ACL override (`settings.rs:168-190`).
+In release, `AppState` uses the token with enforcement enabled (`crates/ace-engine/src/lib.rs:353-359`).
+Tauri reads it from the same storage (`apps/ace-app/src-tauri/src/lib.rs:25-38`).
+The server compares it in constant time for protected calls (`crates/ace-engine/src/service/api/rpc.rs:359-371`, `security.rs:3-14`).
 
-**Confine ipotizzato.** Un account locale diverso da quello che usa Ace, membro di `BU`, legge il file ed effettua RPC di modifica come client provvisto del segreto. **Non** ne consegue automaticamente un bypass dei lock applicativi: gli handler dell'engine rimangono titolari delle loro policy.
+**Hypothesized boundary:** Another `BU` local account might read the file and send modifying RPCs with the token.
+This does **not** automatically bypass application Locks.
+The engine handlers still enforce their own policies.
 
-**Ulteriore segreto nella stessa directory.** Il database principale è collocato sotto `SharedData` (`crates/ace-engine/src/settings.rs:93-95`). Il campo SQLite `accounts.api_key` viene scritto in forma di stringa da `crates/ace-engine/src/db/account_repo.rs:19-32`; il client server riutilizza tale valore come credenziale API (`crates/ace-engine/src/service/clients/ace_server_client.rs:9-20`). Se `BU` ha accesso in lettura anche al database, il problema comprenderebbe una credenziale cloud, distinta dal token IPC. Questo è un rischio da verificare con **ACL e dati sintetici**, senza estrarre credenziali reali.
+**Another secret in the same directory:** The main database resides under `SharedData` (`crates/ace-engine/src/settings.rs:93-95`).
+`crates/ace-engine/src/db/account_repo.rs:19-32` writes `accounts.api_key` as a SQLite string.
+`crates/ace-engine/src/service/clients/ace_server_client.rs:9-20` uses it as an API credential.
+If `BU` can also read the database, the exposure includes a cloud credential separate from the IPC token.
+Verify this risk with **ACLs and synthetic data**.
+Do not extract real credentials.
 
-**Blocco di validazione:** DACL effettiva del file dopo creazione da parte del servizio; eventuali ACE esplicite/protezioni ereditate per token e database, owner e profilo di installazione; possibilità dell'account secondario di aprire il pipe e autorizzare una *sola operazione innocua* su dati fittizi.
+**Validation blocker:** Inspect effective file DACLs after service creation.
+Check explicit and inherited ACEs for the token and database, the owner, and installation profile.
+Check whether a second account can connect to the pipe and authorize *one harmless operation* on dummy data.
 
-**Verifica sicura:** in una **VM Windows monouso**, eseguire installazione con account test, osservare **soltanto le ACL** di cartella/token/database mediante `icacls` o `Get-Acl` e confrontarle da un secondo account standard. Usare soltanto un token e una risorsa fittizi isolati per un singolo RPC non distruttivo; non copiare, registrare o esporre credenziali reali.
+**Safe verification:** Use a **disposable Windows VM** and test accounts.
+Inspect **only ACLs** on the directory, token, and database with `icacls` or `Get-Acl`.
+Compare access from a second standard account.
+Use an isolated dummy token and resource for one nondestructive RPC.
+Never copy, log, or expose real credentials.
 
-**Correzione minima suggerita:** definire ACL esplicite sul **file** e verificare gli ACE post-creazione, con isolamento per SID dell'utente legittimo. Poiché la Tauri app gira come utente normale e deve leggere il token, **non** restringerlo semplicemente a SYSTEM rompendo l'IPC: progettare emissione/rotazione di capability per identità autorizzata oppure associazione sicura dell'identità peer lato engine, senza credenziale globale condivisa fra tutti gli utenti. Aggiungere test multi-account con ACL reali.
+**Suggested minimum fix:** Define explicit ACLs on the **file** and verify ACEs after creation.
+Isolate authorized user SIDs.
+Tauri runs as a normal user and must read the token.
+Do **not** simply restrict the token to SYSTEM and break IPC.
+Instead, design capability issuance/rotation for authorized identities or secure peer-identity binding in the engine.
+Do not share one global credential across all users.
+Add real ACL tests with multiple accounts.
 
-## AB-02 — Chiave privata della CA MITM nello stesso albero dati
+<a id="ab-02--chiave-privata-della-ca-mitm-nello-stesso-albero-dati"></a>
+## AB-02 — MITM CA private key in the same data tree
 
-**Traccia statica.** I certificati vengono collocati in `Settings::get_app_dir()/certs` (`crates/ace-engine/src/settings.rs:97-99`), con `mitm_ca.pem` e `mitm_ca.key` generati/gestiti dal servizio (`crates/ace-engine/src/service/proxy/mod.rs:897-915`). `CertAuthority::load_or_generate` scrive la **chiave privata** con `fs::write(key_path, &key_pem)` senza DACL per-file in quel percorso (`crates/mitm-proxy/src/ca.rs:199-223`). La directory madre è soggetta alla policy MSI di AB-01.
+**Static evidence:** Certificates reside in `Settings::get_app_dir()/certs` (`crates/ace-engine/src/settings.rs:97-99`).
+The service generates or manages `mitm_ca.pem` and `mitm_ca.key` (`crates/ace-engine/src/service/proxy/mod.rs:897-915`).
+`CertAuthority::load_or_generate` writes the **private key** with `fs::write(key_path, &key_pem)`.
+The reviewed path shows no file-specific DACL (`crates/mitm-proxy/src/ca.rs:199-223`).
+The parent directory follows the AB-01 MSI policy.
 
-**Confine ipotizzato.** Se `BU` eredita lettura effettiva anche su `mitm_ca.key` e la root pubblica è considerata attendibile sul dispositivo, un utente locale non autorizzato può leggere la chiave che consente di firmare certificati associati a quella CA. L'effettiva possibilità di intercettare connessioni resta condizionata al controllo del traffico e alla trust configuration del client.
+**Hypothesized boundary:** If `BU` inherits read access to `mitm_ca.key` and the public root is trusted on the device, an unauthorized local user can read the signing key.
+Actual traffic interception also requires traffic control and the relevant client trust configuration.
 
-**Blocco di validazione:** DACL reali su `certs` e `mitm_ca.key`, effettiva installazione nello store Root usato dai browser, eventuale gestione dell'ACL altrove o trust store differenziati.
+**Validation blocker:** Inspect actual DACLs on `certs` and `mitm_ca.key`.
+Verify root-store installation, other ACL management, and differences between trust stores.
 
-**Verifica sicura:** controllare con `Get-Acl`/`icacls` solo metadati di permessi in una VM nuova, con CA **di test**; esaminare il trust store senza esportare chiavi. Nessuna intercettazione di traffico reale.
+**Safe verification:** Use `Get-Acl` or `icacls` to inspect only permission metadata in a fresh VM.
+Use a **test CA**. Inspect trust stores without exporting keys.
+Do not intercept real traffic.
 
-**Correzione minima suggerita:** creazione atomica del file della CA con permessi espliciti **SYSTEM + Administrators** (ed eventuali SID di servizio strettamente necessari), verifica dell'accesso prima dell'installazione della root, migrazione/rigenerazione sicura se una vecchia chiave risultasse leggibile. Il client Tauri **non deve** avere accesso alla chiave privata. Test di ACL e trust store automatizzato su VM Windows.
+**Suggested minimum fix:** Create the CA key file atomically with explicit **SYSTEM + Administrators** permissions.
+Allow only other strictly necessary service SIDs.
+Verify access before installing the trusted root.
+Migrate or regenerate safely if an older key is readable.
+The Tauri client **must not** access the private key.
+Automate ACL and trust-store tests on Windows VMs.
 
-## AB-03 — RPC di lettura sensibile privo di capability
+<a id="ab-03--rpc-di-lettura-sensibile-privo-di-capability"></a>
+## AB-03 — Sensitive read RPC without capability
 
-**Traccia statica.** Su Windows il pipe consente R/W a `AU` (`crates/ace-engine/src/service/api/transport.rs:17-36`); su Linux il socket è impostato a `0666` (`:66-80`). Il metodo `check_capability(presented, required)` ritorna immediatamente successo per `required == false` (`crates/ace-engine/src/service/api/rpc.rs:359-371`). `export_backup` usa esplicitamente `false` e invoca l'export senza ulteriori controlli di identità nel percorso visto (`rpc.rs:438-447`; `operations_backup.rs:6-12`). L'oggetto `EngineBackup` include `network_blocks`, `custom_site_packs` e `deactivated_resistance_scripts`; ogni network block contiene nome, schedule, user rules e site pack connessi (`crates/ace-engine/src/manager/network/backup.rs:48-67,71-165`). Anche `get_all_network_blocks`, `get_user_rules`, `get_account_info` sono invocati con `false` (`rpc.rs:376-386,822-830,1360-1371`).
+**Static evidence:** On Windows, the pipe grants read/write to `AU` (`crates/ace-engine/src/service/api/transport.rs:17-36`).
+The Linux socket uses `0666` (`:66-80`).
+`check_capability(presented, required)` succeeds immediately when `required == false` (`crates/ace-engine/src/service/api/rpc.rs:359-371`).
+`export_backup` passes `false` and exports without additional identity checks in the reviewed path (`rpc.rs:438-447`; `operations_backup.rs:6-12`).
+`EngineBackup` includes `network_blocks`, `custom_site_packs`, and `deactivated_resistance_scripts`.
+Each Network Block includes its name, schedule, user rules, and attached site packs (`crates/ace-engine/src/manager/network/backup.rs:48-67,71-165`).
+`get_all_network_blocks`, `get_user_rules`, and `get_account_info` also pass `false` (`rpc.rs:376-386,822-830,1360-1371`).
 
-**Confine ipotizzato.** Un altro account locale, ammesso al pipe dal sistema operativo, ottiene preferenze e regole che appartengono al profilo di Ace senza il token. Non è provato dalla sola sorgente se il prodotto preveda espressamente condivisione di queste informazioni fra tutti gli utenti della macchina.
+**Hypothesized boundary:** Another local account admitted by the OS might read another user's Ace rules and preferences without a token.
+The source alone does not establish whether the product intentionally shares this information across machine users.
 
-**Blocco di validazione:** modello d'uso multiutente, ACL Windows effettive del pipe, semantica del broker `remoc` su tutte le piattaforme e osservazione del risultato con dati dummy.
+**Validation blocker:** Establish the multi-user privacy model and actual Windows pipe ACLs.
+Verify `remoc` broker behavior on each platform with dummy data.
 
-**Verifica sicura:** su macchina virtuale isolata con due account fittizi e backup sintetico, chiedere `export_backup(None)` con client remoc locale e verificare unicamente se il risultato contiene un marker fittizio. Non consultare backup di utenti reali.
+**Safe verification:** Use an isolated VM with two dummy accounts and a synthetic backup.
+Call `export_backup(None)` through a local remoc client.
+Check only for a synthetic marker in the result.
+Do not inspect real users' backups.
 
-**Correzione minima suggerita:** trattare tutte le letture con contenuto personale (backup, network blocks, user rules, account info, dashboard) come operazioni da autorizzare; mantenere eventualmente anonimi solo `ping` e versione. Distinguere autenticazione al pipe da autorizzazione ai dati, introducendo test per client `None`, token errato, token valido e SID alternativo.
+**Suggested minimum fix:** Authorize reads of personal data, including backups, Network Blocks, user rules, account information, and dashboard data.
+If necessary, keep only `ping` and version anonymous.
+Distinguish pipe connection access from data authorization.
+Test `None`, an incorrect token, a valid token, and a different SID.
 
-## AB-04 — Account-key deep link non associato a una richiesta di login
+<a id="ab-04--account-key-deep-link-non-associato-a-una-richiesta-di-login"></a>
+## AB-04 — Account-key deep link without a pending login
 
-**Traccia statica.** Il protocollo `aceblocker://` permette solo `/account/api-key` (`crates/ace-engine/src/protocol.rs:23-33,91-176`). Il receiver carica un `apiKey` direttamente dal frammento/query ricevuti e chiama l'RPC autenticato `setApiKey` (`crates/ace-engine/src/bin/ace_redirect.rs:23-72`). L'operazione aggiorna il credential store e poi verifica lo stato Pro (`crates/ace-engine/src/service/api/operations_account.rs:44-63`). Non è visibile in questi percorsi una correlazione con un nonce/stato di login avviato dall'app.
+**Static evidence:** The `aceblocker://` protocol allows only `/account/api-key` (`crates/ace-engine/src/protocol.rs:23-33,91-176`).
+The receiver reads `apiKey` from the URL fragment or query and calls authenticated `setApiKey` (`crates/ace-engine/src/bin/ace_redirect.rs:23-72`).
+The operation updates credential storage and verifies Pro status (`crates/ace-engine/src/service/api/operations_account.rs:44-63`).
+The reviewed paths show no binding to an app-generated login nonce or state.
 
-**Confine ipotizzato.** Un sito non attendibile induce l'utente ad aprire uno schema URI che lega Ace a una credenziale di un account diverso, con confusione sull'identità e sugli eventuali backup/sincronizzazioni. La conferma del browser, la provenienza del link e il comportamento del server dei token sono esterni al repository.
+**Hypothesized boundary:** An untrusted website could persuade a user to open a URI that binds Ace to another account credential.
+This can cause identity confusion and affect backups or synchronization.
+Browser confirmation, link origin, and server token behavior are outside this repository.
 
-**Blocco di validazione:** procedura login del sito, UX dei browser, proprietà delle API key e capacità concreta di sostituire la sessione senza una login challenge legittima.
+**Validation blocker:** Review website login, browser UX, API-key properties, and actual ability to replace a session without a valid login challenge.
 
-**Verifica sicura:** usare due identità sintetiche in VM con browser di test; osservare soltanto se una callback inattesa viene accettata dall'engine. Nessun account cloud reale.
+**Safe verification:** Use two synthetic identities and a test browser in a VM.
+Observe whether the engine accepts an unexpected callback.
+Do not use real cloud accounts.
 
-**Correzione proposta se confermato:** associare callback a uno state/nonce one-time generato dall'app, con expiry e binding dell'operazione, più conferma esplicita quando si cambia identità. La allowlist di route attuale è una difesa positiva ma non un binding di sessione.
+**Proposed fix if confirmed:** Bind callbacks to an app-generated, one-time state/nonce.
+Set expiry and bind the initiated operation.
+Require explicit confirmation for account changes.
+The current route allowlist is a useful defense, but it does not bind a session.
 
-## AB-05 — Accettazione concorrente di client remoc senza quota evidente
+<a id="ab-05--accettazione-concorrente-di-client-remoc-senza-quota-evidente"></a>
+## AB-05 — Concurrent remoc clients without a visible quota
 
-**Traccia statica.** Ogni connessione accettata dalla listener viene servita in un `tokio::spawn`, usando `remoc::Cfg::default()` senza limite globale di connessioni visibile in questo file (`crates/ace-engine/src/service/api/transport.rs:29-63`). I client locali possono aprire il pipe prima della verifica della capability.
+**Static evidence:** Each accepted connection gets a `tokio::spawn` task with `remoc::Cfg::default()`.
+The reviewed file shows no global connection limit (`crates/ace-engine/src/service/api/transport.rs:29-63`).
+Local clients can open the pipe before capability verification.
 
-**Confine ipotizzato.** Un processo non autorizzato consuma risorse del servizio privilegiato con connessioni inattive. Mancano la quantificazione delle risorse, le eventuali mitigazioni interne di remoc e la misura di un impatto reale.
+**Hypothesized boundary:** An unauthorized process might consume privileged service resources through idle connections.
+The review did not measure resource use, internal remoc mitigations, or actual service impact.
 
-**Verifica sicura:** test sintetico con numero **piccolo, limitato e monitorato** di client in VM disposable e limiti OS di CPU/memoria/processi/tempo, interrompendo al primo effetto; mai contro il servizio condiviso. Possibili rimedi: semaforo concorrente, timeout handshake/inattività, limiti di payload e metriche.
+**Safe verification:** Run a **small, bounded, monitored** number of synthetic clients on a disposable VM.
+Apply OS limits for CPU, memory, processes, and time.
+Stop at the first adverse effect.
+Never test against a shared service.
+Possible controls include a connection semaphore, handshake/idle timeouts, payload limits, and metrics.
 
-## AB-06 — Sorgenti URL e file usate da un engine privilegiato
+<a id="ab-06--sorgenti-url-e-file-usate-da-un-engine-privilegiato"></a>
+## AB-06 — URL and file sources handled by a privileged engine
 
-**Traccia statica.** Il comando `create_site_pack` prende sorgenti dall'utente e applica gating Pro (`crates/ace-engine/src/service/api/operations_site_pack.rs:43-80`); la creazione RPC richiede capability (`rpc.rs:1124-1132`). L'importer usa l'URL come target di `download_file_with_limit` oppure apre un percorso `File` così come configurato (`crates/ace-engine/src/core/network_block/site_pack/importer/importer.rs:58-105,124-135`); il downloader usa reqwest con timeout 10/60 secondi e tetto di 2 GiB (`crates/ace-engine/src/core/utils/file_download.rs:27-49,59-124`). L'engine è un servizio privilegiato in produzione.
+**Static evidence:** `create_site_pack` accepts user sources and checks Pro entitlement (`crates/ace-engine/src/service/api/operations_site_pack.rs:43-80`).
+The RPC creation call requires capability (`rpc.rs:1124-1132`).
+The importer passes a URL to `download_file_with_limit` or opens a configured `File` path (`crates/ace-engine/src/core/network_block/site_pack/importer/importer.rs:58-105,124-135`).
+The reqwest downloader uses 10/60-second timeouts and a 2 GiB limit (`crates/ace-engine/src/core/utils/file_download.rs:27-49,59-124`).
+The production engine runs as a privileged service.
 
-**Confine ipotizzato:** la funzione di import legittima potrebbe estendersi a risorse locali o indirizzi di rete che il processo chiamante non può accedere direttamente. **Non** è stato dimostrato un esito di lettura dati, un SSRF con conseguenze verso un'altra identità né un aggiramento dei controlli Pro/capability. Non trattare la scelta intenzionale dell'utente di importare file come vulnerabilità di per sé.
+**Hypothesized boundary:** Legitimate import might access local resources or network addresses unavailable to the calling user.
+No data exposure, cross-identity SSRF consequence, or Pro/capability bypass was demonstrated.
+Do not treat an intentional user file import as a vulnerability by itself.
 
-**Blocco di validazione:** destinazioni permesse dal prodotto, filtro dei protocolli/redirect, natura dei permessi del processo, modalità con cui l'eventuale contenuto diviene osservabile, e limiti infrastrutturali non presenti nel repository. Test soltanto con file dummy e server loopback isolato, mai servizi interni o di produzione. Se il confine è reale, limitare `File` a origini autorizzate e le URL ai protocolli/destinazioni previsti, ricontrollando redirect.
+**Validation blocker:** Determine permitted destinations, protocols, redirects, process privileges, data visibility, and infrastructure limits outside this repository.
+Test only with dummy files and an isolated loopback server.
+Do not target internal or production services.
+If the boundary is real, restrict `File` to authorized origins.
+Restrict URLs to permitted protocols and destinations.
+Recheck redirects.
 
-## Hardening senza vulnerabilità dimostrata
+<a id="hardening-senza-vulnerabilità-dimostrata"></a>
+## Hardening without a demonstrated vulnerability
 
-- **WebView:** `apps/ace-app/src-tauri/tauri.conf.json` ha `app.security.csp: null` e `withGlobalTauri: true`. Il frontend può fare chiamate native con capacità dell'app (eccetto shutdown). Una CSP restrittiva, una allowlist di comandi/operazioni e una revisione degli ingressi HTML sono consigliate, ma **non è stato dimostrato un percorso XSS**; non attribuire a questo solo fatto una vulnerabilità.
-- **Segreti durante la generazione:** il token viene scritto con `std::fs::write`; valutare persistenza fail-closed e creazione esclusiva/atomica per evitare permessi iniziali involontari, soprattutto dopo reinstallazioni e in presenza di preesistenze. Non è dimostrata una race sfruttabile.
-- **Delivery di contenuti:** la verifica SHA-256 degli script è utile, ma hash e URL arrivano dal metadata del server. Eventuale verifica firma indipendente, pinning di chiavi o manifest firmato è decisione di threat model, non un incidente dimostrato (`crates/ace-engine/src/service/content_updater.rs:320-409`).
-- **Dipendenze e supply chain:** `Cargo.lock` e `apps/ace-app/bun.lock` sono presenti, ma **nessuna verifica CVE aggiornata** o scansione con advisory database è stata eseguita. La pipeline release usa alcuni GitHub Actions taggati (`.github/workflows/release.yml`) e genera manifesto SHA-256: valutare action pin per commit, attestazioni e firma autentica MSI, distinta dal semplice hash.
-- **Unsafe/FFI:** WinTun, Windows networking, Linux/macOS TUN e funzioni packet/process utilizzano blocchi `unsafe`. L'inventario li ha identificati, ma **nessuna prova di memory corruption** e nessun fuzzing sono stati svolti. Eseguire fuzzing/strumentazione dei parser e test ABI in sandbox dedicato.
-- **Policy di installazione:** su `installer/installer.wxs:419-436` il controllo lock precede la preparazione manutenzione, non il contrario come afferma un commento adiacente; allineare commenti, design e risultati di un reale test MSI, senza supporre un bypass attivo.
+- **WebView:** `apps/ace-app/src-tauri/tauri.conf.json` uses `app.security.csp: null` and `withGlobalTauri: true`. The frontend can call native functions with app capabilities, except shutdown. Consider a restrictive CSP, command/operation allowlist, and HTML input review. **No XSS path was demonstrated.** Do not classify these settings alone as a vulnerability.
+- **Secret generation:** The token is written with `std::fs::write`. Consider fail-closed persistence and exclusive/atomic creation to prevent unintended initial permissions after reinstall or with existing files. No exploitable race was demonstrated.
+- **Content delivery:** Script SHA-256 verification is useful, but hashes and URLs come from server metadata. Independent signatures, key pinning, or signed manifests are threat-model decisions, not proven incidents (`crates/ace-engine/src/service/content_updater.rs:320-409`).
+- **Dependencies and supply chain:** `Cargo.lock` and `apps/ace-app/bun.lock` exist. **No current CVE check** or advisory database scan was performed. The release pipeline uses some tagged GitHub Actions (`.github/workflows/release.yml`) and creates an SHA-256 manifest. Consider commit-pinned actions, attestations, and real MSI signing. Hashes alone do not prove authenticity.
+- **Unsafe/FFI:** WinTun, Windows networking, Linux/macOS TUN, and packet/process functions contain `unsafe` code. The inventory located these areas. **No memory corruption proof** or fuzzing was performed. Run parser fuzzing, instrumentation, and ABI tests in a dedicated sandbox.
+- **Installer policy:** At `installer/installer.wxs:419-436`, the Lock check precedes maintenance preparation. An adjacent comment states the reverse. Align the comment, design, and actual MSI test results. Do not assume a working bypass.
 
-## Controlli positivi osservati nel sorgente
+<a id="controlli-positivi-osservati-nel-sorgente"></a>
+## Positive controls observed in source
 
-- Nessun listener HTTP alternativo per il control plane nell'architettura dichiarata; remoc IPC nativo e `accept_remote(false)` Windows (`docs/IPC_ARCHITECTURE.md`, `transport.rs:29-36`).
-- Metodi RPC mutativi controllano la capability per metodo; `tokens_match` usa digest SHA-256 e `subtle::ConstantTimeEq` (`rpc.rs:359-371`, `security.rs:3-14`).
-- La UI non può chiedere `shutdown` tramite `engine_call`; l'engine ricontrolla i lock e richiede lease del watchdog prima dello shutdown (`apps/ace-app/src-tauri/src/lib.rs:44-58`, `operations_system.rs:105-149`).
-- Lock e autorizzazione Pro sono verificati anche negli handler sensibili, non solo nel frontend (`operations_site_pack.rs:43-80,83-128`).
-- Downloader con timeout/size cap e ZIP extraction con controllo dei segmenti di percorso e dimensione totale (`crates/ace-engine/src/core/utils/file_download.rs:27-49,219-297`).
-- Le operazioni `debug` più pericolose sono compile-gated e l'enforcement della capability è abilitato in release (`crates/ace-engine/src/service/api/rpc.rs:510-560`, `crates/ace-engine/src/lib.rs:353-359`).
-- Permessi restrittivi per il socket separato del watchdog Linux (`crates/ace-watchdog/src/linux.rs:350-369`).
+- No alternate HTTP listener exists for the declared control plane. It uses native remoc IPC and Windows `accept_remote(false)` (`docs/IPC_ARCHITECTURE.md`, `transport.rs:29-36`).
+- Modifying RPC methods check capability per method. `tokens_match` uses SHA-256 digests and `subtle::ConstantTimeEq` (`rpc.rs:359-371`, `security.rs:3-14`).
+- The UI cannot request `shutdown` through `engine_call`. The engine rechecks Locks and requires a watchdog lease before shutdown (`apps/ace-app/src-tauri/src/lib.rs:44-58`, `operations_system.rs:105-149`).
+- Sensitive handlers verify Lock and Pro authorization independently of the frontend (`operations_site_pack.rs:43-80,83-128`).
+- The downloader has timeouts and size limits. ZIP extraction validates path components and total size (`crates/ace-engine/src/core/utils/file_download.rs:27-49,219-297`).
+- Dangerous `debug` operations are compile-gated, and release enables capability enforcement (`crates/ace-engine/src/service/api/rpc.rs:510-560`, `crates/ace-engine/src/lib.rs:353-359`).
+- The separate Linux watchdog socket has restrictive permissions (`crates/ace-watchdog/src/linux.rs:350-369`).
 
-## Copertura e lacune
+<a id="copertura-e-lacune"></a>
+## Coverage and gaps
 
-| Componente | Analisi statica svolta | Lacuna decisiva |
+| Component | Static analysis performed | Critical gap |
 | --- | --- | --- |
-| `ace-engine` API/IPC/autorizzazione | Percorsi Tauri → remoc → handler, token, backup e operazioni di sistema | Client multiutente reale, verifica delle 63 chiamate con matrice di permessi |
-| `ace-engine` lock/schedule/backup | Contratti e flussi lock, shutdown e import; test esistenti inventariati | State-machine test/fuzz/restore differenziale e race |
-| `ace-watchdog` e protocollo | Architettura, permessi e integrazione installer esaminati | Verifica heartbeat/recovery/SCM con perdita servizio reale in VM |
-| `mitm-proxy` e CA | Generazione/salvataggio chiavi, TLS interception e trust policy | ACL root key, TLS/cert chain e browser con client cert |
-| `ace-tun`, networking, `ace-domain-blocklist` | Inventario `unsafe`/FFI, indirizzamento e input trust boundaries | Fuzz packet parsing, crash containment, VPN enforcement e driver |
-| `ace-app` Svelte/Tauri | Bridge IPC, capability, CSP, capabilities e comandi nativi | Revisione esaustiva XSS su tutte le route e test WebView nativi |
-| `installer` WiX | DACL, SCM, recovery, root cert, gate uninstall, custom actions | MSI effettivo, repair/upgrade/uninstall e permessi file su clean install |
-| `.github/workflows`, dipendenze | Pipeline release, permessi, lockfile e manifesti | CVE database, provenance attestation e verifica supply chain |
-| Sito/account cloud esterno | Solo call-site e contratto osservabili nel desktop | **Fuori repository**: audit separato necessario |
+| `ace-engine` API/IPC/authorization | Tauri → remoc → handler paths, token, backup, and system operations | Real multi-user clients and permission matrix for 63 calls |
+| `ace-engine` Lock/schedule/backup | Lock, shutdown, and import contracts/flows; existing tests inventoried | State-machine tests, fuzzing, differential restore, and races |
+| `ace-watchdog` and protocol | Architecture, permissions, and installer integration reviewed | Real VM heartbeat/recovery/SCM tests with service failures |
+| `mitm-proxy` and CA | Key generation/storage, TLS interception, and trust policy | Root-key ACLs, TLS/certificate chain, and browsers with client certificates |
+| `ace-tun`, networking, `ace-domain-blocklist` | `unsafe`/FFI inventory, routing, and input trust boundaries | Packet-parser fuzzing, crash containment, VPN enforcement, and drivers |
+| `ace-app` Svelte/Tauri | IPC bridge, capability, CSP, native commands, and capabilities | Full XSS review of all routes and native WebView tests |
+| `installer` WiX | DACL, SCM, recovery, root certificate, uninstall gates, custom actions | Real MSI repair/upgrade/uninstall and clean-install file permissions |
+| `.github/workflows`, dependencies | Release pipeline, permissions, lockfiles, and manifests | CVE database, provenance attestation, and supply-chain verification |
+| External cloud website/account | Only desktop call sites and contracts are visible | **Outside repository:** separate audit needed |
 
-**Metriche del run:** 714 file tracciati inventariati; 4 deleghe di reconnaissance tentate e fallite; 0 verificatori/critic/hunter operativi; 0 test di codice bersaglio; 0 verifiche runtime Windows/MSI; 0 validazioni advisory online; 0 vulnerabilità formalmente confermate. Nessun precedente `coverage-ledger.json` compatibile individuato per questo run. Il profilo `standard` richiesto dalla skill **non è stato portato a termine**; la copertura è parziale.
+**Run metrics:** 714 tracked files inventoried; 4 reconnaissance delegations attempted and failed; 0 operational verifiers/critics/hunters; 0 target-code tests; 0 Windows/MSI runtime checks; 0 online advisory validations; 0 formally confirmed vulnerabilities.
+No compatible earlier `coverage-ledger.json` was found for this run.
+The required `standard` skill profile **did not finish**.
+Coverage remains partial.
 
-### Piano di chiusura suggerito
+<a id="piano-di-chiusura-suggerito"></a>
+### Suggested closure plan
 
-1. **Bloccare una release pubblica** finché AB-01/AB-02/AB-03 non sono stati risolti o confutati con controlli ACL su VM Windows pulita e due identità locali distinte.
-2. Applicare test di regressione per ACL, letture RPC senza credenziale, stato della CA, riavvio servizi e uninstall gate; eseguire in VM offline usa-e-getta con dataset sintetici e output non sensibili.
-3. Rieseguire la skill quando i revisori indipendenti NovaGPT e un sandbox OS-enforced siano disponibili, completando reconnaissance, hunter waves, verifier, critic, `findings.json` e i due validator della skill.
-4. Pianificare separatamente review completa di frontend e moduli `unsafe`, e valutazione del sito/cloud; non trasferire automaticamente queste lacune alla categoria di bug confermato.
+1. **Block a public release** until AB-01/AB-02/AB-03 are resolved or disproved. Use ACL checks on a clean Windows VM with two separate local identities.
+2. Add regression tests for ACLs, RPC reads without credentials, CA state, service restart, and uninstall gates. Use disposable offline VMs, synthetic datasets, and nonsensitive output.
+3. Rerun the skill when independent NovaGPT reviewers and an OS-enforced sandbox are available. Complete reconnaissance, hunter waves, verifier, critic, `findings.json`, and both skill validators.
+4. Plan separate reviews of the full frontend, `unsafe` modules, and cloud website. Do not automatically classify these gaps as confirmed bugs.
 
-### Integrità del report
+<a id="integrità-del-report"></a>
+### Report integrity
 
-Questo documento è stato scritto come **artefatto del repository**, senza modificare codice applicativo né simulare una verifica riuscita. I numeri `file:line` fanno riferimento al commit indicato. I dati sconosciuti sono riportati esplicitamente come `needs_validation`; non sono state effettuate prove su utenti, servizi o host reali.
+This document is a **repository artifact**.
+No application code changed, and no successful verification was simulated.
+All `file:line` references point to the reviewed commit.
+Unknowns remain explicitly marked `needs_validation`.
+No tests ran against real users, services, or hosts.
