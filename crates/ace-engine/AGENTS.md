@@ -1,23 +1,23 @@
 # Ace Engine Project Context
 
-This file provides the necessary context for AI models to understand the project structure, core concepts, and development policies of the **ace-engine**.
+This document defines the structure, concepts, and development rules of **ace-engine**.
 
 ## 🚀 Project Overview
 
-Ace Engine is a high-performance network and program blocker. It is built as a **service engine** that does not manage a UI directly but exposes **typed remoc RPC** via Named Pipes / Unix sockets to local clients.
+Ace Engine blocks network and program activity. It runs as a **service engine** without a UI. Local clients use **typed remoc RPC** over Named Pipes or Unix sockets.
 
-The core logic resides in the `src/core/` module, while the `src/` directory contains the service layer, database management, and the **system-wide MITM proxy** (`src/service/proxy/mod.rs`) which coordinates URL evaluation and script injection.
+The `src/core/` module contains core logic. The `src/` directory contains services, database management, and the **system-wide MITM proxy** (`src/service/proxy/mod.rs`). The proxy coordinates URL checks and script injection.
 
 Traffic redirection is handled by the pure-Rust **[`ace-tun`](../ace-tun/)**
 crate — a cross-platform transparent redirect (WinTun on Windows, TUN on
 Linux, utun on macOS) that replaces the earlier WinDivert-based
 `proxy-redirect`.
 See [`ace-tun/README.md`](../ace-tun/README.md) for architecture. The `ace-tun` and `mitm-proxy` crates are workspace members under `crates/`, so engine builds always use the in-repo sources rather than remote Git revisions.
-Only browser processes are routed through the MITM proxy; other applications'
-connections are passed through or blocked at the kernel level without decryption.
-For HTTP/3, the TUN recognizes browser QUIC Initials even on alternative UDP
-ports, and forwards selected flows only to the local H3 endpoint. Unattributed
-or migrated QUIC is rejected. The engine's H3 SNI policy permits ONLY hosts
+Route only browser processes through the MITM proxy.
+Pass through or block other application connections at the kernel level. Do not decrypt them.
+For HTTP/3, the TUN detects browser QUIC Initials, including alternative UDP ports.
+It forwards selected flows only to the local H3 endpoint.
+Reject QUIC flows that are unattributed or migrated. The engine's H3 SNI policy permits ONLY hosts
 currently blocked at hostname level; hosts needing URL/path/Resistance inspection
 must use the TCP/CONNECT fallback, which retains the TLS client-certificate
 preflight. Do not relax this without real native/browser/Windows tests.
@@ -28,7 +28,7 @@ preflight. Do not relax this without real native/browser/Windows tests.
 
 ### 1. Network Blocks
 
-A **Network Block** is a bundle of rules used to decide what to block and when. It consists of:
+A **Network Block** contains rules that determine what to block and when:
 
 - **User Defined Rules**: Regex-based rules (`src/core/network_block/regex_rules.rs`).
 - **Exceptions**: Rules that override blocks (`src/core/network_block/mod.rs`).
@@ -42,15 +42,15 @@ A **Network Block** is a bundle of rules used to decide what to block and when. 
 
 ### 2. Domain identifiers
 
-- `NetworkBlockId` and other internally generated UUID identities use UUID v7
-  where their actual contract requires it.
+- Use UUID v7 for `NetworkBlockId` and other generated UUID identities when their contracts require it.
 - `SitePackId` is an opaque, validated, non-empty **single filesystem
   component**, not necessarily a UUID. Canonical catalog IDs such as
   `pack-adult-free` are legitimate. Incoming/persisted IDs must be validated.
 - `RemoteSitePackId` obeys the same safe-component constraints; `ScriptId`
   is a non-empty string identity validated at the catalog, DB and RPC boundaries.
-- Do not assume every domain identity is a UUID or admit empty IDs through
-  `Default`/`From` constructors. Keep typed, fallible parsing at trust boundaries.
+- Do not treat every domain identity as a UUID.
+  Do not permit empty IDs through `Default` or `From` constructors.
+  Keep typed, fallible parsing at trust boundaries.
 
 **Pre-release policy:** Ace Blocker has not yet been publicly released. No
 backward compatibility for legacy program data, old databases, historical
@@ -61,7 +61,7 @@ typed IPC. The binding decisions are in
 
 ### 3. Site Packs
 
-Static or dynamic databases of sites/hosts to be blocked.
+Site Packs contain static or dynamic databases of blocked sites and hosts.
 
 - **Implementation:** One **SQLite** database per pack (`pack.db`, XXH3-64 host
   hashes). Membership is queried lazily with a bounded per-pack cache of
@@ -76,9 +76,9 @@ Static or dynamic databases of sites/hosts to be blocked.
 
 ### 3. Schedule & Locks
 
-- **Schedule**: Defines active time windows. Uses bitmasks for weekdays.
-- **Lock**: Implements a "strictness" policy. A lock can only be changed to a stricter state (e.g., from Unlocked to LockedUntilEnd).
-- **Active Lock Constraints**: When a lock is active, it prevents weakening the blocking rules. Specifically:
+- **Schedule**: Defines active time windows. Uses weekday bitmasks.
+- **Lock**: Enforces a strictness policy. Change a lock only to a stricter state (for example, Unlocked to LockedUntilEnd).
+- **Active Lock Constraints**: An active lock prevents these reductions in blocking rules:
   - **No Deletion**: The Network Block cannot be deleted.
   - **No Exceptions**: Adding new exceptions to the block is prohibited.
   - **No Disconnecting Site Lists**: Removing connections to Sites Lists is prohibited.
@@ -93,7 +93,7 @@ Static or dynamic databases of sites/hosts to be blocked.
 
 ### 4. Resistance Scripts
 
-Custom JavaScript injected into specific websites to reduce their addictive qualities (e.g., removing infinite scroll).
+Resistance Scripts inject JavaScript into specific websites to reduce distracting features, such as infinite scroll.
 
 - **Location:** `src/core/common/injectable_scripts.rs`
 - **Management:** Managed via an `InjectableScriptTree` for fast domain-based script lookup. Script entries are identified by a `ScriptId` (UUID).
@@ -104,13 +104,13 @@ Custom JavaScript injected into specific websites to reduce their addictive qual
 
 ### Descriptive Variable Naming
 
-- **No Single-Letter Variables**: Avoid using single letters for variables (e.g., `i`, `j`, `k`, `x`, `y`). They make the code unreadable and harder to maintain.
-- **Be Descriptive**: Always use descriptive names that convey the purpose of the variable. The compiler doesn't care about naming, but humans (and AI) do. We aim for stable, maintainable software, not competitive programming hacks.
+- **No Single-Letter Variables**: Do not use single-letter variable names (for example, `i`, `j`, `k`, `x`, `y`). These names make code harder to read and maintain.
+- **Be Descriptive**: Use variable names that show their purpose. Clear names help developers and AI tools maintain stable software.
 
 ### Model-Based Design & Modularization
 
-- **Make Invalid States Unrepresentable**: When facing complex logic, avoid huge functions. Instead, design custom data structures (like enums with data) that only allow valid states. This eliminates entire classes of bugs and makes the code self-documenting (e.g., `LockState` in `lock.rs`).
-- **Function Splitting**: If a task is big, break it down into smaller, focused functions.
+- **Make Invalid States Unrepresentable**: For complex logic, use types that permit only valid states. Prefer focused functions over large functions. For example, use `LockState` in `lock.rs`.
+- **Function Splitting**: Split large tasks into small, focused functions.
 - **Meaningful type boundaries, not type proliferation**: Reuse the existing validated `nutype` domain types in `src/core/common/domain_types.rs`; introduce new ones only when they protect a demonstrated identity, secret or invariant. Prefer existing standard types where sufficient. Validate untrusted data at the correct boundary without changing remoc/DB formats in an incidental refactor.
 - **Feature ownership before sharing**: Similar Rust code in unrelated subsystems is not automatically one abstraction. Keep domain semantics with their owner; avoid broad `pub` exposure, global utilities, trait layers or crate splits without a concrete boundary.
 - **Refactoring workflow**: Read root `../../AGENTS.md`, `../../docs/ai/REFACTORING_PLAYBOOK.md` and the relevant sections of `../../docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md`, `../../docs/ai/DOMAIN_TYPES.md` and `../../docs/ai/REVIEW_GATES.md`. Check call sites, error/persistence order and tests before editing. Local API behavior, lock checks, process isolation and proxy interception are never negotiable.
@@ -121,7 +121,7 @@ Custom JavaScript injected into specific websites to reduce their addictive qual
 
 ### Git Commit Policy
 
-- **Commit After Tasks**: ALWAYS commit your changes after successfully finishing a task.
+- **Commit After Tasks**: ALWAYS commit changes after successful task completion.
 - **Message Format**: Use conventional commit prefixes:
   - `feat:` for new features
   - `fix:` for bug fixes
@@ -131,11 +131,11 @@ Custom JavaScript injected into specific websites to reduce their addictive qual
 
 ### No Random Assumptions
 
-- **Ask if Unsure**: If a requirement is ambiguous or you're unsure about the intended behavior (e.g., locking constraints), ALWAYS ask the user for clarification instead of assuming a "safe" or "correct" path. We prefer stability and correctness over fast guesses.
+- **Ask if Unsure**: If a requirement or behavior is unclear, ALWAYS ask for clarification. This includes uncertain locking constraints. Do not assume an implementation is safe or correct.
 
 ### Generated Ace Server API Client
 
-- **Never hand-edit `src/ace_server_api/`**: it is generated code. Manual edits there are useless because the next client regeneration overwrites them.
+- **Never hand-edit `src/ace_server_api/`**: This directory contains generated code. Client regeneration overwrites manual edits.
 - The OpenAPI generator only concerns the external Ace Server client. Local control methods must be added to the remoc trait and Tauri facade directly.
 - Do **not** resolve Clippy or formatting findings by patching files under `src/ace_server_api/`; address the generation source/tooling instead.
 
@@ -153,7 +153,7 @@ Custom JavaScript injected into specific websites to reduce their addictive qual
 
 ### 🧠 Network Manager (`src/manager/network/`)
 
-The main orchestrator of the system.
+This module coordinates the system.
 
 - **Policy:** Keep rule metadata in memory. Site-pack membership uses lazy,
   indexed SQLite lookups behind a bounded per-pack cache; never preload all
@@ -162,13 +162,13 @@ The main orchestrator of the system.
 
 ### 🛡️ Proxy Service (`src/service/proxy/mod.rs`)
 
-The MITM proxy that intercepts traffic. It consults the `NetworkManager` for every request to determine if it should be blocked, allowed, or modified (script injection).
+The MITM proxy intercepts traffic. It asks `NetworkManager` whether to block, allow, or modify each request (script injection).
 
 ---
 
 ## 🛡 Process Hardening (user-mode)
 
-Tamper protection is user-mode only (no kernel driver):
+Tamper protection operates in user mode only (no kernel driver):
 
 - **File hiding**: app-data and installation directories are marked
   HIDDEN+SYSTEM via `SetFileAttributesW` (`hide_important_files`,
@@ -198,10 +198,10 @@ Tamper protection is user-mode only (no kernel driver):
 - **Legacy console guardian**: `ace-engine.exe --guardian` remains only for
   release console runs; it is not the installed production watchdog.
 
-The engine service still **does not accept ordinary SCM STOP** (`sc stop` and
-Services UI stop are rejected). Authorized shutdown remains API-driven and
-reports `SERVICE_STOPPED` before a clean service exit, so SCM recovery remains
-reserved for unexpected failures. The debug-only `watchdog-heartbeat.pause`
+The engine service **rejects ordinary SCM STOP** (`sc stop` and the Services UI).
+Authorized shutdown still uses the authenticated API.
+The engine reports `SERVICE_STOPPED` before clean exit.
+SCM recovery applies only to unexpected failures. The debug-only `watchdog-heartbeat.pause`
 file under ProgramData (or `ACE_WATCHDOG_DEV_DROP_HEARTBEAT`) can suppress
 heartbeat replies while the process stays alive for hang-recovery testing;
 release builds ignore both.
@@ -236,9 +236,9 @@ forcing re-login. The key is delivered via:
   `api_key_from_fragment`) and forwards the key as a JSON body to the running
   engine service.
 
-Never log the raw API key: `handle_uri_scheme` / `ace-redirect` print only the
-path (not the full URI), and `AccountManager::verify_pro_status_remote` logs
-only the key length.
+Never log the raw API key.
+`handle_uri_scheme` and `ace-redirect` print only the path, not the full URI.
+`AccountManager::verify_pro_status_remote` logs only the key length.
 
 ---
 
@@ -254,10 +254,10 @@ only the key length.
 
 ## 🦀 Rust skill catalog (conditional)
 
-These names document earlier Rust skill references. Consult them only if their
-actual `SKILL.md` exists and can be inspected in the active environment.
-A list is not proof of availability; do not auto-install external code. Root
-security boundaries and Ace-specific architecture/type guides take priority.
+These names identify earlier Rust skill references.
+Consult a skill only when its `SKILL.md` is available for inspection.
+A list does not prove availability. Do not auto-install external code.
+Root security boundaries and Ace-specific architecture/type guides take priority.
 
 The following Rust skill references may help with idiomatic patterns, ownership, error handling, and testing **when their actual instructions are accessible**.
 
@@ -275,7 +275,7 @@ The following Rust skill references may help with idiomatic patterns, ownership,
 
 ## 📚 External Library Documentation
 
-To ensure accuracy and avoid using deprecated or non-existent APIs, **ALWAYS refer to the local documentation** for external libraries before implementation or refactoring.
+To avoid deprecated or nonexistent APIs, **ALWAYS read local documentation** before implementing or refactoring external library code.
 
 | Library       | Summary (`.llms.txt`)          | Full API Docs (`.llms-full.txt`)    |
 | :------------ | :----------------------------- | :---------------------------------- |
