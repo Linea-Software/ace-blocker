@@ -1,4 +1,4 @@
-# Ace Engine — Simplification and Architecture Review
+# Ace Engine — Architecture and simplification review
 
 > **Status update (2026-09-02, tracking removal):** the recommendations in
 > this dated review were partially executed the same week. SIMP-01 (delete
@@ -13,7 +13,10 @@
 **Repository:** `C:\Projects\ace-project\ace-engine` (git root: `ace-engine/`, branch `main`, HEAD `3f7413d`, clean tree)
 **Review date:** 2026-09 (session)
 **Reviewer:** AI coding agent (DeepSeek Harness), with evidence gathered directly from the repository
-**Scope:** entire `ace-engine` crate + `crates/ace-domain-blocklist`, migrations, tests, bins, build config, CI; supporting evidence from the sibling `mitm-proxy` and `ace-tun` repos (git dependencies pinned in `Cargo.lock`).
+**Scope:** Review the full `ace-engine` crate and `crates/ace-domain-blocklist`.
+Include migrations, tests, binaries, builds, and CI. Use supporting evidence
+from the sibling `mitm-proxy` and `ace-tun` repositories. `Cargo.lock` pins
+their Git dependencies.
 
 > **Constraint honored:** no production code was modified during this review. Files created: the three project-local skills under `ace-engine/.agents/skills/` and this report.
 
@@ -21,23 +24,95 @@
 
 ## 1. Executive summary
 
-The ace-engine codebase (~22,500 lines of Rust across ~120 source files, plus one helper crate) is **appropriately complex in its core** — the proxy pipeline, security layer, lock/schedule model, and service integration are thoughtful and well-documented — but it is **dangerously complex at the edges for a solo developer**, for one dominant reason: **the repository's own verification loop is broken and the codebase has drifted from its own documentation and tests.**
+The reviewed engine had approximately 22,500 Rust lines in 120 source files,
+plus one helper crate. **The core has justified complexity.** The proxy,
+security, locks, schedules, and service code have clear designs and documents.
+**The surrounding code had excessive maintenance risk for one developer.**
+The test and verification process did not work. Documentation and tests no
+longer matched the code.
 
 The eleven most important conclusions:
 
-1. **P0-latent (headline): HTTPS interception is one `cargo update` away from silently switching off.** `Cargo.lock` pins `mitm-proxy` at rev `755aae0` (which always MITMs CONNECT tunnels). The local `mitm-proxy` HEAD (commit `b74d7c1`, same author, 2026-08-22) added an `InterceptDecider` whose **default intercepts nothing** (`mitm-proxy/src/intercept.rs:32-36`, `lib.rs:87`), and the engine never calls `with_intercept_decider` (`ace-engine/src/service/proxy/mod.rs:502-505`). The moment the pin is bumped, all HTTPS traffic is relayed opaquely: **no HTTPS blocking, no resistance injection, no safe-search redirect** — silently, with no error and no test catching it (the proxy tests never start a real proxy).
-2. **The test suite is red at HEAD: 6 unit + 15 integration failures** (`cargo test --workspace --no-fail-fast`). All 21 failures are test-side staleness (routes renamed `/sites-lists`→`/site-lists`, `/usage` moved to `/report/usage`; the 90-day lock cap; the seed migration `0021`; lock-vs-activation semantics; two self-contradictory `progress.rs` tests that drain a channel and then assert it is non-empty), but the consequence is unchanged: **no green baseline exists**, and `cargo test` without `--no-fail-fast` stops at the first failing binary, masking the integration failures.
-3. **CI (azure-pipelines.yml) cannot be green at HEAD**: it runs `cargo test` (21 failures) and `cargo clippy -- -D warnings` (436 warnings on the lib — mostly `disallowed_names` `e` violations in the committed generated client, which contradicts the repo's own `.clippy.toml`). Either CI is red and ignored, or the gate is decorative. No `cargo fmt --check`, no harness, no OpenAPI snapshot drift check.
-4. **Resistance Mode is v1-beta static-only, and the whole dynamic punishment engine (escalation ladder, probation, dynamic intensity — `src/manager/resistance/*`) is dead weight**: the API rejects dynamic mode (`route_resistance_mode`, `error.rs:41-43`), startup normalizes persisted dynamic configs to static (`src/manager/network/mod.rs:488-509`), yet ~500 lines of dynamic machinery remain implemented and tested. It is unreachable through any public path.
-5. **`UpdateManager` (`src/manager/update/`, ~600 lines: state machine, staged-binary download, checksums, restart script) is entirely dead code**: no production caller; `route_system.rs:94` admits "Phase 4 not yet implemented". Either wire it or delete it — today it is a maintenance liability with no behavior.
-6. **Documentation has drifted badly**: AGENTS.md (root and engine) still describes RocksDB-backed site packs (actually SQLite since 2026-08-22, commit `c03bd5b`), a gitignored generated client at `src/generated/api/` (actually committed at `src/ace_server_api/`), an `ace-hide` DLL that no longer exists, and `engine-core/` paths that don't exist. `docs/rest-api.md` and `docs/update-policy.md` repeat the RocksDB claims.
-7. **Security posture is genuinely good for the weak-moment threat model**: capability token + CORS allowlist + origin-gated preflight (release-only enforcement), read-only installer lock gate, no-kernel anti-tamper per spec, lock-monotonic enforcement with tested matrices, backups exclude locks by design. Two real gaps: (a) the `aceblocker://` protocol handler forwards **any** path to the engine with the capability token attached (`ace_redirect.rs:86-88`), so a single user click on a malicious `aceblocker://system/shutdown` link stops the service; (b) the report routes' CORS `*` lets any website inject arbitrary usage/theme telemetry (validated for shape, not for authenticity).
-8. **The "strict validation" of `/report/*` claimed in `security.rs:40-44` exists but only in the manager layer; the routes themselves accept unauthenticated cross-origin POSTs** — acceptable under the threat model, but the code comment overstates the protection.
-9. **The automatic content updater can brick blocking: `update_site_pack_version` swaps in a new pack UUID without re-pointing connected network blocks and without cleaning join rows; the next restart fails `NetworkManager::from` and falls into Safe Mode with zero blocks (MGR-01)** — combined with the stale results cache (CORE-001) and non-atomic pack resync (CORE-002), the blocking pipeline has three independent ways to silently stop blocking.
-10. **Lifecycle design is deliberate and mostly sound**: proxy-binds-before-tunnel ordering, fail-open on tunnel failure with bounded background retry, `TunRedirect::drop` guarantees teardown even on skipped `stop()`, SCM handshake completes before the service reports RUNNING, and shutdown via API reports `SERVICE_STOPPED` to avoid SCM restart loops. Weak spots: `std::process::exit` inside library code (`settings.rs:41`, `lib.rs:208,221,226,289`), a double-initialization `.expect()` panic path (`lib.rs:260-262`), and a watchdog that resurrects the engine even after a clean console shutdown by design.
-11. **Overall verdict**: code quality of the core is above average for a solo project; the problem is **inertia debt** — 21 failing tests, 436 clippy warnings, dead subsystems (dynamic resistance, UpdateManager), dead code (`get_dodo_payments_url`, `LockState::SoftUnlockable` partial plumbing, unused deps), stale docs, and a CI definition that contradicts HEAD. The highest-value work is not more architecture: it is **re-establishing a green baseline, deleting what is unreachable, and pinning the mitm-proxy decider behavior**.
+1. **P0 risk: a `cargo update` could disable HTTPS interception without a warning.**
+   `Cargo.lock` pinned `mitm-proxy` revision `755aae0`. This revision always
+   intercepted CONNECT tunnels. Local HEAD `b74d7c1` (2026-08-22) added
+   `InterceptDecider`. Its **default intercepts nothing**
+   (`mitm-proxy/src/intercept.rs:32-36`, `lib.rs:87`). The engine did not call
+   `with_intercept_decider` (`ace-engine/src/service/proxy/mod.rs:502-505`).
+   Updating the pin would relay HTTPS without inspection. **HTTPS blocking,
+   Resistance injection, and Safe Search redirects would stop.** Tests did
+   not detect this because they never started a real proxy.
+2. **The tests failed at HEAD: 6 unit tests and 15 integration tests.**
+   `cargo test --workspace --no-fail-fast` reported 21 failures. The tests
+   still used `/sites-lists` instead of `/site-lists` and `/usage` instead
+   of `/report/usage`. They did not match the 90-day lock cap, seed migration
+   `0021`, or lock and activation behavior. Two `progress.rs` tests emptied
+   a channel and then expected it to contain data. These were outdated
+   tests, but **there was no passing baseline**. Without `--no-fail-fast`,
+   `cargo test` stopped before the integration failures.
+3. **CI could not pass with HEAD.** `azure-pipelines.yml` ran `cargo test`
+   with 21 failures. It also ran `cargo clippy -- -D warnings`. Clippy
+   reported 436 library warnings. Most were `disallowed_names` violations
+   for `e` in the committed generated client. These conflicted with
+   `.clippy.toml`. Either CI failed or the check was ignored. CI had no
+   `cargo fmt --check`, test harness, or OpenAPI snapshot-drift check.
+4. **Resistance Mode v1-beta used static mode only.** The API rejected
+   dynamic mode (`route_resistance_mode`, `error.rs:41-43`). Startup converted
+   saved dynamic settings to static (`src/manager/network/mod.rs:488-509`).
+   Yet the dynamic escalation ladder, probation logic, and intensity code
+   in `src/manager/resistance/*` still had approximately 500 lines and tests.
+   No public path could reach this code.
+5. **`UpdateManager` was unused.** The module in `src/manager/update/`
+   contained approximately 600 lines for update state, staged downloads,
+   checksums, and restart scripts. No production code called it.
+   `route_system.rs:94` stated "Phase 4 not yet implemented". Remove this
+   unused subsystem or connect it to a defined feature.
+6. **Documentation was out of date.** Root and engine `AGENTS.md` described
+   RocksDB site packs. SQLite replaced RocksDB on 2026-08-22 (`c03bd5b`).
+   The guides described a Git-ignored client at `src/generated/api/`.
+   The committed client was in `src/ace_server_api/`. They also named a
+   removed `ace-hide` DLL and nonexistent `engine-core/` paths.
+   `docs/rest-api.md` and `docs/update-policy.md` still mentioned RocksDB.
+7. **Source review found useful protection for the weak-moment threat model.**
+   Controls included the capability token, CORS allowlist, release-only
+   origin checks, read-only uninstall gate, and user-mode anti-tampering.
+   Tests covered rules that prevent lock weakening. Backups excluded locks.
+   Two gaps remained. **The `aceblocker://` handler forwarded any path** with
+   the capability token (`ace_redirect.rs:86-88`). A malicious
+   `aceblocker://system/shutdown` link could stop the service after one user
+   approval. Also, `/report/*` routes used CORS `*`. Any website could send
+   fabricated usage or theme reports. Shape checks did not verify origin.
+8. **`/report/*` validation did not authenticate cross-origin requests.**
+   The manager checked payload values, as `security.rs:40-44` described.
+   The routes still accepted unauthenticated cross-origin POSTs. This was
+   consistent with the stated threat model. The comment described more
+   protection than the route provided.
+9. **Automatic site-pack updates could disable blocking.**
+   `update_site_pack_version` replaced a pack UUID but did not update
+   connected network blocks or remove old join rows. On restart,
+   `NetworkManager::from` could fail and start Safe Mode with zero blocks
+   (MGR-01). Two other faults could stop blocking: the stale results
+   cache (CORE-001) and non-atomic pack resynchronization (CORE-002).
+10. **The service lifecycle was mostly intentional.** The proxy bound
+    before the tunnel started. Tunnel failure used fail-open behavior with
+    bounded retry. `TunRedirect::drop` removed tunnel resources even when
+    callers skipped `stop()`. The SCM handshake completed before RUNNING.
+    API shutdown reported `SERVICE_STOPPED` to avoid restart loops.
+    Weaknesses included `std::process::exit` in library code
+    (`settings.rs:41`, `lib.rs:208,221,226,289`), an `.expect()` panic
+    after double initialization (`lib.rs:260-262`), and a watchdog that
+    restarted the engine after clean console shutdown by design.
+11. **The main risk was accumulated maintenance debt.** The review found
+    21 failing tests, 436 Clippy warnings, and unused dynamic Resistance
+    Mode and `UpdateManager` code. Other debt included
+    `get_dodo_payments_url`, partial `LockState::SoftUnlockable` code,
+    unused dependencies, stale documents, and inconsistent CI.
+    **Restore passing tests, remove unreachable code, and configure the
+    MITM decider explicitly before changing the architecture.**
 
-**Complexity verdict:** *appropriately complex in the core; dangerously complex at the edges for a solo developer* (see final JSON: `appropriately_complex` with strong caveats — the core architecture is sound, the accumulated debt is the risk).
+**Complexity verdict:** *The core is appropriately complex. The edges
+carry excessive maintenance risk for one developer.* The final JSON uses
+`appropriately_complex` with this warning.
 
 ---
 
@@ -58,7 +133,9 @@ The repo installs agent skills via `npx skills`. Discovered and relevant:
 
 ### Skills added (project-local, per the review mandate)
 
-The mandatory instruction required adding skills if none existed for (a) systematic Rust simplification review, (b) Windows/network lifecycle analysis, (c) evidence-based refactoring recommendations. None of the three existed; all were created:
+The task required three skills: Rust simplification, Windows/network
+lifecycle analysis, and evidence-based refactoring. No matching project-local
+skills existed. The reviewer created all three:
 
 1. `ace-engine/.agents/skills/rust-simplification-review/AGENTS.md` — used to drive the complexity inventory (Section 7): every candidate classified DELETE / SIMPLIFY / MERGE / DEFER / LEAVE.
 2. `ace-engine/.agents/skills/windows-network-lifecycle-analysis/AGENTS.md` — used to drive the lifecycle scenario matrix (Section 6) and the resource-ownership inventory.
@@ -75,7 +152,11 @@ The mandatory instruction required adding skills if none existed for (a) systema
 | `git status` / `git log` | clean tree at `main` HEAD `3f7413d`; per-file history used to date staleness |
 | grep/glob sweeps | dependency-usage, route-mount, stale-doc (RocksDB/hudsucker/ace-hide/engine-core), path occurrences in `docs/openapi.json` |
 
-**Environment note:** tests ran on Windows (the only supported runtime for the service path); the integration suite requires no elevation in debug (build.rs gates the admin manifest on `CARGO_BIN_NAME`). CI parity could not be tested (no Azure DevOps access); the CI conclusions are from the pipeline definition itself.
+**Environment note:** Tests ran on Windows. At review time, the service
+runtime was supported only on Windows. Debug integration tests did not need
+elevation: `build.rs` gated the administrator manifest on `CARGO_BIN_NAME`.
+The reviewer could not test Azure CI. The CI findings came from its pipeline
+definition.
 
 ### Files created/changed during the review
 
@@ -87,7 +168,11 @@ The mandatory instruction required adding skills if none existed for (a) systema
 
 ### Limitations
 
-- The engine could not be booted end-to-end in this environment (requires elevation for Wintun/trust store on Windows; would have modified system state). Proxy/tunnel behavior was verified by source analysis of `ace-engine`, the pinned `mitm-proxy`/`ace-tun` revisions, and their Drop/teardown paths, not by live traffic.
+- **No complete runtime test:** The environment could not start the full
+  engine without Windows elevation for Wintun and certificate trust. Those
+  changes would have modified system state. The reviewer inspected source
+  code and pinned `mitm-proxy`/`ace-tun` revisions instead. The reviewer
+  checked `Drop` and cleanup paths. No live proxy or tunnel traffic was tested.
 - `docs/openapi.json` was compared to the router by path-occurrence counts, not by full schema diff (see finding API-*).
 - The `ace-app` client was not exhaustively cross-checked against every endpoint; endpoints marked "unverified" in the inventory.
 
@@ -97,21 +182,40 @@ The mandatory instruction required adding skills if none existed for (a) systema
 
 ### 3.1 Processes and services
 
-- **`ace-engine.exe`** — the engine. Release: installed as the `AceEngine` Windows service (SYSTEM, auto-start) with SCM recovery (3 × restart after 1 s, non-crash failures treated as failures, `reset_period = 0`); also supports console mode (debug always; release when not launched by the SCM). It refuses SCM `STOP` (`platform.rs:199-208`) and can only be shut down via `POST /system/shutdown` (which is itself refused with 423 while any lock is active, `route_system.rs:164-189`).
-- **`ace-redirect.exe`** (release only) — OS protocol handler for `aceblocker://`; forwards the URI as a capability-token-bearing POST to the engine's loopback API (`ace_redirect.rs`). In debug, the engine binary itself handles the scheme.
-- **Guardian process** (release, console mode only) — a copy of the engine launched with `--guardian <pid>`; watches the engine PID and restarts it (preferring the SCM) when it dies (`platform.rs:364-390`). The engine keeps a monitor thread that respawns the guardian. Skipped under the SCM.
+- **`ace-engine.exe`**: The release installs `AceEngine` as an automatic
+  LocalSystem Windows service. SCM recovery restarts it three times after
+  one second. Non-crash failures trigger recovery. `reset_period = 0`.
+  The engine also supports console mode in debug and release when SCM does
+  not start it. It rejects SCM `STOP` (`platform.rs:199-208`). Authorized
+  shutdown uses `POST /system/shutdown`. Active locks make that endpoint
+  return 423 (`route_system.rs:164-189`).
+- **`ace-redirect.exe`** (release only): The OS uses this executable for
+  `aceblocker://` links. It forwards a POST with the capability token to
+  the engine loopback API (`ace_redirect.rs`). In debug mode, the engine
+  executable handles the scheme.
+- **Guardian process** (release console mode only): The engine starts a
+  copy of itself with `--guardian <pid>`. The guardian watches the engine
+  PID and restarts it, preferring SCM (`platform.rs:364-390`). The engine
+  has a monitor thread that restarts the guardian. SCM mode skips this path.
 - **`ace-engine.exe --check-locks`** — read-only DB query for the installer's uninstall gate (`lock_check.rs`); never boots the engine.
 
 ### 3.2 Startup order (release service path)
 
 1. `main.rs` → `--check-locks` / guardian arg / `--install` / `--uninstall` short-circuits.
-2. `try_run_as_service()` → SCM dispatcher → `my_service_main`: hides files, registers control handler, **reports SERVICE_RUNNING before the engine boot finishes** (deliberate, to avoid START_PENDING timeouts), then blocks on `crate::run()` inside a Tokio runtime.
+2. `try_run_as_service()` starts the SCM dispatcher and `my_service_main`.
+   The service hides files and registers a control handler. It reports
+   **SERVICE_RUNNING before engine startup finishes** to avoid
+   START_PENDING timeouts. It then runs `crate::run()` in Tokio.
 3. `run()` (`lib.rs:27-104`): logging → `hide_important_files` → (release console) watchdog → `initialize_db` (retry ×3, then corrupt-DB rename-to-.bak + recreate, then `process::exit`) → `AccountManager` → `NetworkManager::from` (loads all site packs, blocks, schedules, locks, exceptions, usage, resistance state into memory; on failure → `new_empty` "Safe Mode") → `ContentUpdateService` → background update loop task → `spawn_proxy_service` (random port → `AceProxy::new` builds the ace-tun rule set → `start()`: **mitm-proxy binds first, 200 ms settle, then ace-tun starts**) → `spawn_api_service` (generates/installs the API TLS cert on first run, then binds `127.0.0.1:{port}`).
 4. `run()` waits on `tokio::select!` over proxy task, API task, update task, Ctrl+C, and the shutdown watch channel.
 
 ### 3.3 Shutdown order
 
-`POST /system/shutdown` → `shutdown_tx` watch fires → `run()` returns → `report_service_stopped()` (SCM sees a clean stop; avoids failure-action restart) → process exits. The proxy task's `AceProxy::start` also ends on Ctrl+C or proxy failure; `ace-tun` teardown is guaranteed by `TunRedirect::drop` (route removal + adapter teardown, `ace-tun/src/lib.rs:447-470`) even on the paths that skip `stop()`.
+`POST /system/shutdown` signals the `shutdown_tx` watch channel. `run()`
+returns and calls `report_service_stopped()`. SCM sees a clean stop and does
+not restart the service. The process exits. The proxy task's `AceProxy::start` ends on Ctrl+C
+or a proxy failure. `TunRedirect::drop` removes routes and the adapter
+(`ace-tun/src/lib.rs:447-470`) even when the path skips `stop()`.
 
 ### 3.4 Runtime architecture (Mermaid)
 
@@ -188,31 +292,62 @@ flowchart LR
 
 ### 3.5 State ownership and persistence boundaries
 
-- **Source of truth:** SQLite (`engine_db.sql`, WAL via Diesel pool). All rules are loaded into memory at startup; the evaluation path (`is_uri_blocked`) never touches the DB (verified: `NetworkManager::is_uri_blocked` iterates in-memory `HashMap`s only, `src/manager/network/mod.rs:231-244`).
+- **Source of truth:** SQLite (`engine_db.sql`, WAL through a Diesel pool).
+  Startup loads rules into memory. `is_uri_blocked` checks in-memory
+  `HashMap`s and does not read SQLite. Source:
+  `NetworkManager::is_uri_blocked`, `src/manager/network/mod.rs:231-244`.
 - **Site packs:** separate SQLite DB per pack (XXH3-64 host hashes; `site_pack_db.rs`), metadata in the main DB. The RocksDB era ended 2026-08-22 (`c03bd5b`); every remaining "RocksDB" mention is stale documentation.
-- **Writes:** every manager mutation writes DB first (or after) and updates memory; some paths can drift on DB failure (e.g., `usage.rs:85-90` logs and continues on persist failure — memory diverges from disk until restart; `delete_network_block` removes from memory before DB delete, `network_blocks.rs:112-123` — a failed DB delete leaves memory/disk inconsistent for the session).
+- **Writes:** Manager methods update both SQLite and memory. The order
+  differs by method. A database error can leave them inconsistent.
+  `usage.rs:85-90` logs a save error and continues. Memory can then differ
+  from disk until restart. `delete_network_block` removes the in-memory
+  entry before the DB delete (`network_blocks.rs:112-123`). A failed DB
+  delete can leave different states for the rest of the session.
 - **The API state (`AppState`)** holds `Arc<RwLock<NetworkManager>>` — the proxy inspectors and the API handlers share one lock; `inspect_request` takes write locks for counters (`proxy/mod.rs:177-179,192-194`).
 
 ### 3.6 Network interception model
 
-Only browser processes' TCP 80/443 is routed through the proxy (ace-tun rule 5, `proxy/mod.rs:399-404`); everything else is direct or blocked by the tunnel rules. QUIC (UDP 443) is dropped process-wide so clients fall back to TCP. VPN/Tor/PPTP ports are blocked. This is the "browser-only MITM" design documented in AGENTS.md — consistent with the code.
+Only TCP port 80/443 traffic from browser processes entered the proxy
+(ace-tun rule 5, `proxy/mod.rs:399-404`). Tunnel rules relayed or blocked
+other traffic. ACE dropped QUIC (UDP 443) process-wide to trigger TCP
+fallback. It blocked VPN, Tor, and PPTP ports. This matched the
+"browser-only MITM" design in `AGENTS.md`.
 
 ### 3.7 Certificate lifecycles
 
-- **MITM CA** (`mitm_ca.pem/.key`): created by mitm-proxy on first run; `install_ca(true)` re-runs `certutil -addstore` on **every** engine start (`mitm-proxy/src/lib.rs:132-134`, `ca.rs:165-190`). Idempotent but noisy; no removal path on uninstall (uninstaller must delete `certs/`).
-- **API cert** (`ace_ca.pem/.key`): self-signed, SANs `ace-engine.local`, `localhost`, `127.0.0.1`, 100-year validity, installed to the machine Root store on first run (`proxy/mod.rs:807-857`). Never rotated or removed; failure to generate/install is logged and **the API service simply does not start** while the rest of the engine runs (`lib.rs:340-343`).
+- **MITM CA** (`mitm_ca.pem/.key`): `mitm-proxy` creates the CA on the
+  first start. `install_ca(true)` runs `certutil -addstore` on **every**
+  engine start (`mitm-proxy/src/lib.rs:132-134`, `ca.rs:165-190`).
+  Repeated calls are safe but create noise. The installer has no CA removal
+  path. Uninstall must remove `certs/`.
+- **API certificate** (`ace_ca.pem/.key`): The self-signed certificate
+  has SANs for `ace-engine.local`, `localhost`, and `127.0.0.1`. It has
+  100-year validity. First startup adds it to the machine Root store
+  (`proxy/mod.rs:807-857`). No rotation or removal path existed. If creation
+  or installation failed, the engine logged the error. **Only the API
+  service failed to start**; the rest of the engine continued
+  (`lib.rs:340-343`).
 - **`ace-engine.local` hosts entry** is (re)written on every start (`main.rs:127-132`).
 
 ### 3.8 Update paths
 
-- Content updates (site packs, resistance scripts, tracking scripts): background loop every 24 h (`content_updater.rs:359-391`); `check_for_updates` fetches release metadata; `apply_pending_content_updates` delegates to the manager. Version comparison for site packs is **lexicographic string comparison** (`content_updater.rs:178`).
+- **Content updates:** The background loop checked site packs, Resistance
+  scripts, and tracking scripts every 24 hours
+  (`content_updater.rs:359-391`). `check_for_updates` fetched release
+  metadata. `apply_pending_content_updates` called the manager.
+  Site-pack versions used **lexicographic string comparison**
+  (`content_updater.rs:178`).
 - Engine self-update: `UpdateManager` state machine exists but is **not wired to anything** (no production call sites; `route_system.rs:94` "Phase 4 not yet implemented").
 
 ---
 
 ## 4. Findings by severity
 
-Legend: **F** = verified fact with file:line; **I** = inference; **S** = simplifies, **C** = adds complexity (as recommended). Findings with ID prefix `TST-` come from the tests/bins/CI deep-dive; `MGR-`, `CORE-`, `API-`, `SVC-` findings were added by parallel subsystem deep-dives; all others were verified first-hand by the lead reviewer.
+Legend: **F** means a verified fact with a file and line. **I** means
+inference. **S** means the proposal reduces complexity. **C** means the
+proposal adds complexity. Prefix `TST-` identifies test, binary, or CI
+findings. `MGR-`, `CORE-`, `API-`, and `SVC-` identify findings from parallel
+subsystem reviews. The lead reviewer checked the other findings directly.
 
 ### 4.1 P0 — immediate launch/security/correctness blocker
 
@@ -422,13 +557,41 @@ Threat model (agreed): a rational adult in a weak moment; not a reverse-engineer
 
 ### 7.2 Real gaps (in order of importance)
 
-1. **Protocol-handler token forwarding (P1).** `ace-redirect` reads the capability token and attaches it to a POST to **any** path derived from the URI (`ace_redirect.rs:73-88`; debug path `main.rs:154-192`). Any website can render `aceblocker://system/shutdown` (or `aceblocker://backup/import` with a chosen body, `aceblocker://network-blocks/...` mutations); the OS asks the user to open the app once, and the engine then executes the request **with valid capability**. Chrome/Firefox prompt on external-protocol navigation, so this needs one click, but one click is exactly what phishing supplies. The token was designed to separate "the app" from "websites" — the redirect binary collapses that separation for every path it forwards. **Fix:** allowlist forwardable paths in `ace-redirect` (only `/account/api-key` is actually needed), or require the fragment to carry a per-request nonce the page cannot know.
-2. **Report telemetry is unauthenticated and cross-origin (P2).** `/report/usage` + `/report/theme` accept POSTs from any origin (CORS `*`) with no token (`security.rs:44,117-118`). Validation exists in the manager (today-only, hostname validity, monotonic seconds, <86400 cap — `usage.rs:20-81`), so a malicious page cannot crash or corrupt much, but it **can fabricate arbitrary usage history and site colors** (e.g., pretend the user spent 24 h on youtube.com), polluting the dashboard and any future scoring. Under v1 static resistance the impact is cosmetic; it becomes a real data-integrity issue if usage ever gates features.
+1. **Protocol handler forwarded the capability token (P1).**
+   `ace-redirect` read the token and attached it to POST requests for **all**
+   paths from a link (`ace_redirect.rs:73-88`, debug `main.rs:154-192`).
+   A website could show `aceblocker://system/shutdown`,
+   `aceblocker://backup/import`, or `aceblocker://network-blocks/...`.
+   The OS asked users to open the app. Chrome and Firefox showed a prompt
+   for an external protocol. One phishing click could approve the action.
+   The engine then executed the request **with a valid capability**.
+   The redirect binary removed the intended separation between the app
+   and websites. **Fix:** allowlist paths in `ace-redirect` (only
+   `/account/api-key` was needed), or require a per-request nonce that
+   the page cannot know.
+2. **Report telemetry lacked authentication (P2).** `/report/usage` and
+   `/report/theme` accepted cross-origin POSTs (CORS `*`) without tokens
+   (`security.rs:44,117-118`). The manager checked date, hostname,
+   monotonic seconds, and a limit below 86400 (`usage.rs:20-81`).
+   A malicious website could still submit false usage history and site
+   colors. For example, it could claim 24 hours of use on youtube.com.
+   These checks did not authenticate the source. Under v1 static
+   Resistance Mode, the effect was cosmetic. If usage controls features
+   later, the risk becomes a data-integrity problem.
 3. **`danger_accept_invalid_certs(true)` in ace-redirect (P3).** Loopback-only and the port comes from `port.lock`; a local attacker could race it, but that's outside the threat model. Acceptable; keep.
-4. **Unbounded `failed_hosts` set (P3).** Hosts returning 525/526/495 are bypassed for the session (`proxy/mod.rs:220-233`) — blocking silently stops for those hosts, and the set never shrinks. Deliberate availability tradeoff; document it.
+4. **The `failed_hosts` set had no size limit (P3).** The proxy skipped
+   interception for hosts with errors 525, 526, or 495
+   (`proxy/mod.rs:220-233`). Blocking stopped on those hosts for the
+   session. The set did not shrink. This was an intentional availability
+   tradeoff that needed documentation.
 5. **No rate limit on local API (P3).** Any local process can hammer GETs; loopback, low value target. Acceptable.
 6. **`main.rs` writes the hosts file on every start (P3).** `setup_local_hostname` rewrites the `ace-engine-local` section (`main.rs:127-132`); failure is non-fatal. Fine.
-7. **Logging of full URLs at INFO (P2, privacy).** `proxy/mod.rs:91-98` logs the full request URI (including query strings) for every request at INFO level, persisted to `logs/ace-engine.log`. Browsing history lands in a plaintext log. Under the weak-moment model this is a privacy smell rather than a vuln, but the default log level should be lowered to DEBUG for URI lines, or the query string stripped.
+7. **INFO logs contained full URLs (P2, privacy).**
+   `proxy/mod.rs:91-98` logged each request URI, including query strings.
+   It saved the data in plaintext at `logs/ace-engine.log`. The weak-moment
+   threat model did not make this a confirmed vulnerability. However,
+   browsing history in logs was a privacy risk. Log only at DEBUG or
+   remove query strings.
 
 ### 7.3 Theoretical hardening explicitly deferred
 
@@ -469,7 +632,10 @@ Method: the scenario matrix from `windows-network-lifecycle-analysis` skill, tra
 
 ## 7. Simplification candidates
 
-Method: the `rust-simplification-review` skill procedure (inventory → count uses → count representations → count state machines → check errors/background work/deps → judge). Every row: what exists, why it is complexity, what to do, benefit/risk/effort.
+Method: Follow the `rust-simplification-review` process. Inventory the
+code and count uses, representations, and state machines. Check errors,
+background tasks, and dependencies. Classify each finding by evidence,
+impact, risk, and effort.
 
 | ID | Area | Current complexity | Proposed simplification | Benefit | Risk | Effort | Recommendation |
 |---|---|---|---|---|---|---|---|
@@ -572,7 +738,12 @@ Method: the `rust-simplification-review` skill procedure (inventory → count us
 
 ## 10. Recommended target architecture
 
-**Do not redesign the engine.** The core architecture — in-memory manager, browser-only MITM via ace-tun, token+CORS local API, monotonic locks, fail-open tunnel, per-pack SQLite — is sound and matches the product thesis ("coverage is the moat; the lock only needs to be good enough"). The target state after the review:
+**Do not redesign the engine.** The core design matched the product's
+threat model: an in-memory manager, browser-only MITM through ace-tun,
+capability token and CORS controls, monotonic locks, fail-open tunnel
+behavior, and one SQLite file per pack. The review recorded the product
+thesis as "coverage is the moat; the lock only needs to be good enough".
+The target state after this review was:
 
 **Stays**
 - `NetworkManager` in-memory evaluation; per-pack SQLite; XXH3 hashing.
@@ -633,7 +804,11 @@ Everything in A, plus:
 
 ### Plan C — Larger redesign (only if justified)
 
-Not justified now. The monolith is coherent; the risks are debt, not structure. Defer: schema-layer unification (SIMP-10), engine-core split (R18), client regeneration in CI (R17). **Recommendation: do not start Plan C before launch**; revisit after v1 ships if maintenance pain shows up in the API layer or the generated client.
+Plan C was not justified at review time. The monolith was coherent. Most
+risk came from maintenance debt, not module boundaries. Defer schema-layer
+unification (SIMP-10), the engine-core split (R18), and client generation
+in CI (R17). **Do not start Plan C before launch.** Revisit it after v1
+if API or generated-client maintenance becomes difficult.
 
 ---
 
@@ -689,7 +864,14 @@ Not justified now. The monolith is coherent; the risks are debt, not structure. 
 
 ## 15. Final recommendation
 
-**Simplify now, do not redesign.** The engine's architecture is appropriate for its threat model and product stage; the launch risk is concentrated in (1) the latent mitm-proxy decider break, (2) a red test suite and contradictory CI gate, (3) two unwired subsystems and a dead tracking pipeline, and (4) lock-semantics bugs in the most user-visible flows (soft-unlock dead, schedule-lock window, restore bypass, stale cache). Execute **Plan B**, with Plan A's items as its first week. Deletion beats refactoring: cut the dead subsystems, dead client methods, dead enums, and stale docs. Defer all architectural redesign (Plan C).
+**Simplify the code now. Do not redesign the architecture.** The design
+fits the threat model and product stage. The review found four launch risks:
+(1) the MITM decider default, (2) failing tests and ineffective CI,
+(3) unused subsystems and tracking code, and (4) lock and cache defects.
+These included soft-unlock failures, schedule-window semantics, backup
+restore bypass, and stale cached decisions. Use **Plan B**. Start with
+Plan A tasks in the first week. Remove dead subsystems, client methods,
+enums, and stale documentation. Defer Plan C.
 
 ```json
 {
