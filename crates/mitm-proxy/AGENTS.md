@@ -2,21 +2,20 @@
 
 ## Overview
 
-This is **mitm-proxy**, the MITM proxy workspace subcrate embedded in `ace-engine` under `crates/mitm-proxy`.
+**mitm-proxy** is the MITM proxy subcrate in the Ace Blocker workspace at `crates/mitm-proxy`.
 
 ## Refactoring boundaries
 
-Follow the root `../../AGENTS.md` and `../../docs/ai/REFACTORING_PLAYBOOK.md`
-for AI-led cleanup. For cross-crate changes read
-`../../docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md` and use
-`../../docs/ai/REVIEW_GATES.md` for independent review.
-The proxy owns transport/interception machinery, **not** engine policy,
-UI state, or service lifecycle. Similar network/proxy utilities do not justify
-new cross-crate dependencies unless ownership and runtime effects are proven.
-Preserve opaque passthrough for unintercepted/non-browser traffic, TLS/cert
-behavior, streaming/cancellation and error semantics; characterize them in
-focused tests before refactoring. Never let a structural cleanup broaden
-interception or weaken enforcement.
+For AI-led cleanup, follow `../../AGENTS.md` and `../../docs/ai/REFACTORING_PLAYBOOK.md`.
+For cross-crate changes, read `../../docs/ai/BOUNDARIES_AND_ABSTRACTIONS.md`.
+Use `../../docs/ai/REVIEW_GATES.md` for independent review.
+The proxy owns transport and interception logic.
+It does **not** own engine policy, UI state, or service lifecycle. Do not introduce cross-crate dependencies only because network utilities appear similar.
+First, prove ownership and runtime effects.
+Preserve opaque passthrough for unintercepted and non-browser traffic.
+Preserve TLS/certificate behavior, streaming, cancellation, and error rules.
+Write focused characterization tests before refactoring these behaviors.
+Never broaden interception or weaken enforcement during structural cleanup.
 
 ## Build & test
 
@@ -37,8 +36,8 @@ cargo clippy --all-targets
 cargo fmt
 ```
 
-**Windows quirk:** rebuilding while `target\debug\mitm-proxy.exe` runs fails
-("Access denied"). Stop it first:
+**Windows quirk:** A running `target\debug\mitm-proxy.exe` prevents rebuilding ("Access denied").
+Stop the process before rebuilding:
 
 ```sh
 taskkill //F //IM mitm-proxy.exe   # git-bash
@@ -85,10 +84,9 @@ Cargo.toml          — Crate manifest
 `with_response_inspector`, `with_inspectors`, `with_intercept_decider`,
 `.run()`.
 
-Narrow interception: `with_intercept_decider(Arc<dyn InterceptDecider>)`
-selects which CONNECT tunnels get TLS-terminated. Tunnels the decider rejects
-are relayed byte-for-byte with no TLS setup (no leaf certificate minted, no
-decryption). Default is `NoInterceptDecider` — intercept nothing.
+For narrow interception, `with_intercept_decider(Arc<dyn InterceptDecider>)` selects CONNECT tunnels for TLS termination.
+Relay rejected tunnels byte-for-byte. Do not set up TLS, issue leaf certificates, or decrypt rejected tunnels.
+The default `NoInterceptDecider` intercepts nothing.
 
 ### ProxyConfig fields
 
@@ -120,24 +118,22 @@ decryption). Default is `NoInterceptDecider` — intercept nothing.
 
 ## ACE HTTP/3 admission contract
 
-The Engine now configures `with_http3_sni_policy`: only hostnames whose
-current policy blocks at the hostname level are admitted for QUIC/TLS.
-Missing/unauthorized SNI must fail **before** minting a leaf certificate.
-Unapproved HTTP/3 request `:authority` values get HTTP 421, never upstream
-access. Ordinary origins requiring path, Safe Search or Resistance inspection
+The engine configures `with_http3_sni_policy`.
+Admit QUIC/TLS only for hostnames blocked by the current hostname-level policy.
+Reject missing or unauthorized SNI **before** issuing a leaf certificate.
+Return HTTP 421 for unapproved HTTP/3 `:authority` values. Never forward them upstream. Ordinary origins requiring path, Safe Search or Resistance inspection
 use TCP fallback because the existing TCP CONNECT path probes for TLS client
 certificates before attempting decryption. Do not relax this selective
 admission without a separately verified pre-handshake client-cert check.
 
 The TUN -> loopback HTTP/3 bridge is described in `crates/ace-tun/README.md`.
-Native Chrome/Brave/Firefox, Windows WFP, VPN and IPv6 checks are release gates;
-local Quinn HTTP/3 tests alone do not prove installed traffic enforcement.
+Native Chrome, Brave, Firefox, Windows WFP, VPN, and IPv6 checks are release gates.
+Local Quinn HTTP/3 tests alone do not prove installed traffic enforcement.
 
 ## HTTP/3 stream-FIN bug
 
-**Root cause:** h3 0.0.8 sends GREASE frames during `finish()` on the first
-request per connection. Strict clients (aioquic) don't handle the
-GREASE-frame-then-FIN sequence correctly.
+**Root cause:** h3 0.0.8 sends GREASE frames during `finish()` on the first request per connection.
+Strict clients (aioquic) do not handle the GREASE-frame-then-FIN sequence correctly.
 
 **Fix:** `.send_grease(false)` on the h3 connection builder
 (`src/http3.rs:68`). Verified by `tests/proxy_http3.rs::http3_stream_finishes_cleanly`.
@@ -160,8 +156,8 @@ ProxyConfig::new(listen_addr, ca_dir)
     .verify_upstream(false);
 ```
 
-This installs a `NoVerify` cert verifier that skips chain validation but
-still performs cryptographic signature checks.
+This installs a `NoVerify` certificate verifier.
+It skips chain validation but still checks cryptographic signatures.
 
 ## Key dependency versions
 
@@ -180,6 +176,6 @@ still performs cryptographic signature checks.
 
 ## Rebuilding while process is running
 
-The compiled binary is `target/debug/mitm-proxy.exe`. If it's running, cargo
-cannot overwrite the file. Kill it first (or use the `cli_tests` which manage
-child process lifecycle).
+The compiled binary is `target/debug/mitm-proxy.exe`.
+Cargo cannot overwrite this file while it runs.
+Stop the process first, or use `cli_tests` to manage its lifecycle.
