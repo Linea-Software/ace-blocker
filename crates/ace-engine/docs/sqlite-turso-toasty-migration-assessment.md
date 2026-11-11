@@ -1,26 +1,45 @@
 # SQLite → Turso + Toasty migration assessment
 
-**Date:** 2026-09-05  
-**Scope:** `ace-engine` database usage, including the main engine database, per-site-pack databases, installer lock checking, migrations, tests, and bundle-generation tooling.
+**Date:** September 5, 2026
+
+**Scope:** Review `ace-engine` database use. Include the main database,
+site-pack databases, installer lock checks, migrations, tests, and bundle tools.
 
 ## Executive summary
 
-Yes: `ace-engine` can realistically move away from Diesel toward Toasty, and Toasty's Turso driver is now capable enough that Turso can be evaluated as the underlying local database engine.
+`ace-engine` can move from Diesel to Toasty. The Toasty Turso driver is also
+ready for an evaluation as a local database engine.
 
-However, there are two distinct migrations hiding behind that sentence:
+These are two separate migrations:
 
 1. **Diesel → Toasty** is mostly an ORM/API and sync→async refactor.
 2. **SQLite/libsqlite3 → Turso** changes the database runtime and concurrency/multi-process assumptions.
 
-They should not be treated as the same step.
+Do not combine these steps.
 
-My recommendation is:
+The assessment recommends these actions:
 
-- **Proceed with a Toasty migration spike.** The current data model is a good fit for Toasty's typed models, relations, transactions, targeted upserts, raw SQL escape hatch, and newly added migration system.
-- **Do not make Turso Cloud the primary storage model for the engine.** The engine currently depends on authoritative local state, direct read-only inspection by the uninstall gate, filesystem-level recovery, and atomic replacement of site-pack databases. A local database should remain authoritative.
-- **Keep the main DB on the ordinary Toasty SQLite driver for the first ORM migration, or prove Turso's multi-process behavior before switching it.** `--check-locks` is a separate process that opens the live DB file while the service may be writing. Turso exposes multi-process WAL as an experimental option, so this is a release gate for the main DB.
-- **Evaluate local Turso independently for site-pack DBs.** They are single-purpose databases and do not need cross-process lock inspection, but they sit on a request-time hot path and bulk-import 50,000 hashes per batch. The Toasty high-level upsert API is single-row, so the existing bulk path should probably stay lower-level/raw SQL even if the connection is managed by Toasty/Turso.
-- **Treat Toasty 0.10 migrations as usable but young.** Toasty 0.10.0 (2026-08-11) added embedded migrations, and the current CLI supports migration generation/application. This removes what would previously have been a hard blocker. `ace-engine` still has custom SQLite `CHECK` constraints, triggers, seeded SQL, and an existing Diesel migration history, so migration adoption needs an explicit baseline strategy and hand-reviewed SQL.
+- **Test a small Toasty migration.** The current data model fits Toasty's typed
+  models, relations, transactions, targeted upserts, raw SQL, and migration tools.
+- **Do not use Turso Cloud as the engine's primary store.** The engine needs
+  authoritative local state. Its uninstall gate reads the local database
+  directly. Recovery uses files, and site-pack updates use atomic file
+  replacement. The local database must remain authoritative.
+- **First use the standard Toasty SQLite driver for the main database.**
+  Alternatively, prove that Turso supports the required multi-process access.
+  `--check-locks` is a separate process. It opens the live file while the
+  service can write to it. Turso marks multi-process WAL as experimental.
+  Therefore, this behavior is a release gate for the main database.
+- **Evaluate local Turso separately for site-pack databases.** These files
+  have one purpose and need no cross-process lock inspection. However, they
+  support request-time lookups and import 50,000 hashes per batch. Toasty's
+  high-level upsert works on one row. Keep the bulk path at the low-level
+  or raw-SQL layer if Toasty/Turso manages the connection.
+- **Review Toasty 0.10 migrations carefully.** Toasty 0.10.0 (2026-08-11)
+  added embedded migrations. Its CLI can generate and apply migrations. These
+  features remove an earlier blocker. However, `ace-engine` has custom SQLite
+  `CHECK` constraints, triggers, seed SQL, and Diesel migration history.
+  Define a baseline strategy. Review generated SQL manually.
 
 A likely long-term architecture is:
 
@@ -42,13 +61,15 @@ Installer/uninstall gate
     └─ deliberately independent from service/network availability
 ```
 
-The main reason to do this migration should therefore be **ergonomics, async integration, and future storage flexibility**, not an assumption that moving the current local state to Turso Cloud is automatically better.
+The reasons to migrate are **simpler code, async integration, and storage
+flexibility**. Do not assume that Turso Cloud improves the current local
+storage model.
 
 ---
 
 ## 1. Current SQLite topology
 
-`ace-engine` does not have one SQLite use case. It has four.
+`ace-engine` has four distinct SQLite use cases.
 
 ### 1.1 Main engine database
 
@@ -63,7 +84,9 @@ Implementation: `src/db.rs` and `src/db/*_repo.rs`.
 
 Relevant code: `src/db.rs:33-87` (pool + embedded migrations + constructor) and the repository modules under `src/db/`.
 
-The main DB is passed around as `Arc<EngineDB>` and shared by account, network, content-update, API, and service code. Most higher-level code does not import Diesel directly, which is a useful migration boundary.
+The account, network, content-update, API, and service components share
+`Arc<EngineDB>`. Most high-level components do not import Diesel. This gives
+the migration a useful interface boundary.
 
 ### 1.2 Per-site-pack content databases
 
@@ -76,7 +99,8 @@ Every site pack has its own SQLite file. Each database contains only:
 
 `SitePackDB` also owns an r2d2/Diesel pool and runs a separate embedded migration set from `migrations_site_packs/`.
 
-This database is not merely import/storage infrastructure. On a block-check cache miss:
+The database also serves live block checks. On a cache miss, the engine uses
+this call sequence:
 
 `NetworkBlock::is_content_blocked()` → `get_internal_content_blocking_result()` → each attached `SitePack::contains(host)` → `SitePackDB::contains(host)` → indexed DB lookup.
 
@@ -86,7 +110,7 @@ Relevant code:
 - `src/core/network_block/site_pack/mod.rs:142-150`
 - `src/core/network_block/site_pack/site_pack_db.rs:164+`
 
-So site-pack DB lookup latency can affect proxy/request latency.
+Site-pack lookup time can increase proxy request latency.
 
 Imports intentionally batch host hashes in groups of **50,000** (`INSERT_BATCH_SIZE`) and call `SitePackDB::insert_entries()` for each batch.
 
@@ -107,7 +131,8 @@ Implementation: `src/lock_check.rs`.
 
 Relevant code: `src/lock_check.rs:83-198`, contention test at `:392-428`.
 
-This is a hard architectural constraint. The uninstall decision must not depend on:
+This is a mandatory architecture rule. The uninstall decision must not
+depend on:
 
 - engine service availability;
 - HTTP availability;
@@ -120,7 +145,8 @@ This is a hard architectural constraint. The uninstall decision must not depend 
 
 Relevant code: `src/bin/export_site_pack_bundle.rs:409-433`.
 
-If Diesel migration tracking is replaced with Toasty's `__toasty_migrations`, this deterministic-build behavior must be ported as well. It is easy to miss because it lives outside `src/db/`.
+If Toasty replaces Diesel migration tracking, preserve deterministic bundle
+output. The code is outside `src/db/`, so migration work must include it.
 
 ---
 
@@ -139,7 +165,9 @@ There are two Diesel CLI configs:
 
 Both enable `sqlite_integer_primary_key_is_bigint = true` for schema generation.
 
-The project uses Rust `stable` (`rust-toolchain.toml`) and edition 2024. Toasty's repository currently declares edition 2024 and `rust-version = "1.95"`; CI/release builders therefore need to resolve to Rust >= 1.95 before adopting it.
+The project uses stable Rust (`rust-toolchain.toml`) and edition 2024.
+Toasty declares edition 2024 and `rust-version = "1.95"` at the report date.
+Before adoption, CI and release builders must use Rust 1.95 or later.
 
 ---
 
@@ -169,7 +197,7 @@ See `src/schema_main_db.rs`.
 
 ### 3.1 Persisted type conventions
 
-The existing model layer (`src/db/models.rs`) deliberately keeps persistence simple:
+The model layer (`src/db/models.rs`) uses simple storage types:
 
 - IDs are mostly UUID v7 values serialized to **TEXT**.
 - Dates/timestamps/times are mostly **TEXT**.
@@ -178,7 +206,7 @@ The existing model layer (`src/db/models.rs`) deliberately keeps persistence sim
 - optional fields are ordinary nullable columns.
 - there is no application JSON/document-column dependency in the main schema.
 
-That is a very compatible shape for Toasty/Turso.
+These types fit Toasty/Turso.
 
 One migration detail matters: Toasty maps `uuid::Uuid` to SQLite/Turso `BLOB` by default. To preserve the current database byte-for-byte, either:
 
@@ -187,13 +215,16 @@ One migration detail matters: Toasty maps `uuid::Uuid` to SQLite/Turso `BLOB` by
 
 Do **not** silently change existing UUID columns from TEXT to BLOB as part of the ORM swap.
 
-The same principle applies to the current chrono-derived date/time strings: keep the storage representation unchanged during the first migration. A later cleanup can consider Toasty's `jiff` types after compatibility is established.
+The same rule applies to date/time strings from chrono. Do not change their
+storage representation during the first migration. Consider Toasty's `jiff`
+types only after compatibility tests pass.
 
 ---
 
 ## 4. SQLite-specific schema behavior that must survive
 
-The database is more than the generated Diesel table list. The migration SQL contains behavior that an ORM model definition alone does not capture.
+The generated Diesel table list does not show all database behavior.
+Migration SQL defines additional behavior that ORM models do not represent.
 
 ### 4.1 Foreign keys and cascades
 
@@ -207,7 +238,8 @@ Several use `ON DELETE CASCADE`.
 
 One migration explicitly warns that SQLite only honors cascade deletion when `PRAGMA foreign_keys` is enabled (`migrations/0021_seed_default_network_blocks/down.sql`). I found no global `PRAGMA foreign_keys = ON` initialization in the normal `EngineDB` pool; the explicit PRAGMA usage in Rust is currently only the lock checker's `busy_timeout`.
 
-Regardless of ORM choice, connection setup should make the intended FK policy explicit and test it.
+Set the intended foreign-key policy explicitly during connection setup.
+Test this policy with either ORM.
 
 ### 4.2 Custom CHECK constraints
 
@@ -223,7 +255,8 @@ Examples include:
 - safe-search enforcement type and field-shape checks;
 - singleton tables constrained to `table_lock = '0'`.
 
-These constraints are part of data integrity and should not be dropped merely because Toasty can express the application types more ergonomically.
+These constraints protect data integrity. Keep them even when Toasty can
+represent the application types.
 
 ### 4.3 Main-DB trigger
 
@@ -240,13 +273,14 @@ Several higher-level paths implicitly rely on a lock row existing for every bloc
 
 They use `SELECT RAISE(ABORT, ...)` and a subquery in the trigger condition because SQLite cannot express that invariant in a normal `CHECK` constraint.
 
-This custom SQL must remain explicitly tested after migration.
+Continue to test this custom SQL after migration.
 
 ---
 
 ## 5. Current repository/query surface
 
-The code is already reasonably well isolated behind `EngineDB`, which is the strongest argument that an ORM migration is tractable.
+Most database access already goes through `EngineDB`. This boundary makes
+an ORM migration practical.
 
 ### `account_repo.rs`
 
@@ -312,7 +346,7 @@ The main `EngineDB` also loads the full join table and groups it in Rust for sta
 - inner join to load owning block;
 - **transactional replace:** delete all entries for the block and bulk insert the replacement list.
 
-The atomic replace behavior must be preserved.
+Keep the atomic replacement behavior.
 
 ### `script_state_repo.rs`
 
@@ -383,7 +417,8 @@ CREATE TABLE pack_meta (
 );
 ```
 
-The current import pipeline can feed extremely large lists without holding the full list in memory because it parses streams and flushes 50,000 hashes at a time.
+The importer parses streams and writes 50,000 hashes per batch. It does not
+hold the full list in memory. It can therefore import very large lists.
 
 The current restore/update design also depends on file semantics: a new DB is staged and validated, the live DB handle is closed, directories are atomically renamed, then the DB is reopened (`src/core/network_block/site_pack/mod.rs:183-255`). A Turso-local design should keep this local-file replacement property unless there is a compelling reason to redesign the whole updater.
 
@@ -405,13 +440,15 @@ On startup the engine:
 
 Relevant code: `src/lib.rs:192-267`.
 
-A Toasty/Turso migration should preserve these recovery semantics deliberately. It should not accidentally treat a transient Turso serialization/IO condition as permanent corruption and rename a healthy DB.
+Preserve the recovery rules when migrating to Toasty/Turso. Do not treat a
+temporary Turso serialization or I/O error as permanent corruption. Do not
+rename a healthy database.
 
 ### 7.2 Higher-level constructors are synchronous
 
 `NetworkManager::from`, `AccountManager::from`, and many manager methods synchronously call `EngineDB` methods. Toasty operations are async, so changing the DB facade to Toasty will propagate `.await` into manager/service code.
 
-This is a larger source change than the SQL/query rewrite itself.
+This async change affects more source code than the SQL query changes.
 
 The upside is that the engine already runs Tokio, and several DB-heavy workflows (content updates and pack imports) are already async at the surrounding layer.
 
@@ -451,7 +488,7 @@ Notable current capabilities:
 - migration CLI and schema snapshots;
 - embedded application migrations (added in Toasty 0.10.0).
 
-This feature set covers almost all of the **query semantics** currently used by `ace-engine`.
+These features support almost all existing **query behavior**.
 
 ---
 
@@ -715,7 +752,8 @@ Only after this phase can Diesel and `diesel_migrations` be removed cleanly from
 
 ### Phase 4 — prototype local Turso for site-pack DBs
 
-This is a good isolated Turso experiment because the schema is tiny and the files are replaceable artifacts.
+This Turso experiment has a small scope. The schema is small, and each pack
+file can be replaced.
 
 Do **not** port the import loop to naive per-row ORM upserts.
 
@@ -743,11 +781,12 @@ Only after the main ORM layer is stable:
 - initially leave `concurrent_writes()` disabled;
 - evaluate MVCC only if measured write contention justifies it.
 
-The main DB workload is small enough that concurrent-writer throughput is unlikely to be the primary reason for this change.
+The main database has a small write workload. Concurrent-writer speed is
+unlikely to justify the migration by itself.
 
 ### Phase 6 — optional remote sync, as a separate product feature
 
-Only pursue Turso remote sync if there is an actual cross-device/cloud requirement.
+Use Turso remote sync only if the product needs cross-device or cloud sync.
 
 If pursued:
 
@@ -762,7 +801,7 @@ If pursued:
 
 ## 13. Suggested implementation shape
 
-A reasonable end-state keeps the current public concept of `EngineDB` while replacing its internals:
+Keep `EngineDB` as the public interface. Replace its implementation as follows:
 
 ```text
 EngineDB
@@ -790,7 +829,7 @@ For the uninstall gate, I would keep a deliberately tiny independent reader. If 
 - use a minimal synchronous SQLite reader for `--check-locks`; or
 - make `--check-locks` async and use Turso only after the separate-process read-only behavior is proven.
 
-The first option deliberately allows the installer safety path to remain simpler than the application ORM.
+The first option keeps the uninstall safety path simpler than the main ORM.
 
 ---
 
@@ -900,19 +939,28 @@ The strongest improvements for `ace-engine` would be:
 - easier backend switching between SQLite and Turso;
 - raw SQL available when the database-specific behavior is important.
 
-The existing repository boundary also means the ergonomics benefit is concentrated in code that is already isolated.
+The existing repository boundary limits most code-simplification benefits
+to an isolated area.
 
 ### Can the main DB use Turso?
 
-**Likely yes technically, but I would not approve it based on SQL compatibility alone.** The release gate is the separate-process uninstall checker and its fail-safe local-read behavior. Prove that before changing the main file's engine/journal semantics.
+**Probably, but SQL compatibility is not sufficient.** The uninstall
+checker must safely read the database from a separate process. Prove this
+before changing the main database engine or journal format.
 
 ### Can site-pack DBs use Turso?
 
-**Yes, they are a good candidate for a controlled benchmark.** But the critical API is not ORM CRUD; it is bulk insertion and primary-key membership lookup. Keep those optimized, potentially using Toasty's raw SQL escape hatch or the lower-level Turso API.
+**Yes. Test site-pack databases in a controlled benchmark.** Their
+important operations are bulk inserts and primary-key membership lookups,
+not ordinary ORM CRUD. Keep these operations optimized. Use raw Toasty SQL
+or the low-level Turso API if necessary.
 
 ### Should `ace-engine` use Turso Cloud sync now?
 
-**No, not as part of the ORM migration.** It provides little value for the current local protection architecture and raises privacy, authority, offline, and lock-conflict questions. Local Turso does not require Turso Cloud.
+**No. Do not add Turso Cloud sync during the ORM migration.** It adds
+privacy, state-authority, offline, and lock-conflict risks. It offers little
+value to the current local protection system. Local Turso does not require
+Turso Cloud.
 
 ### Should Diesel be removed in one step?
 
@@ -926,13 +974,14 @@ The existing repository boundary also means the ergonomics benefit is concentrat
 6. evaluate Turso separately for site packs and then the main DB;
 7. remove the last Diesel-only tooling/checker dependency once equivalent behavior is proven.
 
-This gets the ergonomic benefit early without coupling it to the riskiest storage-engine changes.
+This sequence simplifies code first. It keeps risky database engine changes
+separate.
 
 ---
 
 ## 17. Concrete spike I would do next
 
-A small proof-of-concept should answer the remaining unknowns before a full branch is started:
+Run a small proof of concept before starting the full migration branch:
 
 1. Add Toasty 0.10 with both `sqlite` and `turso` features on a branch.
 2. Model only:
@@ -953,13 +1002,16 @@ A small proof-of-concept should answer the remaining unknowns before a full bran
 8. Compare p99 site-pack membership lookup latency against current Diesel SQLite.
 9. Prototype the Diesel→Toasty migration baseline on an upgraded fixture database.
 
-If those pass, there is no obvious architectural reason the broader migration cannot proceed.
+If these tests pass, the review identifies no remaining architectural
+blocker to a broader migration.
 
 ---
 
 ## 18. External references checked
 
-Current Toasty information was verified against the project/API documentation on 2026-09-05. Toasty is moving quickly, so pin the exact release and re-run this compatibility check before implementation.
+The reviewers checked Toasty's project and API documentation on 2026-09-05.
+Toasty changes quickly. Pin the release and repeat this compatibility review
+before implementation.
 
 - Toasty repository / overview: https://github.com/tokio-rs/toasty
 - Toasty 0.10 API docs: https://docs.rs/toasty/0.10.0/toasty/
