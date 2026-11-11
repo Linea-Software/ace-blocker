@@ -1,19 +1,18 @@
 # Linux browser proxy/VPN extension guard
 
-**Preview:** this is opt-in and must be tested on actual supported Linux browsers
-before claiming that all VPN/proxy extensions are blocked.
+**Preview:** This guard requires opt-in. Test it on supported Linux browsers.
+Do not claim that it blocks all VPN or proxy extensions without live verification.
 
 ## Scope
 
-The network engine already uses the TUN with Linux policy routing and nftables,
-but HTTPS browser proxy extensions can conceal the requested website inside the
-encrypted connection to a relay. A correct route capture does not reveal the
-inner `CONNECT` destination. The engine's TCP/4443 deny rule is only additional
+The network engine uses TUN, Linux policy routing, and nftables.
+HTTPS browser proxy extensions can hide the requested website in an encrypted relay connection.
+Correct route capture does not show the inner `CONNECT` destination. The engine's TCP/4443 deny rule is only additional
 defense, not a universal anti-bypass control.
 
-Ace Blocker ships an administrator-managed browser policy helper as part of the
-Linux release at `/opt/ace-blocker/browser-proxy-policy.py`. It does not modify
-browser policies during normal installation. The helper supports these
+The Linux release includes `/opt/ace-blocker/browser-proxy-policy.py`.
+Administrators can use this helper to manage browser policies.
+Normal installation does not change browser policies. The helper supports these
 native/system installations:
 
 - Google Chrome: `/etc/opt/chrome/policies/managed/`
@@ -29,17 +28,15 @@ permission and `ProxyMode=direct`. Firefox receives
 The `blocked_permissions` setting in Firefox requires **Firefox 153+**. The
 Firefox Proxy policy also works in older supported versions, but the precise
 effect on an existing extension must be checked with that browser version.
-Snap, Flatpak, distro-specific Chromium/Firefox builds, portable browsers,
-unrecognized forks, and per-profile browser preferences may not honor these
-system paths; they are not automatically covered. Firefox Flatpak has a
+Snap, Flatpak, distribution-specific builds, portable browsers, unknown forks,
+and per-profile preferences can ignore these paths. The guard does not automatically cover them. Firefox Flatpak has a
 separate distribution-specific policy mechanism. The guard will not
 silently claim compatibility with every Linux packaging variant.
 
 ## Usage
 
-After installing Ace Blocker on a Linux system, inspect the policy plan and
-existing configuration first. Commands below are intended to be run by the
-machine owner and **never automatically by the installer**:
+After installation, inspect the policy plan and existing configuration.
+The machine owner must run these commands. The installer must **never** run them automatically:
 
 ```bash
 sudo /opt/ace-blocker/browser-proxy-policy.py --status
@@ -49,23 +46,22 @@ sudo /opt/ace-blocker/browser-proxy-policy.py --enable
 sudo /opt/ace-blocker/browser-proxy-policy.py --disable
 ```
 
-The default `--enable` protects all four browsers. If a browser has a
-conflicting managed policy, the operation fails **before writing anything**.
+By default, `--enable` protects all four browsers.
+If a browser has a conflicting managed policy, the command fails **before writing anything**.
 To opt in only for the unaffected browsers, repeat `--browser`, for example:
 
 ```bash
 sudo /opt/ace-blocker/browser-proxy-policy.py --enable --browser chrome --browser brave
 ```
 
-This deliberately leaves Chromium and Firefox unprotected in that example.
-To change the selected set, first disable the owned policies and then enable
-with a new selection. The ownership journal is private to root, so the
+This example leaves Chromium and Firefox unprotected.
+To change the selected browsers, first disable the owned policies.
+Then enable the new selection. The ownership journal is private to root, so the
 `--status` command should also be run with `sudo` after enabling.
 
-This disables *legitimate* browser proxy functionality too, including VPN
-extensions, web debugging proxies, and corporate proxies. It affects all
-users of the supported browsers and stays active outside Ace Blocker's
-scheduled block times. It does not prevent a user with root access from
+This also disables *legitimate* VPN extensions, debugging proxies, and corporate proxies.
+It affects all users of the supported browsers.
+The policy stays active outside Ace Blocker's scheduled block times. It does not prevent a user with root access from
 modifying system policies.
 
 For Chromium-family browsers, the manager writes its own dedicated JSON
@@ -76,8 +72,8 @@ file bytes, ownership group and file permissions for exact restoration. It
 refuses an existing `ExtensionSettings` or `Proxy` policy rather than
 taking it over, and checks known installation-specific Firefox policy files.
 
-The root-only journal is written before browser policy changes. If setup
-is interrupted, `--disable` can restore or remove only ACE-owned changes.
+The helper writes its root-only journal before changing browser policies.
+If setup stops unexpectedly, `--disable` can revert only ACE-owned changes.
 If a policy has been changed subsequently, rollback refuses to erase it,
 rather than deleting unrelated administrator configuration. Do not manually
 edit the guard's ownership journal. Use `--status` to check the result and
@@ -94,8 +90,8 @@ profiles, and restarted browsers. Use Proton VPN, Windscribe, NordVPN,
 Browsec and Surfshark where available; test standard HTTPS proxies on
 443/4443, WSS, DoH and local HTTP/SOCKS relays.
 
-Verify that browsers recognize the enterprise policies and refuse proxy
-extension traffic while ordinary HTTPS still works. Inspect local
+Verify that browsers recognize the enterprise policies.
+Verify that proxy extension traffic is denied and ordinary HTTPS still works. Inspect local
 ACE netstack decisions, outbound relay endpoints, route/nftables state,
 and sanitized browser logs. Run all policy-manager tests against temporary
 filesystem roots only: they must not modify the current workstation's
