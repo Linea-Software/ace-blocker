@@ -1,16 +1,15 @@
-# Ace Engine — Launch-Safety & Simplification Implementation Report
+# Ace Engine — Launch-safety and simplification implementation report
 
-> **Status update (2026-09-02, tracking removal):** the remaining
-> tracking/usage items from this report (SIMP-01 dynamic resistance engine,
-> SIMP-04 tracking-script pipeline, SVC-13, and the report receivers) were
-> executed by the tracking-removal change (engine commit `8e5fca5`); the
-> rows below are kept as the historical record.
+> **Status update (2026-09-02, tracking removal):** Engine commit `8e5fca5`
+> removed the remaining tracking and usage components. These included the
+> SIMP-01 dynamic resistance engine, SIMP-04 tracking-script pipeline,
+> SVC-13, and report receivers. The tables below keep the historical record.
 
 **Repository:** `C:\Projects\ace-project\ace-engine` (git root: `ace-engine/`, branch `main`)
 **Implementation date:** 2026-09 (session)
 **Author:** AI coding agent (DeepSeek Harness)
 **Input:** `docs/review/architecture-review-2026-09.md` (the authoritative review)
-**Scope:** launch-safety and simplification pass only — no redesign of the engine architecture.
+**Scope:** Launch-safety and simplification only. The work did not redesign the engine.
 
 ---
 
@@ -24,11 +23,11 @@
 | `cargo clippy --workspace --all-targets -- -D warnings` | ❌ 436 lib warnings (gate red) | ✅ clean (incl. `--features dev-tools`) |
 | Baseline log | `docs/review/baseline-2026-09.log` (kept) | — |
 
-All 21 baseline test failures were pre-existing test staleness (routes renamed
-`/sites-lists`→`/site-lists`, `/usage`→`/report/usage`, the 90-day lock cap,
-the seed migration `0021`, schedule-only activation semantics, two
-drain-then-assert `progress.rs` tests, Pro-forcing harness). None were caused
-by this pass; each is resolved below.
+All 21 baseline failures came from outdated tests. The causes included renamed
+routes (`/sites-lists`→`/site-lists` and `/usage`→`/report/usage`), the 90-day
+lock cap, seed migration `0021`, and schedule-only activation. Other causes
+were two drain-then-assert tests in `progress.rs` and a harness that forces Pro.
+This work did not cause these failures. The sections below describe each fix.
 
 ---
 
@@ -37,10 +36,10 @@ by this pass; each is resolved below.
 ### 2.1 `aceblocker://` protocol handler restricted (SEC-01/SVC-06)
 
 The release (`ace-redirect`) and debug (`main.rs`) protocol handlers forwarded
-**any** path with the capability token attached. Verified against the product:
-the only deep link the site generates is
-`aceblocker://account/api-key#apiKey=...` (`ace-blocker-site/src/lib/utils.ts`),
-plus the `get-engine-port` probe (never reaches the engine).
+**all** paths with the capability token. The product review found one site deep
+link: `aceblocker://account/api-key#apiKey=...`
+(`ace-blocker-site/src/lib/utils.ts`). The site also has a `get-engine-port`
+probe. That probe does not reach the engine.
 
 Changes:
 
@@ -78,14 +77,14 @@ Every outbound request now has explicit connect + total timeouts:
 - `ace_redirect.rs` and the debug handler in `main.rs` — connect 5 s / total
   30 s.
 
-An unavailable server can no longer hang engine startup: startup content init
-is no longer synchronous at all (see 2.4).
+An unavailable server can no longer stop engine startup indefinitely. Startup
+content initialization no longer runs synchronously (see Section 2.4).
 
 ### 2.3 Safe atomic site-pack updates (MGR-01, CORE-012, MGR-14, SVC-17)
 
-`update_site_pack_version` was replaced by a **stage → validate → atomic
-commit** pipeline that keeps the pack UUID (the root cause of MGR-01's
-"Safe Mode on restart" was UUID churn with un-repointed blocks):
+The new **stage → validate → atomic commit** pipeline replaces
+`update_site_pack_version`. It keeps the pack UUID. MGR-01 caused "Safe Mode
+on restart" when the UUID changed but blocks still referred to the old UUID:
 
 - Staging (`ContentUpdateService::stage_site_pack_backup`) — unique temp zip,
   extraction into a staging directory on the same volume as the live packs,
@@ -106,9 +105,10 @@ commit** pipeline that keeps the pack UUID (the root cause of MGR-01's
 - `NetworkManager::from` now tolerates dangling pack references at load
   (skip + warn) instead of failing into Safe Mode (MGR-01 defense in depth).
 
-Tests: failed downloads (size-cap/content-length), invalid archives (no DB
-entry, corrupt DB, empty DB — previous pack preserved), traversal entries,
-replacement success/rollback, and litter checks.
+Tests cover failed downloads (size cap and content length). They also cover
+invalid archives, including no DB entry, a corrupt DB, and an empty DB. In
+these cases, the previous pack remains intact. Other tests cover path
+traversal, successful replacement, rollback, and temporary-file cleanup.
 
 ### 2.4 No network work under the manager write lock (SVC-02, SVC-15, LIF-03, API-02)
 
@@ -153,25 +153,25 @@ Audited and kept (it was already read-only, fail-safe, and tested). Added:
 
 ### 3.2 `ActiveDuringSchedule` semantics (API-003 / review Q2)
 
-The intended semantics **can be determined from the repository**, so per the
-task instruction no speculative redesign was made. The evidence: the state's
-name ("Active During Schedule"), the core evaluator
-(`Lock::is_active` → `schedule.is_active_at(now)`), the app label
-(`lock_active_during_schedule`), and every engine guard using
-`is_locked(now)`. Conclusion: **window-bound enforcement** is the product
-semantic; the uninstall gate is deliberately conservative (it cannot evaluate
-schedules, and uninstall is irreversible). This is now documented in
-`src/core/common/lock.rs` (variant + `is_active` docs) and in `lock_check.rs`.
+The repository establishes the intended behavior. The review did not need a
+speculative redesign. Evidence includes the state name "Active During
+Schedule", the evaluator (`Lock::is_active` →
+`schedule.is_active_at(now)`), the app label
+(`lock_active_during_schedule`), and engine guards that call
+`is_locked(now)`. **Enforcement applies only in the schedule window.** The
+uninstall gate uses a stricter rule. It cannot evaluate schedules, and
+uninstall cannot be reversed. Documentation in `src/core/common/lock.rs`
+(variant and `is_active`) and `lock_check.rs` now states this behavior.
 
 ### 3.3 Soft-unlock dead-end fixed (API-001)
 
-The app's default lock option (`soft_unlockable`) was un-removable: the
-challenge-confirm path called `set_lock(Inactive)`, which the strictness
-guard always rejects. Added `NetworkManager::redeem_soft_unlock` — the only
-path that may weaken a soft lock, called only after the challenge flow
-(initiate → id → cooldown) verifies intent; it re-checks the state under the
-write lock so an escalated lock is never redeemed, and the challenge is
-consumed only after success. Unit tests cover redemption, guard integrity,
+Users could not remove the default `soft_unlockable` lock. The confirmation
+path called `set_lock(Inactive)`. The strictness guard rejected that call.
+The fix adds `NetworkManager::redeem_soft_unlock` as the only permitted path
+to weaken a soft lock. The challenge flow (initiate → id → cooldown) must
+first verify intent. The function then checks state again under the write
+lock. It cannot redeem a lock that became stricter. It consumes the
+challenge only after success. Unit tests cover redemption, guard integrity,
 and escalation protection.
 
 ### 3.4 Installer coordination (LIF-01 / review Q4)
@@ -185,13 +185,13 @@ Verified in `ace-installer/installer.wxs`:
   STOP by design**, so the engine process keeps running (and keeps its
   database/files) after "uninstall" until `POST /system/shutdown` or reboot.
 
-This repository cannot enforce the installer behavior; the required
-sibling-repository change is documented separately (see §7): the installer
-should call `POST /system/shutdown` with the capability token (or the engine
-will be replaced on reboot; active locks already block uninstall via
-`--check-locks`). Engine-side, `--uninstall` now **warns loudly** when the
-service is still running after the stop attempt instead of silently deleting
-the registration.
+This repository cannot change installer behavior. Section 7 records the
+required change in a sibling repository. The installer should call
+`POST /system/shutdown` with the capability token. Otherwise, the engine
+process can remain until reboot. Active locks already prevent uninstall
+through `--check-locks`. The engine's `--uninstall` command now gives a clear
+warning if the service still runs after the stop attempt. It no longer
+silently removes the registration.
 
 ---
 
@@ -284,17 +284,17 @@ the registration.
 
 ### Dynamic Resistance Mode (SIMP-01)
 
-The API already rejects dynamic mode and startup normalizes persisted dynamic
-configs to static — the machinery is confirmed **not part of the current
-product**. Because `PunishmentMode::Dynamic` and the dynamic settings columns
-are part of the public API/persistence contract (removing them would require
-coordinated app-SDK and migration work), the task's fallback was chosen:
-**isolate, don't delete**. The ladder/probation machinery stays in the clearly
-named `src/manager/resistance/` module and is now **never executed outside
-dynamic mode**: `process_usage_report` and `advance_day` return early in
-static mode (MGR-04 — no more dead ladder work, no dynamic-field churn on
-every usage report). Also fixed MGR-06: the startup restricted-usage-history
-load walked the *same* day 10 times; it now walks 10 distinct days.
+The API rejects dynamic mode. At startup, the engine converts saved dynamic
+configurations to static mode. Dynamic mode is **not part of the current
+product**. However, `PunishmentMode::Dynamic` and the dynamic settings
+columns remain part of the public API and persistence contract. Removing
+them would require app-SDK and migration changes. The chosen rule was
+**isolate, do not delete**. Ladder and probation code remains in
+`src/manager/resistance/`. It runs **only in dynamic mode**.
+`process_usage_report` and `advance_day` return early in static mode
+(MGR-04). This avoids unused ladder work and changes to dynamic fields on
+each usage report. MGR-06 is also fixed. The restricted usage history
+loader formerly read the *same* day 10 times. It now reads 10 distinct days.
 
 ### Correctness/doc fixes folded in
 
@@ -325,19 +325,19 @@ load walked the *same* day 10 times; it now walks 10 distinct days.
 | `evidence-based-refactoring` (project-local) | Every claim re-verified against source (e.g. the `#[cfg(test)]` test-dir bug, the installer `Stop="both"` finding, `zip`'s sanitize-vs-reject behavior); risk bucketing kept the dynamic-resistance change conservative |
 | `rust-best-practices` / `rust-patterns` / `rust-testing` / `rust-async-patterns` (session) | `#[expect]` over `#[allow]`, error propagation (API-02), atomic-swap rollback paths, `try_stream!`/pin discipline, test quality (no vacuous tests) |
 
-No missing skill needed to be created; the three project-local skills from
-the review were sufficient.
+The three project-local skills from the review were sufficient. The work
+did not require a new skill.
 
 ---
 
 ## 7. Cross-repository change required (documented, not executed)
 
-**`ace-installer/installer.wxs`** — before `CA_CheckLocks` on `REMOVE`, the
-installer should shut the engine down via its own API
-(`POST /system/shutdown` with `X-Ace-Capability` read from the capability
-token file) or explicitly warn that the engine process survives uninstall
-until reboot. The current `ServiceControl Stop="both"` cannot stop the engine
-(it refuses SCM STOP by design). This is the only remaining piece of LIF-01.
+**`ace-installer/installer.wxs`** — Before `CA_CheckLocks` on `REMOVE`, the
+installer should stop the engine through its API. It must call
+`POST /system/shutdown` with `X-Ace-Capability` from the capability token
+file. Alternatively, it must warn that the engine process remains until
+reboot. The current `ServiceControl Stop="both"` cannot stop the engine.
+The engine rejects SCM STOP by design. This is the remaining LIF-01 task.
 
 ---
 
