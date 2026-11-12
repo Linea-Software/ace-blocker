@@ -34,7 +34,7 @@
     import SectionSchedule from "./_components/SectionSchedule.svelte";
 
     import CircleAlert from "@lucide/svelte/icons/circle-alert";
-    import { ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck, Check } from "@lucide/svelte";
+    import { ArrowDown, ArrowLeft, ArrowRight, LockKeyhole, ShieldCheck, Check } from "@lucide/svelte";
 
     let {
         block = $bindable(null),
@@ -73,6 +73,8 @@
     let dataLoadFailed = $state(false);
     let saveConfirmationWarning = $state(false);
     let websitesOpen = $state(false);
+    let hasMoreBelow = $state(false);
+    let updateScrollHint = () => {};
     function leaveEditor() { if (!isSubmitting && !scheduleEditorOpen) onClose(); }
     const steps = [m.block_wizard_content(), m.block_wizard_schedule(), m.block_wizard_review()];
     const categoryCount = $derived(sitePacksDelta.currentConnectedListIds.filter(id =>
@@ -88,13 +90,47 @@
         websitesOpen = true;
         await tick();
         document.getElementById("website-manager")?.scrollIntoView({ block: "center" });
+        updateScrollHint();
     }
     async function goToStep(next: 0 | 1 | 2) {
         if (scheduleEditorOpen || isSubmitting) return;
         step = next;
         await tick();
         document.getElementById("editor-step-heading")?.focus();
+        updateScrollHint();
     }
+
+    // The workspace is the only scroll region. Indicate when the editor has
+    // more content below the viewport, without introducing nested scrolling.
+    onMount(() => {
+        const editor = document.querySelector<HTMLElement>(".block-editor-page");
+        if (!editor) return;
+        let scrollParent: HTMLElement | null = editor.parentElement;
+        while (scrollParent && !/(auto|scroll)/.test(getComputedStyle(scrollParent).overflowY)) {
+            scrollParent = scrollParent.parentElement;
+        }
+        const scroller = scrollParent ?? document.scrollingElement;
+        if (!(scroller instanceof HTMLElement)) return;
+
+        const update = () => {
+            hasMoreBelow = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight > 20;
+        };
+        updateScrollHint = update;
+
+        const observer = new ResizeObserver(update);
+        observer.observe(editor);
+        observer.observe(scroller);
+        scroller.addEventListener("scroll", update, { passive: true });
+        window.addEventListener("resize", update);
+        const frame = requestAnimationFrame(update);
+        return () => {
+            cancelAnimationFrame(frame);
+            observer.disconnect();
+            scroller.removeEventListener("scroll", update);
+            window.removeEventListener("resize", update);
+            updateScrollHint = () => {};
+        };
+    });
 
     const isScheduleViolation = $derived(
         (block?.isLocked ?? false) &&
@@ -421,6 +457,9 @@
     <footer class="editor-page-footer">
         <div class="footer-status" aria-live="polite">
             <span>{m.block_wizard_step_counter({step:step + 1})}</span>
+            {#if hasMoreBelow}
+                <span class="scroll-cue"><ArrowDown size={13} aria-hidden="true" />{m.block_editor_scroll_more()}</span>
+            {/if}
             {#if scheduleEditorOpen}<span class="footer-warning">{m.schedule_period_finish_edit()}</span>
             {:else if step === 2 && (!name.trim() || needsSchedule || needsTargets || isScheduleViolation)}
                 <span class="footer-warning">{m.block_wizard_incomplete()}</span>
@@ -537,6 +576,7 @@
     .editor-page-footer { position: sticky; bottom: 0; z-index: 5; margin-top: auto; border-top: 1px solid var(--border);
         background: var(--background); padding: 13px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
     .footer-status { color: var(--muted-foreground); display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; }
+    .scroll-cue { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
     .footer-warning { color: var(--destructive); }
     .footer-actions { display: flex; justify-content: flex-end; gap: 9px; }
     .footer-actions :global(button) { min-height: 39px; white-space: nowrap; display: inline-flex; gap: 8px; }

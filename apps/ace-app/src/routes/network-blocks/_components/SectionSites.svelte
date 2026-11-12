@@ -31,7 +31,10 @@
         isLocked?: boolean;
     } = $props();
 
+    const CATEGORY_PREVIEW_LIMIT = 5;
     let searchQuery = $state("");
+    let showAllCategories = $state(false);
+    let showAllProCategories = $state(false);
 
     let downloadModalOpen = $state(false);
     let listToDownload = $state<SitePackSchema | null>(null);
@@ -66,6 +69,33 @@
             : sortedAllLists,
     );
     let filteredCategories = $derived(filteredLists.filter(isAceCategory));
+    // Keep the existing Free-user Pro catalog behind its disclosure.
+    // On Pro accounts, all available categories share the same preview.
+    let primaryCategories = $derived(
+        filteredCategories.filter(
+            (item) => !requiresProForConnection(item) || !isFreeUser || connectedListIds.includes(item.id),
+        ),
+    );
+    let gatedProCategories = $derived(
+        isFreeUser
+            ? filteredCategories.filter(
+                  (item) => requiresProForConnection(item) && !connectedListIds.includes(item.id),
+              )
+            : [],
+    );
+    const isSearching = $derived(searchQuery.trim().length > 0);
+    let visibleCategories = $derived(
+        isSearching || showAllCategories
+            ? primaryCategories
+            : primaryCategories.filter(
+                  (item, index) => index < CATEGORY_PREVIEW_LIMIT || connectedListIds.includes(item.id),
+              ),
+    );
+    let visibleProCategories = $derived(
+        isSearching || showAllProCategories
+            ? gatedProCategories
+            : gatedProCategories.slice(0, CATEGORY_PREVIEW_LIMIT),
+    );
     let filteredCustomLists = $derived(
         filteredLists.filter((list) => !isAceCategory(list)),
     );
@@ -263,23 +293,54 @@
         {#if filteredCategories.length === 0}
             <p class="text-muted-foreground py-3 text-sm">{m.no_lists_found()}</p>
         {:else}
-            <div class="space-y-1.5">
-                {#each filteredCategories.filter((item) => !requiresProForConnection(item)) as list (list.id)}
-                    {@render listRow(list)}
-                {/each}
-                {#each filteredCategories.filter((item) => requiresProForConnection(item) && (!isFreeUser || connectedListIds.includes(item.id))) as list (list.id)}
-                    {@render listRow(list)}
-                {/each}
-            </div>
-            {#if isFreeUser && filteredCategories.some((item) => requiresProForConnection(item) && !connectedListIds.includes(item.id))}
-                <details class="pro-categories">
-                    <summary>{m.pro_badge()} · {m.block_categories_toggle()}</summary>
-                    <div class="space-y-1.5 pt-3">
-                        {#each filteredCategories.filter((item) => requiresProForConnection(item) && !connectedListIds.includes(item.id)) as list (list.id)}
+            {#if visibleCategories.length > 0}
+                <div class="space-y-1.5" data-testid="category-preview">
+                    {#each visibleCategories as list (list.id)}
+                        {@render listRow(list)}
+                    {/each}
+                </div>
+                {#if !isSearching && primaryCategories.length > CATEGORY_PREVIEW_LIMIT && (showAllCategories || visibleCategories.length < primaryCategories.length)}
+                    <button
+                        type="button"
+                        class="category-visibility-toggle"
+                        aria-expanded={showAllCategories}
+                        onclick={() => (showAllCategories = !showAllCategories)}
+                    >
+                        {showAllCategories
+                            ? m.block_categories_show_less()
+                            : m.block_categories_show_all({ count: primaryCategories.length })}
+                    </button>
+                {/if}
+            {/if}
+            {#if gatedProCategories.length > 0}
+                {#if isSearching}
+                    <div class="space-y-1.5" data-testid="pro-category-search-results">
+                        {#each gatedProCategories as list (list.id)}
                             {@render listRow(list)}
                         {/each}
                     </div>
-                </details>
+                {:else}
+                    <details class="pro-categories">
+                        <summary>{m.pro_badge()} · {m.block_categories_toggle()}</summary>
+                        <div class="space-y-1.5 pt-3" data-testid="pro-category-preview">
+                            {#each visibleProCategories as list (list.id)}
+                                {@render listRow(list)}
+                            {/each}
+                        </div>
+                        {#if gatedProCategories.length > CATEGORY_PREVIEW_LIMIT}
+                            <button
+                                type="button"
+                                class="category-visibility-toggle"
+                                aria-expanded={showAllProCategories}
+                                onclick={() => (showAllProCategories = !showAllProCategories)}
+                            >
+                                {showAllProCategories
+                                    ? m.block_categories_show_less()
+                                    : m.block_categories_show_all({ count: gatedProCategories.length })}
+                            </button>
+                        {/if}
+                    </details>
+                {/if}
             {/if}
         {/if}
     </section>
@@ -399,6 +460,29 @@
 
 
 <style>
+    .category-visibility-toggle {
+        display: flex;
+        width: 100%;
+        min-height: 38px;
+        align-items: center;
+        justify-content: center;
+        margin-top: 8px;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--card);
+        color: var(--foreground);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .category-visibility-toggle:hover {
+        background: var(--muted);
+    }
+    .category-visibility-toggle:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
     .pro-categories {
         border-top: 1px solid var(--border);
         padding-top: 12px;
