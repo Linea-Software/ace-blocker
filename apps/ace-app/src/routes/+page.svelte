@@ -1,7 +1,6 @@
 <script lang="ts">
     import { dashboardStore } from "$lib/stores/dashboard.svelte";
     import { engineStore } from "$lib/stores/engine.svelte";
-    import type { NetworkBlockSnapshot } from "$engine-client";
     import {
         ArrowRight,
         ArrowUpRight,
@@ -9,6 +8,7 @@
         LockKeyhole,
         Shield,
         ShieldCheck,
+        SlidersHorizontal,
         WifiOff,
     } from "@lucide/svelte";
     import { SvelteDate } from "svelte/reactivity";
@@ -26,11 +26,14 @@
             (snapshot) => snapshot.block.enabled && snapshot.block.isActive,
         ),
     );
+    const previewSnapshots = $derived(activeSnapshots.slice(0, 5));
     const enabledSnapshots = $derived(
         dashboardStore.networkBlockSnapshots.filter((snapshot) => snapshot.block.enabled),
     );
     const enabledScheduledCount = $derived(
-        enabledSnapshots.filter((snapshot) => snapshot.block.scheduleMode === "scheduled" && snapshot.scheduleEntries.length > 0).length,
+        enabledSnapshots.filter(
+            (snapshot) => snapshot.block.scheduleMode === "scheduled" && snapshot.scheduleEntries.length > 0,
+        ).length,
     );
     const upcomingTransitions = $derived(
         findUpcomingBlockTransitions(dashboardStore.networkBlockSnapshots),
@@ -115,44 +118,26 @@
         </div>
     {:else}
         <div class="control-dashboard">
-            <section class="protection-overview" class:quiet={activeSnapshots.length === 0} aria-labelledby="protection-title">
-                <div class="hero-row">
-                    <span class="hero-symbol" aria-hidden="true">
-                        {#if activeSnapshots.length > 0}
-                            <ShieldCheck size={26} strokeWidth={1.8} />
-                        {:else}
-                            <Shield size={26} strokeWidth={1.8} />
-                        {/if}
-                    </span>
-                    <div class="hero-copy">
-                        <span class="eyebrow">{m.control_protection_heading()}</span>
-                        <h2 id="protection-title">{protectionTitle}</h2>
-                        <p>{protectionDescription}</p>
-                    </div>
-                    <a class="hero-action" href={resolve("/network-blocks")}>
-                        {m.manage_blocks()}
-                        <ArrowUpRight size={16} aria-hidden="true" />
-                    </a>
+            <section class="status-band" class:quiet={activeSnapshots.length === 0} aria-labelledby="protection-title">
+                <span class="status-icon" aria-hidden="true">
+                    {#if activeSnapshots.length > 0}
+                        <ShieldCheck size={23} strokeWidth={1.8} />
+                    {:else}
+                        <Shield size={23} strokeWidth={1.8} />
+                    {/if}
+                </span>
+                <div class="status-copy">
+                    <h2 id="protection-title">{protectionTitle}</h2>
+                    <p>{protectionDescription}</p>
                 </div>
-
-                <div class="metric-grid">
-                    <div class="metric">
-                        <span>{m.control_metric_enforcing()}</span>
-                        <strong class="metric-number">
-                            {activeSnapshots.length}
-                            <span> / {dashboardStore.totalBlocksCount}</span>
-                        </strong>
-                        <small>{m.control_metric_enforcing_detail()}</small>
+                <div class="status-metrics">
+                    <div class="inline-metric">
+                        <strong>{activeSnapshots.length}<span> / {dashboardStore.totalBlocksCount}</span></strong>
+                        <small>{m.control_metric_enforcing()}</small>
                     </div>
-                    <div class="metric">
-                        <span>{m.blocked_attempts_title()}</span>
-                        <strong class="metric-number">{dashboardStore.blockedAttempts}</strong>
-                        <small>{m.control_metric_blocked_detail()}</small>
-                    </div>
-                    <div class="metric">
-                        <span>{m.resistance_state()}</span>
-                        <strong class="metric-status">{resistanceLabel}</strong>
-                        <small>{m.control_metric_resistance_detail()}</small>
+                    <div class="inline-metric">
+                        <strong>{dashboardStore.blockedAttempts}</strong>
+                        <small>{m.blocked_attempts_title()}</small>
                     </div>
                 </div>
             </section>
@@ -160,26 +145,21 @@
             <div class="dashboard-grid">
                 <section class="surface-panel active-panel" aria-labelledby="enforcing-now-title">
                     <header class="panel-heading">
-                        <div>
-                            <span class="eyebrow">{m.control_now_eyebrow()}</span>
-                            <h2 id="enforcing-now-title">{m.enforcing_now()}</h2>
-                        </div>
-                        <span class="count-readout">
-                            {activeSnapshots.length === 1
-                                ? m.policy_count_active_one({ active: 1, total: dashboardStore.totalBlocksCount })
-                                : m.policy_count_active({
-                                      active: activeSnapshots.length,
-                                      total: dashboardStore.totalBlocksCount,
-                                  })}
-                        </span>
+                        <h2 id="enforcing-now-title">{m.enforcing_now()}</h2>
+                        {#if dashboardStore.totalBlocksCount > 0 && activeSnapshots.length <= previewSnapshots.length}
+                            <a class="panel-link" href={resolve("/network-blocks")}>
+                                {m.control_view_all_blocks()}
+                                <ArrowUpRight size={15} aria-hidden="true" />
+                            </a>
+                        {/if}
                     </header>
 
                     {#if activeSnapshots.length > 0}
                         <div class="enforcement-list">
-                            {#each activeSnapshots as snapshot (snapshot.block.id)}
+                            {#each previewSnapshots as snapshot (snapshot.block.id)}
                                 <a
                                     class="enforcement-row"
-                                    href={resolve(`/network-blocks?block=${encodeURIComponent(snapshot.block.id)}`)}
+                                    href={resolve("/network-blocks") + "?block=" + encodeURIComponent(snapshot.block.id)}
                                 >
                                     <span class="policy-rail" aria-hidden="true"></span>
                                     <span class="policy-copy">
@@ -215,105 +195,80 @@
                                                 : m.control_lock_configured_label()}
                                         </span>
                                     {/if}
-                                    <ArrowUpRight class="row-arrow" size={16} aria-hidden="true" />
+                                    <ArrowUpRight class="row-arrow" size={15} aria-hidden="true" />
                                 </a>
                             {/each}
+                            {#if activeSnapshots.length > previewSnapshots.length}
+                                <a class="preview-footer" href={resolve("/network-blocks")}>
+                                    {m.control_view_all_blocks()}
+                                    <ArrowRight size={15} aria-hidden="true" />
+                                </a>
+                            {/if}
                         </div>
                     {:else}
                         <div class="empty-enforcement">
-                            <Shield size={26} aria-hidden="true" />
+                            <Shield size={24} aria-hidden="true" />
                             <strong>{m.control_no_enforcement_title()}</strong>
-                            <p>{m.no_active_enforcement()}</p>
-                            <a href={resolve("/network-blocks")}>{m.manage_blocks()}</a>
+                            <p>
+                                {dashboardStore.totalBlocksCount === 0
+                                    ? m.no_network_blocks_description()
+                                    : m.no_active_enforcement()}
+                            </p>
+                            {#if dashboardStore.totalBlocksCount === 0}
+                                <a class="empty-action" href={resolve("/network-blocks/editor")}>
+                                    {m.create_block()}
+                                    <ArrowRight size={15} aria-hidden="true" />
+                                </a>
+                            {/if}
                         </div>
                     {/if}
-                    <footer class="panel-footer">
-                        <p>{m.control_active_panel_hint()}</p>
-                        <a href={resolve("/network-blocks")}>
-                            {m.control_view_all_blocks()}
-                            <ArrowRight size={15} aria-hidden="true" />
-                        </a>
-                    </footer>
                 </section>
 
-                <div class="side-stack">
-                    <section class="surface-panel upcoming-panel" aria-labelledby="upcoming-title">
-                        <header class="panel-heading">
-                            <div>
-                                <span class="eyebrow">{m.control_next_eyebrow()}</span>
-                                <h2 id="upcoming-title">{m.control_upcoming_title()}</h2>
-                            </div>
-                            <Clock3 size={18} aria-hidden="true" />
-                        </header>
-                        {#if upcomingTransitions.length > 0}
-                            <ol class="upcoming-list">
-                                {#each upcomingTransitions as transition, index (transition.block.block.id + transition.at.toISOString() + index)}
-                                    <li>
-                                        <span class="timeline-rail" aria-hidden="true"></span>
-                                        <time datetime={transition.at.toISOString()}>{transitionTime(transition.at)}</time>
-                                        <span class="upcoming-copy">
-                                            <strong>{transition.block.block.name}</strong>
-                                            <small>
-                                                {transition.kind === "start"
-                                                    ? m.control_schedule_starts()
-                                                    : m.control_schedule_ends()}
-                                            </small>
-                                        </span>
-                                    </li>
-                                {/each}
-                            </ol>
-                        {:else}
-                            <div class="upcoming-empty">
-                                <Clock3 size={22} aria-hidden="true" />
-                                <p>{m.no_upcoming_changes()}</p>
-                            </div>
-                        {/if}
-                        <p class="panel-caption">{m.control_upcoming_note()}</p>
-                    </section>
-
-                    <section class="surface-panel resistance-panel" aria-labelledby="resistance-title">
-                        <header class="panel-heading">
-                            <div>
-                                <span class="eyebrow">{m.control_resistance_eyebrow()}</span>
-                                <h2 id="resistance-title">{m.resistance_mode()}</h2>
-                            </div>
-                        </header>
-                        <div class="resistance-content">
-                            <strong>{resistanceLabel}</strong>
-                            {#if resistanceLockText()}
-                                <p class="resistance-lock">
-                                    <LockKeyhole size={14} aria-hidden="true" />
-                                    {resistanceLockText()}
-                                </p>
-                            {:else}
-                                <p>
-                                    {dashboardStore.engineEnabled
-                                        ? m.dashboard_resistance_active_description()
-                                        : m.dashboard_resistance_inactive_description()}
-                                </p>
-                            {/if}
-                            <a href={resolve("/resistance-mode")}>
-                                {m.configure_resistance()}
-                                <ArrowUpRight size={15} aria-hidden="true" />
-                            </a>
+                <section class="surface-panel upcoming-panel" aria-labelledby="upcoming-title">
+                    <header class="panel-heading">
+                        <h2 id="upcoming-title">{m.control_upcoming_title()}</h2>
+                        <Clock3 size={17} aria-hidden="true" />
+                    </header>
+                    {#if upcomingTransitions.length > 0}
+                        <ol class="upcoming-list">
+                            {#each upcomingTransitions as transition, index (transition.block.block.id + transition.at.toISOString() + index)}
+                                <li class:next={index === 0}>
+                                    <span class="timeline-rail" aria-hidden="true"></span>
+                                    <time datetime={transition.at.toISOString()}>{transitionTime(transition.at)}</time>
+                                    <span class="upcoming-copy">
+                                        <strong>{transition.block.block.name}</strong>
+                                        <small>
+                                            {transition.kind === "start"
+                                                ? m.control_schedule_starts()
+                                                : m.control_schedule_ends()}
+                                        </small>
+                                    </span>
+                                </li>
+                            {/each}
+                        </ol>
+                    {:else}
+                        <div class="upcoming-empty">
+                            <Clock3 size={23} aria-hidden="true" />
+                            <p>{m.no_upcoming_changes()}</p>
                         </div>
-                    </section>
-                </div>
+                    {/if}
+                </section>
             </div>
 
-            <section class="lock-help-strip" aria-labelledby="control-lock-help-title">
-                <span class="lock-help-icon" aria-hidden="true">
-                    <LockKeyhole size={21} strokeWidth={1.8} />
+            <a class="resistance-strip" href={resolve("/resistance-mode")}>
+                <span class="resistance-icon" aria-hidden="true">
+                    <SlidersHorizontal size={18} strokeWidth={1.8} />
                 </span>
-                <div>
-                    <h2 id="control-lock-help-title">{m.control_lock_help_title()}</h2>
-                    <p>{m.control_lock_help_detail()}</p>
-                </div>
-                <a href={resolve("/network-blocks")}>
-                    {m.control_lock_help_action()}
-                    <ArrowRight size={15} aria-hidden="true" />
-                </a>
-            </section>
+                <strong>{m.resistance_state()}</strong>
+                {#if resistanceLockText()}
+                    <span class="resistance-lock">
+                        <LockKeyhole size={14} aria-hidden="true" />
+                        {resistanceLockText()}
+                    </span>
+                {/if}
+                <span class="resistance-state">{resistanceLabel}</span>
+                <ArrowUpRight size={16} aria-hidden="true" />
+            </a>
         </div>
     {/if}
 </PageLayout>
@@ -325,12 +280,12 @@
 
     .control-dashboard {
         display: grid;
-        gap: 18px;
+        gap: 14px;
     }
 
-    .protection-overview,
+    .status-band,
     .surface-panel,
-    .lock-help-strip {
+    .resistance-strip {
         min-width: 0;
         overflow: hidden;
         border: 1px solid var(--border);
@@ -338,205 +293,183 @@
         background: var(--card);
     }
 
-    .protection-overview {
+    .status-band {
+        display: flex;
+        align-items: center;
+        gap: 17px;
+        padding: 18px 22px;
         border-top: 3px solid var(--ace-signal);
     }
 
-    .protection-overview.quiet {
+    .status-band.quiet {
         border-top-color: var(--muted-foreground);
     }
 
-    .hero-row {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding: 26px 28px;
-    }
-
-    .hero-symbol {
+    .status-icon {
         display: grid;
-        width: 56px;
-        height: 56px;
+        width: 46px;
+        height: 46px;
         flex: none;
         place-items: center;
         border: 1px solid color-mix(in srgb, var(--ace-signal-deep) 35%, var(--border));
-        border-radius: 6px;
+        border-radius: 5px;
         background: color-mix(in srgb, var(--ace-signal) 10%, var(--card));
         color: var(--ace-signal-deep);
     }
 
-    .quiet .hero-symbol {
+    .quiet .status-icon {
         border-color: var(--border);
         background: var(--muted);
         color: var(--muted-foreground);
     }
 
-    .hero-copy {
+    .status-copy {
         min-width: 0;
-        flex: 1;
+        flex: 1 1 auto;
     }
 
-    .eyebrow {
-        color: var(--muted-foreground);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 10px;
+    .status-copy h2 {
+        margin: 0;
+        font-size: 25px;
         font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        line-height: 1.2;
     }
 
-    .hero-copy h2 {
+    .status-copy p {
+        max-width: 570px;
         margin: 5px 0 0;
-        font-size: clamp(25px, 2.6cqi, 34px);
+        color: var(--muted-foreground);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .status-metrics {
+        display: flex;
+        flex: none;
+        align-items: center;
+        gap: 23px;
+        padding-left: 23px;
+        border-left: 1px solid var(--border);
+    }
+
+    .inline-metric {
+        display: grid;
+        gap: 4px;
+        text-align: right;
+    }
+
+    .inline-metric strong {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 21px;
         font-weight: 600;
         line-height: 1.15;
+        white-space: nowrap;
     }
 
-    .hero-copy p {
-        max-width: 580px;
-        margin: 7px 0 0;
+    .inline-metric strong span {
         color: var(--muted-foreground);
         font-size: 13px;
-        line-height: 1.55;
+        font-weight: 400;
     }
 
-    .hero-action {
+    .inline-metric small {
+        color: var(--muted-foreground);
+        font-size: 10px;
+        line-height: 1.4;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.65fr) minmax(285px, 0.9fr);
+        align-items: start;
+        gap: 14px;
+    }
+
+    .panel-heading {
+        display: flex;
+        min-height: 62px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 15px 19px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel-heading h2 {
+        margin: 0;
+        font-size: 21px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .panel-heading :global(svg) {
+        color: var(--muted-foreground);
+        flex: none;
+    }
+
+    .panel-link {
         display: inline-flex;
         flex: none;
         align-items: center;
-        justify-content: center;
-        gap: 8px;
-        min-height: 39px;
-        padding: 0 13px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
+        gap: 6px;
         color: var(--foreground);
         font-size: 12px;
         font-weight: 600;
         text-decoration: none;
     }
 
-    .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        border-top: 1px solid var(--border);
-        background: color-mix(in srgb, var(--muted) 22%, var(--card));
-    }
-
-    .metric {
-        display: flex;
-        min-width: 0;
-        flex-direction: column;
-        gap: 5px;
-        padding: 17px 26px;
-    }
-
-    .metric + .metric {
-        border-left: 1px solid var(--border);
-    }
-
-    .metric > span {
-        color: var(--muted-foreground);
-        font-size: 12px;
-    }
-
-    .metric-number {
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 32px;
-        font-weight: 600;
-        line-height: 1;
-    }
-
-    .metric-number span {
-        color: var(--muted-foreground);
-        font-size: 17px;
-        font-weight: 400;
-    }
-
-    .metric-status {
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 24px;
-        line-height: 1.3;
-        font-weight: 600;
-    }
-
-    .metric small {
-        color: var(--muted-foreground);
-        font-size: 11px;
-        line-height: 1.35;
-    }
-
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.9fr);
-        align-items: start;
-        gap: 18px;
-    }
-
-    .active-panel {
-        display: flex;
-        min-height: 370px;
-        flex-direction: column;
-    }
-
-    .panel-heading {
-        display: flex;
-        min-height: 73px;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 17px 21px;
-        border-bottom: 1px solid var(--border);
-    }
-
-    .panel-heading h2 {
-        margin: 3px 0 0;
-        font-size: 23px;
-        font-weight: 600;
-    }
-
-    .panel-heading :global(svg) {
-        color: var(--muted-foreground);
-    }
-
-    .count-readout {
-        color: var(--muted-foreground);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
-        text-align: right;
+    .panel-link:hover {
+        text-decoration: underline;
+        text-underline-offset: 3px;
     }
 
     .enforcement-list {
         display: grid;
-        flex: 1;
-        align-content: start;
     }
 
     .enforcement-row {
         display: grid;
         position: relative;
         min-width: 0;
-        min-height: 72px;
+        min-height: 65px;
         grid-template-columns: minmax(0, 1fr) auto auto;
         align-items: center;
-        gap: 13px;
-        padding: 12px 18px 12px 25px;
+        gap: 12px;
+        padding: 11px 16px 11px 20px;
         border-bottom: 1px solid var(--border);
         color: var(--foreground);
         text-decoration: none;
         transition: background 140ms ease;
     }
 
+    .enforcement-row:last-child {
+        border-bottom: 0;
+    }
+
+    .preview-footer {
+        display: flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 18px;
+        border-top: 1px solid var(--border);
+        color: var(--foreground);
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
     .enforcement-row:hover,
-    .hero-action:hover,
-    .lock-help-strip a:hover {
+    .preview-footer:hover,
+    .resistance-strip:hover {
         background: color-mix(in srgb, var(--muted) 65%, transparent);
     }
 
     .policy-rail {
         position: absolute;
         inset: 0 auto 0 0;
-        width: 5px;
+        width: 4px;
         background: var(--ace-signal);
     }
 
@@ -552,22 +485,22 @@
     .policy-copy strong {
         overflow: hidden;
         font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 19px;
+        font-size: 18px;
         font-weight: 600;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     .policy-facts {
-        margin-top: 4px;
+        margin-top: 3px;
         color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
+        font-size: 10px;
         line-height: 1.4;
     }
 
     .policy-facts span {
-        margin-inline: 6px;
+        margin-inline: 5px;
     }
 
     .sealed-note {
@@ -575,93 +508,77 @@
         align-items: center;
         gap: 5px;
         color: var(--muted-foreground);
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .enforcement-row :global(.row-arrow) {
+        color: var(--muted-foreground);
     }
 
     .empty-enforcement {
         display: grid;
-        min-height: 205px;
-        flex: 1;
+        min-height: 175px;
         place-items: center;
         align-content: center;
-        gap: 9px;
-        padding: 28px 20px;
+        gap: 7px;
+        padding: 21px;
         text-align: center;
     }
 
-    .empty-enforcement :global(svg) {
+    .empty-enforcement :global(svg),
+    .upcoming-empty :global(svg) {
         color: var(--muted-foreground);
     }
 
     .empty-enforcement strong {
         font-family: "IBM Plex Sans Condensed", sans-serif;
         font-size: 18px;
+        font-weight: 600;
     }
 
     .empty-enforcement p {
+        max-width: 360px;
         margin: 0;
         color: var(--muted-foreground);
-        font-size: 13px;
+        font-size: 12px;
+        line-height: 1.45;
     }
 
-    .empty-enforcement a,
-    .panel-footer a,
-    .resistance-content a {
+    .empty-action {
+        display: inline-flex;
+        min-height: 34px;
+        align-items: center;
+        gap: 8px;
+        margin-top: 7px;
+        padding: 0 11px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
         color: var(--foreground);
         font-size: 12px;
         font-weight: 600;
-        text-decoration: underline;
-        text-underline-offset: 3px;
+        text-decoration: none;
     }
 
-    .panel-footer {
-        display: flex;
-        min-height: 54px;
-        align-items: center;
-        justify-content: space-between;
-        gap: 15px;
-        padding: 12px 21px;
-        border-top: 1px solid var(--border);
-        margin-top: auto;
-    }
-
-    .panel-footer p {
-        margin: 0;
-        color: var(--muted-foreground);
-        font-size: 11px;
-        line-height: 1.5;
-    }
-
-    .panel-footer a,
-    .resistance-content a {
-        display: inline-flex;
-        flex: none;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .side-stack {
-        display: grid;
-        min-width: 0;
-        gap: 18px;
+    .empty-action:hover {
+        background: var(--muted);
     }
 
     .upcoming-list {
         display: grid;
         margin: 0;
-        padding: 0 21px;
+        padding: 0;
         list-style: none;
     }
 
     .upcoming-list li {
         display: grid;
         position: relative;
-        grid-template-columns: 4px minmax(90px, auto) minmax(0, 1fr);
+        grid-template-columns: 4px minmax(0, 1fr);
+        gap: 3px 11px;
         align-items: center;
-        gap: 13px;
-        padding: 12px 0;
+        padding: 13px 18px;
         border-bottom: 1px solid var(--border);
     }
 
@@ -670,15 +587,27 @@
     }
 
     .timeline-rail {
-        height: 28px;
+        grid-row: span 2;
+        align-self: stretch;
         border-radius: 3px;
+        background: var(--border);
+    }
+
+    .upcoming-list li.next .timeline-rail {
         background: var(--ace-signal);
     }
 
     .upcoming-list time {
+        color: var(--muted-foreground);
         font-family: "IBM Plex Mono", monospace;
         font-size: 11px;
-        color: var(--muted-foreground);
+        line-height: 1.4;
+    }
+
+    .upcoming-list li.next time {
+        color: var(--foreground);
+        font-size: 16px;
+        font-weight: 600;
     }
 
     .upcoming-copy {
@@ -697,114 +626,81 @@
     }
 
     .upcoming-copy small {
-        font-size: 11px;
         color: var(--muted-foreground);
+        font-size: 11px;
     }
 
     .upcoming-empty {
         display: grid;
-        min-height: 100px;
+        min-height: 175px;
         place-items: center;
         align-content: center;
-        gap: 9px;
-        padding: 20px;
-        text-align: center;
+        gap: 10px;
+        padding: 18px;
         color: var(--muted-foreground);
+        text-align: center;
     }
 
     .upcoming-empty p {
+        max-width: 250px;
         margin: 0;
-        font-size: 13px;
-    }
-
-    .panel-caption {
-        padding: 12px 21px;
-        border-top: 1px solid var(--border);
-        margin: 0;
-        color: var(--muted-foreground);
-        font-size: 11px;
-        line-height: 1.4;
-    }
-
-    .resistance-content {
-        display: grid;
-        gap: 9px;
-        padding: 18px 21px;
-    }
-
-    .resistance-content > strong {
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 24px;
-        font-weight: 600;
-    }
-
-    .resistance-content p {
-        display: flex;
-        align-items: flex-start;
-        gap: 6px;
-        margin: 0;
-        color: var(--muted-foreground);
         font-size: 12px;
         line-height: 1.5;
     }
 
-    .resistance-content a {
-        justify-self: start;
-        margin-top: 4px;
-    }
-
-    .lock-help-strip {
+    .resistance-strip {
         display: flex;
+        min-height: 61px;
         align-items: center;
-        gap: 18px;
-        padding: 18px 21px;
-        background: color-mix(in srgb, var(--muted) 24%, var(--card));
+        gap: 13px;
+        padding: 11px 17px;
+        color: var(--foreground);
+        text-decoration: none;
+        transition: background 140ms ease;
     }
 
-    .lock-help-icon {
+    .resistance-icon {
         display: grid;
-        width: 42px;
-        height: 42px;
+        width: 34px;
+        height: 34px;
         flex: none;
         place-items: center;
         border: 1px solid var(--border);
         border-radius: 4px;
-        background: var(--card);
+        color: var(--muted-foreground);
     }
 
-    .lock-help-strip > div {
+    .resistance-strip > strong {
         min-width: 0;
-        flex: 1;
-    }
-
-    .lock-help-strip h2 {
-        margin: 0;
-        font-size: 19px;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 18px;
         font-weight: 600;
     }
 
-    .lock-help-strip p {
-        max-width: 680px;
-        margin: 4px 0 0;
+    .resistance-lock {
+        display: inline-flex;
+        min-width: 0;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted-foreground);
+        font-size: 11px;
+    }
+
+    .resistance-lock :global(svg) {
+        flex: none;
+    }
+
+    .resistance-state {
+        margin-left: auto;
         color: var(--muted-foreground);
         font-size: 12px;
-        line-height: 1.45;
+        font-weight: 600;
+        white-space: nowrap;
     }
 
-    .lock-help-strip a {
-        display: inline-flex;
+    .resistance-strip > :global(svg) {
         flex: none;
-        min-height: 39px;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 0 13px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        color: var(--foreground);
-        font-size: 12px;
-        font-weight: 600;
-        text-decoration: none;
+        color: var(--muted-foreground);
     }
 
     .offline-board {
@@ -859,72 +755,49 @@
 
     @container page (max-width: 930px) {
         .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .side-stack {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            align-items: start;
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 
-    @container page (max-width: 690px) {
-        .hero-row {
-            align-items: flex-start;
+    @container page (max-width: 700px) {
+        .status-band {
             flex-wrap: wrap;
-            padding: 20px;
-            gap: 13px;
+            padding: 16px;
+            gap: 12px;
         }
 
-        .hero-action {
-            margin-left: 69px;
-        }
-
-        .metric {
-            padding: 14px 15px;
-        }
-
-        .side-stack {
-            grid-template-columns: 1fr;
-        }
-
-        .lock-help-strip {
-            align-items: flex-start;
-            flex-wrap: wrap;
-        }
-
-        .lock-help-strip a {
-            margin-left: 60px;
-        }
-    }
-
-    @container page (max-width: 480px) {
-        .metric-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .metric {
-            padding: 14px 20px;
-        }
-
-        .metric + .metric {
+        .status-metrics {
+            width: 100%;
+            justify-content: flex-start;
+            gap: 35px;
+            padding: 12px 0 0;
             border-top: 1px solid var(--border);
             border-left: 0;
         }
 
-        .hero-symbol {
-            width: 43px;
-            height: 43px;
+        .inline-metric {
+            text-align: left;
+        }
+    }
+
+    @container page (max-width: 480px) {
+        .status-icon {
+            width: 40px;
+            height: 40px;
         }
 
-        .hero-action {
-            margin-left: 0;
-            width: 100%;
+        .status-copy h2 {
+            font-size: 22px;
+        }
+
+        .status-metrics {
+            justify-content: space-between;
+            gap: 12px;
         }
 
         .panel-heading {
             flex-wrap: wrap;
-            padding: 15px;
+            padding: 14px 15px;
         }
 
         .enforcement-row {
@@ -937,33 +810,24 @@
         }
 
         .sealed-note {
-            font-size: 11px;
+            font-size: 10px;
         }
 
-        .panel-footer {
-            align-items: flex-start;
-            flex-direction: column;
-            gap: 5px;
-            padding: 14px 15px;
+        .resistance-strip {
+            flex-wrap: wrap;
+            gap: 8px 12px;
         }
 
-        .upcoming-list {
-            padding-inline: 14px;
-        }
-
-        .upcoming-list li {
-            grid-template-columns: 4px minmax(74px, auto) minmax(0, 1fr);
-            gap: 8px;
-        }
-
-        .lock-help-strip a {
-            margin-left: 0;
-            width: 100%;
+        .resistance-lock {
+            order: 5;
+            flex-basis: 100%;
+            padding-left: 46px;
         }
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .enforcement-row {
+        .enforcement-row,
+        .resistance-strip {
             transition: none;
         }
     }

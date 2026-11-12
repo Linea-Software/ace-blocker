@@ -100,29 +100,53 @@ test.describe("Desktop UI friction", () => {
             userStore.tosAccepted = true;
             dashboardStore.loadError = false;
             dashboardStore.isLoading = false;
-            dashboardStore.activeBlocksCount = 5;
-            dashboardStore.totalBlocksCount = 5;
-            dashboardStore.networkBlockSnapshots = Array.from({ length: 5 }, (_, index) => ({
+            dashboardStore.activeBlocksCount = 7;
+            dashboardStore.totalBlocksCount = 7;
+            dashboardStore.blockedAttempts = 12;
+            dashboardStore.engineEnabled = true;
+            dashboardStore.resistanceStatus = "operational";
+            dashboardStore.networkBlockSnapshots = Array.from({ length: 7 }, (_, index) => ({
                 block: {
                     id: `test-${index}`,
                     name: `Policy ${index}`,
                     isActive: true,
                     enabled: true,
-                    lockState: { state: "inactive" },
+                    isLocked: index === 0,
+                    scheduleMode: index === 0 ? "scheduled" : "always",
+                    lockState: { state: index === 0 ? "active" : "inactive" },
                 },
-                scheduleEntries: [],
+                scheduleEntries: index === 0
+                    ? [{
+                        startTime: "06:00",
+                        endTime: "22:00",
+                        sunday: true, monday: true, tuesday: true,
+                        wednesday: true, thursday: true, friday: true, saturday: true,
+                    }]
+                    : [],
                 sitePackConnectionCount: 1,
                 userRulesCount: 2,
             })) as typeof dashboardStore.networkBlockSnapshots;
             engineStore.isAlive = true;
         });
 
+        // The browser fixture has no onboarding state from the native app.
+        // Dismiss its welcome dialog so visual checks inspect the actual board.
+        const skipSetup = page.getByRole("button", { name: "Skip setup" });
+        if (await skipSetup.isVisible()) await skipSetup.click();
+
         const board = page.locator(".control-dashboard");
         await expect(board).toBeVisible();
-        await expect(board.locator(".protection-overview")).toBeVisible();
-        await expect(board.getByRole("heading", { name: "What does locking a block do?" })).toBeVisible();
+        await expect(board.locator(".status-band")).toBeVisible();
+        await expect(board.locator(".inline-metric")).toHaveCount(2);
+        await expect(board.locator(".enforcement-row")).toHaveCount(5);
+        await expect(board.locator(".preview-footer")).toBeVisible();
+        await expect(board.locator(".sealed-note")).toHaveCount(1);
+        await expect(board.locator(".upcoming-list li")).toHaveCount(4);
+        await expect(board.getByRole("heading", { name: "Upcoming schedule" })).toBeVisible();
+        await expect(board.getByRole("link", { name: /Resistance/ })).toBeVisible();
+        await expect(board.getByRole("heading", { name: "What does locking a block do?" })).toHaveCount(0);
 
-        for (const width of [1600, 1200, 800, 580]) {
+        for (const width of [1600, 1200, 800, 580, 400, 320]) {
             await page.setViewportSize({ width, height: 800 });
             const measurements = await board.evaluate((element) => {
                 const grid = element.querySelector(".dashboard-grid")!;
@@ -137,7 +161,60 @@ test.describe("Desktop UI friction", () => {
             expect(measurements.layoutWidth).toBeLessThanOrEqual(1280);
             expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth + 1);
             expect(measurements.columnCount).toBe(width >= 1200 ? 2 : 1);
+            if (width === 1200 || width === 580) {
+                await page.screenshot({ path: `test-results/ui-audit/control-populated-${width}.png`, fullPage: true });
+            }
         }
+    });
+
+    test("Control shows a direct create action without extra panels when empty", async ({ page }) => {
+        await page.setViewportSize({ width: 900, height: 700 });
+        await page.goto("/");
+
+        // Only simulate the browser's reactive UI stores. No engine IPC is used.
+        await page.evaluate(async () => {
+            const storeModules = [
+                "/src/lib/stores/engine.svelte.ts",
+                "/src/lib/stores/dashboard.svelte.ts",
+                "/src/lib/stores/user-store.svelte.ts",
+            ];
+            const [{ engineStore }, { dashboardStore }, { userStore }] = await Promise.all(
+                storeModules.map((modulePath) => {
+                    const loaded = performance.getEntriesByType("resource")
+                        .map((entry) => new URL(entry.name))
+                        .filter((url) => url.pathname === modulePath)
+                        .at(-1);
+                    return import(/* @vite-ignore */ (loaded ? loaded.pathname + loaded.search : modulePath));
+                }),
+            );
+            userStore.accountInfoLoaded = true;
+            userStore.tosAccepted = true;
+            dashboardStore.loadError = false;
+            dashboardStore.isLoading = false;
+            dashboardStore.totalBlocksCount = 0;
+            dashboardStore.networkBlockSnapshots = [];
+            dashboardStore.blockedAttempts = 0;
+            engineStore.isAlive = true;
+        });
+
+        const skipSetup = page.getByRole("button", { name: "Skip setup" });
+        if (await skipSetup.isVisible()) await skipSetup.click();
+
+        const board = page.locator(".control-dashboard");
+        await expect(board.locator(".status-band")).toBeVisible();
+        await expect(board.locator(".enforcement-row")).toHaveCount(0);
+        await expect(board.locator(".resistance-strip")).toBeVisible();
+        await expect(board.getByRole("link", { name: "Create Block" })).toHaveAttribute(
+            "href", /\/network-blocks\/editor/,
+        );
+        await expect(board.getByRole("heading", { name: "What does locking a block do?" })).toHaveCount(0);
+
+        const dimensions = await board.evaluate((node) => ({
+            scrollWidth: node.scrollWidth,
+            clientWidth: node.clientWidth,
+        }));
+        expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
+        await page.screenshot({ path: "test-results/ui-audit/control-empty.png", fullPage: true });
     });
 });
 
