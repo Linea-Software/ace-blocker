@@ -95,7 +95,12 @@ impl SitePackDB {
                 .execute(connection)
                 .map_err(staging_error)?;
         }
-        std::fs::File::open(db_path)
+        // FlushFileBuffers needs a writable handle on Windows.
+        // File::open uses a read-only handle and fails with access denied.
+        std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(db_path)
             .and_then(|file| file.sync_all())
             .map_err(|error| DBError::DatabaseConnectionError {
                 message: format!("failed to sync staging database: {error}"),

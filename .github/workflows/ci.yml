@@ -98,6 +98,7 @@ jobs:
           cargo test --locked -p ace-watchdog-protocol
           cargo test --locked -p ace-watchdog --bin ace-watchdog
           cargo test --locked -p ace-engine --lib remoc_tests
+          cargo test --locked -p ace-engine --lib staging_settings_are_transient_and_database_reopens_normally
           cargo test --locked -p ace-engine --lib manager::network::schedule::tests
 
       - name: Preserve Cargo compilation timings
