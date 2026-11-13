@@ -2,6 +2,8 @@ import hashlib
 import importlib.util
 import io
 import json
+import subprocess
+import sys
 import tarfile
 import tempfile
 import unittest
@@ -57,6 +59,35 @@ class ReleaseCandidateTests(unittest.TestCase):
                     path, manifest, "1.2.3", platform,
                     "a" * 40, "Linea-Software/ace-blocker"
                 )
+
+    def test_cli_accepts_matching_release_candidates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            windows, linux, manifests = self.make_candidates(Path(tmp))
+            result = subprocess.run(
+                [
+                    sys.executable, str(ROOT / "installer/verify_release_candidates.py"),
+                    "--version", "1.2.3",
+                    "--commit", "a" * 40,
+                    "--repository", "Linea-Software/ace-blocker",
+                    "--windows", str(windows),
+                    "--linux", str(linux),
+                    "--windows-manifest", str(manifests[0]),
+                    "--linux-manifest", str(manifests[1]),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("passed structure, hash and provenance", result.stdout)
+
+    def test_draft_workflow_checks_out_release_verifier(self):
+        release = (ROOT / ".github/workflows/release.yml").read_text()
+        draft = release.split("\n  draft:\n", 1)[1]
+        self.assertLess(
+            draft.index("- uses: actions/checkout@"),
+            draft.index("python3 installer/verify_release_candidates.py"),
+        )
 
     def test_rejects_fake_msi_even_with_matching_hash(self):
         with tempfile.TemporaryDirectory() as tmp:

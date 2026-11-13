@@ -121,7 +121,7 @@ def main() -> None:
     parser.add_argument("--windows-manifest", required=True, type=Path)
     parser.add_argument("--linux-manifest", required=True, type=Path)
     args = parser.parse_args()
-    if not re.fullmatch(r"\\d+\\.\\d+\\.\\d+", args.version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
         parser.error("Version must be X.Y.Z")
     verify_candidate(args.windows, args.windows_manifest, args.version, "windows", args.commit, args.repository)
     verify_candidate(args.linux, args.linux_manifest, args.version, "linux", args.commit, args.repository)
