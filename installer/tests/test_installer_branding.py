@@ -63,15 +63,21 @@ class InstallerBrandingTests(unittest.TestCase):
             tuple(float(v) for v in point.split(","))
             for point in ring.get("points").split()
         ]
-        # The original logo started at x/y=46; the installer artwork
-        # must reduce the navy padding to about 25 on a 320px canvas.
-        self.assertLess(min(x for x, _ in coords), 30)
-        self.assertLess(min(y for _, y in coords), 30)
+        # The original logo started at x/y=46. The foreground now
+        # grows to fill almost all of the 320px artboard (about 14px margin).
+        self.assertGreater(min(x for x, _ in coords), 10)
+        self.assertLess(min(x for x, _ in coords), 17)
+        self.assertGreater(min(y for _, y in coords), 10)
+        self.assertLess(min(y for _, y in coords), 17)
 
         badge = nodes["Installer badge · amber disk"]
         separator = nodes["Installer badge · minimal separation"]
-        self.assertLessEqual(float(badge.get("r")) * 2, 100)
-        self.assertLessEqual(float(separator.get("r")) - float(badge.get("r")), 4)
+        self.assertEqual((float(badge.get("cx")), float(badge.get("cy"))),
+                         (248.0, 248.0))
+        self.assertEqual((float(separator.get("cx")), float(separator.get("cy"))),
+                         (248.0, 248.0))
+        self.assertEqual(float(badge.get("r")), 48.0)
+        self.assertEqual(float(separator.get("r")) - float(badge.get("r")), 7.0)
 
         # The download arrow must render above the entire Ace symbol.
         groups = [item.get("data-name") for item in svg if item.tag.endswith("g")]
