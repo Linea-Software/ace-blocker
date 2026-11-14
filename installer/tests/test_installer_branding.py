@@ -51,6 +51,32 @@ class InstallerBrandingTests(unittest.TestCase):
         self.assertFalse(tags & {"image", "text", "foreignObject"})
         self.assertEqual(svg.get("viewBox"), "0 0 320 320")
 
+    def test_main_symbol_fills_canvas_without_oversized_download_badge(self):
+        svg = ET.parse(BRANDING / "ace-icon-installer-dark.svg").getroot()
+        nodes = {
+            element.get("data-name"): element
+            for element in svg.iter()
+            if element.get("data-name")
+        }
+        ring = nodes["ace-icon-dark · Ring A / upper-left"]
+        coords = [
+            tuple(float(v) for v in point.split(","))
+            for point in ring.get("points").split()
+        ]
+        # The original logo started at x/y=46; the installer artwork
+        # must reduce the navy padding to about 25 on a 320px canvas.
+        self.assertLess(min(x for x, _ in coords), 30)
+        self.assertLess(min(y for _, y in coords), 30)
+
+        badge = nodes["Installer badge · amber disk"]
+        separator = nodes["Installer badge · minimal separation"]
+        self.assertLessEqual(float(badge.get("r")) * 2, 100)
+        self.assertLessEqual(float(separator.get("r")) - float(badge.get("r")), 4)
+
+        # The download arrow must render above the entire Ace symbol.
+        groups = [item.get("data-name") for item in svg if item.tag.endswith("g")]
+        self.assertEqual(groups[-1], "80 • Installer download badge")
+
     def test_icon_used_in_installed_program_metadata(self):
         icons = self.wix.findall(".//w:Icon", NS)
         icons = [icon for icon in icons if icon.get("Id") == "AceInstallerIcon"]

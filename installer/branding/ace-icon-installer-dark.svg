@@ -5,22 +5,22 @@
     <path id="ace-icon-dark___background" data-name="ace-icon-dark · background" d="M56 0 L264 0 C294.928 0 320 25.072 320 56 L320 264 C320 294.928 294.928 320 264 320 L56 320 C25.072 320 0 294.928 0 264 L0 56 C0 25.072 25.072 0 56 0 Z" fill="#1e2936"/>
   </g>
   <g id="_10___Ring___3_interrupted_ribbons" data-name="10 • Ring / 3 interrupted ribbons">
-    <polygon id="ace-icon-dark___Ring_A___upper-left" data-name="ace-icon-dark · Ring A / upper-left" points="183,46 100,46 46,100 46,183 73,156 73,111.184 111.184,73 156,73" fill="#f7b84b"/>
-    <polygon id="ace-icon-dark___Ring_B___right-bottom" data-name="ace-icon-dark · Ring B / right-bottom" points="209,46 220,46 274,100 274,220 220,274 127,274 154,247 208.816,247 247,208.816 247,111.184 208.816,73 182,73" fill="#f7b84b"/>
-    <polygon id="ace-icon-dark___Ring_C___southwest" data-name="ace-icon-dark · Ring C / southwest" points="46,209 46,220 100,274 101,274 128,247 111.184,247 73,208.816 73,182" fill="#f7b84b"/>
+    <polygon id="ace-icon-dark___Ring_A___upper-left" data-name="ace-icon-dark · Ring A / upper-left" points="187.14,25.48 89.2,25.48 25.48,89.2 25.48,187.14 57.34,155.28 57.34,102.397 102.397,57.34 155.28,57.34" fill="#f7b84b"/>
+    <polygon id="ace-icon-dark___Ring_B___right-bottom" data-name="ace-icon-dark · Ring B / right-bottom" points="217.82,25.48 230.8,25.48 294.52,89.2 294.52,230.8 230.8,294.52 121.06,294.52 152.92,262.66 217.603,262.66 262.66,217.603 262.66,102.397 217.603,57.34 185.96,57.34" fill="#f7b84b"/>
+    <polygon id="ace-icon-dark___Ring_C___southwest" data-name="ace-icon-dark · Ring C / southwest" points="25.48,217.82 25.48,230.8 89.2,294.52 90.38,294.52 122.24,262.66 102.397,262.66 57.34,217.603 57.34,185.96" fill="#f7b84b"/>
   </g>
   <g id="_20___Spade___pedestal___symmetric_curves" data-name="20 • Spade + pedestal / symmetric curves">
-    <path id="ace-icon-dark___Spade" data-name="ace-icon-dark · Spade" d="M160 88 L219 148 C228 158 229 177 225 191 C218 214 196 221 179 213 C170 209 163 199 160 187 C157 199 150 209 141 213 C124 221 102 214 95 191 C91 177 92 158 101 148 Z" fill="#f7b84b"/>
-    <path id="ace-icon-dark___Pedestal" data-name="ace-icon-dark · Pedestal" d="M160 186 C159 203 150 218 131 230 C129.667 231.333 130 232.333 132 233 L188 233 C190 232.333 190.333 231.333 189 230 C170 218 161 203 160 186 Z" fill="#f7b84b"/>
+    <path id="ace-icon-dark___Spade" data-name="ace-icon-dark · Spade" d="M160 75.04 L229.62 145.84 C240.24 157.64 241.42 180.06 236.7 196.58 C228.44 223.72 202.48 231.98 182.42 222.54 C171.8 217.82 163.54 206.02 160 191.86 C156.46 206.02 148.2 217.82 137.58 222.54 C117.52 231.98 91.56 223.72 83.3 196.58 C78.58 180.06 79.76 157.64 90.38 145.84 Z" fill="#f7b84b"/>
+    <path id="ace-icon-dark___Pedestal" data-name="ace-icon-dark · Pedestal" d="M160 190.68 C158.82 210.74 148.2 228.44 125.78 242.6 C124.207 244.173 124.6 245.353 126.96 246.14 L193.04 246.14 C195.4 245.353 195.793 244.173 194.22 242.6 C171.8 228.44 161.18 210.74 160 190.68 Z" fill="#f7b84b"/>
   </g>
   <g id="_30___Wordmarks___converted_to_paths" data-name="30 • Wordmarks / converted to paths">
   </g>
   <g id="_40___Taglines___letterspaced_outlines" data-name="40 • Taglines / letterspaced outlines">
   </g>
   <g id="_80___Installer_download_badge" data-name="80 • Installer download badge">
-    <circle id="Installer_badge___narrow_separator" data-name="Installer badge · narrow separator" cx="248" cy="248" r="70" fill="#1e2936"/>
-    <circle id="Installer_badge___amber_disk" data-name="Installer badge · amber disk" cx="248" cy="248" r="65" fill="#f7b84b"/>
-    <path id="Installer_badge___enlarged_deep_ink_arrow" data-name="Installer badge · enlarged deep ink arrow" d="M238 205 C238 202.333 239.333 201 242 201 L254 201 C256.667 201 258 202.333 258 205 L258 244 L272 230 C274.667 227.333 277.333 227.333 280 230 L284 234 C286.667 236.667 286.667 239.333 284 242 L252 274 C249.333 276.667 246.667 276.667 244 274 L212 242 C209.333 239.333 209.333 236.667 212 234 L216 230 C218.667 227.333 221.333 227.333 224 230 L238 244 Z" fill="#1e2936"/>
-    <path id="Installer_badge___bold_download_tray" data-name="Installer badge · bold download tray" d="M217 282 L279 282 C281.209 282 283 283.791 283 286 L283 290 C283 292.209 281.209 294 279 294 L217 294 C214.791 294 213 292.209 213 290 L213 286 C213 283.791 214.791 282 217 282 Z" fill="#1e2936"/>
+    <circle id="Installer_badge___minimal_separation" data-name="Installer badge · minimal separation" cx="264" cy="264" r="51" fill="#1e2936"/>
+    <circle id="Installer_badge___amber_disk" data-name="Installer badge · amber disk" cx="264" cy="264" r="48" fill="#f7b84b"/>
+    <path id="Installer_badge___deep_ink_download_arrow" data-name="Installer badge · deep ink download arrow" d="M258 232 C258 230 259 229 261 229 L268 229 C270 229 271 230 271 232 L271 260 L278 252 C280 250 282 250 284 252 L288 256 C290 258 290 260 288 262 L268 283 C265.333 285.667 262.667 285.667 260 283 L240 262 C238 260 238 258 240 256 L244 252 C246 250 248 250 250 252 L258 260 Z" fill="#1e2936"/>
+    <path id="Installer_badge___download_tray" data-name="Installer badge · download tray" d="M237 291 L291 291 C292.657 291 294 292.343 294 294 L294 299 C294 300.657 292.657 302 291 302 L237 302 C235.343 302 234 300.657 234 299 L234 294 C234 292.343 235.343 291 237 291 Z" fill="#1e2936"/>
   </g>
 </svg>
