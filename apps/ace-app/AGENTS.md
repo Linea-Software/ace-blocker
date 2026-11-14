@@ -261,15 +261,19 @@ and `ace-icon-dark-transparent.svg` in the UI.
 Switch them through CSS `.dark`.
 Do not place a solid-background icon on a themed surface.
 
-Generate `src-tauri/icons` from `PNG/ace-icon-light-transparent.png`
-with `bun run tauri icon ... --ios-color '#FAF7F1'`.
-After generation, make only `src-tauri/icons/ios/*.png` opaque on `#FAF7F1`.
-Use ImageMagick:
-`magick "$f" -background '#FAF7F1' -alpha remove -alpha off -strip "PNG24:$f"`.
-App Store icons must be opaque.
-The Tauri CLI can leave small amounts of transparency.
-Keep web, Windows, macOS, and Android foreground artwork transparent.
-Use solid platform icon backgrounds only where the operating system requires them.
+The native **desktop application icon** uses the dark rounded-square
+`ace-icon-dark` artwork: navy background behind the amber octagon and spade,
+with transparent pixels only outside its rounded corners. This is different
+from the installer EXE's download-badge logo and from the transparent UI logos.
+The exact official PNG/SVG exports are checked in to
+`src-tauri/branding/ace-icon-dark.{png,svg}`.
+To regenerate the Windows, Linux and macOS desktop icons, run:
+`pwsh ./scripts/generate-native-icons.ps1` from `apps/ace-app/`.
+The script uses Tauri's icon generator and copies desktop-only assets to
+`src-tauri/icons`. Do not automatically replace `ios/` or `android/`
+platform-specific icon sets. iOS App Store icons must be opaque; Android
+adaptive foregrounds use their own platform-specific requirements.
+Keep web and in-app artwork transparent and theme-aware.
 The app navigation rail must show the official transparent icon, not a placeholder letter.
 Do not change the logo source repository when you use its exported files.
 

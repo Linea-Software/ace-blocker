@@ -11,5 +11,10 @@ fn main() {
     //     .expect("Couldn't compile protos");
 
     // BuildSystem::generate_at_build_time().expect("Failed to generate TypeScript bindings");
+    // Force Tauri's native resource step to rerun when icon assets change.
+    // Otherwise incremental builds can keep the previous icon in ace-app.exe.
+    println!("cargo:rerun-if-changed=icons/icon.ico");
+    println!("cargo:rerun-if-changed=icons/icon.icns");
+    println!("cargo:rerun-if-changed=icons/128x128.png");
     tauri_build::build()
 }
