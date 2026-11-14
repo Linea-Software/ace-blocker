@@ -35,18 +35,21 @@ After **both** builds pass, the workflow checks artifact hashes and commit prove
 It then creates or updates a GitHub **draft prerelease** named `v<version>`.
 It never publishes the release automatically.
 
-- **Windows x64:** `AceBlocker-<version>.msi` using WiX 4, plus a
-  `release-candidate-windows.json` provenance manifest.
+- **Windows x64:** `AceBlocker-<version>.msi` using WiX 4, plus the
+  offline Burn bootstrapper `AceBlocker-Setup-<version>.exe` with custom icon,
+  and one `release-candidate-windows.json` provenance manifest containing both
+  hashes. The EXE embeds the original MSI and does not replace its lock-aware
+  privileged custom actions.
 - **Linux x64:** `AceBlocker-<version>-linux-x64.tar.gz`, plus
   `release-candidate-linux.json`. The archive contains the Tauri executable,
   engine, watchdog, URL callback helper, certificate tool, offline site packs,
   and this document.
-- **Both:** `SHA256SUMS` covers the MSI and Linux tarball.
+- **Both:** `SHA256SUMS` covers the Windows MSI, branded Setup EXE, and Linux tarball.
 
 The draft-assembly job also runs `installer/verify_release_candidates.py`.
-It refuses to create a draft if either platform file is absent, if the
+It refuses to create a draft if a required platform file is absent, if the
 version/commit/hash provenance differs, if the MSI header is not a valid
-compound-file header, or if the Linux archive is structurally unsafe or
+compound-file header, if the Setup EXE does not have an x64 PE header, or if the Linux archive is structurally unsafe or
 missing required executables, scripts or bundled content. This gate checks release **candidates**.
 It does not prove Authenticode signing or installation safety. Its offline regression tests run in ordinary desktop CI.
 
@@ -55,7 +58,7 @@ deliverable *inside* that ZIP is still `.tar.gz`. Keep the Linux tarball. Tar an
 Upload the inner tarball to the website, not GitHub's outer ZIP.
 
 The individual GitHub Actions artifacts are retained for 14 days; the draft
-release keeps a copy of both assets and the manifests. Neither workflow
+release keeps a copy of all three binaries and the manifests. Neither workflow
 builds or ships a macOS executable.
 
 The optional `stage_on_site` switch works **only on Windows**.

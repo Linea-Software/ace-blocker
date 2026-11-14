@@ -53,8 +53,13 @@ jobs:
               raise SystemExit(f"Release version {expected} differs from product components: {mismatches}")
           PY
 
+      - name: Validate installer and release-candidate tests
+        run: |
+          python3 -m unittest discover -s installer/tests -p 'test_*.py' -v
+          python3 -m unittest tests.test_release_candidates -v
+
   windows:
-    name: Package Windows x64 MSI
+    name: Package Windows x64 MSI and branded Setup EXE
     needs: validate
     runs-on: windows-2022
     timeout-minutes: 120
@@ -87,6 +92,7 @@ jobs:
         run: |
           dotnet tool install -g wix --version 4.0.5
           & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.Util.wixext/4.0.5
+          & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.Bal.wixext/4.0.5
       - name: Prepare MSI inputs
         shell: pwsh
         run: |
@@ -100,13 +106,14 @@ jobs:
           Copy-Item "$wintun\bin\amd64\wintun.dll" $engine -ErrorAction Stop
           Copy-Item "$wintun\LICENSE.txt" (Join-Path $engine "WINTUN-LICENSE.txt") -ErrorAction Stop
           Copy-Item "target\release\ace-app.exe" $app -ErrorAction Stop
-      - name: Package MSI
+      - name: Package MSI and branded Setup EXE
         shell: pwsh
         env:
           VERSION: ${{ inputs.version }}
         run: |
           & ".\installer\package.ps1" -Version $env:VERSION -EngineArtifacts ".\release-input\engine" -AppArtifacts ".\release-input\app"
-          if ($LASTEXITCODE -ne 0) { throw "MSI packaging failed" }
+          if ($LASTEXITCODE -ne 0) { throw "MSI and Setup packaging failed" }
+          if (-not (Test-Path "installer\dist\AceBlocker-Setup-$env:VERSION.exe")) { throw "Missing Setup EXE" }
       - name: Build Windows provenance manifest
         id: candidate
         shell: pwsh
@@ -115,11 +122,15 @@ jobs:
         run: |
           $msi = (Resolve-Path "installer\dist\AceBlocker-$env:VERSION.msi").Path
           $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $msi).Hash.ToLowerInvariant()
+          $setup = (Resolve-Path "installer\dist\AceBlocker-Setup-$env:VERSION.exe").Path
+          $setupSha = (Get-FileHash -Algorithm SHA256 -LiteralPath $setup).Hash.ToLowerInvariant()
           $manifest = [ordered]@{
             version = $env:VERSION
             os = "windows"
             architecture = "x64"
             sha256 = $sha
+            setupFile = "AceBlocker-Setup-$env:VERSION.exe"
+            setupSha256 = $setupSha
             sourceRepository = "${{ github.repository }}"
             sourceCommit = "${{ github.sha }}"
             sourceRunId = "${{ github.run_id }}"
@@ -149,6 +160,7 @@ jobs:
           name: AceBlocker-${{ inputs.version }}-windows-x64
           path: |
             installer/dist/AceBlocker-${{ inputs.version }}.msi
+            installer/dist/AceBlocker-Setup-${{ inputs.version }}.exe
             installer/dist/release-candidate-windows.json
           if-no-files-found: error
           retention-days: 14
@@ -302,6 +314,7 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           cp "release-assets/windows/AceBlocker-$VERSION.msi" dist/
+          cp "release-assets/windows/AceBlocker-Setup-$VERSION.exe" dist/
           cp "release-assets/linux/AceBlocker-$VERSION-linux-x64.tar.gz" dist/
           cp release-assets/windows/release-candidate-windows.json dist/
           cp release-assets/linux/release-candidate-linux.json dist/
@@ -324,7 +337,7 @@ jobs:
               ):
                   raise SystemExit(f"Candidate provenance/hash mismatch: {platform}")
           PY
-          (cd dist && sha256sum *.msi *.tar.gz > SHA256SUMS)
+          (cd dist && sha256sum *.exe *.msi *.tar.gz > SHA256SUMS)
       - name: Validate complete Windows and Linux release candidates
         env:
           VERSION: ${{ inputs.version }}
@@ -334,6 +347,7 @@ jobs:
             --commit "$GITHUB_SHA" \
             --repository "$GITHUB_REPOSITORY" \
             --windows "dist/AceBlocker-$VERSION.msi" \
+            --windows-setup "dist/AceBlocker-Setup-$VERSION.exe" \
             --linux "dist/AceBlocker-$VERSION-linux-x64.tar.gz" \
             --windows-manifest dist/release-candidate-windows.json \
             --linux-manifest dist/release-candidate-linux.json
@@ -360,5 +374,5 @@ jobs:
             gh release create "$tag" dist/* \
               --draft --prerelease --target "$GITHUB_SHA" \
               --title "Ace Blocker $tag (candidate)" \
-              --notes "Windows MSI and Linux x64 manual-install candidate. Not validated for production; see RELEASING.md inside the Linux archive and repository release documentation."
+              --notes "Windows branded Setup EXE (embedded MSI), standalone MSI, and Linux x64 manual-install candidate. Unsigned/not validated for production; see repository release documentation."
           fi

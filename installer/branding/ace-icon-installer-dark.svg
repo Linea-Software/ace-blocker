@@ -18,10 +18,9 @@
   <g id="_40___Taglines___letterspaced_outlines" data-name="40 • Taglines / letterspaced outlines">
   </g>
   <g id="_80___Installer_download_badge" data-name="80 • Installer download badge">
-    <circle id="Installer_badge___clearance_halo" data-name="Installer badge · clearance halo" cx="257" cy="257" r="55" fill="#1e2936"/>
-    <circle id="Installer_badge___amber_circular_border" data-name="Installer badge · amber circular border" cx="257" cy="257" r="48" fill="#f7b84b"/>
-    <circle id="Installer_badge___deep_ink_center" data-name="Installer badge · deep ink center" cx="257" cy="257" r="40" fill="#1e2936"/>
-    <path id="Installer_badge___download_arrow" data-name="Installer badge · download arrow" d="M251 226 C251 224 252 223 254 223 L260 223 C262 223 263 224 263 226 L263 248 L270 242 C272 240.667 273.667 241 275 243 L277 245 C278.333 247 278 249 276 251 L260 267 C258 269 256 269 254 267 L238 251 C236 249 236 247 238 245 L240 243 C242 241 244 241 246 243 L251 248 Z" fill="#f7b84b"/>
-    <path id="Installer_badge___download_tray" data-name="Installer badge · download tray" d="M238 273 L276 273 C277.657 273 279 274.343 279 276 L279 278 C279 279.657 277.657 281 276 281 L238 281 C236.343 281 235 279.657 235 278 L235 276 C235 274.343 236.343 273 238 273 Z" fill="#f7b84b"/>
+    <circle id="Installer_badge___narrow_separator" data-name="Installer badge · narrow separator" cx="248" cy="248" r="70" fill="#1e2936"/>
+    <circle id="Installer_badge___amber_disk" data-name="Installer badge · amber disk" cx="248" cy="248" r="65" fill="#f7b84b"/>
+    <path id="Installer_badge___enlarged_deep_ink_arrow" data-name="Installer badge · enlarged deep ink arrow" d="M238 205 C238 202.333 239.333 201 242 201 L254 201 C256.667 201 258 202.333 258 205 L258 244 L272 230 C274.667 227.333 277.333 227.333 280 230 L284 234 C286.667 236.667 286.667 239.333 284 242 L252 274 C249.333 276.667 246.667 276.667 244 274 L212 242 C209.333 239.333 209.333 236.667 212 234 L216 230 C218.667 227.333 221.333 227.333 224 230 L238 244 Z" fill="#1e2936"/>
+    <path id="Installer_badge___bold_download_tray" data-name="Installer badge · bold download tray" d="M217 282 L279 282 C281.209 282 283 283.791 283 286 L283 290 C283 292.209 281.209 294 279 294 L217 294 C214.791 294 213 292.209 213 290 L213 286 C213 283.791 214.791 282 217 282 Z" fill="#1e2936"/>
   </g>
 </svg>

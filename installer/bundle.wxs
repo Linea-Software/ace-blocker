@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Ace Blocker Windows download bootstrapper (WiX Burn v4).
+  The existing MSI remains the sole owner of service installation, lock
+  checks, and privileged maintenance. This EXE only chains that MSI.
+  __ACE_VERSION__ is substituted by package.ps1 at packaging time.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
+  <Bundle Name="Ace Blocker Setup"
+          Manufacturer="Linea Software"
+          Version="__ACE_VERSION__"
+          UpgradeCode="{8FE977D9-F4DE-4D88-B754-A38D09EBFEF3}"
+          IconSourceFile="branding\ace-icon-installer-dark.ico"
+          Compressed="yes">
+    <BootstrapperApplication>
+      <bal:WixStandardBootstrapperApplication
+          Theme="hyperlinkLicense"
+          LicenseUrl=""
+          LogoFile="branding\ace-icon-installer-dark.png"
+          SuppressOptionsUI="yes" />
+    </BootstrapperApplication>
+    <Chain>
+      <!-- Embedded offline payload. MSI custom actions retain lock enforcement. -->
+      <MsiPackage Id="AceBlockerMsi"
+                  SourceFile="__ACE_MSI_PATH__"
+                  Compressed="yes"
+                  Vital="yes"
+                  Visible="no" />
+    </Chain>
+  </Bundle>
+</Wix>

@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import re
+import struct
 import tarfile
 from pathlib import Path
 
@@ -39,6 +40,26 @@ def verify_msi(path: Path) -> None:
         header[28:30] != b"\xfe\xff" or
         header[30:32] not in (b"\x09\x00", b"\x0c\x00")):
         raise ValueError("Not an MSI compound-file header")
+
+
+def verify_setup(path: Path, manifest_path: Path, version: str) -> None:
+    """Validate the branded Windows x64 Burn EXE and its provenance."""
+    expected = f"AceBlocker-Setup-{version}.exe"
+    if path.name != expected or not 0 < path.stat().st_size <= MAX_PACKAGE_BYTES:
+        raise ValueError(f"Expected nonempty {expected} (max 100 MiB)")
+    with path.open("rb") as source:
+        header = source.read(4096)
+    if len(header) < 256 or header[:2] != b"MZ":
+        raise ValueError("Not a Windows Setup PE executable")
+    pe_offset = struct.unpack_from("<I", header, 0x3C)[0]
+    if (pe_offset + 6 > len(header) or header[pe_offset:pe_offset + 4] != b"PE\x00\x00"
+        or struct.unpack_from("<H", header, pe_offset + 4)[0] != 0x8664):
+        raise ValueError("Setup is not an x86-64 Windows PE executable")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
+    if manifest.get("setupFile") != expected:
+        raise ValueError("Windows Setup filename mismatch")
+    if manifest.get("setupSha256") != sha256_file(path):
+        raise ValueError("Windows Setup SHA-256 mismatch")
 
 
 def verify_linux(path: Path, version: str) -> None:
@@ -117,6 +138,7 @@ def main() -> None:
     parser.add_argument("--commit", required=True)
     parser.add_argument("--repository", required=True)
     parser.add_argument("--windows", required=True, type=Path)
+    parser.add_argument("--windows-setup", required=True, type=Path)
     parser.add_argument("--linux", required=True, type=Path)
     parser.add_argument("--windows-manifest", required=True, type=Path)
     parser.add_argument("--linux-manifest", required=True, type=Path)
@@ -124,8 +146,9 @@ def main() -> None:
     if not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
         parser.error("Version must be X.Y.Z")
     verify_candidate(args.windows, args.windows_manifest, args.version, "windows", args.commit, args.repository)
+    verify_setup(args.windows_setup, args.windows_manifest, args.version)
     verify_candidate(args.linux, args.linux_manifest, args.version, "linux", args.commit, args.repository)
-    print("Both Windows and Linux release artifacts passed structure, hash and provenance checks.")
+    print("Windows MSI, Setup EXE, and Linux release artifacts passed structure, hash and provenance checks.")
 
 
 if __name__ == "__main__":

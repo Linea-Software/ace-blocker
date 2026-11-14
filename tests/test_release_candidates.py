@@ -2,6 +2,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import struct
 import subprocess
 import sys
 import tarfile
@@ -26,6 +27,15 @@ class ReleaseCandidateTests(unittest.TestCase):
         header[30:32] = b"\x09\x00"
         windows.write_bytes(header)
 
+        # Minimal syntactically valid x64 PE header for bundle provenance tests.
+        setup = directory / f"AceBlocker-Setup-{version}.exe"
+        pe = bytearray(512)
+        pe[:2] = b"MZ"
+        struct.pack_into("<I", pe, 0x3C, 0x80)
+        pe[0x80:0x84] = b"PE\x00\x00"
+        struct.pack_into("<H", pe, 0x84, 0x8664)
+        setup.write_bytes(pe)
+
         linux = directory / f"AceBlocker-{version}-linux-x64.tar.gz"
         with tarfile.open(linux, "w:gz") as archive:
             for name in sorted(verifier.REQUIRED_LINUX):
@@ -44,6 +54,8 @@ class ReleaseCandidateTests(unittest.TestCase):
             manifest = directory / f"release-candidate-{platform}.json"
             manifest.write_text(json.dumps({
                 "version": version, "os": platform, "architecture": "x64",
+                **({"setupFile": setup.name,
+                    "setupSha256": hashlib.sha256(setup.read_bytes()).hexdigest()} if platform == "windows" else {}),
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 "sourceCommit": "a" * 40, "sourceRepository": "Linea-Software/ace-blocker",
                 "engineCommit": "a" * 40, "appCommit": "a" * 40,
@@ -59,6 +71,7 @@ class ReleaseCandidateTests(unittest.TestCase):
                     path, manifest, "1.2.3", platform,
                     "a" * 40, "Linea-Software/ace-blocker"
                 )
+            verifier.verify_setup(windows.parent / "AceBlocker-Setup-1.2.3.exe", manifests[0], "1.2.3")
 
     def test_cli_accepts_matching_release_candidates(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -70,6 +83,7 @@ class ReleaseCandidateTests(unittest.TestCase):
                     "--commit", "a" * 40,
                     "--repository", "Linea-Software/ace-blocker",
                     "--windows", str(windows),
+                    "--windows-setup", str(windows.parent / "AceBlocker-Setup-1.2.3.exe"),
                     "--linux", str(linux),
                     "--windows-manifest", str(manifests[0]),
                     "--linux-manifest", str(manifests[1]),
@@ -101,6 +115,22 @@ class ReleaseCandidateTests(unittest.TestCase):
                     windows, manifests[0], "1.2.3", "windows",
                     "a" * 40, "Linea-Software/ace-blocker"
                 )
+
+    def test_rejects_setup_hash_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            windows, _, manifests = self.make_candidates(Path(tmp))
+            setup = windows.parent / "AceBlocker-Setup-1.2.3.exe"
+            setup.write_bytes(setup.read_bytes() + b"tamper")
+            with self.assertRaisesRegex(ValueError, "SHA-256"):
+                verifier.verify_setup(setup, manifests[0], "1.2.3")
+
+    def test_rejects_fake_setup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            windows, _, manifests = self.make_candidates(Path(tmp))
+            setup = windows.parent / "AceBlocker-Setup-1.2.3.exe"
+            setup.write_bytes(b"MZ" + bytes(510))
+            with self.assertRaisesRegex(ValueError, "PE executable"):
+                verifier.verify_setup(setup, manifests[0], "1.2.3")
 
     def test_rejects_provenance_mismatch(self):
         with tempfile.TemporaryDirectory() as tmp:

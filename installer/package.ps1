@@ -272,7 +272,37 @@ try {
     }
 }
 
+# Build a self-contained, custom-icon Windows installer that chains this exact MSI.
+# Burn does not replace or bypass the MSI's maintenance/uninstall lock checks.
+$BundleSource = Join-Path $ScriptDir 'bundle.wxs'
+$GeneratedBundleSource = Join-Path $ScriptDir 'bundle.generated.wxs'
+$bundleXml = Get-Content -LiteralPath $BundleSource -Raw
+$msiPath = (Resolve-Path -LiteralPath $outputPath).Path
+if (-not ($bundleXml.Contains('__ACE_VERSION__') -and $bundleXml.Contains('__ACE_MSI_PATH__'))) {
+    throw 'Burn bundle template is missing version/MSI placeholders.'
+}
+$generatedBundleXml = $bundleXml.Replace('__ACE_VERSION__', $Version).Replace('__ACE_MSI_PATH__', $msiPath)
+$setupPath = Join-Path $OutputDir ('AceBlocker-Setup-{0}.exe' -f $Version)
+
+try {
+    Set-Content -LiteralPath $GeneratedBundleSource -Value $generatedBundleXml -Encoding utf8
+    Push-Location $ScriptDir
+    try {
+        & $WixCommand build 'bundle.generated.wxs' -ext WixToolset.Bal.wixext -arch x64 -o $setupPath
+        if ($LASTEXITCODE -ne 0) {
+            throw 'WiX Burn bootstrapper build failed. Install WixToolset.Bal.wixext/4.0.5.'
+        }
+    } finally {
+        Pop-Location
+    }
+} finally {
+    if (Test-Path -LiteralPath $GeneratedBundleSource) {
+        Remove-Item -LiteralPath $GeneratedBundleSource -Force
+    }
+}
+
 Write-Host ''
 Write-Host '================================================================' -ForegroundColor Green
-Write-Host ('  Output: {0}' -f $outputPath) -ForegroundColor Green
+Write-Host ('  MSI:   {0}' -f $outputPath) -ForegroundColor Green
+Write-Host ('  Setup: {0}' -f $setupPath) -ForegroundColor Green
 Write-Host '================================================================' -ForegroundColor Green

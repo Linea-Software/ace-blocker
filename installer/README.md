@@ -19,10 +19,15 @@ Programs and Features. The setup dialog shows the BMP through the MSI `Binary`
 table. The Start Menu and Desktop shortcuts still use the application's own
 `ace-app.exe` icon, **not** the installer download badge.
 
-Windows Explorer normally shows the generic Windows Installer icon for a raw
-`.msi` file; this MSI metadata does not replace the file's Shell icon. A
-custom-icon download executable would require a separately authored bootstrapper.
-No bootstrapper is added by this change.
+Windows Explorer shows the generic Windows Installer icon for a raw
+`.msi` file. To provide a branded download, `bundle.wxs` builds an offline WiX
+Burn bootstrapper, `AceBlocker-Setup-<version>.exe`, with the download-badge
+shell icon. The EXE embeds the **same MSI**; the original MSI still owns
+install/upgrade/uninstall custom actions, service configuration and lock checks.
+The MSI remains available separately for the signed update/staging pipeline.
+The EXE is not automatically signed and must pass code-signing and disposable-VM
+installation tests before it is published. Small ICO sizes 16/24/32 px use
+simplified, larger arrow artwork, while 48–256 px use the full variant.
 
 When the installer logo changes in `ace-blocker-logo`, copy its ICO/SVG/PNG
 exports into `installer/branding/` and update the 128×128 24-bit BMP used by the
@@ -41,6 +46,7 @@ python -m unittest discover -s installer/tests -p 'test_*.py' -v
   ```powershell
   dotnet tool install -g wix --version 4.0.5
   & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.Util.wixext/4.0.5
+  & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.Bal.wixext/4.0.5
   ```
 
   The major version is pinned intentionally. WiX v7 has different licensing
@@ -79,8 +85,8 @@ directly with explicit inputs:
 `package.ps1` never reaches into sibling source repositories. It validates and
 stages the supplied binaries, verifies the Wintun Authenticode signature,
 includes the selected offline site-pack bundle, stamps a generated WiX source,
-and writes `dist\AceBlocker-<version>.msi` without modifying
-`installer.wxs`.
+and writes `dist\AceBlocker-<version>.msi` plus the branded
+`dist\AceBlocker-Setup-<version>.exe` without modifying the WiX source templates.
 
 The packager runs `verify-crt.ps1` over the PE import tables of all five
 executables and the signed Wintun DLL and rejects dependencies on MSVC
