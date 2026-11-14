@@ -36,6 +36,12 @@
 
     <MediaTemplate EmbedCab="yes" />
 
+    <!-- Installer-only branding: MSI Add/Remove Programs icon and setup dialog.
+         The app shortcuts still use ace-app.exe's own icon. -->
+    <Icon Id="AceInstallerIcon" SourceFile="branding\ace-icon-installer-dark.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AceInstallerIcon" />
+    <Binary Id="AceInstallerDialogLogo" SourceFile="branding\ace-icon-installer-dark.bmp" />
+
     <!-- ============================================================ -->
     <!--  Directory structure                                          -->
     <!-- ============================================================ -->
@@ -296,11 +302,19 @@
     <UI>
       <Dialog Id="InstallConfirmDlg" Width="370" Height="180" Title="[ProductName] Setup" NoMinimize="yes">
         <Control
+          Id="InstallerLogo"
+          Type="Bitmap"
+          X="20"
+          Y="24"
+          Width="60"
+          Height="60"
+          Text="AceInstallerDialogLogo" />
+        <Control
           Id="Heading"
           Type="Text"
-          X="20"
-          Y="20"
-          Width="330"
+          X="96"
+          Y="24"
+          Width="254"
           Height="20"
           Transparent="yes"
           NoPrefix="yes"
@@ -308,10 +322,10 @@
         <Control
           Id="Description"
           Type="Text"
-          X="20"
+          X="96"
           Y="52"
-          Width="330"
-          Height="45"
+          Width="254"
+          Height="70"
           Text="Ace Blocker will install its desktop app and protected background services on this computer. Click Install to continue." />
         <Control
           Id="Install"

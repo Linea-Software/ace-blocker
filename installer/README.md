@@ -3,6 +3,36 @@
 Packages **ace-engine**, the dedicated **ace-watchdog**, and **ace-app** into a
 Windows MSI installer using WiX Toolset v4.
 
+## Installer branding
+
+The installer uses the separate **download-badge** artwork, kept inside
+`installer/branding/` so packaging does not depend on the sibling
+`ace-blocker-logo` checkout:
+
+- `ace-icon-installer-dark.ico`: Windows installer icon (16–256 px).
+- `ace-icon-installer-dark.bmp`: bitmap shown in the interactive setup dialog.
+- `ace-icon-installer-dark.svg` and `.png`: editable vector export and reference image.
+
+`installer.wxs` embeds the ICO through the WiX `Icon` table and
+`ARPPRODUCTICON`, so the installed product uses it in Windows Apps & Features /
+Programs and Features. The setup dialog shows the BMP through the MSI `Binary`
+table. The Start Menu and Desktop shortcuts still use the application's own
+`ace-app.exe` icon, **not** the installer download badge.
+
+Windows Explorer normally shows the generic Windows Installer icon for a raw
+`.msi` file; this MSI metadata does not replace the file's Shell icon. A
+custom-icon download executable would require a separately authored bootstrapper.
+No bootstrapper is added by this change.
+
+When the installer logo changes in `ace-blocker-logo`, copy its ICO/SVG/PNG
+exports into `installer/branding/` and update the 128×128 24-bit BMP used by the
+setup UI. The installer uses only its checked-in branding files. Test with:
+
+```powershell
+python -m unittest discover -s installer/tests -p 'test_*.py' -v
+```
+
+
 ## Prerequisites
 
 - [Rust toolchain](https://rustup.rs/) (for `ace-engine` and `ace-watchdog`)
