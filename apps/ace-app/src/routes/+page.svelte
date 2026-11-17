@@ -21,6 +21,14 @@
     import { findUpcomingBlockTransitions } from "$lib/utils/dashboard-transitions";
 
     const engineOnline = $derived(engineStore.isAlive);
+
+    // This page owns its data lifecycle. The old EngineState widget that
+    // refreshed the global store is not mounted in the redesigned layout.
+    // Fetch on entering Control and whenever the engine reconnects, without
+    // restoring the old five-second polling loop.
+    $effect(() => {
+        if (engineStore.isAlive) void dashboardStore.refresh();
+    });
     const activeSnapshots = $derived(
         dashboardStore.networkBlockSnapshots.filter(
             (snapshot) => snapshot.block.enabled && snapshot.block.isActive,

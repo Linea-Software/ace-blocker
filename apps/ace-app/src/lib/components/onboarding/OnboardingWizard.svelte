@@ -34,6 +34,7 @@
 
     import { countMessage } from "$lib/utils/count-message";
     import { onboardingStore } from "$lib/stores/onboarding.svelte";
+    import { dashboardStore } from "$lib/stores/dashboard.svelte";
     import { getPackIcon, FALLBACK_ICON } from "$lib/utils/pack-icons";
     import {
         ONBOARDING_BLOCK_ORDER,
@@ -148,6 +149,10 @@
             }
 
             await invalidateAll();
+            // The Control page remains mounted behind this modal. Refresh its
+            // singleton after applying the choices, or it keeps the empty
+            // pre-onboarding dashboard even though the engine saved the blocks.
+            await dashboardStore.refresh();
             return true;
         } catch (error) {
             console.error("Onboarding: failed to apply choices", error);
