@@ -52,8 +52,20 @@ pub const LINUX_WATCHDOG_SOCKET_PATH: &str = "/run/ace-blocker/watchdog.sock";
 pub const LINUX_WATCHDOG_PAUSE_PATH: &str = "/run/ace-blocker/watchdog-heartbeat.pause";
 
 pub const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(3);
+// Windows first boots can be busy with certificate trust, WebView2 and Wintun
+// initialization. Allow enough time for real progress before declaring the
+// engine hung; Linux keeps its tighter watchdog timing.
+#[cfg(windows)]
+pub const HEARTBEAT_TIMEOUT: Duration = Duration::from_secs(5);
+#[cfg(not(windows))]
 pub const HEARTBEAT_TIMEOUT: Duration = Duration::from_secs(2);
+#[cfg(windows)]
+pub const HEARTBEAT_FAILURE_THRESHOLD: u32 = 4;
+#[cfg(not(windows))]
 pub const HEARTBEAT_FAILURE_THRESHOLD: u32 = 3;
+#[cfg(windows)]
+pub const ENGINE_STARTUP_GRACE: Duration = Duration::from_secs(60);
+#[cfg(not(windows))]
 pub const ENGINE_STARTUP_GRACE: Duration = Duration::from_secs(20);
 pub const DEFAULT_MAINTENANCE_TTL: Duration = Duration::from_secs(180);
 pub const MIN_MAINTENANCE_TTL: Duration = Duration::from_secs(120);

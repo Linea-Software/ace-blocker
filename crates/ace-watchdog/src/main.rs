@@ -459,7 +459,20 @@ mod windows_impl {
         log_event(&format!(
             "engine declared hung after {failures} heartbeat failures; verifying SCM PID {process_id}"
         ));
-        terminate_verified_engine_process(process_id)?;
+        if let Err(error) = terminate_verified_engine_process(process_id) {
+            // The process may have exited or SCM may have restarted it since
+            // our status query. Keep the watchdog service alive and retry after
+            // backoff rather than crashing on an access-denied race.
+            log_event(&format!(
+                "verified engine termination was not completed for PID {process_id}: {error:#}; retrying after backoff"
+            ));
+            context.note_recovery_attempt(now);
+            context.transition(WatchdogState::Backoff {
+                until: context.next_recovery_at,
+                failures: context.recovery_failures,
+            });
+            return Ok(());
+        }
         log_event(&format!(
             "verified engine PID {process_id} terminated; SCM recovery will run"
         ));
@@ -565,9 +578,15 @@ mod windows_impl {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
-                        if let Some((_, _, sent_at)) = &pending_ping
-                            && sent_at.elapsed() >= HEARTBEAT_TIMEOUT {
+                        if let Some((_, _, sent_at)) = &pending_ping {
+                            if sent_at.elapsed() < HEARTBEAT_TIMEOUT {
+                                // A delayed but valid pong must still match
+                                // its challenge. Do not overwrite the pending
+                                // nonce on each interval tick.
+                                continue;
+                            }
                             note_heartbeat_failure(shared_health);
+                            pending_ping.take();
                         }
                         sequence = sequence.wrapping_add(1);
                         let nonce = WatchdogNonce::from(Uuid::new_v4());
