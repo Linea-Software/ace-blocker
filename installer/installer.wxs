@@ -30,8 +30,12 @@
     Compressed="yes"
     UpgradeCode="{D3A9F1B2-8C4E-4A2D-B1F5-6E7A8D9C0B2E}">
 
-    <!-- Allow major upgrades (old version is removed first) -->
+    <!-- Pre-release rebuilds can share a three-part version but have new ProductCodes.
+         Treat these as upgrades, and make removal rollback-safe. Production
+         signed releases must still increase their versions. -->
     <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      Schedule="afterInstallInitialize"
       DowngradeErrorMessage="A newer version of Ace Blocker is already installed." />
 
     <MediaTemplate EmbedCab="yes" />
@@ -120,12 +124,13 @@
             RestartServiceDelayInSeconds="2" />
         </ServiceInstall>
 
-        <!-- Start service on install, stop on uninstall -->
+        <!-- Never stop a live engine during install/repair. The previous MSI
+             performs graceful, lock-aware maintenance during major upgrades. -->
         <ServiceControl
           Id="SC_AceEngine"
           Name="AceEngine"
           Start="install"
-          Stop="both"
+          Stop="uninstall"
           Remove="uninstall"
           Wait="yes" />
       </Component>
@@ -165,7 +170,7 @@
           Id="SC_AceWatchdog"
           Name="AceEngineWatchdog"
           Start="install"
-          Stop="both"
+          Stop="uninstall"
           Remove="uninstall"
           Wait="yes" />
       </Component>
@@ -459,10 +464,8 @@
     <InstallExecuteSequence>
       <!-- Install the CA certificate once files are in place -->
       <Custom Action="CA_InstallCert" After="InstallFiles" Condition="NOT Installed" />
-      <!-- Shut the engine down gracefully BEFORE the lock gate (LIF-01): see
-           CA_ShutdownEngine. Sequencing is shutdown -> check locks -> remove
-           certs, exactly as the plan prescribes. If a lock is active the
-           engine refuses shutdown (423) and the gate aborts the uninstall. -->
+      <!-- Enforce the lock gate first, then request authenticated shutdown and
+           watchdog maintenance. No destructive MSI action precedes the gate. -->
       <Custom Action="CA_PrepareEngineMaintenance" After="CA_CheckLocks" Condition="REMOVE" />
       <!-- Uninstall gate: refuse while a lock is active, BEFORE any
            destructive step (stop/delete services, remove files). Runs on
