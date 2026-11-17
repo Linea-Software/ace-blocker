@@ -6,6 +6,8 @@ default-run = "ace-engine"
 
 [features]
 default = []
+# Opt-in local development build. Never enable in production releases.
+no-license = []
 # Developer-only tool binaries (not shipped): build/lint them with
 # `--features dev-tools`. `ace-redirect` and `install-cert` are product
 # binaries and are always built (the installer packages them).

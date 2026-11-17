@@ -55,6 +55,9 @@ impl AppState {
     /// acceptance and the desktop shell are local state. Background/explicit
     /// refresh remains responsible for remote entitlement validation.
     async fn cached_pro_account_entitled(&self) -> bool {
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         #[cfg(debug_assertions)]
         match self.network_manager.read().await.get_debug_pro_policy() {
             DebugProPolicy::Pro => return true,
@@ -78,6 +81,9 @@ impl AppState {
     }
 
     async fn pro_account_entitled(&self, refresh: bool) -> bool {
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         #[cfg(debug_assertions)]
         match self.network_manager.read().await.get_debug_pro_policy() {
             DebugProPolicy::Pro => return true,

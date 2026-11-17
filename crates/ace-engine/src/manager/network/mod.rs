@@ -169,6 +169,9 @@ impl NetworkManager {
     }
 
     pub fn is_pro_user_cached(&self) -> bool {
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         #[cfg(debug_assertions)]
         match self.debug_pro_policy {
             DebugProPolicy::Pro => return true,
@@ -179,6 +182,9 @@ impl NetworkManager {
     }
 
     pub async fn is_pro_user(&self) -> bool {
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         #[cfg(debug_assertions)]
         match self.debug_pro_policy {
             DebugProPolicy::Pro => return true,

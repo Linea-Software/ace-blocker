@@ -94,6 +94,10 @@ impl AccountManager {
     }
 
     pub async fn is_pro(&self) -> bool {
+        // Opt-in development build: local Pro gates do not require a license.
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         // The proxy hot path uses the long cache window.
         self.verify_pro_if_stale(chrono::Duration::days(1)).await
     }
@@ -196,11 +200,17 @@ impl AccountManager {
     /// Concurrent calls remain single-flight; transient errors retain the
     /// last known entitlement.
     pub async fn refresh_pro_status(&self) -> bool {
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         self.verify_pro_if_stale(chrono::Duration::seconds(30))
             .await
     }
 
     pub fn get_cached_pro_status(&self) -> bool {
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         let now = Utc::now().timestamp();
         self.cached_pro.load(Ordering::Acquire)
             && now <= self.cached_until.load(Ordering::Acquire)
@@ -221,6 +231,9 @@ impl AccountManager {
     /// logged-out account is never shown as Pro, even if its settings row
     /// still contains a cached entitlement from an earlier session.
     pub async fn get_cached_pro_entitlement(&self) -> bool {
+        if cfg!(feature = "no-license") {
+            return true;
+        }
         matches!(self.get_api_key().await, Ok(Some(_))) && self.get_cached_pro_status()
     }
 
@@ -399,6 +412,20 @@ impl AccountManager {
 mod cached_pro_tests {
     use super::*;
 
+    #[cfg(feature = "no-license")]
+    #[tokio::test]
+    async fn no_license_grants_pro_without_a_saved_key_or_network_request() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&dir.path().join("no-license.sqlite")).unwrap());
+        let manager = AccountManager::from(db).unwrap();
+
+        assert!(manager.get_api_key().await.unwrap().is_none());
+        assert!(manager.is_pro().await);
+        assert!(manager.refresh_pro_status().await);
+        assert!(manager.get_cached_pro_status());
+        assert!(manager.get_cached_pro_entitlement().await);
+    }
+
     #[test]
     fn explicit_refresh_can_detect_an_upgrade_before_the_proxy_cache_expires() {
         let now = Local::now();
@@ -421,6 +448,7 @@ mod cached_pro_tests {
         assert!(pro_check_is_stale(None, chrono::Duration::seconds(30), now,));
     }
 
+    #[cfg(not(feature = "no-license"))]
     #[tokio::test]
     async fn initial_account_snapshot_uses_local_entitlement_and_requires_a_saved_key() {
         let dir = tempfile::tempdir().unwrap();
@@ -441,6 +469,7 @@ mod cached_pro_tests {
         assert!(!manager.get_cached_pro_entitlement().await);
     }
 
+    #[cfg(not(feature = "no-license"))]
     #[test]
     fn cached_entitlement_is_shared_between_clones_and_reloaded_on_restart() {
         let dir = tempfile::tempdir().unwrap();
