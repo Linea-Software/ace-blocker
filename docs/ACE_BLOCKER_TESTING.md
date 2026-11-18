@@ -322,7 +322,7 @@ A running engine does not prove that rules and locks are still enforced. Service
 - Installer service configuration, ACLs, and maintenance lifecycle: `installer/README.md`.
 - Current shutdown mechanism: `ace-engine.exe --request-shutdown` over typed remoc IPC, **not** the obsolete HTTP `POST /system/shutdown` path.
 - Native IPC/security checks: `docs/ai/ACE_APP_NATIVE_TEST_GATE.md` and `docs/IPC_ARCHITECTURE.md`.
-- Existing security leads requiring native verification: `docs/SECURITY_AUDIT_FOLLOWUP_2026-10-26.md`.
+- Related threat models requiring native verification: `docs/VPN_BROWSER_EXTENSION_THREAT_MODEL.md` and `docs/TRUSTED_TIME_FUTURE.md`.
 
 ### Evidence template
 
@@ -336,3 +336,70 @@ For each scenario, record:
 - Redacted logs and screenshots, plus PASS/FAIL/LIMITATION and a linked issue for failures.
 
 Never include real credentials, capability tokens, CA private keys, or production user data in logs or test artifacts.
+
+## 12. VPN, TOR, I2P and encrypted-proxy bypass testing
+
+**Goal:** Active Network Blocks and Locks continue to protect supported browsers when a desktop VPN, browser VPN/proxy extension, TOR transport, local SOCKS/HTTP relay or anonymity-network helper is present. Verify the *actual blocked origin*, not only that a tunnel is connected or an engine service is Running.
+
+**Separate threat mechanisms:**
+
+- **Desktop VPN routing:** WireGuard/OpenVPN/Proton clients modify physical/default routes, tunnel interfaces and DNS. On Windows verify WFP route enforcement; on Linux verify ACE's TUN, policy routing and nftables guard.
+- **Browser extensions and encrypted relays:** the proxy CONNECT may hide the origin hostname from ACE. Known relay-domain rules and TCP/4443 guard are defense in depth, not universal protection against HTTPS relays on TCP/443.
+- **Local SOCKS/HTTP helpers:** browsers may send to a loopback proxy; the helper is a separate process making the outbound connection. Verify TOR/Tor Browser, `torsocks`, process aliases and different ports. Loopback exceptions can preserve this bypass boundary.
+- **Anonymity networks and bridges:** TOR bridges (obfs4, Snowflake, WebTunnel) and I2P outproxies are separate cases. An I2P tunnel alone is not evidence that a public HTTPS origin was reached.
+
+### Reusable snapshot topology and automation
+
+1. Maintain **one disposable libvirt VM per OS**: Windows 11, Ubuntu, Arch and CachyOS. Do not install clients or change routing on the development host.
+2. For each VM maintain `base` and `ace-ready` states, then **environment snapshots** such as `ubuntu-wireguard-ready`, `ubuntu-openvpn-ready`, `ubuntu-tor-ready`, `ubuntu-tor-browser-ready`, `ubuntu-socks-ready`, `ubuntu-i2p-ready` and `ubuntu-proton-ready`. A snapshot is per provider/configuration, **not per test case**.
+3. Use an environment snapshot for many scenarios. For tests that change persistent state or damage the guest, shut down normally and restore it before continuing. Do not use `virsh destroy` or force snapshot-revert to defeat an active Lock. Offline internal libvirt snapshots require compatible QCOW2 storage; reject unsupported external/multi-disk snapshots rather than guessing.
+4. Create a new test Network Block (Always, known blocked HTTPS hostname, Hard/Time Lock) **after** restoring a snapshot. Do not preserve a live timed Lock inside a long-lived snapshot: trusted-clock rollback and expired wall-clock state can contaminate results.
+5. Provision official free distro packages through the QEMU Guest Agent. Use a controlled WireGuard/OpenVPN gateway and SOCKS/HTTPS relay where possible, with disposable keys. Keep real Proton/Windscribe Free sessions in **private** snapshots prepared by a human; never automate account creation, CAPTCHA, login or paid subscriptions.
+6. Run the VM orchestration in `installer/tests/network_lab/` using **TOML**, not YAML. `lab.toml` declares environment snapshots and scenarios; `run.py` supports validation, dry-run planning, provisioning, provider connect/disconnect, snapshot save/restore and read-only probes. All mutating operations require `--execute --confirm-domain`; snapshot restore additionally requires `--accept-data-loss`.
+7. Distinguish `INFRA_OK` (service, routes, proxy listener) from **PASS** (supported browser cannot reach the blocked origin while an allowed origin still works). Current Python probes do **not** prove end-to-end blocking; native browser evidence must be added separately and missing checks remain NOT RUN.
+8. Record `ace-tun` decisions, Linux `ip rule`/`nft` and service state (or Windows WFP), browser process identity and NetLog, remote relay address, and blocked/allowed origin-server logs, plus any packet captures. Keep screenshots and network metadata private, and sanitize all tokens and credentials.
+
+### VPN / proxy test cases
+
+| ID | Priority | Scenario | Expected verification |
+| --- | --- | --- | --- |
+| VPN-01 | P0 | Supported browser with no VPN, baseline | Blocked origin denied and allowed origin reachable before enabling a VPN |
+| VPN-02 | P0 | WireGuard full tunnel, including route changes and startup order | Protected browser traffic remains filtered; gateway observes only permitted egress |
+| VPN-03 | P0 | OpenVPN and WireGuard split tunneling, include/exclude browser or destination | A route exclusion cannot silently permit a locked blocked origin |
+| VPN-04 | P0 | Proton Free browser extension connected/disconnected, guard OFF | Measure actual proxy bypass if present; record it as FAIL/limitation, not a successful test |
+| VPN-05 | P0 | Same extension with **explicitly opted-in** managed browser guard ON | Proxy permission is denied on supported native browsers; unrelated allowed browsing remains functional |
+| VPN-06 | P1 | Desktop VPN and browser proxy extension active simultaneously | Layered routing/proxy behavior is visible and a blocked origin does not silently escape |
+| VPN-07 | P0 | Start VPN before/after ACE, reboot, restore browser tabs and switch servers | No permanent stale unrestricted session or service-routing race |
+| VPN-08 | P1 | Disconnect/reconnect, tunnel failure, kill switch and server rotation | Active blocks remain enforced or protection is clearly marked degraded |
+| VPN-09 | P1 | DoH, IPv4/IPv6, QUIC/HTTP3, DNS switch, split DNS | No unnoticed route/hostname attribution bypass on supported browsers |
+| VPN-10 | P1 | HTTPS proxy relay on TCP 443, 4443 and 8443 | Identify and document hidden-origin paths; 4443-specific deny alone is insufficient |
+| VPN-11 | P0 | Local HTTP/SOCKS5/HTTPS proxy helper or browser-to-loopback connection | An unprotected helper does not silently act as an untracked relay for a locked blocked origin |
+| VPN-12 | P1 | Chrome/Chromium, Firefox, Edge/Brave as available, private windows and new profiles | Process attribution and browser-managed policy remain effective on every claimed target |
+| VPN-13 | P2 | Real free providers (Proton, Windscribe) and any additional voluntarily available clients | Log client/protocol, exact free-tier limitations and coverage; **do not** buy paid plans |
+| VPN-14 | P1 | Ubuntu, Arch, CachyOS and Windows network routes and enforcement boundary | Linux RPDB/nftables vs Windows WFP are validated separately, not inferred from one another |
+
+### TOR and related anonymity-network test cases
+
+| ID | Priority | Scenario | Expected verification |
+| --- | --- | --- | --- |
+| TOR-01 | P0 | Tor Browser with no bridge | Compare blocked and allowed HTTPS origins, including the Tor Browser process identity |
+| TOR-02 | P0 | Chrome/Firefox configured with TOR SOCKS5 on localhost | Local proxy routing cannot deliver an origin blocked by an active Network Block |
+| TOR-03 | P1 | TOR daemon and `torsocks` as separate processes | Verify listener, process attribution and real browser behavior; a listening socket alone is only INFRA_OK |
+| TOR-04 | P1 | Tor Browser with obfs4 bridge | Verify blocked origin while distinguishing bridge bootstrap failure from enforcement failure |
+| TOR-05 | P1 | Tor Browser with Snowflake or WebTunnel | Test encrypted/obfuscated helper relay behavior without treating transport success as filter success |
+| TOR-06 | P0 | TOR starts before/after ACE and browser | No startup-order bypass or stale pre-existing proxy session |
+| TOR-07 | P1 | Kill/restart TOR process with active Hard Lock | Engine stays responsive and blocking persists after helper recovery |
+| TOR-08 | P1 | Nondefault SOCKS port, process path/binary alias, separate proxy owner | Test the real process-matching rule, not solely the known `tor.exe` name |
+| TOR-09 | P0 | Loopback/localhost, remote DNS over SOCKS, IPv6 and new browser profile | Observe whether trusted/untrusted helper boundaries create an origin bypass |
+| TOR-10 | P1 | Repeat Windows 11, Ubuntu, Arch and CachyOS | Record OS-specific browser process aliases, policy differences and known limits |
+| I2P-01 | P2 | I2P local HTTP proxy and a *controlled* external outproxy where available | Test hostname visibility and origin reachability; no outproxy means NOT RUN, not PASS |
+
+### Release criteria and known limits
+
+- **P0 FAIL:** a standard-user supported browser reaches an origin blocked by an active protected Network Block through VPN/TOR/proxy, without explicit documented exemption. A P0 issue blocks release pending triage.
+- Do not confuse "TOR blocked completely" with secure behavior unless the product's intended compatibility policy explicitly permits blanket denial. Check allowed browsing and non-browser applications to detect harmful false positives.
+- Do not claim protection from every VPN relay, bridge or root/administrator-controlled network route. If the policy does not support a configuration, document the **LIMITATION** and verify no false "Protected" UI state.
+- Never claim a live provider test passed from a local simulation. Free test tunnels exercise routing and proxy *classes*; paid/proprietary client differences remain unverified until tested with the actual client.
+- The executable names in `LOCAL_PROXY_PROCESSES` and the existing localhost exception require **native process and route tests**, especially for Tor Browser's bundled helper processes on Linux.
+
+**References:** `installer/tests/network_lab/README.md`, `installer/tests/network_lab/lab.toml`, `docs/VPN_BROWSER_EXTENSION_THREAT_MODEL.md`, `docs/BROWSER_PROXY_ENFORCEMENT.md`, `docs/LINUX_BROWSER_PROXY_ENFORCEMENT.md`, `crates/ace-engine/src/service/proxy/constants.rs`, and `crates/ace-tun/src/platform/mod.rs`.
