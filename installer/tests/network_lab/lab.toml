@@ -1,0 +1,430 @@
+# Environment-per-provider snapshots, NOT snapshots per test case.
+# Change 'domain' to the actual owned disposable libvirt domain before running.
+# The same domain can have many named libvirt snapshots; it must be shut off
+# for snapshot creation/revert. Explicit --execute and confirmation are required.
+
+[lab]
+libvirt_uri = "qemu:///session"
+artifacts = ".artifacts"
+
+[[environments]]
+name = "ubuntu-direct"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "direct"
+snapshot = "ubuntu-ace-ready"
+
+[[environments]]
+name = "ubuntu-wireguard"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "wireguard"
+snapshot = "ubuntu-wireguard-ready"
+
+[[environments]]
+name = "ubuntu-openvpn"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "openvpn"
+snapshot = "ubuntu-openvpn-ready"
+
+[[environments]]
+name = "ubuntu-tor"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "tor"
+snapshot = "ubuntu-tor-ready"
+
+[[environments]]
+name = "ubuntu-tor-browser"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "tor-browser"
+snapshot = "ubuntu-tor-browser-ready"
+
+[[environments]]
+name = "ubuntu-socks"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "socks"
+snapshot = "ubuntu-socks-ready"
+
+[[environments]]
+name = "ubuntu-i2p"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "i2p"
+snapshot = "ubuntu-i2p-ready"
+
+[[environments]]
+name = "ubuntu-proton"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "proton"
+snapshot = "ubuntu-proton-ready"
+
+[[environments]]
+name = "ubuntu-windscribe"
+domain = "ace-lab-ubuntu"
+distribution = "ubuntu"
+provider = "windscribe"
+snapshot = "ubuntu-windscribe-ready"
+
+[[environments]]
+name = "arch-direct"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "direct"
+snapshot = "arch-ace-ready"
+
+[[environments]]
+name = "arch-wireguard"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "wireguard"
+snapshot = "arch-wireguard-ready"
+
+[[environments]]
+name = "arch-openvpn"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "openvpn"
+snapshot = "arch-openvpn-ready"
+
+[[environments]]
+name = "arch-tor"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "tor"
+snapshot = "arch-tor-ready"
+
+[[environments]]
+name = "arch-tor-browser"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "tor-browser"
+snapshot = "arch-tor-browser-ready"
+
+[[environments]]
+name = "arch-socks"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "socks"
+snapshot = "arch-socks-ready"
+
+[[environments]]
+name = "arch-i2p"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "i2p"
+snapshot = "arch-i2p-ready"
+
+[[environments]]
+name = "arch-proton"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "proton"
+snapshot = "arch-proton-ready"
+
+[[environments]]
+name = "arch-windscribe"
+domain = "ace-lab-arch"
+distribution = "arch"
+provider = "windscribe"
+snapshot = "arch-windscribe-ready"
+
+[[environments]]
+name = "cachyos-direct"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "direct"
+snapshot = "cachyos-ace-ready"
+
+[[environments]]
+name = "cachyos-wireguard"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "wireguard"
+snapshot = "cachyos-wireguard-ready"
+
+[[environments]]
+name = "cachyos-openvpn"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "openvpn"
+snapshot = "cachyos-openvpn-ready"
+
+[[environments]]
+name = "cachyos-tor"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "tor"
+snapshot = "cachyos-tor-ready"
+
+[[environments]]
+name = "cachyos-tor-browser"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "tor-browser"
+snapshot = "cachyos-tor-browser-ready"
+
+[[environments]]
+name = "cachyos-socks"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "socks"
+snapshot = "cachyos-socks-ready"
+
+[[environments]]
+name = "cachyos-i2p"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "i2p"
+snapshot = "cachyos-i2p-ready"
+
+[[environments]]
+name = "cachyos-proton"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "proton"
+snapshot = "cachyos-proton-ready"
+
+[[environments]]
+name = "cachyos-windscribe"
+domain = "ace-lab-cachyos"
+distribution = "cachyos"
+provider = "windscribe"
+snapshot = "cachyos-windscribe-ready"
+
+[[environments]]
+name = "windows-direct"
+domain = "ace-lab-windows11"
+distribution = "windows"
+provider = "direct"
+snapshot = "windows-ace-ready"
+
+[[environments]]
+name = "windows-wireguard"
+domain = "ace-lab-windows11"
+distribution = "windows"
+provider = "wireguard"
+snapshot = "windows-wireguard-ready"
+
+[[environments]]
+name = "windows-tor-browser"
+domain = "ace-lab-windows11"
+distribution = "windows"
+provider = "tor-browser"
+snapshot = "windows-tor-browser-ready"
+
+[[environments]]
+name = "windows-proton"
+domain = "ace-lab-windows11"
+distribution = "windows"
+provider = "proton"
+snapshot = "windows-proton-ready"
+
+# Dedicated gateway VM, snapshotted separately from the three client VMs.
+[[environments]]
+name = "wireguard-gateway"
+domain = "ace-lab-vpn-gateway"
+distribution = "ubuntu"
+provider = "wireguard"
+snapshot = "wireguard-gateway-base"
+
+[[cases]]
+id = "LAB-01"
+kind = "baseline"
+environments = ["ubuntu-direct", "arch-direct", "cachyos-direct", "windows-direct"]
+expected = "Baseline service/route information only; requires subsequent browser evidence"
+
+[[cases]]
+id = "LAB-02"
+kind = "routing"
+environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn"]
+expected = "Record both original route and VPN route; compare protected browser behavior separately"
+
+[[cases]]
+id = "LAB-03"
+kind = "browser-guard"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser", "ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+expected = "Record Linux browser proxy-policy status; do not enable it without opt-in"
+
+[[cases]]
+id = "VPN-01"
+kind = "browser"
+environments = ["ubuntu-direct", "arch-direct", "cachyos-direct", "windows-direct"]
+expected = "With no VPN, blocked origin must be denied and allowed origin reachable"
+
+[[cases]]
+id = "VPN-02"
+kind = "browser"
+environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard"]
+expected = "IPv4 WireGuard lab tunnel only; verify IPv6 separately, and require real blocked/allowed browser-origin evidence"
+
+[[cases]]
+id = "VPN-03"
+kind = "browser"
+environments = ["ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn", "ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard"]
+expected = "Split tunnel includes/excludes browser; blocked origin must remain denied"
+
+[[cases]]
+id = "VPN-04"
+kind = "browser"
+environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+expected = "Real provider extension disconnected/connected; compare guard off and on"
+
+[[cases]]
+id = "VPN-05"
+kind = "browser"
+environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+expected = "Optional managed browser-policy guard must prevent proxy-based bypass when enabled"
+
+[[cases]]
+id = "VPN-06"
+kind = "manual"
+environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton", "ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard"]
+expected = "Desktop VPN plus proxy extension concurrently; record all routes and DNS"
+
+[[cases]]
+id = "VPN-07"
+kind = "browser"
+environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton", "ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn"]
+expected = "VPN starts before/after engine and browser; policy remains enforced"
+
+[[cases]]
+id = "VPN-08"
+kind = "manual"
+environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn", "ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+expected = "Disconnect/reconnect, kill switch and server change preserve or visibly degrade enforcement"
+
+[[cases]]
+id = "VPN-09"
+kind = "manual"
+environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn", "ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+expected = "DoH IPv6 QUIC and UDP paths do not open uninspected browser egress"
+
+[[cases]]
+id = "VPN-10"
+kind = "browser"
+environments = ["ubuntu-socks", "arch-socks", "cachyos-socks"]
+expected = "Opaque HTTPS proxy on ports 443/4443/8443 must be observed/blocked or documented as gap"
+
+[[cases]]
+id = "VPN-11"
+kind = "browser"
+environments = ["ubuntu-socks", "arch-socks", "cachyos-socks", "ubuntu-tor", "arch-tor", "cachyos-tor"]
+expected = "Local SOCKS/HTTP proxy cannot convert a blocked browser origin into untracked egress"
+
+[[cases]]
+id = "VPN-12"
+kind = "manual"
+environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+expected = "Repeat with supported browsers/profiles and record process identities"
+
+[[cases]]
+id = "VPN-13"
+kind = "manual"
+environments = ["ubuntu-windscribe", "arch-windscribe", "cachyos-windscribe"]
+expected = "Use real free provider when authenticated snapshot is available; do not attempt paid tiers"
+
+[[cases]]
+id = "VPN-14"
+kind = "routing"
+environments = ["ubuntu-direct", "ubuntu-wireguard", "ubuntu-openvpn", "ubuntu-tor", "ubuntu-tor-browser", "ubuntu-socks", "ubuntu-i2p", "ubuntu-proton", "ubuntu-windscribe", "arch-direct", "arch-wireguard", "arch-openvpn", "arch-tor", "arch-tor-browser", "arch-socks", "arch-i2p", "arch-proton", "arch-windscribe", "cachyos-direct", "cachyos-wireguard", "cachyos-openvpn", "cachyos-tor", "cachyos-tor-browser", "cachyos-socks", "cachyos-i2p", "cachyos-proton", "cachyos-windscribe"]
+expected = "Inspect Linux RPDB, nftables and TUN/route changes across distributions"
+
+[[cases]]
+id = "TOR-01"
+kind = "browser"
+environments = ["ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+expected = "Tor Browser reaches allowed site but not an active blocked origin"
+
+[[cases]]
+id = "TOR-02"
+kind = "browser"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor"]
+expected = "Firefox/Chrome through TOR SOCKS5 cannot bypass an active protected block"
+
+[[cases]]
+id = "TOR-03"
+kind = "tor-socks"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor"]
+expected = "Tor daemon and torsocks installed, port 9050 listening; infrastructure only"
+
+[[cases]]
+id = "TOR-04"
+kind = "manual"
+environments = ["ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+expected = "Tor Browser with obfs4 bridge; record actual origin outcome and bridge availability"
+
+[[cases]]
+id = "TOR-05"
+kind = "manual"
+environments = ["ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+expected = "Snowflake/WebTunnel transports; distinguish network failure from blocked-origin bypass"
+
+[[cases]]
+id = "TOR-06"
+kind = "browser"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+expected = "Start TOR before/after Ace and compare traffic enforcement"
+
+[[cases]]
+id = "TOR-07"
+kind = "manual"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor"]
+expected = "Restart TOR under active Hard Lock without losing protected network rules"
+
+[[cases]]
+id = "TOR-08"
+kind = "manual"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor"]
+expected = "Nondefault SOCKS ports/process aliases cannot bypass browser protection"
+
+[[cases]]
+id = "TOR-09"
+kind = "browser"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+expected = "Loopback, remote DNS, IPv6 and new browser profiles remain accounted for"
+
+[[cases]]
+id = "TOR-10"
+kind = "manual"
+environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+expected = "Cross-distro and Windows TOR behavior recorded separately"
+
+[[cases]]
+id = "I2P-01"
+kind = "manual"
+environments = ["ubuntu-i2p", "arch-i2p", "cachyos-i2p"]
+expected = "Local I2P HTTP proxy and outproxy scenario, using controlled destinations only"
+
+# Optional fully local WireGuard fixture. Values are examples: set gateway
+# domain and endpoint to a reachable owned disposable Ubuntu VM before executing.
+# Generated private keys stay in /etc/wireguard inside each guest.
+[wireguard_lab]
+gateway_domain = "ace-lab-vpn-gateway"
+gateway_distribution = "ubuntu"
+endpoint_ipv4 = "192.168.122.40"
+
+[wireguard_lab.peers.ubuntu]
+iface = "acegw0"
+port = 51821
+subnet = "10.66.10.0/24"
+gateway_address = "10.66.10.1/24"
+client_address = "10.66.10.2/32"
+
+[wireguard_lab.peers.arch]
+iface = "acegw1"
+port = 51822
+subnet = "10.66.11.0/24"
+gateway_address = "10.66.11.1/24"
+client_address = "10.66.11.2/32"
+
+[wireguard_lab.peers.cachyos]
+iface = "acegw2"
+port = 51823
+subnet = "10.66.12.0/24"
+gateway_address = "10.66.12.1/24"
+client_address = "10.66.12.2/32"
