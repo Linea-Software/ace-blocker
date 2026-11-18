@@ -1,225 +1,297 @@
-# Environment-per-provider snapshots, NOT snapshots per test case.
-# Change 'domain' to the actual owned disposable libvirt domain before running.
-# The same domain can have many named libvirt snapshots; it must be shut off
-# for snapshot creation/revert. Explicit --execute and confirmation are required.
+# NovaGPT 0.5.x managed forks only. No host libvirt VM imports or fallbacks.
+# Fill in vm-... IDs returned by 'fork-create' once, for each approved fork.
+# Preserve reusable environment snapshots on the owned instance, not per test ID.
 
 [lab]
-libvirt_uri = "qemu:///session"
+mcp_url = "http://127.0.0.1:8787/mcp"
+token_env = "NOVAGPT_HTTP_TOKEN"
 artifacts = ".artifacts"
+
+[vms.ubuntu]
+image = "ubuntu-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 4
+memory_mb = 8192
+networks = ["nat"]
+display = true
+guest_agent = true
+
+[vms.arch]
+image = "arch-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 4
+memory_mb = 8192
+networks = ["nat"]
+display = true
+guest_agent = true
+
+[vms.cachyos]
+image = "cachyos-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 4
+memory_mb = 8192
+networks = ["nat"]
+display = true
+guest_agent = true
+
+[vms.windows]
+image = "windows-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 4
+memory_mb = 8192
+networks = ["nat"]
+display = true
+guest_agent = true
+
+[vms.ubuntu-wg]
+image = "ubuntu-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 4
+memory_mb = 8192
+networks = ["nat", "connect:ace-ubuntu"]
+display = true
+guest_agent = true
+
+[vms.arch-wg]
+image = "arch-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 4
+memory_mb = 8192
+networks = ["nat", "connect:ace-arch"]
+display = true
+guest_agent = true
+
+[vms.cachyos-wg]
+image = "cachyos-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 4
+memory_mb = 8192
+networks = ["nat", "connect:ace-cachyos"]
+display = true
+guest_agent = true
+
+[vms.gateway]
+image = "ubuntu-ace-ready"
+id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+cpus = 2
+memory_mb = 4096
+networks = ["nat", "listen:ace-ubuntu", "listen:ace-arch", "listen:ace-cachyos"]
+display = false
+guest_agent = true
 
 [[environments]]
 name = "ubuntu-direct"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "direct"
 snapshot = "ubuntu-ace-ready"
 
 [[environments]]
 name = "ubuntu-wireguard"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu-wg"
 distribution = "ubuntu"
 provider = "wireguard"
 snapshot = "ubuntu-wireguard-ready"
 
 [[environments]]
 name = "ubuntu-openvpn"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "openvpn"
 snapshot = "ubuntu-openvpn-ready"
 
 [[environments]]
 name = "ubuntu-tor"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "tor"
 snapshot = "ubuntu-tor-ready"
 
 [[environments]]
 name = "ubuntu-tor-browser"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "tor-browser"
 snapshot = "ubuntu-tor-browser-ready"
 
 [[environments]]
 name = "ubuntu-socks"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "socks"
 snapshot = "ubuntu-socks-ready"
 
 [[environments]]
 name = "ubuntu-i2p"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "i2p"
 snapshot = "ubuntu-i2p-ready"
 
 [[environments]]
 name = "ubuntu-proton"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "proton"
 snapshot = "ubuntu-proton-ready"
 
 [[environments]]
 name = "ubuntu-windscribe"
-domain = "ace-lab-ubuntu"
+vm = "ubuntu"
 distribution = "ubuntu"
 provider = "windscribe"
 snapshot = "ubuntu-windscribe-ready"
 
 [[environments]]
 name = "arch-direct"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "direct"
 snapshot = "arch-ace-ready"
 
 [[environments]]
 name = "arch-wireguard"
-domain = "ace-lab-arch"
+vm = "arch-wg"
 distribution = "arch"
 provider = "wireguard"
 snapshot = "arch-wireguard-ready"
 
 [[environments]]
 name = "arch-openvpn"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "openvpn"
 snapshot = "arch-openvpn-ready"
 
 [[environments]]
 name = "arch-tor"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "tor"
 snapshot = "arch-tor-ready"
 
 [[environments]]
 name = "arch-tor-browser"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "tor-browser"
 snapshot = "arch-tor-browser-ready"
 
 [[environments]]
 name = "arch-socks"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "socks"
 snapshot = "arch-socks-ready"
 
 [[environments]]
 name = "arch-i2p"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "i2p"
 snapshot = "arch-i2p-ready"
 
 [[environments]]
 name = "arch-proton"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "proton"
 snapshot = "arch-proton-ready"
 
 [[environments]]
 name = "arch-windscribe"
-domain = "ace-lab-arch"
+vm = "arch"
 distribution = "arch"
 provider = "windscribe"
 snapshot = "arch-windscribe-ready"
 
 [[environments]]
 name = "cachyos-direct"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "direct"
 snapshot = "cachyos-ace-ready"
 
 [[environments]]
 name = "cachyos-wireguard"
-domain = "ace-lab-cachyos"
+vm = "cachyos-wg"
 distribution = "cachyos"
 provider = "wireguard"
 snapshot = "cachyos-wireguard-ready"
 
 [[environments]]
 name = "cachyos-openvpn"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "openvpn"
 snapshot = "cachyos-openvpn-ready"
 
 [[environments]]
 name = "cachyos-tor"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "tor"
 snapshot = "cachyos-tor-ready"
 
 [[environments]]
 name = "cachyos-tor-browser"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "tor-browser"
 snapshot = "cachyos-tor-browser-ready"
 
 [[environments]]
 name = "cachyos-socks"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "socks"
 snapshot = "cachyos-socks-ready"
 
 [[environments]]
 name = "cachyos-i2p"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "i2p"
 snapshot = "cachyos-i2p-ready"
 
 [[environments]]
 name = "cachyos-proton"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "proton"
 snapshot = "cachyos-proton-ready"
 
 [[environments]]
 name = "cachyos-windscribe"
-domain = "ace-lab-cachyos"
+vm = "cachyos"
 distribution = "cachyos"
 provider = "windscribe"
 snapshot = "cachyos-windscribe-ready"
 
 [[environments]]
 name = "windows-direct"
-domain = "ace-lab-windows11"
+vm = "windows"
 distribution = "windows"
 provider = "direct"
 snapshot = "windows-ace-ready"
 
 [[environments]]
 name = "windows-wireguard"
-domain = "ace-lab-windows11"
+vm = "windows"
 distribution = "windows"
 provider = "wireguard"
 snapshot = "windows-wireguard-ready"
 
 [[environments]]
 name = "windows-tor-browser"
-domain = "ace-lab-windows11"
+vm = "windows"
 distribution = "windows"
 provider = "tor-browser"
 snapshot = "windows-tor-browser-ready"
 
 [[environments]]
 name = "windows-proton"
-domain = "ace-lab-windows11"
+vm = "windows"
 distribution = "windows"
 provider = "proton"
 snapshot = "windows-proton-ready"
@@ -227,7 +299,7 @@ snapshot = "windows-proton-ready"
 # Dedicated gateway VM, snapshotted separately from the three client VMs.
 [[environments]]
 name = "wireguard-gateway"
-domain = "ace-lab-vpn-gateway"
+vm = "gateway"
 distribution = "ubuntu"
 provider = "wireguard"
 snapshot = "wireguard-gateway-base"
@@ -404,9 +476,8 @@ expected = "Local I2P HTTP proxy and outproxy scenario, using controlled destina
 # domain and endpoint to a reachable owned disposable Ubuntu VM before executing.
 # Generated private keys stay in /etc/wireguard inside each guest.
 [wireguard_lab]
-gateway_domain = "ace-lab-vpn-gateway"
+gateway_vm = "gateway"
 gateway_distribution = "ubuntu"
-endpoint_ipv4 = "192.168.122.40"
 
 [wireguard_lab.peers.ubuntu]
 iface = "acegw0"
@@ -414,6 +485,8 @@ port = 51821
 subnet = "10.66.10.0/24"
 gateway_address = "10.66.10.1/24"
 client_address = "10.66.10.2/32"
+gateway_link = "172.29.10.1/30"
+client_link = "172.29.10.2/30"
 
 [wireguard_lab.peers.arch]
 iface = "acegw1"
@@ -421,6 +494,8 @@ port = 51822
 subnet = "10.66.11.0/24"
 gateway_address = "10.66.11.1/24"
 client_address = "10.66.11.2/32"
+gateway_link = "172.29.11.1/30"
+client_link = "172.29.11.2/30"
 
 [wireguard_lab.peers.cachyos]
 iface = "acegw2"
@@ -428,3 +503,5 @@ port = 51823
 subnet = "10.66.12.0/24"
 gateway_address = "10.66.12.1/24"
 client_address = "10.66.12.2/32"
+gateway_link = "172.29.12.1/30"
+client_link = "172.29.12.2/30"
