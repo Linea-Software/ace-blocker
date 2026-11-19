@@ -563,7 +563,7 @@ export type RefreshAccountResponses = {
 export type RefreshAccountResponse = RefreshAccountResponses[keyof RefreshAccountResponses];
 
 export type ExportBackupToCloudData = {
-    body?: never;
+    body: { password: string };
     path?: never;
     query?: never;
 };
@@ -576,7 +576,7 @@ export type ExportBackupToCloudResponses = {
 };
 
 export type ImportBackupFromCloudData = {
-    body?: never;
+    body: { password: string };
     path?: never;
     query?: never;
 };

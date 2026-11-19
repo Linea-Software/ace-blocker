@@ -33,244 +33,134 @@ pub(super) async fn export_backup(
     Ok(backup)
 }
 
-pub(super) async fn export_backup_to_cloud(state: AppState) -> Result<(), ApiError> {
-    let is_pro = state.is_pro_account_entitled().await;
+/// The server never receives the account password or plaintext JSON.
+fn cloud_backup_url() -> String {
+    format!("{}/api/v1/backups/", AceServerClient::base_url())
+}
 
-    if !is_pro {
-        return Err(ApiError::Forbidden(
-            "Cloud backup is a Pro feature".to_string(),
-        ));
+fn cloud_http_client() -> Result<reqwest::Client, ApiError> {
+    reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(35))
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .map_err(|_| ApiError::Internal("Could not initialize cloud backup transport".into()))
+}
+
+fn cloud_http_status(status: reqwest::StatusCode) -> ApiError {
+    match status.as_u16() {
+        401 => ApiError::Unauthorized("Please reconnect your Ace Blocker account".into()),
+        403 => ApiError::Forbidden("Cloud backup requires an active Pro subscription".into()),
+        404 => ApiError::NotFound("No cloud backup found".into()),
+        413 => ApiError::BadRequest("Encrypted cloud backup is too large".into()),
+        _ => ApiError::Internal(format!(
+            "Cloud backup service returned HTTP {}",
+            status.as_u16()
+        )),
     }
+}
 
+/// Download only the authenticated encrypted backup envelope.
+async fn download_cloud_backup(
+    api_key: &crate::core::ApiKey,
+) -> Result<Option<super::backup_encryption::EncryptedCloudBackup>, ApiError> {
+    let response = cloud_http_client()?
+        .get(cloud_backup_url())
+        .header("x-api-key", api_key.as_ref())
+        .send()
+        .await
+        .map_err(|_| ApiError::Internal("Could not connect to cloud backup service".into()))?;
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Ok(None);
+    }
+    if !response.status().is_success() {
+        return Err(cloud_http_status(response.status()));
+    }
+    if response
+        .content_length()
+        .is_some_and(|size| size > 2 * 1024 * 1024)
+    {
+        return Err(ApiError::BadRequest("Cloud backup is too large".into()));
+    }
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|_| ApiError::Internal("Could not download cloud backup".into()))?;
+    if bytes.len() > 2 * 1024 * 1024 {
+        return Err(ApiError::BadRequest("Cloud backup is too large".into()));
+    }
+    let encrypted = serde_json::from_slice(&bytes)
+        .map_err(|_| ApiError::BadRequest("Invalid encrypted cloud backup envelope".into()))?;
+    Ok(Some(encrypted))
+}
+
+async fn upload_encrypted_backup(
+    api_key: &crate::core::ApiKey,
+    encrypted: &super::backup_encryption::EncryptedCloudBackup,
+) -> Result<(), ApiError> {
+    let response = cloud_http_client()?
+        .post(cloud_backup_url())
+        .header("x-api-key", api_key.as_ref())
+        .json(encrypted)
+        .send()
+        .await
+        .map_err(|_| ApiError::Internal("Could not connect to cloud backup service".into()))?;
+    if !response.status().is_success() {
+        return Err(cloud_http_status(response.status()));
+    }
+    Ok(())
+}
+
+pub(super) async fn export_backup_to_cloud(
+    state: AppState,
+    payload: super::backup_encryption::CloudBackupPasswordRequest,
+) -> Result<(), ApiError> {
+    if !state.is_pro_account_entitled().await {
+        return Err(ApiError::Forbidden("Cloud backup is a Pro feature".into()));
+    }
     let api_key = state
         .account_manager
         .get_api_key()
         .await
         .map_err(ApiError::Internal)?
-        .ok_or_else(|| ApiError::Unauthorized("Not logged in".to_string()))?;
-
+        .ok_or_else(|| ApiError::Unauthorized("Not logged in".into()))?;
+    let password = zeroize::Zeroizing::new(payload.password);
     let backup = {
         let mut manager = state.network_manager.write().await;
         manager.export_backup()?
     };
-    // The current Ace Server backup schema has no schedule_timezone field.
-    // Reject lossy exports rather than silently shifting user schedules.
-    if backup.network_blocks.iter().any(|block| {
-        !block.schedules.is_empty()
-            && block.schedule_timezone != "Etc/UTC"
-            && block.schedule_timezone != "UTC"
-    }) {
-        return Err(ApiError::BadRequest(
-            "Cloud backup cannot preserve non-UTC schedules until Ace Server supports IANA timezones; use local export".into(),
-        ));
+    // If there is a previous encrypted backup, its password must decrypt it
+    // before we allow an overwrite. A mistyped password cannot silently
+    // render a previously recoverable cloud backup inaccessible.
+    if let Some(existing) = download_cloud_backup(&api_key).await? {
+        super::backup_encryption::decrypt_backup(&existing, &password)?;
     }
-
-    // The current server contract stores only disabled script IDs. With
-    // opt-in interventions, dropping enabled overrides would lose settings.
-    if !backup.activated_resistance_scripts.is_empty() {
-        return Err(ApiError::BadRequest(
-            "Cloud backup cannot preserve enabled opt-in interventions yet; use local export"
-                .into(),
-        ));
-    }
-
-    let client = AceServerClient::new_http_client(Some(&api_key));
-
-    use crate::ace_server_api::types::*;
-
-    let cloud_backup = CreateBackupRequest {
-        version: backup.version,
-        custom_sites_lists: backup
-            .custom_site_packs
-            .into_iter()
-            .map(|list| CreateBackupRequestCustomSitesListsItem {
-                id: list.id,
-                name: list.name,
-                description: Some(list.description),
-                remote_id: Some(list.remote_id),
-                requires_pro: Some(list.requires_pro),
-                version: Some(list.version),
-                sources: list
-                    .sources
-                    .into_iter()
-                    .map(
-                        |source| CreateBackupRequestCustomSitesListsItemSourcesItem {
-                            source: source.source,
-                            source_type: source.source_type,
-                            format: source.format,
-                        },
-                    )
-                    .collect(),
-            })
-            .collect(),
-        network_blocks: backup
-            .network_blocks
-            .into_iter()
-            .map(|block| CreateBackupRequestNetworkBlocksItem {
-                id: block.id,
-                name: block.name,
-                icon: Some(block.icon),
-                safe_search: block.safe_search,
-                user_rules: block
-                    .user_rules
-                    .into_iter()
-                    .map(|rule| CreateBackupRequestNetworkBlocksItemUserRulesItem {
-                        rule: rule.rule,
-                        rule_type: match rule.rule_type {
-                            crate::core::UserDefinedRuleType::Domain => {
-                                CreateBackupRequestNetworkBlocksItemUserRulesItemRuleType::Domain
-                            }
-                            crate::core::UserDefinedRuleType::Regex => {
-                                CreateBackupRequestNetworkBlocksItemUserRulesItemRuleType::Regex
-                            }
-                        },
-                    })
-                    .collect(),
-                connected_sites_lists: block.connected_site_packs,
-                schedules: block
-                    .schedules
-                    .into_iter()
-                    .map(|sched| CreateBackupRequestNetworkBlocksItemSchedulesItem {
-                        start_time: sched.start_time,
-                        end_time: sched.end_time,
-                        monday: sched.monday,
-                        tuesday: sched.tuesday,
-                        wednesday: sched.wednesday,
-                        thursday: sched.thursday,
-                        friday: sched.friday,
-                        saturday: sched.saturday,
-                        sunday: sched.sunday,
-                    })
-                    .collect(),
-            })
-            .collect(),
-        deactivated_resistance_mode_scripts: backup.deactivated_resistance_scripts,
-    };
-
-    client
-        .create_backup(cloud_backup)
-        .await
-        .map_err(|error| ApiError::Internal(format!("Cloud backup failed: {}", error)))?;
-
-    Ok(())
+    // Encrypt the *entire* EngineBackup, including timezone, enabled state,
+    // pack icons and both Resistance script override lists.
+    let encrypted = super::backup_encryption::encrypt_backup(&backup, &password)?;
+    upload_encrypted_backup(&api_key, &encrypted).await
 }
 
-pub(super) async fn import_backup_from_cloud(state: AppState) -> Result<(), ApiError> {
-    let is_pro = state.is_pro_account_entitled().await;
-
-    if !is_pro {
-        return Err(ApiError::Forbidden(
-            "Cloud import is a Pro feature".to_string(),
-        ));
+pub(super) async fn import_backup_from_cloud(
+    state: AppState,
+    payload: super::backup_encryption::CloudBackupPasswordRequest,
+) -> Result<(), ApiError> {
+    if !state.is_pro_account_entitled().await {
+        return Err(ApiError::Forbidden("Cloud restore is a Pro feature".into()));
     }
-
     let api_key = state
         .account_manager
         .get_api_key()
         .await
         .map_err(ApiError::Internal)?
-        .ok_or_else(|| ApiError::Unauthorized("Not logged in".to_string()))?;
-
-    let client = AceServerClient::new_http_client(Some(&api_key));
-    let backup = client
-        .fetch_backup()
-        .await
-        .map_err(|error| ApiError::Internal(format!("Cloud import failed: {}", error)))?;
-    // Remote rows cannot identify the original civil-time zone: importing a
-    // schedule would silently reinterpret it in UTC. Preserve correctness.
-    if backup
-        .network_blocks
-        .iter()
-        .any(|block| !block.schedules.is_empty())
-    {
-        return Err(ApiError::BadRequest(
-            "Cloud backup lacks schedule timezone metadata; scheduled blocks must be imported from a local timezone-aware backup".into(),
-        ));
-    }
-
-    use crate::ace_server_api::types::FetchBackupResponseNetworkBlocksItemUserRulesItemRuleType;
-    use crate::manager::network::backup::*;
-
-    let internal_backup = EngineBackup {
-        version: backup.version,
-        custom_site_packs: backup
-            .custom_sites_lists
-            .into_iter()
-            .map(|list| BackupSitePack {
-                id: list.id,
-                remote_id: list.remote_id.flatten(),
-                requires_pro: list.requires_pro.unwrap_or(false),
-                version: list.version.flatten(),
-                name: list.name,
-                description: list.description.flatten(),
-                icon: None,
-                sources: list
-                    .sources
-                    .into_iter()
-                    .map(|source| BackupSitePackSource {
-                        source: source.source,
-                        source_type: source.source_type,
-                        format: source.format,
-                    })
-                    .collect(),
-            })
-            .collect(),
-        network_blocks: backup
-            .network_blocks
-            .into_iter()
-            .map(|block| BackupNetworkBlock {
-                id: block.id,
-                name: block.name,
-                icon: block.icon.flatten(),
-                schedule_timezone: "Etc/UTC".into(),
-                // The remote backup contract predates this field. Treat it like a
-                // legacy local backup and preserve the historical enabled behavior.
-                enabled: true,
-                schedule_mode: if block.schedules.is_empty() {
-                    crate::core::ScheduleMode::Always
-                } else {
-                    crate::core::ScheduleMode::Scheduled
-                },
-                safe_search: block.safe_search,
-                user_rules: block
-                    .user_rules
-                    .into_iter()
-                    .map(|rule| {
-                        let rule_type = match rule.rule_type {
-                            FetchBackupResponseNetworkBlocksItemUserRulesItemRuleType::Domain => {
-                                crate::core::UserDefinedRuleType::Domain
-                            }
-                            FetchBackupResponseNetworkBlocksItemUserRulesItemRuleType::Regex => {
-                                crate::core::UserDefinedRuleType::Regex
-                            }
-                        };
-                        crate::core::UserDefinedRule::new(rule.rule, rule_type)
-                    })
-                    .collect(),
-                connected_site_packs: block.connected_sites_lists,
-                schedules: block
-                    .schedules
-                    .into_iter()
-                    .map(|sched| BackupScheduleEntry {
-                        start_time: sched.start_time,
-                        end_time: sched.end_time,
-                        monday: sched.monday,
-                        tuesday: sched.tuesday,
-                        wednesday: sched.wednesday,
-                        thursday: sched.thursday,
-                        friday: sched.friday,
-                        saturday: sched.saturday,
-                        sunday: sched.sunday,
-                    })
-                    .collect(),
-            })
-            .collect(),
-        deactivated_resistance_scripts: backup.deactivated_resistance_mode_scripts,
-        activated_resistance_scripts: vec![],
-    };
+        .ok_or_else(|| ApiError::Unauthorized("Not logged in".into()))?;
+    let password = zeroize::Zeroizing::new(payload.password);
+    let encrypted = download_cloud_backup(&api_key)
+        .await?
+        .ok_or_else(|| ApiError::NotFound("No cloud backup found".into()))?;
+    let backup = super::backup_encryption::decrypt_backup(&encrypted, &password)?;
 
     let mut manager = state.network_manager.write().await;
-    manager.import_backup(internal_backup).await?;
+    manager.import_backup(backup).await?;
     drop(manager);
 
     #[cfg(not(debug_assertions))]

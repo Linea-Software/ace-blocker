@@ -47,8 +47,26 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
         }
         "logout" => no_arg_call!(client.logout(capability)),
         "exportBackup" => no_arg_call!(client.export_backup(capability)),
-        "exportBackupToCloud" => no_arg_call!(client.export_backup_to_cloud(capability)),
-        "importBackupFromCloud" => no_arg_call!(client.import_backup_from_cloud(capability)),
+        "exportBackupToCloud" => {
+            let payload: super::backup_encryption::CloudBackupPasswordRequest =
+                serde_json::from_value(args.get("payload").cloned().unwrap_or(Value::Null))
+                    .map_err(|_| bad_args("Invalid cloud backup password request"))?;
+            let result = client
+                .export_backup_to_cloud(capability, payload)
+                .await
+                .map_err(transport_error)??;
+            serde_json::to_value(result).map_err(transport_error)
+        }
+        "importBackupFromCloud" => {
+            let payload: super::backup_encryption::CloudBackupPasswordRequest =
+                serde_json::from_value(args.get("payload").cloned().unwrap_or(Value::Null))
+                    .map_err(|_| bad_args("Invalid cloud backup password request"))?;
+            let result = client
+                .import_backup_from_cloud(capability, payload)
+                .await
+                .map_err(transport_error)??;
+            serde_json::to_value(result).map_err(transport_error)
+        }
         "importBackup" => {
             let payload: crate::manager::network::backup::EngineBackup =
                 serde_json::from_value(args.get("payload").cloned().unwrap_or(Value::Null))

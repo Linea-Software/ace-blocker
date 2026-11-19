@@ -7,6 +7,7 @@ use crate::core::{NetworkBlockId, common::unlock_challenge::UnlockChallenge};
 use crate::manager::network::DebugProPolicy;
 use crate::manager::{AccountManager, NetworkManager};
 
+mod backup_encryption;
 pub mod bridge;
 pub mod error;
 mod operations_account;

@@ -8,8 +8,8 @@ export const rpcParameters = {
   ],
   "logout": [],
   "exportBackup": [],
-  "exportBackupToCloud": [],
-  "importBackupFromCloud": [],
+  "exportBackupToCloud": ["payload"],
+  "importBackupFromCloud": ["payload"],
   "importBackup": [
     "payload"
   ],

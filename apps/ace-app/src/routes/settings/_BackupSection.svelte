@@ -31,6 +31,10 @@
     let isCloudRestoring = $state(false);
     let isImportConfirmOpen = $state(false);
     let lastSyncedDate = $state<string | null>(null);
+    let isCloudPasswordDialogOpen = $state(false);
+    let cloudOperation = $state<"upload" | "restore" | null>(null);
+    let cloudPassword = $state("");
+    let cloudPasswordError = $state<string | null>(null);
 
     async function handleExportLocal() {
         isExporting = true;
@@ -93,58 +97,114 @@
         }
     }
 
-    async function handleSyncCloud() {
-        if (!userStore.isPro) return;
-        isCloudSyncing = true;
-        try {
-            const { error } = await exportBackupToCloud();
-            if (error) {
-                showCloudError(error, m.cloud_backup_failed());
-            } else {
-                toast.success(m.cloud_backup_success());
-                lastSyncedDate = new Date().toLocaleString(getLocale());
-            }
-        } catch (error) {
-            console.error("Cloud backup request failed:", error);
-            toast.error(m.cloud_backup_failed());
-        } finally {
-            isCloudSyncing = false;
-        }
+    function openCloudPasswordDialog(operation: "upload" | "restore") {
+        if (!userStore.isPro || isCloudSyncing || isCloudRestoring) return;
+        cloudPassword = "";
+        cloudPasswordError = null;
+        cloudOperation = operation;
+        isCloudPasswordDialogOpen = true;
     }
 
-    async function handleRestoreCloud() {
-        if (!userStore.isPro) return;
-        isCloudRestoring = true;
+    function closeCloudPasswordDialog() {
+        if (isCloudSyncing || isCloudRestoring) return;
+        cloudPassword = "";
+        cloudPasswordError = null;
+        cloudOperation = null;
+        isCloudPasswordDialogOpen = false;
+    }
+
+    async function handleConfirmCloud(event: SubmitEvent) {
+        event.preventDefault();
+        if (
+            !userStore.isPro ||
+            !cloudOperation ||
+            !cloudPassword ||
+            isCloudSyncing ||
+            isCloudRestoring
+        ) return;
+
+        const operation = cloudOperation;
+        cloudPasswordError = null;
+        if (operation === "upload") {
+            isCloudSyncing = true;
+        } else {
+            isCloudRestoring = true;
+        }
+
         try {
-            const { error } = await importBackupFromCloud();
+            // Capture the password in the RPC argument, then immediately wipe the UI.
+            // No password is kept for retry or shared with another operation.
+            const request = operation === "upload"
+                ? exportBackupToCloud({ body: { password: cloudPassword } })
+                : importBackupFromCloud({ body: { password: cloudPassword } });
+            cloudPassword = "";
+            const { error } = await request;
             if (error) {
-                showCloudError(error, m.cloud_restore_failed());
+                cloudPasswordError = cloudErrorMessage(
+                    error,
+                    operation === "upload"
+                        ? m.cloud_backup_failed()
+                        : m.cloud_restore_failed(),
+                );
             } else {
-                toast.success(m.cloud_restore_success());
+                if (operation === "upload") {
+                    toast.success(m.cloud_backup_success());
+                    lastSyncedDate = new Date().toLocaleString(getLocale());
+                } else {
+                    toast.success(m.cloud_restore_success());
+                }
+                cloudPassword = "";
+                cloudPasswordError = null;
+                cloudOperation = null;
+                isCloudPasswordDialogOpen = false;
             }
-        } catch (error) {
-            console.error("Cloud restore request failed:", error);
-            toast.error(m.cloud_restore_failed());
+        } catch {
+            // Do not log credential-bearing RPC error objects.
+            cloudPasswordError =
+                operation === "upload"
+                    ? m.cloud_backup_failed()
+                    : m.cloud_restore_failed();
         } finally {
+            cloudPassword = "";
+            isCloudSyncing = false;
             isCloudRestoring = false;
         }
     }
 
-    function showCloudError(error: unknown, fallbackMessage: string) {
-        console.error("Cloud backup error:", error);
+    function cloudErrorMessage(error: unknown, fallbackMessage: string): string {
         const code =
             error && typeof error === "object"
                 ? (error as Record<string, unknown>).code
                 : undefined;
 
-        if (code === "unauthorized" || code === "capability_required") {
-            toast.error(m.cloud_backup_not_signed_in());
-        } else if (code === "forbidden" || code === "pro_plan_required") {
-            toast.error(m.cloud_backup_needs_pro());
-        } else {
-            toast.error(fallbackMessage);
+        // Only match known server messages; never display or log raw RPC errors.
+        const reason =
+            error && typeof error === "object"
+                ? (error as Record<string, unknown>).error
+                : undefined;
+        if (reason === "Incorrect password or corrupted cloud backup") {
+            return m.cloud_backup_decryption_failed();
         }
+        if (code === "unauthorized" || code === "capability_required") {
+            return m.cloud_backup_not_signed_in();
+        }
+        if (code === "forbidden" || code === "pro_plan_required") {
+            return m.cloud_backup_needs_pro();
+        }
+        if (
+            code === "invalid_password" ||
+            code === "incorrect_password" ||
+            code === "wrong_password" ||
+            code === "invalid_credentials"
+        ) {
+            return m.cloud_backup_password_incorrect();
+        }
+        if (code === "decryption_failed" || code === "backup_decryption_failed") {
+            return m.cloud_backup_decryption_failed();
+        }
+        return fallbackMessage;
     }
+
 </script>
 
 <section class="settings-section">
@@ -206,8 +266,8 @@
                 {#if userStore.isPro}
                     <button
                         type="button"
-                        onclick={handleSyncCloud}
-                        disabled={isCloudSyncing}
+                        onclick={() => openCloudPasswordDialog("upload")}
+                        disabled={isCloudSyncing || isCloudRestoring}
                     >
                         {#if isCloudSyncing}
                             <RefreshCw class="spinner" size={15} aria-hidden="true" />
@@ -218,8 +278,8 @@
                     </button>
                     <button
                         type="button"
-                        onclick={handleRestoreCloud}
-                        disabled={isCloudRestoring}
+                        onclick={() => openCloudPasswordDialog("restore")}
+                        disabled={isCloudSyncing || isCloudRestoring}
                     >
                         {#if isCloudRestoring}
                             <RefreshCw class="spinner" size={15} aria-hidden="true" />
@@ -269,6 +329,93 @@
                 {/if}
             </AlertDialog.Action>
         </AlertDialog.Footer>
+    </AlertDialog.Content>
+</AlertDialog.Root>
+
+<AlertDialog.Root
+    bind:open={isCloudPasswordDialogOpen}
+    onOpenChange={(open) => {
+        if (!open) {
+            cloudPassword = "";
+            cloudPasswordError = null;
+            cloudOperation = null;
+        }
+    }}
+>
+    <AlertDialog.Content
+        class="rounded-md border-border bg-card shadow-none sm:max-w-md"
+        onEscapeKeydown={(event) => {
+            if (isCloudSyncing || isCloudRestoring) event.preventDefault();
+        }}
+        onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            document.getElementById("cloud-backup-password")?.focus();
+        }}
+    >
+        <form autocomplete="off" onsubmit={handleConfirmCloud} class="grid gap-4">
+            <AlertDialog.Header class="gap-3">
+                <div class="flex flex-col gap-2 text-left">
+                    <AlertDialog.Title class="font-condensed text-xl font-semibold">
+                        {cloudOperation === "upload"
+                            ? m.cloud_backup_password_upload_title()
+                            : m.cloud_backup_password_restore_title()}
+                    </AlertDialog.Title>
+                    <AlertDialog.Description class="text-sm leading-relaxed">
+                        {cloudOperation === "upload"
+                            ? m.cloud_backup_password_upload_description()
+                            : m.cloud_backup_password_restore_description()}
+                    </AlertDialog.Description>
+                </div>
+            </AlertDialog.Header>
+            <div class="cloud-password-field">
+                <label for="cloud-backup-password">{m.cloud_backup_password_label()}</label>
+                <input
+                    id="cloud-backup-password"
+                    type="password"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck={false}
+                    required
+                    bind:value={cloudPassword}
+                    disabled={isCloudSyncing || isCloudRestoring}
+                    aria-invalid={cloudPasswordError !== null}
+                    aria-describedby={cloudPasswordError
+                        ? "cloud-backup-password-hint cloud-backup-password-error"
+                        : "cloud-backup-password-hint"}
+                />
+                <p id="cloud-backup-password-hint">{m.cloud_backup_password_hint()}</p>
+                {#if cloudPasswordError}
+                    <p id="cloud-backup-password-error" class="cloud-password-error" role="alert">
+                        {cloudPasswordError}
+                    </p>
+                {/if}
+            </div>
+            <AlertDialog.Footer class="mt-1 gap-2 border-t border-border pt-4">
+                <AlertDialog.Cancel
+                    type="button"
+                    disabled={isCloudSyncing || isCloudRestoring}
+                    onclick={closeCloudPasswordDialog}
+                >
+                    {m.cancel()}
+                </AlertDialog.Cancel>
+                <button
+                    class="cloud-password-submit"
+                    type="submit"
+                    disabled={!cloudPassword || isCloudSyncing || isCloudRestoring}
+                >
+                    {#if isCloudSyncing || isCloudRestoring}
+                        <RefreshCw class="spinner" size={15} aria-hidden="true" />
+                        {m.processing()}
+                    {:else if cloudOperation === "upload"}
+                        <CloudUpload size={15} aria-hidden="true" />
+                        {m.upload_to_cloud()}
+                    {:else}
+                        <History size={15} aria-hidden="true" />
+                        {m.restore_from_cloud()}
+                    {/if}
+                </button>
+            </AlertDialog.Footer>
+        </form>
     </AlertDialog.Content>
 </AlertDialog.Root>
 
@@ -414,6 +561,73 @@
         border: 1px solid color-mix(in srgb, var(--ace-danger) 35%, var(--border));
         border-radius: 4px;
         color: var(--ace-danger);
+    }
+
+    .cloud-password-field {
+        display: grid;
+        gap: 7px;
+    }
+
+    .cloud-password-field label {
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .cloud-password-field input {
+        width: 100%;
+        min-height: 38px;
+        border: 1px solid var(--input);
+        border-radius: 4px;
+        padding: 8px 11px;
+        background: var(--background);
+        color: var(--foreground);
+        font-size: 14px;
+    }
+
+    .cloud-password-field input:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+
+    .cloud-password-field input[aria-invalid="true"] {
+        border-color: var(--ace-danger);
+    }
+
+    .cloud-password-field p {
+        margin: 0;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .cloud-password-field .cloud-password-error {
+        color: var(--ace-danger);
+    }
+
+    .cloud-password-submit {
+        display: inline-flex;
+        min-height: 36px;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 0 12px;
+        background: var(--foreground);
+        color: var(--background);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .cloud-password-submit:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+
+    .cloud-password-submit:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
     }
 
     :global(.spinner) {

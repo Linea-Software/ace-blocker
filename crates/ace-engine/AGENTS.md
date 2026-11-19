@@ -24,6 +24,24 @@ preflight. Do not relax this without real native/browser/Windows tests.
 
 ---
 
+## Password-encrypted cloud backups (2026-11-19)
+
+- Cloud backup encrypt/decrypt occurs only inside the engine, using Argon2id
+  and AES-256-GCM with fresh salt/nonce for every upload; full `EngineBackup`
+  serialization preserves schedule timezone, icons, enabled state and script
+  overrides. See `../../../ace-blocker-site/docs/CLOUD_BACKUP_PASSWORD_ENCRYPTION.md`
+  for wire format and migration.
+- `exportBackupToCloud` and `importBackupFromCloud` require an explicitly
+  supplied `CloudBackupPasswordRequest` via remoc RPC. Never log passwords,
+  persist keys/passwords, or send plaintext to the backup endpoint. Reject
+  unsupported/tampered envelopes, and verify old encrypted data before an
+  overwrite; preserve existing backup/import lock safety and Pro entitlement.
+- Desktop prompts separately on every upload and restore; account password
+  changes cannot unlock older backups. Legacy plaintext is restored once and
+  re-encrypted after successful import where possible.
+- The current Better Auth login can observe passwords during authentication,
+  so do not call this strict zero-knowledge E2EE.
+
 ## Core Concepts
 
 ### 1. Network Blocks

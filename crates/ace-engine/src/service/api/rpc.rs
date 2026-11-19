@@ -91,10 +91,12 @@ pub trait EngineControl {
     async fn export_backup_to_cloud(
         &self,
         capability: Option<String>,
+        payload: super::backup_encryption::CloudBackupPasswordRequest,
     ) -> Result<RpcResult<()>, CallError>;
     async fn import_backup_from_cloud(
         &self,
         capability: Option<String>,
+        payload: super::backup_encryption::CloudBackupPasswordRequest,
     ) -> Result<RpcResult<()>, CallError>;
     async fn import_backup(
         &self,
@@ -442,12 +444,13 @@ impl EngineControl for EngineRpc {
     async fn export_backup_to_cloud(
         &self,
         capability: Option<String>,
+        payload: super::backup_encryption::CloudBackupPasswordRequest,
     ) -> Result<RpcResult<()>, CallError> {
         if let Err(error) = self.check_capability(capability.as_deref(), true) {
             return Ok(Err(error));
         }
         Ok(
-            super::operations_backup::export_backup_to_cloud(self.state.clone())
+            super::operations_backup::export_backup_to_cloud(self.state.clone(), payload)
                 .await
                 .map(|_| ())
                 .map_err(Into::into),
@@ -457,12 +460,13 @@ impl EngineControl for EngineRpc {
     async fn import_backup_from_cloud(
         &self,
         capability: Option<String>,
+        payload: super::backup_encryption::CloudBackupPasswordRequest,
     ) -> Result<RpcResult<()>, CallError> {
         if let Err(error) = self.check_capability(capability.as_deref(), true) {
             return Ok(Err(error));
         }
         Ok(
-            super::operations_backup::import_backup_from_cloud(self.state.clone())
+            super::operations_backup::import_backup_from_cloud(self.state.clone(), payload)
                 .await
                 .map(|_| ())
                 .map_err(Into::into),
@@ -1377,7 +1381,6 @@ impl EngineControl for EngineRpc {
                 .map_err(Into::into),
         )
     }
-
 }
 
 #[cfg(test)]

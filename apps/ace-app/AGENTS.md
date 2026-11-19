@@ -2,6 +2,14 @@ If the Svelte MCP server is connected, use its documentation tools for Svelte 5 
 If it is not connected, use official documentation, repository source, and checks.
 Do not report the use of a tool that is not available.
 
+## Password-protected cloud backup UX (2026-11-19)
+
+- `src/routes/settings/_BackupSection.svelte` asks the account password in a focused, obscured AlertDialog for **each** cloud upload and restore, before invoking the typed RPC methods with `{ body: { password } }`.
+- The UI must not persist or log the password, must clear it on dismissal/submission, and must prevent repeat requests. Preserve Pro gates and local export/import functionality.
+- Restores require the password used when the backup was created. Changing or resetting the account password will not unlock old encrypted backups; keep this limitation visible in EN/IT microcopy.
+- Encryption/Argon2id/GCM occurs in the native Rust engine, **not** in Svelte, and the site only stores the encrypted envelope. Current Better Auth login isn't strictly zero-knowledge; never promise otherwise.
+- Follow the approved design system and UI/UX skills for future changes to the dialog.
+
 ## Browser-prompt-free account linking (2026-11-11)
 
 - The default account and license activation starts in `src/routes/settings/_LicenseSection.svelte`.
