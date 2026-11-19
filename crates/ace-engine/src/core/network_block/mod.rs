@@ -10,12 +10,15 @@ use chrono::{DateTime, Local};
 use http;
 use moka::sync::Cache;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{
+    Arc, RwLock,
+    atomic::{AtomicU64, Ordering},
+};
 use thiserror::Error;
 use tracing::{debug, warn};
 use uri_hash::UriHash;
 
-use crate::core::common::constants::RESULTS_CACHE_MAX_SIZE;
+use crate::core::common::constants::NETWORK_BLOCK_RESULTS_CACHE_MAX_SIZE;
 use crate::core::common::lock::Lock;
 use crate::core::common::schedule::{Schedule, ScheduleEntry};
 use crate::core::network_block::site_pack::SitePackId;
@@ -58,6 +61,38 @@ impl ScheduleMode {
     }
 }
 
+/// A cache's cumulative counters and current approximate number of entries.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CacheMetricsSnapshot {
+    pub hits: u64,
+    pub misses: u64,
+    pub entries: u64,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct CacheCounters {
+    hits: AtomicU64,
+    misses: AtomicU64,
+}
+
+impl CacheCounters {
+    pub(crate) fn record_hit(&self) {
+        self.hits.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn record_miss(&self) {
+        self.misses.fetch_add(1, Ordering::Relaxed);
+    }
+
+    pub(crate) fn snapshot(&self, entries: u64) -> CacheMetricsSnapshot {
+        CacheMetricsSnapshot {
+            hits: self.hits.load(Ordering::Relaxed),
+            misses: self.misses.load(Ordering::Relaxed),
+            entries,
+        }
+    }
+}
+
 /// One independently scheduled rule set with shared site-pack handles.
 /// URI decisions are cached per block, separately from activation checks.
 #[derive(Debug, Clone)]
@@ -77,6 +112,7 @@ pub struct NetworkBlock {
 
     // Cache only rule decisions; the enabled switch and schedule are checked by callers.
     results_cache: Cache<UriHash, BlockingResult>,
+    cache_counters: Arc<CacheCounters>,
 }
 
 #[derive(Error, Debug)]
@@ -134,8 +170,9 @@ impl NetworkBlock {
             safe_search,
             icon: None,
             results_cache: Cache::builder()
-                .max_capacity(RESULTS_CACHE_MAX_SIZE)
+                .max_capacity(NETWORK_BLOCK_RESULTS_CACHE_MAX_SIZE)
                 .build(),
+            cache_counters: Arc::new(CacheCounters::default()),
         }
     }
 
@@ -168,8 +205,9 @@ impl NetworkBlock {
             safe_search,
             icon,
             results_cache: Cache::builder()
-                .max_capacity(RESULTS_CACHE_MAX_SIZE)
+                .max_capacity(NETWORK_BLOCK_RESULTS_CACHE_MAX_SIZE)
                 .build(),
+            cache_counters: Arc::new(CacheCounters::default()),
         }
     }
 
@@ -316,6 +354,31 @@ impl NetworkBlock {
         self.results_cache.clone()
     }
 
+    pub fn cache_metrics(&self) -> CacheMetricsSnapshot {
+        self.cache_counters
+            .snapshot(self.results_cache.entry_count())
+    }
+
+    /// A snapshot save can replace metadata without changing URI decisions.
+    /// The editor always retains the previous exceptions; other rule inputs
+    /// must match before reusing its cache.
+    pub(crate) fn preserve_cache_if_policy_unchanged(&mut self, previous: &Self) {
+        let same_packs = self.site_packs.len() == previous.site_packs.len()
+            && self.site_packs.iter().all(|(id, pack)| {
+                previous
+                    .site_packs
+                    .get(id)
+                    .is_some_and(|old| Arc::ptr_eq(pack, old))
+            });
+        if same_packs
+            && self.user_defined_rules.rules() == previous.user_defined_rules.rules()
+            && self.safe_search == previous.safe_search
+        {
+            self.results_cache = previous.results_cache.clone();
+            self.cache_counters = previous.cache_counters.clone();
+        }
+    }
+
     pub fn set_schedule(&mut self, schedule_entries: Vec<ScheduleEntry>) {
         self.schedule = Schedule::from_in_zone(schedule_entries, self.schedule.timezone());
     }
@@ -331,13 +394,23 @@ impl NetworkBlock {
         let uri_hash = UriHash::from_uri(entry);
 
         if let Some(blocking_result) = self.results_cache.get(&uri_hash) {
+            self.cache_counters.record_hit();
             return blocking_result;
         }
+        self.cache_counters.record_miss();
 
-        let blocking_result = self.get_internal_content_blocking_result(entry);
-        self.results_cache.insert(uri_hash, blocking_result.clone());
-
-        blocking_result
+        match self.get_internal_content_blocking_result(entry) {
+            Ok(blocking_result) => {
+                self.results_cache.insert(uri_hash, blocking_result.clone());
+                blocking_result
+            }
+            Err(error) => {
+                // AE-04 permits this request to fail open, but never cache the
+                // error-derived allow: a later successful lookup must be retried.
+                warn!(%error, "Site-pack lookup failed; not caching fail-open decision");
+                BlockingResult::NotBlocked
+            }
+        }
     }
 
     fn blocks_host_without_request_path(&self, host: &str) -> bool {
@@ -378,32 +451,47 @@ impl NetworkBlock {
 
     /// Checks exceptions first, then user rules, then site-pack membership.
     /// The caller handles caching of the resulting decision.
-    fn get_internal_content_blocking_result(&self, entry: &http::uri::Uri) -> BlockingResult {
+    fn get_internal_content_blocking_result(
+        &self,
+        entry: &http::uri::Uri,
+    ) -> Result<BlockingResult, crate::db::error::DBError> {
         let entry_string = entry.to_string();
         if self.exceptions.contains(entry_string.as_str()) {
-            return BlockingResult::NotBlocked;
+            return Ok(BlockingResult::NotBlocked);
         }
 
         if self.user_defined_rules.matches_uri(entry) {
-            return BlockingResult::Blocked;
+            return Ok(BlockingResult::Blocked);
         }
 
+        let mut first_error = None;
         if let Some(host) = entry.host() {
             for pack in self.site_packs.values() {
-                if pack.is_poisoned() {
-                    warn!("Site pack is poisoned: {}", host);
-                    continue;
-                }
+                let pack = match pack.read() {
+                    Ok(pack) => pack,
+                    Err(_) => {
+                        first_error.get_or_insert_with(|| {
+                            crate::db::error::DBError::DatabaseConnectionError {
+                                message: "site-pack policy lock poisoned".into(),
+                            }
+                        });
+                        continue;
+                    }
+                };
 
-                let pack = pack.read().unwrap();
-
-                if pack.blocking_result(host) == BlockingResult::Blocked {
-                    debug!("Site pack matched: {}", host);
-                    return BlockingResult::Blocked;
+                match pack.try_blocking_result(host) {
+                    Ok(BlockingResult::Blocked) => {
+                        debug!("Site pack matched: {}", host);
+                        return Ok(BlockingResult::Blocked);
+                    }
+                    Ok(BlockingResult::NotBlocked) => {}
+                    Err(error) => {
+                        first_error.get_or_insert(error);
+                    }
                 }
             }
         }
-        BlockingResult::NotBlocked
+        first_error.map_or(Ok(BlockingResult::NotBlocked), Err)
     }
 
     pub fn is_locked(&self, _now: &DateTime<Local>) -> bool {
@@ -493,6 +581,52 @@ mod decision_cache_tests {
         assert!(block.is_content_blocked(&uri).is_blocked());
         block.remove_user_defined_entry(&rule).unwrap();
         assert!(!block.is_content_blocked(&uri).is_blocked());
+    }
+
+    #[test]
+    fn transient_site_pack_error_is_not_cached_as_allow() {
+        use site_pack::site_pack_db::{SitePackDB, hash_host};
+
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("pack.db");
+        let db = SitePackDB::from(&path).unwrap();
+        db.insert_entries(&[hash_host("blocked.example")]).unwrap();
+        drop(db);
+
+        let id = SitePackId::try_new("test-pack").unwrap();
+        let pack = SitePack::from(
+            id.clone(),
+            None,
+            "Test".into(),
+            None,
+            false,
+            None,
+            None,
+            dir.path(),
+            vec![],
+            None,
+        )
+        .unwrap();
+        pack.release_idle_db().unwrap();
+        let mut block = block();
+        block
+            .add_site_pack(id, Arc::new(RwLock::new(pack)))
+            .unwrap();
+        let uri: http::Uri = "https://blocked.example/path".parse().unwrap();
+
+        let moved = dir.path().join("temporarily-moved.db");
+        std::fs::rename(&path, &moved).unwrap();
+        assert!(!block.is_content_blocked(&uri).is_blocked());
+        let cache = block.results_cache_handle();
+        cache.run_pending_tasks();
+        assert_eq!(
+            cache.entry_count(),
+            0,
+            "failure-derived allow must not be cached"
+        );
+
+        std::fs::rename(&moved, &path).unwrap();
+        assert!(block.is_content_blocked(&uri).is_blocked());
     }
 
     #[test]

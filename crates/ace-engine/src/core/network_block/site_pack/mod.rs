@@ -3,7 +3,7 @@ pub mod site_pack_db;
 
 use crate::core::common::domain_types::{RemoteSitePackId, SitePackVersion};
 use crate::core::network_block::site_pack::site_pack_db::SitePackDB;
-use crate::core::network_block::{BlockingResult, UriHash};
+use crate::core::network_block::{BlockingResult, CacheCounters, CacheMetricsSnapshot, UriHash};
 use crate::db::error::DBError;
 pub use importer::{
     Importer, SitePackCreationStatus, SitePackFormat, SitePackId, SitePackImportError,
@@ -13,6 +13,7 @@ pub use importer::{
 use std::{
     fs::File,
     path::{Path, PathBuf},
+    sync::Mutex,
 };
 use tracing::warn;
 use zip::ZipArchive;
@@ -31,10 +32,16 @@ pub struct SitePack {
     icon: Option<String>,
     db_path: PathBuf,
     // None when the pack has never been downloaded/created yet (remote packs).
-    db: Option<SitePackDB>,
+    // A synchronized pack may release idle SQLite connections without losing
+    // its on-disk availability or the decisions already cached in memory.
+    db: Mutex<Option<SitePackDB>>,
+    db_available: bool,
+    // Pack metadata is stable until close/reload; listing must not re-open idle pools.
+    cached_entry_count: Mutex<Option<u64>>,
     // Bounded, lazy cache shared by request and tunnel policy lookups.
     // It exists because calling the DB for each request may be
     membership_cache: moka::sync::Cache<UriHash, BlockingResult>,
+    cache_counters: CacheCounters,
     sources: Vec<SitePackSource>,
     last_updated_at: Option<chrono::DateTime<chrono::Local>>,
 }
@@ -114,6 +121,11 @@ impl SitePack {
             None
         };
 
+        let cached_entry_count = db
+            .as_ref()
+            .and_then(|opened| opened.get_entry_count().ok())
+            .and_then(|count| u64::try_from(count).ok());
+
         Ok(SitePack {
             id,
             remote_id,
@@ -123,10 +135,13 @@ impl SitePack {
             version,
             icon,
             db_path: db_path.to_path_buf(),
-            db,
+            db_available: db.is_some(),
+            db: Mutex::new(db),
+            cached_entry_count: Mutex::new(cached_entry_count),
             membership_cache: moka::sync::Cache::builder()
-                .max_capacity(crate::core::common::constants::RESULTS_CACHE_MAX_SIZE)
+                .max_capacity(crate::core::common::constants::SITE_PACK_MEMBERSHIP_CACHE_MAX_SIZE)
                 .build(),
+            cache_counters: CacheCounters::default(),
             sources,
             last_updated_at,
         })
@@ -136,15 +151,61 @@ impl SitePack {
         self.db_path.join(PACK_DB_FILE)
     }
 
+    fn opened_db(&self) -> Result<Option<SitePackDB>, DBError> {
+        if !self.db_available {
+            return Ok(None);
+        }
+        let mut guard = self
+            .db
+            .lock()
+            .map_err(|error| DBError::DatabaseConnectionError {
+                message: format!("site pack database lock poisoned: {error}"),
+            })?;
+        if guard.is_none() {
+            let path = self.pack_db_path();
+            if !path.is_file() {
+                return Err(DBError::DatabaseConnectionError {
+                    message: format!("site pack database disappeared: {}", path.display()),
+                });
+            }
+            *guard = Some(SitePackDB::from(&path)?);
+        }
+        Ok(guard.clone())
+    }
+
+    /// Release connections, not persisted coverage or cached decisions.
+    pub(crate) fn release_idle_db(&self) -> Result<(), DBError> {
+        let mut guard = self
+            .db
+            .lock()
+            .map_err(|error| DBError::DatabaseConnectionError {
+                message: format!("site pack database lock poisoned: {error}"),
+            })?;
+        *guard = None;
+        Ok(())
+    }
+
+    /// Validate that an existing pack opens before attaching it to live policy.
+    pub(crate) fn ensure_db_open(&self) -> Result<(), DBError> {
+        self.opened_db().map(|_| ())
+    }
+
     /// Returns a real database error rather than conflating it with a rule miss.
     /// Callers can decide the appropriate enforcement/error policy.
     pub fn try_blocking_result(&self, host: &str) -> Result<BlockingResult, DBError> {
-        let Some(db) = self.db.as_ref() else {
+        if !self.db_available {
             // A never-downloaded pack has no policy entries yet.
             return Ok(BlockingResult::NotBlocked);
-        };
-
+        }
         let uri_hash = site_pack_db::hash_host(host);
+        if let Some(hit) = self.membership_cache.get(&uri_hash) {
+            self.cache_counters.record_hit();
+            return Ok(hit);
+        }
+        self.cache_counters.record_miss();
+        let Some(db) = self.opened_db()? else {
+            return Ok(BlockingResult::NotBlocked);
+        };
         // Cache successful hits and misses only, not transient DB failures.
         self.membership_cache
             .try_get_with(uri_hash.clone(), || db.blocking_result(&uri_hash))
@@ -164,42 +225,71 @@ impl SitePack {
         })
     }
 
+    pub fn cache_metrics(&self) -> CacheMetricsSnapshot {
+        self.cache_counters
+            .snapshot(self.membership_cache.entry_count())
+    }
+
     pub fn get_entry_count(&self) -> Result<u64, DBError> {
-        let Some(db) = self.db.as_ref() else {
+        let mut count_guard =
+            self.cached_entry_count
+                .lock()
+                .map_err(|error| DBError::DatabaseConnectionError {
+                    message: format!("site pack entry-count lock poisoned: {error}"),
+                })?;
+        if let Some(count) = *count_guard {
+            return Ok(count);
+        }
+        let Some(db) = self.opened_db()? else {
             // A never-downloaded pack has zero entries, not a failed lookup.
             return Ok(0);
         };
-        let count = db.get_entry_count()?;
-        u64::try_from(count).map_err(|error| DBError::DataFetchError {
-            table: "pack_meta".to_string(),
-            message: format!("negative site-pack entry count: {error}"),
-        })
+        let count =
+            u64::try_from(db.get_entry_count()?).map_err(|error| DBError::DataFetchError {
+                table: "pack_meta".to_string(),
+                message: format!("negative site-pack entry count: {error}"),
+            })?;
+        *count_guard = Some(count);
+        Ok(count)
     }
 
-    /// A site pack is synced once its database is loaded. Remote packs have no
-    /// database until they are downloaded for the first time, so they start
-    /// unsynced; local packs are created empty and are therefore always synced.
+    /// Synced indicates available on-disk rules, even when idle connections
+    /// have been released. An undownloaded remote pack remains unsynced.
     pub fn is_synced(&self) -> bool {
-        self.db.is_some()
+        self.db_available
     }
 
     pub fn close_db(&mut self) {
-        self.db = None;
+        self.db_available = false;
+        *self
+            .cached_entry_count
+            .get_mut()
+            .unwrap_or_else(|poison| poison.into_inner()) = None;
+        *self
+            .db
+            .get_mut()
+            .unwrap_or_else(|poison| poison.into_inner()) = None;
         self.membership_cache.invalidate_all();
     }
 
     /// Reopens the database from disk.
     pub fn reload_db(&mut self) -> Result<(), String> {
-        let db_result = SitePackDB::from(&self.pack_db_path());
-
-        match db_result {
-            Ok(db) => {
-                self.db = Some(db);
-                self.membership_cache.invalidate_all();
-                Ok(())
-            }
-            Err(error) => Err(error.to_string()),
-        }
+        let db = SitePackDB::from(&self.pack_db_path()).map_err(|error| error.to_string())?;
+        let entry_count = db
+            .get_entry_count()
+            .ok()
+            .and_then(|count| u64::try_from(count).ok());
+        *self
+            .cached_entry_count
+            .get_mut()
+            .unwrap_or_else(|poison| poison.into_inner()) = entry_count;
+        *self
+            .db
+            .get_mut()
+            .unwrap_or_else(|poison| poison.into_inner()) = Some(db);
+        self.db_available = true;
+        self.membership_cache.invalidate_all();
+        Ok(())
     }
 
     /// Restores the pack from a zip archive containing the SQLite database
@@ -509,6 +599,134 @@ mod tests {
     }
 
     #[test]
+    fn idle_site_pack_reopens_on_cache_miss_without_losing_coverage() {
+        let temp = tempfile::tempdir().unwrap();
+        make_valid_pack_db(&temp.path().join("pack.db"), &["known.example"]);
+        let pack = test_pack(temp.path());
+
+        assert!(pack.is_synced());
+        assert!(pack.blocking_result("known.example").is_blocked());
+        pack.membership_cache.run_pending_tasks();
+        assert_eq!(pack.membership_cache.entry_count(), 1);
+
+        pack.release_idle_db().unwrap();
+        assert!(pack.is_synced());
+        assert!(pack.db.lock().unwrap().is_none());
+
+        // Listing and schema serialization read metadata without reopening a pool.
+        for _ in 0..3 {
+            let schema = crate::service::api::schemas::SitePackSchema::try_from(&pack).unwrap();
+            assert_eq!(schema.entries_count, 1);
+            assert!(pack.db.lock().unwrap().is_none());
+        }
+
+        assert!(pack.blocking_result("known.example").is_blocked());
+        assert!(
+            pack.db.lock().unwrap().is_none(),
+            "cache hit must not reopen SQLite"
+        );
+
+        assert!(!pack.blocking_result("other.example").is_blocked());
+        assert!(
+            pack.db.lock().unwrap().is_some(),
+            "cache miss must reopen SQLite"
+        );
+        let metrics = pack.cache_metrics();
+        assert_eq!(metrics.hits, 1);
+        assert_eq!(metrics.misses, 2);
+    }
+
+    #[test]
+    #[ignore = "manual microbenchmark; not a CI timing assertion"]
+    fn benchmark_site_pack_membership_cache() {
+        use std::time::Instant;
+
+        let temp = tempfile::tempdir().unwrap();
+        let db = SitePackDB::from(&temp.path().join("pack.db")).unwrap();
+        const LOOKUPS: usize = 1_024;
+        let hashes: Vec<_> = (0..LOOKUPS)
+            .map(|index| site_pack_db::hash_host(&format!("site-{index}.example")))
+            .collect();
+        db.insert_entries(&hashes).unwrap();
+        drop(db);
+
+        let pack = test_pack(temp.path());
+        let started = Instant::now();
+        for index in 0..LOOKUPS {
+            assert!(
+                pack.blocking_result(&format!("site-{index}.example"))
+                    .is_blocked()
+            );
+        }
+        let uncached = started.elapsed();
+        let started = Instant::now();
+        for index in 0..LOOKUPS {
+            assert!(
+                pack.blocking_result(&format!("site-{index}.example"))
+                    .is_blocked()
+            );
+        }
+        let cached = started.elapsed();
+        let metrics = pack.cache_metrics();
+        assert_eq!(
+            (metrics.hits, metrics.misses),
+            (LOOKUPS as u64, LOOKUPS as u64)
+        );
+        eprintln!(
+            "site-pack membership: {LOOKUPS} SQLite misses in {uncached:?}; {LOOKUPS} cache hits in {cached:?}"
+        );
+    }
+
+    #[test]
+    fn parallel_cold_site_pack_lookups_reuse_one_lazy_pool() {
+        let temp = tempfile::tempdir().unwrap();
+        make_valid_pack_db(&temp.path().join("pack.db"), &["known.example"]);
+        let pack = std::sync::Arc::new(test_pack(temp.path()));
+        pack.release_idle_db().unwrap();
+
+        let ready = std::sync::Arc::new(std::sync::Barrier::new(16));
+        let threads: Vec<_> = (0..16)
+            .map(|_| {
+                let pack = pack.clone();
+                let ready = ready.clone();
+                std::thread::spawn(move || {
+                    ready.wait();
+                    for _ in 0..100 {
+                        assert!(
+                            pack.try_blocking_result("known.example")
+                                .unwrap()
+                                .is_blocked()
+                        );
+                        assert!(
+                            !pack
+                                .try_blocking_result("unknown.example")
+                                .unwrap()
+                                .is_blocked()
+                        );
+                    }
+                })
+            })
+            .collect();
+        for thread in threads {
+            thread.join().unwrap();
+        }
+        assert!(pack.db.lock().unwrap().is_some());
+    }
+
+    #[test]
+    fn missing_idle_database_is_an_error_and_is_never_recreated() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("pack.db");
+        make_valid_pack_db(&path, &["known.example"]);
+        let pack = test_pack(temp.path());
+        pack.release_idle_db().unwrap();
+
+        std::fs::remove_file(&path).unwrap();
+        assert!(pack.try_blocking_result("uncached.example").is_err());
+        assert!(!path.exists());
+    }
+
+    #[test]
     fn membership_lookup_preserves_database_errors_until_enforcement_boundary() {
         use diesel::RunQueryDsl;
 
@@ -518,7 +736,14 @@ mod tests {
         let pack = test_pack(temp.path());
 
         // Invalidate the content schema after the pool has been opened.
-        let mut conn = pack.db.as_ref().unwrap().get_db_connection().unwrap();
+        let mut conn = pack
+            .db
+            .lock()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .get_db_connection()
+            .unwrap();
         diesel::sql_query("DROP TABLE entries")
             .execute(&mut conn)
             .unwrap();

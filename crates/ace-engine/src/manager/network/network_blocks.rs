@@ -158,6 +158,7 @@ impl NetworkManager {
             })?;
 
         self.network_blocks.remove(network_block_id);
+        self.release_unused_site_pack_pools();
         Ok(())
     }
 

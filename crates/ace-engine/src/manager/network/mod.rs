@@ -111,7 +111,25 @@ impl NetworkManager {
             debug_pro_policy: DebugProPolicy::Default,
         };
 
+        // Keep pack metadata registered, but release SQLite pools for packs
+        // that cannot participate in any currently configured block.
+        manager.release_unused_site_pack_pools();
         Ok(manager)
+    }
+
+    fn release_unused_site_pack_pools(&self) {
+        let referenced: HashSet<_> = self
+            .network_blocks
+            .values()
+            .flat_map(|block| block.get_site_packs().keys().cloned())
+            .collect();
+        for (id, pack) in &self.site_packs {
+            if !referenced.contains(id) {
+                if let Err(error) = pack.read().unwrap().release_idle_db() {
+                    warn!(site_pack_id = %id, %error, "Could not release idle site-pack database");
+                }
+            }
+        }
     }
 
     pub fn new_empty(db: Arc<EngineDB>, account_manager: AccountManager) -> NetworkManager {

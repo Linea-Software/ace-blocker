@@ -84,6 +84,7 @@ dependencies = [
  "roughtime",
  "rustls",
  "rustls-pemfile",
+ "scheduled-thread-pool",
  "schemars 1.2.3",
  "semver",
  "serde",

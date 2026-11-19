@@ -195,6 +195,7 @@ impl NetworkManager {
             let script_tree = Self::try_load_resistance_mode(&db)?;
             self.site_packs = site_packs;
             self.network_blocks = network_blocks;
+            self.release_unused_site_pack_pools();
             self.resistance_mode.script_tree = script_tree;
             Ok::<(), NetworkManagerOpErr>(())
         })();

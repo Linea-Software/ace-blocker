@@ -6,9 +6,16 @@
 use diesel::prelude::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness};
-use std::path::Path;
+use scheduled_thread_pool::ScheduledThreadPool;
+use std::{
+    path::Path,
+    sync::{Arc, OnceLock},
+    time::Duration,
+};
 
 use super::DBError;
+
+static SQLITE_WORKERS: OnceLock<Arc<ScheduledThreadPool>> = OnceLock::new();
 
 pub(crate) fn open_pool(
     path: &Path,
@@ -29,9 +36,24 @@ pub(crate) fn open_pool_with_size(
             message: "provided database path is not a valid string".to_string(),
         })?;
     let manager = ConnectionManager::<SqliteConnection>::new(database_path);
-    let mut builder = Pool::builder();
+    // One maintenance worker group for all pools, rather than three threads per site pack.
+    let workers = SQLITE_WORKERS
+        .get_or_init(|| {
+            Arc::new(
+                ScheduledThreadPool::builder()
+                    .num_threads(3)
+                    .thread_name_pattern("ace-sqlite-{}")
+                    .build(),
+            )
+        })
+        .clone();
+    let mut builder = Pool::builder().thread_pool(workers);
     if let Some(max_size) = max_size {
-        builder = builder.max_size(max_size);
+        // Site-pack and staging pools need no more than one idle connection.
+        builder = builder
+            .max_size(max_size)
+            .min_idle(Some(1))
+            .idle_timeout(Some(Duration::from_secs(120)));
     }
     let pool = builder
         .build(manager)

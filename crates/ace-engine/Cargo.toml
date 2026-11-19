@@ -132,7 +132,8 @@ webbrowser = "~1.2"
 nutype = { version = "~0.8", features = ["serde", "schemars08", "derive_unchecked"] }
 certkit = "~0.2"
 async-trait = "~0.1"
-moka = { version = "~0.12", features = ["sync"]}
+moka = { version = "~0.12", features = ["sync"] }
+scheduled-thread-pool = "0.2.7"
 
 [dependencies.xxhash-rust]
 version = "~0.8"

@@ -46,7 +46,7 @@ impl SitePackDB {
             })?;
         }
 
-        let pool = crate::db::sqlite_pool::open_pool(db_path, MIGRATIONS)?;
+        let pool = crate::db::sqlite_pool::open_pool_with_size(db_path, MIGRATIONS, Some(2))?;
         Ok(SitePackDB { db_pool: pool })
     }
 
@@ -290,6 +290,14 @@ mod tests {
     use super::*;
     use crate::schema_site_packs::{entries, pack_meta};
     use diesel_migrations::MigrationHarness;
+
+    #[test]
+    fn live_pack_pool_keeps_one_idle_connection_and_caps_concurrency() {
+        let temp = tempfile::tempdir().unwrap();
+        let db = SitePackDB::from(&temp.path().join("pack.db")).unwrap();
+        assert_eq!(db.db_pool.max_size(), 2);
+        assert_eq!(db.db_pool.min_idle(), Some(1));
+    }
 
     fn test_connection() -> SqliteConnection {
         let mut connection =

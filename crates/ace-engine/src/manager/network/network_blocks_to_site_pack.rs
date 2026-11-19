@@ -54,21 +54,29 @@ impl NetworkManager {
             })?
             .clone();
 
-        if site_pack_arc.is_poisoned() {
-            return Err(NetworkManagerOpErr::RwLockPoison);
-        }
-        if !site_pack_arc.read().unwrap().is_synced() {
-            return Err(NetworkManagerOpErr::SitePackNotSynced {
-                id: site_pack_id.clone(),
-            });
-        }
-
-        // Validate every precondition before publishing a live policy change.
+        // Reject invalid targets before a potentially expensive lazy SQLite open.
         self.get_network_block_from(network_block_id).ok_or(
             NetworkManagerOpErr::NetworkBlockNotFound {
                 id: network_block_id.clone(),
             },
         )?;
+        if site_pack_arc.is_poisoned() {
+            return Err(NetworkManagerOpErr::RwLockPoison);
+        }
+        {
+            let pack = site_pack_arc.read().unwrap();
+            if !pack.is_synced() {
+                return Err(NetworkManagerOpErr::SitePackNotSynced {
+                    id: site_pack_id.clone(),
+                });
+            }
+            pack.ensure_db_open()
+                .map_err(|error| NetworkManagerOpErr::DatabaseError {
+                    message: format!(
+                        "failed to open site pack {site_pack_id} for enforcement: {error}"
+                    ),
+                })?;
+        }
 
         self.db
             .add_network_block_to_site_pack(network_block_id, site_pack_id)
@@ -118,6 +126,7 @@ impl NetworkManager {
         self.get_mut_network_block_from(network_block_id)
             .expect("network block was validated before persistence")
             .remove_site_pack(site_pack_id);
+        self.release_unused_site_pack_pools();
 
         Ok(())
     }

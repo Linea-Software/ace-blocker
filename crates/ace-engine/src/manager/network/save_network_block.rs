@@ -120,6 +120,12 @@ impl NetworkManager {
                 if (!pack.is_remote() || pack.requires_pro()) && !is_pro_entitled {
                     return Err(NetworkManagerOpErr::ProPlanRequired);
                 }
+                pack.ensure_db_open()
+                    .map_err(|error| NetworkManagerOpErr::DatabaseError {
+                        message: format!(
+                            "failed to open site pack {pack_id} for enforcement: {error}"
+                        ),
+                    })?;
             }
             drop(pack);
             selected_packs.insert(pack_id, pack_arc.clone());
@@ -242,6 +248,9 @@ impl NetworkManager {
 
         let mut prepared_block = prepared_block;
         prepared_block.set_schedule_mode(draft.schedule_mode);
+        if let Some(previous) = current {
+            prepared_block.preserve_cache_if_policy_unchanged(previous);
+        }
 
         self.db.save_network_block_snapshot(
             &model,
@@ -251,6 +260,7 @@ impl NetworkManager {
             is_new,
         )?;
         self.network_blocks.insert(id.clone(), prepared_block);
+        self.release_unused_site_pack_pools();
         Ok(id)
     }
 }
@@ -298,6 +308,104 @@ mod tests {
             ],
             site_pack_ids: vec![],
         }
+    }
+
+    #[test]
+    fn unauthorized_and_missing_target_links_never_open_idle_pack() {
+        use crate::core::network_block::site_pack::site_pack_db::SitePackDB;
+
+        let (mut manager, _temp) = context();
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("pack.db");
+        drop(SitePackDB::from(&path).unwrap());
+        let id = SitePackId::try_new("custom-pro").unwrap();
+        let pack = SitePack::from(
+            id.clone(),
+            None,
+            "Custom".into(),
+            None,
+            true,
+            None,
+            None,
+            dir.path(),
+            vec![],
+            None,
+        )
+        .unwrap();
+        pack.release_idle_db().unwrap();
+        std::fs::remove_file(&path).unwrap();
+        manager
+            .site_packs
+            .insert(id.clone(), Arc::new(RwLock::new(pack)));
+
+        let mut unauthorized = draft(None, "Denied");
+        unauthorized.site_pack_ids.push(id.clone());
+        assert!(matches!(
+            manager.save_network_block(unauthorized, false),
+            Err(NetworkManagerOpErr::ProPlanRequired)
+        ));
+        assert!(!path.exists());
+
+        let missing_block = NetworkBlockId::from(uuid::Uuid::now_v7());
+        assert!(matches!(
+            manager.add_network_block_to_site_pack(&missing_block, &id),
+            Err(NetworkManagerOpErr::NetworkBlockNotFound { .. })
+        ));
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn metadata_only_save_preserves_cached_uri_decisions() {
+        let (mut manager, _temp) = context();
+        let id = manager
+            .save_network_block(draft(None, "First"), false)
+            .unwrap();
+        let uri: http::Uri = "https://new.example/path".parse().unwrap();
+
+        {
+            let block = manager.get_network_block_from(&id).unwrap();
+            assert!(block.is_content_blocked(&uri).is_blocked());
+            let cache = block.results_cache_handle();
+            cache.run_pending_tasks();
+            assert_eq!(cache.entry_count(), 1);
+        }
+
+        let mut renamed = draft(Some(id.clone()), "Renamed");
+        renamed.icon = Some("new-icon".into());
+        manager.save_network_block(renamed, false).unwrap();
+
+        let block = manager.get_network_block_from(&id).unwrap();
+        let cache = block.results_cache_handle();
+        cache.run_pending_tasks();
+        assert_eq!(cache.entry_count(), 1);
+        assert!(block.is_content_blocked(&uri).is_blocked());
+        let stats = block.cache_metrics();
+        assert_eq!((stats.hits, stats.misses), (1, 1));
+    }
+
+    #[test]
+    fn changed_policy_does_not_reuse_cached_decisions() {
+        let (mut manager, _temp) = context();
+        let id = manager
+            .save_network_block(draft(None, "First"), false)
+            .unwrap();
+        let old_uri: http::Uri = "https://new.example/path".parse().unwrap();
+        assert!(
+            manager
+                .get_network_block_from(&id)
+                .unwrap()
+                .is_content_blocked(&old_uri)
+                .is_blocked()
+        );
+
+        let mut updated = draft(Some(id.clone()), "First");
+        updated.rules = vec![rule("another.example")];
+        manager.save_network_block(updated, false).unwrap();
+
+        let block = manager.get_network_block_from(&id).unwrap();
+        assert!(!block.is_content_blocked(&old_uri).is_blocked());
+        let new_uri: http::Uri = "https://another.example/path".parse().unwrap();
+        assert!(block.is_content_blocked(&new_uri).is_blocked());
     }
 
     #[test]
