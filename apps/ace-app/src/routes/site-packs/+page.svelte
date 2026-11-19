@@ -16,6 +16,7 @@
     import ProGatedButton from "$lib/components/ProGatedButton.svelte";
     import Inspector from "$lib/components/ace/structural/Inspector.svelte";
     import SitePackRow from "$lib/components/ace/domain/SitePackRow.svelte";
+    import { groupSitePackCategories, getSitePackCoverage } from "$lib/utils/site-pack-presentation";
 
     import {
         deleteSitePack,
@@ -99,6 +100,8 @@
                 ),
             ),
     );
+
+    const categoryGroups = $derived(groupSitePackCategories(categories));
 
     const customLists = $derived(
         packs
@@ -328,18 +331,37 @@
                         </div>
                         <span>{categories.length}</span>
                     </header>
-                    <div class="pack-ledger">
-                        {#each categories as pack (pack.id)}
-                            <SitePackRow
-                                {pack}
-                                isPro={userStore.isPro}
-                                subtitle={getSubtitle(pack)}
-                                selected={selectedPack?.id === pack.id}
-                                status={syncStore.statusOf(pack.id)}
-                                progress={syncStore.progressOf(pack.id) ?? 0}
-                                phase={phaseLabel(syncStore.phaseOf(pack.id))}
-                                onSelect={selectPack}
-                            />
+                    <div class="category-groups">
+                        {#each categoryGroups as group (group.name)}
+                            <div class="category-family" role="group" aria-label={group.name} data-testid="site-pack-family">
+                                <div class="category-family-heading">
+                                    <strong>{group.name}</strong>
+                                    {#if group.catalogPair}
+                                        <span data-testid="site-pack-tier-comparison">
+                                            {m.pack_access_free()}: {group.catalogPair.free.toLocaleString(getLocale())}
+                                            <span aria-hidden="true">·</span>
+                                            {m.pro_badge()}: {group.catalogPair.pro.toLocaleString(getLocale())}
+                                            <span class="comparison-source">{m.catalog_snapshot_note()}</span>
+                                        </span>
+                                    {/if}
+                                </div>
+                                <div class="pack-ledger">
+                                    {#each group.packs as pack (pack.id)}
+                                        <SitePackRow
+                                            {pack}
+                                            grouped
+                                            hasPair={!!group.catalogPair}
+                                            isPro={userStore.isPro}
+                                            subtitle={getSubtitle(pack)}
+                                            selected={selectedPack?.id === pack.id}
+                                            status={syncStore.statusOf(pack.id)}
+                                            progress={syncStore.progressOf(pack.id) ?? 0}
+                                            phase={phaseLabel(syncStore.phaseOf(pack.id))}
+                                            onSelect={selectPack}
+                                        />
+                                    {/each}
+                                </div>
+                            </div>
                         {/each}
                     </div>
                 </section>
@@ -405,9 +427,10 @@
                 <div>
                     <dt>{m.domains_lowercase()}</dt>
                     <dd>
-                        {inspectorPack.isSynced
-                            ? (inspectorPack.entriesCount?.toLocaleString(getLocale()) ?? "—")
-                            : "—"}
+                        {getSitePackCoverage(inspectorPack).count?.toLocaleString(getLocale()) ?? "—"}
+                        {#if getSitePackCoverage(inspectorPack).source === "catalog"}
+                            <small>{m.catalog_snapshot_note()}</small>
+                        {/if}
                     </dd>
                 </div>
                 <div>
@@ -629,6 +652,12 @@
         font-size: 11px;
     }
 
+    .category-groups { display: grid; gap: 1px; background: var(--border); }
+    .category-family { min-width: 0; background: var(--card); }
+    .category-family-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px; padding: 11px 16px 8px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--muted) 20%, var(--card)); }
+    .category-family-heading > strong { font: 600 16px "IBM Plex Sans Condensed", sans-serif; }
+    .category-family-heading > span { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font: 500 11px "IBM Plex Mono", monospace; color: var(--muted-foreground); }
+    .comparison-source { font-family: "IBM Plex Sans", sans-serif; }
     .pack-ledger :global(.site-pack-row:last-child) {
         border-bottom: 0;
     }

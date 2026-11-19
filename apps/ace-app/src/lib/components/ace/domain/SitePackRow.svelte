@@ -4,6 +4,8 @@
     import { SvelteDate } from "svelte/reactivity";
     import { getLocale } from "$lib/paraglide/runtime";
     import { getBlockingListDisplayName } from "$lib/utils/category-presentation";
+    import { getPackIcon } from "$lib/utils/pack-icons";
+    import { getSitePackCoverage, getSitePackIconSlug } from "$lib/utils/site-pack-presentation";
     import {
         Check,
         ChevronRight,
@@ -16,6 +18,8 @@
         pack,
         subtitle,
         selected = false,
+        grouped = false,
+        hasPair = false,
         isPro,
         status,
         progress = 0,
@@ -25,6 +29,8 @@
         pack: SitePackSchema;
         subtitle: string;
         selected?: boolean;
+        grouped?: boolean;
+        hasPair?: boolean;
         isPro: boolean;
         status?: "queued" | "downloading" | "completed" | "failed";
         progress?: number;
@@ -33,6 +39,8 @@
     } = $props();
 
     const displayName = $derived(getBlockingListDisplayName(pack));
+    const PackIcon = $derived(getPackIcon(getSitePackIconSlug(pack)));
+    const coverage = $derived(getSitePackCoverage(pack));
     const proRequired = $derived(pack.requiresPro && !isPro);
 
     const stateLabel = $derived.by(() => {
@@ -63,30 +71,44 @@
     <span class="state-rail" aria-hidden="true"></span>
 
     <span class="identity">
-        <strong>{displayName}</strong>
+        <span class="identity-head">
+            <span class="pack-icon" data-testid="site-pack-row-icon" aria-hidden="true"><PackIcon size={19} strokeWidth={1.75} /></span>
+            <strong>{grouped
+                ? (hasPair
+                    ? (pack.requiresPro ? m.catalog_pro_extended() : m.catalog_free_essential())
+                    : (pack.requiresPro ? m.pro_badge() : m.pack_access_free()))
+                : displayName}</strong>
+        </span>
         <span class="metadata">
-            {#if pack.requiresPro}
-                <span>{m.pro_badge()}</span>
-            {:else}
-                <span>{m.pack_access_free()}</span>
+            {#if !grouped}
+                {#if pack.requiresPro}
+                    <span>{m.pro_badge()}</span>
+                {:else}
+                    <span>{m.pack_access_free()}</span>
+                {/if}
             {/if}
             {#if pack.isBundled}
                 <span aria-hidden="true">·</span>
                 <span>{m.pack_included_badge()}</span>
             {/if}
-            {#if subtitle}
+            {#if subtitle && !grouped}
                 <span aria-hidden="true">·</span>
                 <span class="subtitle">{subtitle}</span>
             {/if}
+            <span class="compact-coverage">
+                {coverage.count === null ? "—" : coverage.count.toLocaleString(getLocale())}
+                {m.domains_lowercase()}{#if coverage.source === "catalog"} · {m.catalog_snapshot_note()}{/if}
+            </span>
         </span>
     </span>
 
     <span class="fact">
         <span>{m.domains_lowercase()}</span>
         <strong>
-            {pack.isSynced
-                ? (pack.entriesCount?.toLocaleString(getLocale()) ?? "—")
-                : "—"}
+            {coverage.count === null ? "—" : coverage.count.toLocaleString(getLocale())}
+            {#if coverage.source === "catalog"}
+                <span class="catalog-count-note">{m.catalog_snapshot_note()}</span>
+            {/if}
         </strong>
     </span>
 
@@ -182,7 +204,9 @@
         display: block;
     }
 
-    .identity > strong {
+    .identity-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .pack-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid var(--border); border-radius: 5px; background: var(--muted); color: var(--foreground); }
+    .identity-head > strong {
         display: block;
         overflow: hidden;
         font-family: "IBM Plex Sans Condensed", sans-serif;
@@ -198,11 +222,14 @@
         align-items: center;
         gap: 5px;
         margin-top: 4px;
+        margin-left: 42px;
         color: var(--muted-foreground);
         font-size: 11px;
         line-height: 1.25;
     }
 
+    .compact-coverage { display: none; }
+    .catalog-count-note { font: 400 10px "IBM Plex Sans", sans-serif; color: var(--muted-foreground); }
     .subtitle {
         min-width: 0;
         overflow: hidden;
@@ -297,6 +324,7 @@
         .fact {
             display: none;
         }
+        .compact-coverage { display: block; flex-basis: 100%; font-variant-numeric: tabular-nums; }
     }
 
     @media (prefers-reduced-motion: reduce) {

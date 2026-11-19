@@ -2,6 +2,9 @@
     import { Badge } from "$lib/components/ui/badge/index.js";
     import { Input } from "$lib/components/ui/input/index.js";
     import { Search, Check } from "@lucide/svelte";
+    import { getPackIcon } from "$lib/utils/pack-icons";
+    import { getCategoryCatalogPair, getSitePackCoverage, getSitePackIconSlug } from "$lib/utils/site-pack-presentation";
+    import { getLocale } from "$lib/paraglide/runtime";
     import * as m from "$lib/paraglide/messages.js";
     import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
     import { Progress } from "$lib/components/ui/progress/index.js";
@@ -174,6 +177,9 @@
 {#snippet listRow(list: SitePackSchema)}
     {@const isConnected = connectedListIds.includes(list.id)}
     {@const isPremium = requiresProForConnection(list)}
+    {@const PackIcon = getPackIcon(getSitePackIconSlug(list))}
+    {@const coverage = getSitePackCoverage(list)}
+    {@const pair = getCategoryCatalogPair(list)}
     {@const isProGated = isPremium && isFreeUser && !isConnected}
     {@const canToggle =
         !isProGated &&
@@ -213,8 +219,9 @@
                 {/if}
             </span>
 
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-foreground" aria-hidden="true" data-testid="category-icon"><PackIcon size={19} strokeWidth={1.75} /></span>
             <span class="min-w-0 flex-1">
-                <span class="flex min-w-0 items-center gap-2">
+                <span class="flex min-w-0 flex-wrap items-center gap-2">
                     <span class="truncate text-sm font-semibold">
                         {getBlockingListDisplayName(list)}
                     </span>
@@ -236,21 +243,24 @@
                 {#if isConnected && isPremium && isFreeUser}
                     <span class="text-xs text-muted-foreground">{m.status_pro_required()}</span>
                 {/if}
-                {#if list.description || list.entriesCount || !list.isSynced}
+                {#if pair && !isPremium}
+                    <span class="mt-1 block text-xs text-muted-foreground" data-testid="category-tier-comparison">
+                        {m.pack_access_free()} {pair.free.toLocaleString(getLocale())} · {m.pro_badge()} {pair.pro.toLocaleString(getLocale())} {m.domains_lowercase()} · {m.catalog_snapshot_note()}
+                    </span>
+                {/if}
+                {#if list.description || coverage.count !== null || !list.isSynced}
                     <span
-                        class="text-muted-foreground mt-0.5 flex min-w-0 items-center gap-2 text-xs"
+                        class="text-muted-foreground mt-0.5 flex min-w-0 flex-wrap items-center gap-2 text-xs"
                     >
                         {#if list.description}
                             <span class="min-w-0 truncate">
                                 {list.description}
                             </span>
                         {/if}
-                        {#if list.entriesCount}
-                            <span class="shrink-0 font-mono text-[11px]">
-                                {new Intl.NumberFormat("en-US").format(
-                                    list.entriesCount,
-                                )}
-                                {m.domains_lowercase()}
+                        {#if coverage.count !== null && (!pair || isPremium)}
+                            <span class="shrink-0 font-mono text-[11px]" data-testid="category-coverage">
+                                {coverage.count.toLocaleString(getLocale())} {m.domains_lowercase()}
+                                {#if coverage.source === "catalog"} · {m.catalog_snapshot_note()}{/if}
                             </span>
                         {/if}
                         {#if !list.isSynced}

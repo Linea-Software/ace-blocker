@@ -41,8 +41,50 @@ pub(crate) fn derive_icon_from_name(name: &str) -> Option<String> {
         Some("piracy".to_string())
     } else if name_lower.contains("news") {
         Some("news".to_string())
+    } else if name_lower.contains("anime") || name_lower.contains("manga") {
+        Some("anime".to_string())
+    } else if name_lower.contains("forum") || name_lower.contains("communit") {
+        Some("forums".to_string())
+    } else if name_lower.contains("sport") {
+        Some("sports".to_string())
+    } else if name_lower.contains("dating") || name_lower.contains("matchmaking") {
+        Some("dating".to_string())
+    } else if name_lower.contains("ai tools") || name_lower.contains("ai chatbot") {
+        Some("ai-tools".to_string())
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod icon_tests {
+    use super::derive_icon_from_name;
+
+    #[test]
+    fn all_official_pack_categories_have_stable_icons() {
+        for (name, slug) in [
+            ("Adult Websites — Free", "adult"),
+            ("Adult Websites — Pro", "adult"),
+            ("Social Media Websites — Free", "social"),
+            ("Gaming Websites — Free", "gaming"),
+            ("Gambling Websites — Free", "gambling"),
+            ("Gambling Websites — Pro", "gambling"),
+            ("Streaming Websites — Free", "streaming"),
+            ("Streaming Websites — Pro", "streaming"),
+            ("Messaging Websites — Pro", "messaging"),
+            ("Shopping Websites — Pro", "shopping"),
+            ("Anime & Manga Websites — Pro", "anime"),
+            ("Forums & Communities — Pro", "forums"),
+            ("News Websites — Pro", "news"),
+            ("Sports Websites — Pro", "sports"),
+            ("Dating Websites — Pro", "dating"),
+            ("AI Tools Websites — Pro", "ai-tools"),
+            ("Phishing Websites — Pro", "phishing"),
+            ("Piracy Websites — Pro", "piracy"),
+        ] {
+            assert_eq!(derive_icon_from_name(name).as_deref(), Some(slug), "{name}");
+        }
+        assert_eq!(derive_icon_from_name("My Custom List"), None);
     }
 }
 

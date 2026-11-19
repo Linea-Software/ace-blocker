@@ -11,9 +11,10 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 1501263,
-        "compressed_size_bytes": 1502231,
-        "domains_count": 76509
+        "uncompressed_size_bytes": 4075256,
+        "compressed_size_bytes": 1555124,
+        "domains_count": 153512,
+        "icon": "adult"
     },
     {
         "id": "pack-social-free",
@@ -29,7 +30,8 @@
         ],
         "uncompressed_size_bytes": 1435028,
         "compressed_size_bytes": 394930,
-        "domains_count": 37537
+        "domains_count": 37537,
+        "icon": "social"
     },
     {
         "id": "pack-gaming-free",
@@ -45,7 +47,8 @@
         ],
         "uncompressed_size_bytes": 898305,
         "compressed_size_bytes": 356405,
-        "domains_count": 33841
+        "domains_count": 33841,
+        "icon": "gaming"
     },
     {
         "id": "pack-gambling-free",
@@ -61,7 +64,8 @@
         ],
         "uncompressed_size_bytes": 176,
         "compressed_size_bytes": 972,
-        "domains_count": 14
+        "domains_count": 14,
+        "icon": "gambling"
     },
     {
         "id": "pack-streaming-free",
@@ -77,7 +81,8 @@
         ],
         "uncompressed_size_bytes": 115,
         "compressed_size_bytes": 905,
-        "domains_count": 9
+        "domains_count": 9,
+        "icon": "streaming"
     },
     {
         "id": "pack-adult-pro",
@@ -91,9 +96,10 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 183455139,
-        "compressed_size_bytes": 183456983,
-        "domains_count": 13123167
+        "uncompressed_size_bytes": 90074797,
+        "compressed_size_bytes": 25221354,
+        "domains_count": 2644357,
+        "icon": "adult"
     },
     {
         "id": "pack-gambling-pro",
@@ -107,9 +113,10 @@
                 "format": "standard"
             }
         ],
-        "uncompressed_size_bytes": 12288473,
-        "compressed_size_bytes": 4524466,
-        "domains_count": 454801
+        "uncompressed_size_bytes": 12271045,
+        "compressed_size_bytes": 4516561,
+        "domains_count": 454090,
+        "icon": "gambling"
     },
     {
         "id": "pack-messaging-pro",
@@ -125,7 +132,8 @@
         ],
         "uncompressed_size_bytes": 124583,
         "compressed_size_bytes": 37496,
-        "domains_count": 3245
+        "domains_count": 3245,
+        "icon": "messaging"
     },
     {
         "id": "pack-streaming-pro",
@@ -141,7 +149,8 @@
         ],
         "uncompressed_size_bytes": 1203218,
         "compressed_size_bytes": 300518,
-        "domains_count": 28324
+        "domains_count": 28324,
+        "icon": "streaming"
     },
     {
         "id": "pack-shopping-pro",
@@ -157,7 +166,8 @@
         ],
         "uncompressed_size_bytes": 1015249,
         "compressed_size_bytes": 393589,
-        "domains_count": 37463
+        "domains_count": 37463,
+        "icon": "shopping"
     },
     {
         "id": "pack-anime-manga-pro",
@@ -173,7 +183,8 @@
         ],
         "uncompressed_size_bytes": 165908,
         "compressed_size_bytes": 72425,
-        "domains_count": 6501
+        "domains_count": 6501,
+        "icon": "anime"
     },
     {
         "id": "pack-forums-pro",
@@ -189,7 +200,8 @@
         ],
         "uncompressed_size_bytes": 5352,
         "compressed_size_bytes": 3216,
-        "domains_count": 197
+        "domains_count": 197,
+        "icon": "forums"
     },
     {
         "id": "pack-news-pro",
@@ -205,7 +217,8 @@
         ],
         "uncompressed_size_bytes": 129782,
         "compressed_size_bytes": 52473,
-        "domains_count": 4644
+        "domains_count": 4644,
+        "icon": "news"
     },
     {
         "id": "pack-sports-pro",
@@ -221,7 +234,8 @@
         ],
         "uncompressed_size_bytes": 62109,
         "compressed_size_bytes": 27789,
-        "domains_count": 2362
+        "domains_count": 2362,
+        "icon": "sports"
     },
     {
         "id": "pack-dating-pro",
@@ -237,7 +251,8 @@
         ],
         "uncompressed_size_bytes": 315459,
         "compressed_size_bytes": 120001,
-        "domains_count": 10941
+        "domains_count": 10941,
+        "icon": "dating"
     },
     {
         "id": "pack-ai-tools-pro",
@@ -253,7 +268,8 @@
         ],
         "uncompressed_size_bytes": 5449,
         "compressed_size_bytes": 3499,
-        "domains_count": 221
+        "domains_count": 221,
+        "icon": "ai-tools"
     },
     {
         "id": "pack-phishing-pro",
@@ -274,7 +290,8 @@
         ],
         "uncompressed_size_bytes": 5493261,
         "compressed_size_bytes": 5494229,
-        "domains_count": 257761
+        "domains_count": 257761,
+        "icon": "phishing"
     },
     {
         "id": "pack-piracy-pro",
@@ -290,6 +307,7 @@
         ],
         "uncompressed_size_bytes": 35397,
         "compressed_size_bytes": 36365,
-        "domains_count": 1530
+        "domains_count": 1530,
+        "icon": "piracy"
     }
 ]

@@ -509,7 +509,14 @@ impl TryFrom<&crate::core::network_block::site_pack::SitePack> for SitePackSchem
             id: pack.get_id().to_string(),
             name: pack.get_name().to_string(),
             description: pack.get_description().unwrap_or_default().to_string(),
-            icon: pack.get_icon().map(|v| v.to_string()),
+            // Older managed packs may have been registered before the engine
+            // supported their canonical icon slug. Keep user-imported icons
+            // untouched, but derive a stable display icon for remote packs.
+            icon: pack.get_icon().map(str::to_string).or_else(|| {
+                pack.is_remote()
+                    .then(|| crate::db::site_pack_repo::derive_icon_from_name(pack.get_name()))
+                    .flatten()
+            }),
             is_synced: pack.is_synced(),
             is_bundled,
             entries_count: pack.get_entry_count()?,

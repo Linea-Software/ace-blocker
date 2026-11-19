@@ -16,6 +16,7 @@ import {
     CircleUser,
     AtSign,
     Gamepad2,
+    Bot,
     LayoutGrid,
     Dice1,
     Trophy,
@@ -110,6 +111,11 @@ export const LIST_ICON_MAP: Record<string, LucideIcon> = {
     // Security & Risk
     phishing: TriangleAlert,
     piracy: Download,
+    anime: BookOpen,
+    forums: MessageCircle,
+    sports: Trophy,
+    dating: Heart,
+    "ai-tools": Bot,
 
     // News & Information
     news: Newspaper,
@@ -175,6 +181,7 @@ export const LIST_ICONS_GROUPED: Array<{
             "movie",
             "tv",
             "podcast",
+            "anime",
         ],
     },
     {
@@ -187,11 +194,13 @@ export const LIST_ICONS_GROUPED: Array<{
             "users",
             "profile",
             "mention",
+            "forums",
+            "dating",
         ],
     },
     {
         category: "Gaming & Entertainment",
-        slugs: ["gaming", "cards", "dice", "trophy", "sword", "puzzle"],
+        slugs: ["gaming", "cards", "dice", "trophy", "sword", "puzzle", "sports"],
     },
     {
         category: "Gambling & Risk",
@@ -232,6 +241,7 @@ export const LIST_ICONS_GROUPED: Array<{
             "wifi",
             "laptop",
             "mobile",
+            "ai-tools",
         ],
     },
     {

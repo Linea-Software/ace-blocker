@@ -250,3 +250,69 @@ test("Editor hints at overflow, then hides the hint at the bottom", async ({ pag
     await expect(editor.locator(".scroll-cue")).toHaveCount(0);
     await expect(editor.getByRole("button", { name: "Continue" })).toBeVisible();
 });
+
+
+test("Official Site Pack icons and Free/Pro coverage are visible in both selection surfaces", async ({ page }) => {
+    await page.setViewportSize({ width: 1000, height: 740 });
+    await page.goto("/getting-started");
+    await page.evaluate(async () => {
+        const svelte = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const delta = new URL("/src/lib/deltas/site-packs-connection-delta.svelte.ts", location.origin).pathname;
+        const store = new URL("/src/lib/stores/user-store.svelte.ts", location.origin).pathname;
+        const [{ mount }, { default: SectionSites }, { default: SitePackRow }, { SitePacksConnectionDelta }, { userStore }] =
+            await Promise.all([
+                import(/* @vite-ignore */ svelte),
+                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.svelte"),
+                import(/* @vite-ignore */ "/src/lib/components/ace/domain/SitePackRow.svelte"),
+                import(/* @vite-ignore */ delta),
+                import(/* @vite-ignore */ store),
+            ]);
+        userStore.isPro = false;
+        const base = { description: "Test catalog", isBundled: false, isLocked: false, isRemote: true, isSynced: false, entriesCount: 0, icon: null };
+        const free = { ...base, id: "pack-gambling-free", name: "Gambling Websites — Free", requiresPro: false };
+        const pro = { ...base, id: "pack-gambling-pro", name: "Gambling Websites — Pro", requiresPro: true };
+        const host = document.createElement("div");
+        host.dataset.testid = "pack-family-fixture";
+        host.style.cssText = "position:fixed;inset:0;overflow:auto;z-index:70;background:var(--background);padding:22px;container:page / inline-size;";
+        document.body.append(host);
+        const selection = document.createElement("section");
+        host.append(selection);
+        mount(SectionSites, { target: selection, props: {
+            delta: new SitePacksConnectionDelta(), availableLists: [free, pro],
+        } });
+        const ledger = document.createElement("section");
+        ledger.style.cssText = "max-width:840px;margin-top:30px;";
+        host.append(ledger);
+        for (const pack of [free, pro]) {
+            mount(SitePackRow, { target: ledger, props: {
+                pack, subtitle: "", isPro: false, grouped: true, hasPair: true,
+                onSelect: () => {},
+            } });
+        }
+    });
+
+    const fixture = page.getByTestId("pack-family-fixture");
+    const freeCategory = fixture.getByTestId("category-preview").getByRole("button", { name: /Gambling/ });
+    await expect(freeCategory.getByTestId("category-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
+    await expect(freeCategory.getByTestId("category-tier-comparison")).toContainText("454,090");
+    await expect(freeCategory.getByTestId("category-tier-comparison")).toContainText("catalog estimate");
+
+    const proGroup = fixture.locator("details.pro-categories");
+    await proGroup.locator("summary").click();
+    const proCategory = proGroup.getByRole("button", { name: /Gambling/ });
+    await expect(proCategory.getByTestId("category-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
+    await expect(proCategory.getByTestId("category-coverage")).toContainText("454,090");
+
+    const rows = fixture.getByTestId("site-pack-row");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0)).toContainText("Free · Basic");
+    await expect(rows.nth(1)).toContainText("Pro · Extended");
+    for (const row of await rows.all()) {
+        await expect(row.getByTestId("site-pack-row-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
+    }
+
+    await page.setViewportSize({ width: 390, height: 750 });
+    await page.screenshot({ path: "test-results/site-pack-tiers-mobile.png" });
+    const overflow = await fixture.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth }));
+    expect(overflow.scroll).toBeLessThanOrEqual(overflow.width + 1);
+});
