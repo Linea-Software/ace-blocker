@@ -29,6 +29,7 @@
     import { isAceCategory } from "$lib/utils/category-presentation";
 
     import SectionGeneral from "./_components/SectionGeneral.svelte";
+    import SectionSafeSearch from "./_components/SectionSafeSearch.svelte";
     import SectionRules from "./_components/SectionRules.svelte";
     import SectionSites from "./_components/SectionSites.svelte";
     import SectionSchedule from "./_components/SectionSchedule.svelte";
@@ -341,6 +342,10 @@
                 </div>
                 <div class="step-content-stack">
                     <SectionSites delta={sitePacksDelta} bind:availableLists isLocked={block?.isLocked ?? false} />
+                    <SectionSafeSearch bind:isSafeSearch disabled={isSubmitting} isLocked={block?.isLocked ?? false} />
+                    {#if isSafeSearch && rulesDelta.currentRules.length === 0 && sitePacksDelta.currentConnectedListIds.length === 0}
+                        <p class="text-muted-foreground text-sm leading-relaxed" data-testid="safe-search-only-hint">{m.block_safe_search_only_hint()}</p>
+                    {/if}
                     <div class="secondary-section">
                         <details class="website-manager" id="website-manager" data-testid="website-manager" bind:open={websitesOpen}>
                             <summary>
@@ -400,7 +405,7 @@
                 </div>
                 <div class="review-stack">
                     <div class="review-identity">
-                        <SectionGeneral bind:name bind:icon={blockIcon} bind:isSafeSearch disabled={isSubmitting} isLocked={block?.isLocked ?? false} />
+                        <SectionGeneral bind:name bind:icon={blockIcon} disabled={isSubmitting} isLocked={block?.isLocked ?? false} />
                     </div>
                     <div class="review-list" aria-label={m.block_wizard_summary()}>
                         <div class="review-row">
@@ -408,6 +413,10 @@
                                 <strong>{m.block_wizard_content()}</strong>
                                 <p>{m.block_wizard_category_count({count:categoryCount})} · {m.block_wizard_custom_count({count:customListCount})}</p>
                                 <p>{m.block_wizard_websites_count({count:websiteCount})}{#if regexCount} · {m.block_wizard_regex_count({count:regexCount})}{/if}</p>
+                                <p data-testid="review-safe-search">{m.force_safe_search()}: {isSafeSearch ? m.block_safe_search_included() : m.block_safe_search_not_included()}</p>
+                                {#if isSafeSearch && rulesDelta.currentRules.length === 0 && sitePacksDelta.currentConnectedListIds.length === 0}
+                                    <p>{m.block_safe_search_only_hint()}</p>
+                                {/if}
                                 {#if chosenNames.length}<p class="review-selected" title={chosenNames.join(", ")}>{chosenNames.slice(0,3).join(", ")}{chosenNames.length > 3 ? "…" : ""}</p>{/if}
                             </div>
                             <button type="button" class="review-edit" onclick={() => goToStep(0)}>{m.block_wizard_edit()}</button>
@@ -584,7 +593,10 @@
     @container block-editor (max-width: 640px) {
         .protection-panel { grid-template-columns: auto 1fr; }
         .protection-panel button,.protection-panel > span { grid-column: 2; justify-self: start; }
-        .editor-page-footer { align-items: end; }
+        .editor-page-footer { flex-direction: column; align-items: stretch; gap: 9px; }
+        .footer-actions { width: 100%; }
+        .footer-actions :global(button) { min-width: 0; justify-content: center; white-space: normal; text-align: center; }
+        .footer-actions :global(.save-action) { min-width: 0; flex: 1; }
         .editor-steps { gap: 4px; }
         .step-label { gap: 5px; font-size: 12px; }
         .mode-selector { grid-template-columns: 1fr; }

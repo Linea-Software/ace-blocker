@@ -42,7 +42,7 @@ test("Network Block cards display custom and fallback icons without changing the
             mount(NetworkPolicy, {
                 target: section,
                 props: {
-                    policy: { ...base, id: String(index), icon, name, enabled, isActive: enabled },
+                    policy: { ...base, id: String(index), icon, name, enabled, isActive: enabled, safeSearch: index === 0 },
                     onEdit: () => {},
                     onDelete: () => {},
                     onLock: () => {},
@@ -57,6 +57,9 @@ test("Network Block cards display custom and fallback icons without changing the
     await expect(cards.nth(0).getByTestId("network-policy-icon").locator("svg.lucide-gamepad-2")).toBeVisible();
     await expect(cards.nth(1).getByTestId("network-policy-icon").locator("svg.lucide-globe")).toBeVisible();
     await expect(cards.nth(2).getByTestId("network-policy-icon").locator("svg.lucide-message-square")).toBeVisible();
+    await expect(cards.nth(0).getByTestId("network-policy-safe-search")).toContainText("Included");
+    await expect(cards.nth(1).getByTestId("network-policy-safe-search")).toHaveCount(0);
+    await expect(cards.nth(2).getByTestId("network-policy-safe-search")).toHaveCount(0);
     for (const card of await cards.all()) {
         await expect(card.getByTestId("network-policy-icon")).toHaveAttribute("aria-hidden", "true");
         await expect(card.getByRole("switch")).toBeVisible();

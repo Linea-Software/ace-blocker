@@ -24,6 +24,7 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
     const steps = editor.locator(".editor-steps button");
     await expect(editor.getByRole("heading", { name: "What do you want to block?" })).toBeVisible();
     await expect(editor.getByRole("heading", { name: "Categories", exact: true })).toBeVisible();
+    await expect(editor.getByTestId("block-safe-search-setting").getByRole("switch", { name: "Force Safe Search" })).toBeVisible();
     await expect(editor.getByRole("textbox", { name: "Search categories and Custom Lists..." })).toBeVisible();
     await expect(steps).toHaveCount(3);
     await expect(steps.nth(0)).toHaveAttribute("aria-current", "step");
@@ -78,6 +79,67 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
     await steps.nth(2).click();
     await expect(editor.getByText("Individual websites: 26")).toBeVisible();
     await expect(editor.getByRole("button", { name: "Create and enable block" })).toBeEnabled();
+});
+
+test("Safe Search-only blocks expose their coverage and keep the settings in the draft", async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 600 });
+    await page.goto("/getting-started");
+    await page.evaluate(async () => {
+        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const [{ mount }, { default: BlockEditor }] = await Promise.all([
+            import(/* @vite-ignore */ runtime),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.svelte"),
+        ]);
+        const host = document.createElement("div");
+        host.dataset.testid = "safe-search-editor-fixture";
+        // The IconPicker portal has z-index 80; the fixture must sit below it.
+        host.style.cssText = "position:fixed;inset:0;overflow:auto;z-index:70;background:var(--background);";
+        document.body.append(host);
+        mount(BlockEditor, { target: host, props: { block: null, onSave: () => {} } });
+    });
+
+    const editor = page.getByTestId("safe-search-editor-fixture").locator(".block-editor-page");
+    const steps = editor.locator(".editor-steps button");
+    const safeSearchRow = editor.getByTestId("block-safe-search-setting");
+    const safeSearch = safeSearchRow.getByRole("switch", { name: "Force Safe Search" });
+    await expect(safeSearch).toHaveAttribute("aria-checked", "false");
+
+    // The icon and text are part of the clickable label, not only the small switch.
+    await safeSearchRow.locator("label").click({ position: { x: 22, y: 22 } });
+    await expect(safeSearch).toHaveAttribute("aria-checked", "true");
+    await expect(editor.getByTestId("safe-search-only-hint")).toBeVisible();
+
+    await steps.nth(2).click();
+    const iconTrigger = editor.getByRole("button", { name: "Icon" });
+    await expect(iconTrigger).toBeVisible();
+    expect(await iconTrigger.evaluate(el => el.getBoundingClientRect().width)).toBeGreaterThanOrEqual(44);
+    await expect(editor.getByText("More options")).toHaveCount(0);
+    await editor.getByRole("textbox", { name: "Block name" }).fill("Safe searches");
+    await expect(editor.getByTestId("review-safe-search")).toContainText("Force Safe Search: Included");
+    await expect(editor.getByText("With only Safe Search selected", { exact: false })).toBeVisible();
+    await expect(editor.getByRole("button", { name: "Create and enable block" })).toBeEnabled();
+
+    await iconTrigger.click();
+    await page.getByRole("textbox", { name: "Search icons…" }).fill("gaming");
+    await page.getByRole("button", { name: "gaming", exact: true }).click();
+    await expect(page.getByRole("textbox", { name: "Search icons…" })).not.toBeVisible();
+    await expect(editor.locator("#general svg.lucide-gamepad-2")).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 750 });
+    await page.screenshot({ path: "test-results/network-block-safe-search-mobile.png" });
+    const overflow = await editor.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth }));
+    expect(overflow.scroll).toBeLessThanOrEqual(overflow.width + 1);
+
+    await steps.nth(0).click();
+    await page.screenshot({ path: "test-results/network-block-safe-search-content-mobile.png" });
+    const contentOverflow = await editor.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth }));
+    expect(contentOverflow.scroll).toBeLessThanOrEqual(contentOverflow.width + 1);
+    await safeSearchRow.getByRole("switch").click();
+    await expect(safeSearchRow.getByRole("switch")).toHaveAttribute("aria-checked", "false");
+    await expect(editor.getByTestId("safe-search-only-hint")).toHaveCount(0);
+    await steps.nth(2).click();
+    await expect(editor.getByTestId("review-safe-search")).toContainText("Not included");
+    await expect(editor.getByRole("button", { name: "Create and enable block" })).toBeDisabled();
 });
 
 test("Category preview keeps selections, expands, and never truncates search results", async ({ page }) => {

@@ -69,6 +69,10 @@ Do not save incremental changes during step navigation or Category selection.
 Content shows Ace Categories first.
 Show available Free Categories immediately.
 Show Pro Categories in a collapsed catalog.
+Show the Free Safe Search toggle directly in Content, after Categories and before website rules.
+Safe Search alone is a valid target, but the UI must explain it only filters supported searches.
+Review keeps the block icon picker beside the name, without a hidden More options menu,
+and summarizes whether Safe Search is included.
 Keep selected Pro Categories visible.
 Show Custom Lists separately.
 **Manage individual websites** opens a subordinate list editor.

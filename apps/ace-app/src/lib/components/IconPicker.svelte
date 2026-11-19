@@ -14,13 +14,15 @@
         fallbackIcon = FALLBACK_ICON,
         label = "",
         size = "md",
+        disabled = false,
         side = "bottom",
     }: {
         selectedIcon: string | null;
         open: boolean;
         fallbackIcon?: typeof FALLBACK_ICON;
         label?: string;
-        size?: "sm" | "md";
+        size?: "sm" | "md" | "lg";
+        disabled?: boolean;
         side?: "bottom" | "left";
     } = $props();
 
@@ -35,20 +37,21 @@
             : allSlugs,
     );
 
-    const triggerSize = $derived(size === "sm" ? "size-8" : "size-9");
-    const gridCols = $derived(size === "sm" ? "grid-cols-8" : "grid-cols-7");
-    const itemSize = $derived(size === "sm" ? "size-7" : "size-8");
+    const triggerSize = $derived(size === "sm" ? "size-8" : size === "lg" ? "size-11" : "size-9");
+    const gridCols = $derived(size === "sm" ? "grid-cols-8" : size === "lg" ? "grid-cols-5" : "grid-cols-7");
+    const itemSize = $derived(size === "sm" ? "size-7" : size === "lg" ? "size-11" : "size-8");
 </script>
 
 <Popover.Root bind:open>
     <Popover.Trigger
         class="{triggerSize} shrink-0 rounded-sm border border-border bg-card flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-muted/50 transition-colors"
         aria-label={label || m.choose_icon()}
+        {disabled}
     >
         {@const PreviewIcon = selectedIcon
             ? getPackIcon(selectedIcon)
             : fallbackIcon}
-        <PreviewIcon size={size === "sm" ? 16 : 18} />
+        <PreviewIcon size={size === "sm" ? 16 : size === "lg" ? 20 : 18} />
     </Popover.Trigger>
     <Popover.Portal>
         <Popover.Content
@@ -62,6 +65,7 @@
                 <input
                     type="text"
                     placeholder={m.search_icons()}
+                    aria-label={m.search_icons()}
                     bind:value={searchQuery}
                     class="w-full h-8 px-2.5 text-sm rounded-md bg-muted border border-border/50 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
                 />
@@ -71,7 +75,7 @@
                 <!-- None button -->
                 <button
                     type="button"
-                    class="{itemSize} rounded-md flex items-center justify-center {selectedIcon ===
+                    class="{itemSize} rounded-md flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {selectedIcon ===
                     null
                         ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/40'
                         : 'bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground'}"
@@ -81,7 +85,7 @@
                     }}
                     aria-label={m.none_label()}
                 >
-                    <X size={size === "sm" ? 14 : 16} />
+                    <X size={size === "sm" ? 14 : size === "lg" ? 18 : 16} />
                 </button>
 
                 {#if searchQuery}
@@ -90,7 +94,7 @@
                             {@const Icon = getPackIcon(slug)}
                             <button
                                 type="button"
-                                class="{itemSize} rounded-md flex items-center justify-center {selectedIcon ===
+                                class="{itemSize} rounded-md flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {selectedIcon ===
                                 slug
                                     ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/40'
                                     : 'bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground'}"
@@ -100,7 +104,7 @@
                                 }}
                                 aria-label={slug}
                             >
-                                <Icon size={size === "sm" ? 14 : 16} />
+                                <Icon size={size === "sm" ? 14 : size === "lg" ? 18 : 16} />
                             </button>
                         {/each}
                     </div>
@@ -117,7 +121,7 @@
                                     {@const Icon = getPackIcon(slug)}
                                     <button
                                         type="button"
-                                        class="{itemSize} rounded-md flex items-center justify-center {selectedIcon ===
+                                        class="{itemSize} rounded-md flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {selectedIcon ===
                                         slug
                                             ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/40'
                                             : 'bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground'}"
@@ -127,7 +131,7 @@
                                         }}
                                         aria-label={slug}
                                     >
-                                        <Icon size={size === "sm" ? 14 : 16} />
+                                        <Icon size={size === "sm" ? 14 : size === "lg" ? 18 : 16} />
                                     </button>
                                 {/each}
                             </div>

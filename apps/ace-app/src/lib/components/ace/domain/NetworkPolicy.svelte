@@ -321,6 +321,12 @@
                     <dt>{m.custom_rules()}</dt>
                     <dd>{policy.rulesCount ?? 0}</dd>
                 </div>
+                {#if policy.safeSearch}
+                    <div data-testid="network-policy-safe-search">
+                        <dt>{m.force_safe_search()}</dt>
+                        <dd>{m.block_safe_search_included()}</dd>
+                    </div>
+                {/if}
             </dl>
         </div>
     </div>
