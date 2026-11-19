@@ -156,6 +156,7 @@ test("Category preview keeps selections, expands, and never truncates search res
                 import(/* @vite-ignore */ userModule),
             ]);
         userStore.isPro = false;
+        (window as unknown as { __sitePacksTestUserStore: typeof userStore }).__sitePacksTestUserStore = userStore;
         const packs = [
             ...Array.from({ length: 9 }, (_, i) => ({
                 id: `fixture-free-${i + 1}`, name: `Free category ${i + 1}`,
@@ -208,17 +209,69 @@ test("Category preview keeps selections, expands, and never truncates search res
     await expect(root.getByTestId("category-preview")).toHaveCount(0);
     await page.screenshot({ path: "test-results/block-category-search.png" });
 
-    // A Pro account can reach every category with the same Show all control.
+    // The Free user's Pro-only catalog remains accessible behind its disclosure.
     await search.clear();
+    await expect(root.locator("details.pro-categories")).toHaveCount(1);
+});
+
+
+test("Pro users switch between Free and Pro tiers without losing locked connections", async ({ page }) => {
+    await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const modulePath = new URL("/src/lib/stores/user-store.svelte.ts", location.origin).pathname;
-        const { userStore } = await import(/* @vite-ignore */ modulePath);
+        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const delta = new URL("/src/lib/deltas/site-packs-connection-delta.svelte.ts", location.origin).pathname;
+        const store = new URL("/src/lib/stores/user-store.svelte.ts", location.origin).pathname;
+        const [{ mount }, { default: SectionSites }, { SitePacksConnectionDelta }, { userStore }] =
+            await Promise.all([
+                import(/* @vite-ignore */ runtime),
+                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.svelte"),
+                import(/* @vite-ignore */ delta),
+                import(/* @vite-ignore */ store),
+            ]);
         userStore.isPro = true;
+        const base = {
+            isRemote: true, isSynced: true, isBundled: false, isLocked: false,
+            entriesCount: 123, icon: null, description: "Test catalog",
+        };
+        const packs = [
+            { ...base, id: "pack-gambling-free", name: "Gambling Websites — Free", requiresPro: false },
+            { ...base, id: "pack-gambling-pro", name: "Gambling Websites — Pro", requiresPro: true },
+        ];
+        for (const [name, isLocked] of [["switchable", false], ["locked", true]] as const) {
+            const host = document.createElement("div");
+            host.dataset.testid = name + "-tier-fixture";
+            host.style.cssText = "padding:20px;max-width:860px;";
+            document.body.append(host);
+            mount(SectionSites, { target: host, props: {
+                delta: new SitePacksConnectionDelta(["pack-gambling-free"]),
+                availableLists: packs,
+                isLocked,
+            } });
+        }
     });
-    await expect(root.locator("details.pro-categories")).toHaveCount(0);
-    await expect(freeRows).toHaveCount(6);
-    await root.getByRole("button", { name: "Show all (16)" }).click();
-    await expect(freeRows).toHaveCount(16);
+    const versions = await page.evaluate(async () => {
+        const urls = [...new Set(performance.getEntriesByType("resource")
+            .map((entry) => new URL(entry.name))
+            .filter((url) => url.pathname.endsWith("/src/lib/stores/user-store.svelte.ts"))
+            .map((url) => url.pathname + url.search))];
+        for (const url of urls) {
+            const { userStore } = await import(/* @vite-ignore */ url);
+            userStore.isPro = true;
+        }
+        return urls;
+    });
+    expect(versions.length).toBeGreaterThan(0);
+    for (const id of ["switchable", "locked"]) {
+        const fixture = page.getByTestId(id + "-tier-fixture");
+        await fixture.getByTestId("category-family-toggle").click();
+        const options = fixture.getByTestId("category-tier-option");
+        await expect(options).toHaveCount(2);
+        await expect(options.first()).toHaveAttribute("aria-pressed", "true");
+        await options.last().click();
+        await expect(options.last()).toHaveAttribute("aria-pressed", "true");
+        // A pre-existing locked connection may not be removed during an upgrade.
+        await expect(options.first()).toHaveAttribute("aria-pressed", id === "locked" ? "true" : "false");
+    }
 });
 
 test("Editor hints at overflow, then hides the hint at the bottom", async ({ page }) => {
@@ -285,31 +338,36 @@ test("Official Site Pack icons and Free/Pro coverage are visible in both selecti
         host.append(ledger);
         for (const pack of [free, pro]) {
             mount(SitePackRow, { target: ledger, props: {
-                pack, subtitle: "", isPro: false, grouped: true, hasPair: true,
+                pack, subtitle: "", isPro: false, variantOnly: true,
                 onSelect: () => {},
             } });
         }
     });
 
     const fixture = page.getByTestId("pack-family-fixture");
-    const freeCategory = fixture.getByTestId("category-preview").getByRole("button", { name: /Gambling/ });
-    await expect(freeCategory.getByTestId("category-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
-    await expect(freeCategory.getByTestId("category-tier-comparison")).toContainText("454,090");
-    await expect(freeCategory.getByTestId("category-tier-comparison")).toContainText("catalog estimate");
+    // Paired categories appear exactly once, not again in the Pro-only list.
+    const category = fixture.getByTestId("category-preview").getByTestId("category-family");
+    await expect(category).toHaveCount(1);
+    const disclosure = category.getByTestId("category-family-toggle");
+    await expect(disclosure.getByTestId("category-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
+    await expect(disclosure.getByTestId("category-tier-comparison")).toContainText("454,090");
+    await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+    await expect(fixture.locator("details.pro-categories")).toHaveCount(0);
+    await disclosure.click();
+    await expect(disclosure).toHaveAttribute("aria-expanded", "true");
+    const options = category.getByTestId("category-tier-option");
+    await expect(options).toHaveCount(2);
+    await expect(options.first()).toContainText("Free · Basic");
+    await expect(options.last()).toContainText("Pro · Extended");
+    await expect(options.last().getByTestId("category-coverage")).toContainText("454,090");
 
-    const proGroup = fixture.locator("details.pro-categories");
-    await proGroup.locator("summary").click();
-    const proCategory = proGroup.getByRole("button", { name: /Gambling/ });
-    await expect(proCategory.getByTestId("category-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
-    await expect(proCategory.getByTestId("category-coverage")).toContainText("454,090");
-
+    // The Inspector's compact rows preserve one icon and no repeated headings.
     const rows = fixture.getByTestId("site-pack-row");
     await expect(rows).toHaveCount(2);
-    await expect(rows.nth(0)).toContainText("Free · Basic");
-    await expect(rows.nth(1)).toContainText("Pro · Extended");
-    for (const row of await rows.all()) {
-        await expect(row.getByTestId("site-pack-row-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
-    }
+    await expect(rows.first()).toContainText("Free · Basic");
+    await expect(rows.last()).toContainText("Pro · Extended");
+    await expect(rows.first().getByTestId("site-pack-row-icon")).toHaveCount(0);
+    await expect(rows.last().getByTestId("site-pack-row-icon")).toHaveCount(0);
 
     await page.setViewportSize({ width: 390, height: 750 });
     await page.screenshot({ path: "test-results/site-pack-tiers-mobile.png" });

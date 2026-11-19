@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { SitePackSchema } from "$engine-client";
 import catalog from "$lib/data/site-packs.json";
 import {
-    getCategoryCatalogPair,
     getOfficialCatalogEntry,
     getSitePackCoverage,
     getSitePackIconSlug,
@@ -39,10 +38,6 @@ describe("official site-pack presentation", () => {
         const category = pack("pack-adult-pro", { id: "019bd28a-9417-7aef-a30e-44a95a7e7e2c" });
         expect(getOfficialCatalogEntry(category)?.id).toBe("pack-adult-pro");
         expect(getSitePackIconSlug(category)).toBe("adult");
-        expect(getCategoryCatalogPair(category)).toEqual({
-            free: 153512,
-            pro: 2644357,
-        });
     });
 
     it("never treats a user-created list as a curated category based on its name", () => {
@@ -53,7 +48,6 @@ describe("official site-pack presentation", () => {
         });
         expect(getOfficialCatalogEntry(own)).toBeUndefined();
         expect(getSitePackIconSlug(own)).toBe("photo");
-        expect(getCategoryCatalogPair(own)).toBeNull();
         expect(getSitePackIconSlug({ ...own, icon: null })).toBe("globe");
     });
 
@@ -80,7 +74,6 @@ describe("official site-pack presentation", () => {
         expect(gambling?.packs.map((entry) => entry.id)).toEqual([
             "pack-gambling-free", "pack-gambling-pro",
         ]);
-        expect(gambling?.catalogPair).toEqual({ free: 14, pro: 454090 });
         expect(groups.length).toBe(3);
     });
 });

@@ -266,7 +266,7 @@ test("official Pro packs remain identifiable for Free and Pro accounts", async (
         "Pro required",
     );
     await expect(page.locator('[data-testid="pro-pack"]')).toContainText(
-        "Downloaded",
+        "2,345 sites",
     );
 });
 
@@ -544,4 +544,57 @@ test("An active scheduled lock cannot be removed from its review modal", async (
     await expect(dialog.getByText("Changes are restricted during the current scheduled period.")).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Remove scheduled lock" })).toHaveCount(0);
     await expect(dialog.getByRole("button", { name: "Close" }).first()).toBeVisible();
+});
+
+
+test("Categories list shows one compact row per family and expands only paired tiers", async ({ page }) => {
+    await page.setViewportSize({ width: 1180, height: 840 });
+    await page.addInitScript(() => {
+        const base = {
+            description: "", icon: null, isRemote: true, isSynced: false,
+            entriesCount: 0, isBundled: false, isLocked: false,
+            lastUpdatedAt: null, version: "2026.11",
+        };
+        const sitePacks = [
+            { ...base, id: "pack-adult-free", name: "Adult Websites — Free", requiresPro: false },
+            { ...base, id: "pack-adult-pro", name: "Adult Websites — Pro", requiresPro: true },
+            { ...base, id: "pack-gambling-free", name: "Gambling Websites — Free", requiresPro: false },
+            { ...base, id: "pack-gambling-pro", name: "Gambling Websites — Pro", requiresPro: true },
+            { ...base, id: "pack-ai-tools-pro", name: "AI Tools Websites — Pro", requiresPro: true },
+        ];
+        (window as unknown as { __TAURI_INTERNALS__: unknown }).__TAURI_INTERNALS__ = {
+            invoke: async (cmd: string, args: { op?: string }) => {
+                if (cmd === "engine_call" && args?.op === "getAllSitePacks") {
+                    return { sitePacks };
+                }
+                if (cmd === "engine_call" && args?.op === "getAccountInfo") {
+                    return { isPro: false, tosAccepted: true };
+                }
+                throw new Error("No native engine in the visual fixture");
+            },
+            transformCallback: () => 1,
+            unregisterCallback: () => {},
+        };
+    });
+    await page.goto("/site-packs");
+
+    const familyRows = page.getByTestId("site-pack-family");
+    await expect(familyRows).toHaveCount(3);
+    await expect(page.getByText("Coverage for packs not downloaded is estimated.")).toBeVisible();
+    await expect(page.getByTestId("category-family-toggle")).toHaveCount(2);
+    await expect(page.getByTestId("site-pack-row")).toHaveCount(1);
+    await expect(page.getByTestId("category-family-options")).toHaveCount(0);
+    await expect(familyRows.first().getByTestId("site-pack-tier-comparison")).toContainText("2,644,357");
+
+    await page.screenshot({ path: "test-results/categories-simplified-desktop.png", fullPage: true });
+
+    await familyRows.first().getByTestId("category-family-toggle").click();
+    await expect(familyRows.first().getByTestId("category-family-options").getByTestId("site-pack-row")).toHaveCount(2);
+    await expect(familyRows.first().getByTestId("site-pack-row-icon")).toHaveCount(0);
+    await expect(familyRows.first().getByText("Pro · Extended")).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 750 });
+    await page.screenshot({ path: "test-results/categories-simplified-mobile.png", fullPage: true });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
 });

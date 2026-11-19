@@ -10,7 +10,11 @@
         TriangleAlert,
         X,
         ArrowRight,
+        ChevronDown,
+        ChevronRight,
     } from "@lucide/svelte";
+    import { getPackIcon } from "$lib/utils/pack-icons";
+    import { getSitePackIconSlug } from "$lib/utils/site-pack-presentation";
     import { SvelteDate } from "svelte/reactivity";
     import ImportPackModal from "./_ImportPackModal.svelte";
     import ProGatedButton from "$lib/components/ProGatedButton.svelte";
@@ -46,6 +50,13 @@
     let loadError = $state(false);
     let isImportModalOpen = $state(false);
     let selectedPack = $state<SitePackSchema | null>(null);
+    let expandedCategoryNames = $state<string[]>([]);
+
+    function toggleCategory(name: string) {
+        expandedCategoryNames = expandedCategoryNames.includes(name)
+            ? expandedCategoryNames.filter((value) => value !== name)
+            : [...expandedCategoryNames, name];
+    }
 
     let isDeleteDialogOpen = $state(false);
     let packToDelete = $state<SitePackSchema | null>(null);
@@ -323,36 +334,58 @@
     {:else}
         <div class="catalog">
             {#if categories.length > 0}
-                <section class="inventory-group" aria-labelledby="categories-title">
-                    <header>
-                        <div>
-                            <h2 id="categories-title">{m.site_packs()}</h2>
-                            <p>{m.category_group_description()}</p>
-                        </div>
-                        <span>{categories.length}</span>
-                    </header>
+                <section class="inventory-group" aria-label={m.site_packs()}>
+                    <p class="catalog-count-notice">{m.catalog_counts_disclaimer()}</p>
                     <div class="category-groups">
                         {#each categoryGroups as group (group.name)}
                             <div class="category-family" role="group" aria-label={group.name} data-testid="site-pack-family">
-                                <div class="category-family-heading">
-                                    <strong>{group.name}</strong>
-                                    {#if group.catalogPair}
-                                        <span data-testid="site-pack-tier-comparison">
-                                            {m.pack_access_free()}: {group.catalogPair.free.toLocaleString(getLocale())}
-                                            <span aria-hidden="true">·</span>
-                                            {m.pro_badge()}: {group.catalogPair.pro.toLocaleString(getLocale())}
-                                            <span class="comparison-source">{m.catalog_snapshot_note()}</span>
+                                {#if group.packs.length > 1}
+                                    {@const GroupIcon = getPackIcon(getSitePackIconSlug(group.packs[0]))}
+                                    <button
+                                        type="button"
+                                        class="category-family-toggle"
+                                        aria-expanded={expandedCategoryNames.includes(group.name)}
+                                        onclick={() => toggleCategory(group.name)}
+                                        data-testid="category-family-toggle"
+                                    >
+                                        <span class="family-icon" aria-hidden="true"><GroupIcon size={19} strokeWidth={1.75} /></span>
+                                        <span class="family-copy">
+                                            <strong>{group.name}</strong>
+                                            <span class="family-coverage" data-testid="site-pack-tier-comparison">
+                                                {#each group.packs as pack, i (pack.id)}
+                                                    {#if i > 0}<span aria-hidden="true">·</span>{/if}
+                                                    <span>{pack.requiresPro ? m.pro_badge() : m.pack_access_free()} {getSitePackCoverage(pack).count?.toLocaleString(getLocale()) ?? "—"}</span>
+                                                {/each}
+                                                <span>{m.domains_lowercase()}</span>
+                                            </span>
                                         </span>
+                                        {#if expandedCategoryNames.includes(group.name)}
+                                            <ChevronDown size={17} aria-hidden="true" />
+                                        {:else}
+                                            <ChevronRight size={17} aria-hidden="true" />
+                                        {/if}
+                                    </button>
+                                    {#if expandedCategoryNames.includes(group.name)}
+                                        <div class="category-family-options" data-testid="category-family-options">
+                                            {#each group.packs as pack (pack.id)}
+                                                <SitePackRow
+                                                    {pack}
+                                                    variantOnly
+                                                    isPro={userStore.isPro}
+                                                    selected={selectedPack?.id === pack.id}
+                                                    status={syncStore.statusOf(pack.id)}
+                                                    progress={syncStore.progressOf(pack.id) ?? 0}
+                                                    phase={phaseLabel(syncStore.phaseOf(pack.id))}
+                                                    onSelect={selectPack}
+                                                />
+                                            {/each}
+                                        </div>
                                     {/if}
-                                </div>
-                                <div class="pack-ledger">
+                                {:else}
                                     {#each group.packs as pack (pack.id)}
                                         <SitePackRow
                                             {pack}
-                                            grouped
-                                            hasPair={!!group.catalogPair}
                                             isPro={userStore.isPro}
-                                            subtitle={getSubtitle(pack)}
                                             selected={selectedPack?.id === pack.id}
                                             status={syncStore.statusOf(pack.id)}
                                             progress={syncStore.progressOf(pack.id) ?? 0}
@@ -360,7 +393,7 @@
                                             onSelect={selectPack}
                                         />
                                     {/each}
-                                </div>
+                                {/if}
                             </div>
                         {/each}
                     </div>
@@ -652,12 +685,24 @@
         font-size: 11px;
     }
 
-    .category-groups { display: grid; gap: 1px; background: var(--border); }
+    .catalog-count-notice { margin: 0; padding: 8px 14px; border-bottom: 1px solid var(--border); color: var(--muted-foreground); font-size: 11px; }
+    .category-groups { display: grid; gap: 0; }
     .category-family { min-width: 0; background: var(--card); }
-    .category-family-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 14px; padding: 11px 16px 8px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--muted) 20%, var(--card)); }
-    .category-family-heading > strong { font: 600 16px "IBM Plex Sans Condensed", sans-serif; }
-    .category-family-heading > span { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font: 500 11px "IBM Plex Mono", monospace; color: var(--muted-foreground); }
-    .comparison-source { font-family: "IBM Plex Sans", sans-serif; }
+    .category-family-toggle {
+        display: flex; width: 100%; min-height: 62px; align-items: center; gap: 12px;
+        border: 0; border-bottom: 1px solid var(--border); padding: 10px 14px;
+        background: var(--card); color: var(--foreground); text-align: left; cursor: pointer;
+    }
+    .category-family-toggle:hover, .category-family-toggle[aria-expanded="true"] { background: color-mix(in srgb, var(--muted) 52%, var(--card)); }
+    .category-family-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+    .category-family-toggle > :last-child { flex: 0 0 auto; color: var(--muted-foreground); }
+    .family-icon { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; border: 1px solid var(--border); border-radius: 5px; background: var(--muted); }
+    .family-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }
+    .family-copy > strong { font: 600 15px "IBM Plex Sans Condensed", sans-serif; }
+    .family-coverage { display: flex; flex-wrap: wrap; gap: 5px; color: var(--muted-foreground); font: 500 11px "IBM Plex Mono", monospace; }
+    .category-family-options { border-bottom: 1px solid var(--border); background: var(--muted); padding-left: 30px; }
+    .category-family-options :global(.site-pack-row:last-child) { border-bottom: 0; }
+    @media (max-width: 560px) { .category-family-options { padding-left: 8px; } }
     .pack-ledger :global(.site-pack-row:last-child) {
         border-bottom: 0;
     }

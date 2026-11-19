@@ -1,9 +1,9 @@
 <script lang="ts">
     import { Badge } from "$lib/components/ui/badge/index.js";
     import { Input } from "$lib/components/ui/input/index.js";
-    import { Search, Check } from "@lucide/svelte";
+    import { Search, Check, ChevronDown, ChevronRight } from "@lucide/svelte";
     import { getPackIcon } from "$lib/utils/pack-icons";
-    import { getCategoryCatalogPair, getSitePackCoverage, getSitePackIconSlug } from "$lib/utils/site-pack-presentation";
+    import { getSitePackCoverage, getSitePackIconSlug, groupSitePackCategories, type SitePackCategoryGroup } from "$lib/utils/site-pack-presentation";
     import { getLocale } from "$lib/paraglide/runtime";
     import * as m from "$lib/paraglide/messages.js";
     import * as AlertDialog from "$lib/components/ui/alert-dialog/index.js";
@@ -38,6 +38,13 @@
     let searchQuery = $state("");
     let showAllCategories = $state(false);
     let showAllProCategories = $state(false);
+    let expandedCategoryNames = $state<string[]>([]);
+
+    function toggleCategory(name: string) {
+        expandedCategoryNames = expandedCategoryNames.includes(name)
+            ? expandedCategoryNames.filter((candidate) => candidate !== name)
+            : [...expandedCategoryNames, name];
+    }
 
     let downloadModalOpen = $state(false);
     let listToDownload = $state<SitePackSchema | null>(null);
@@ -72,26 +79,25 @@
             : sortedAllLists,
     );
     let filteredCategories = $derived(filteredLists.filter(isAceCategory));
-    // Keep the existing Free-user Pro catalog behind its disclosure.
-    // On Pro accounts, all available categories share the same preview.
+    let categoryGroups = $derived(groupSitePackCategories(filteredCategories));
+    // A dual-tier category is shown once: its Pro variant belongs to the
+    // same disclosure, never to a duplicate row in the Pro-only catalog.
     let primaryCategories = $derived(
-        filteredCategories.filter(
-            (item) => !requiresProForConnection(item) || !isFreeUser || connectedListIds.includes(item.id),
-        ),
+        categoryGroups.filter((group) => group.packs.some(
+            (pack) => !requiresProForConnection(pack) || !isFreeUser || connectedListIds.includes(pack.id),
+        )),
     );
     let gatedProCategories = $derived(
-        isFreeUser
-            ? filteredCategories.filter(
-                  (item) => requiresProForConnection(item) && !connectedListIds.includes(item.id),
-              )
-            : [],
+        categoryGroups.filter((group) => !primaryCategories.includes(group)),
     );
     const isSearching = $derived(searchQuery.trim().length > 0);
     let visibleCategories = $derived(
         isSearching || showAllCategories
             ? primaryCategories
             : primaryCategories.filter(
-                  (item, index) => index < CATEGORY_PREVIEW_LIMIT || connectedListIds.includes(item.id),
+                (group, index) =>
+                    index < CATEGORY_PREVIEW_LIMIT ||
+                    group.packs.some((pack) => connectedListIds.includes(pack.id)),
               ),
     );
     let visibleProCategories = $derived(
@@ -132,11 +138,12 @@
                 (list) => list.id === listToDownload!.id,
             );
             if (freshList) {
-                delta.addConnection(freshList.id);
+                stageConnection(freshList);
             }
+            const completedListId = listToDownload.id;
             window.setTimeout(() => {
-                if (syncStore.statusOf(listToDownload!.id) === "completed") {
-                    syncStore.clear(listToDownload!.id);
+                if (syncStore.statusOf(completedListId) === "completed") {
+                    syncStore.clear(completedListId);
                 }
             }, 4000);
             downloadModalOpen = false;
@@ -145,6 +152,30 @@
             console.error("Failed to download list:", error);
             downloadStatus = "error";
         }
+    }
+
+    // Pro contains Free for Ace's paired categories. Staging a tier change
+    // replaces the other tier only when the existing connection is removable.
+    // Never remove an initially locked connection or a user Custom List.
+    function stageConnection(list: SitePackSchema) {
+        if (isAceCategory(list)) {
+            for (const sibling of availableLists) {
+                if (
+                    sibling.id === list.id ||
+                    !isAceCategory(sibling) ||
+                    getBlockingListDisplayName(sibling) !== getBlockingListDisplayName(list) ||
+                    !delta.isConnected(sibling.id) ||
+                    (isLocked && delta.isInitialConnection(sibling.id))
+                ) continue;
+
+                if (delta.isNewConnection(sibling.id)) {
+                    delta.removeTempConnection(sibling.id);
+                } else {
+                    delta.removeConnection(sibling.id);
+                }
+            }
+        }
+        delta.addConnection(list.id);
     }
 
     function toggleList(list: SitePackSchema) {
@@ -169,17 +200,16 @@
                 delta.removeConnection(listId);
             }
         } else {
-            delta.addConnection(listId);
+            stageConnection(list);
         }
     }
 </script>
 
-{#snippet listRow(list: SitePackSchema)}
+{#snippet listRow(list: SitePackSchema, variant: boolean)}
     {@const isConnected = connectedListIds.includes(list.id)}
     {@const isPremium = requiresProForConnection(list)}
     {@const PackIcon = getPackIcon(getSitePackIconSlug(list))}
     {@const coverage = getSitePackCoverage(list)}
-    {@const pair = getCategoryCatalogPair(list)}
     {@const isProGated = isPremium && isFreeUser && !isConnected}
     {@const canToggle =
         !isProGated &&
@@ -188,95 +218,112 @@
     <button
         type="button"
         class={cn(
-            "bg-card border-border/50 flex w-full items-center rounded-sm border px-3 py-2.5 text-left transition-colors",
-            canToggle && "hover:border-border cursor-pointer",
-            !canToggle && "cursor-default opacity-55",
+            "flex w-full min-w-0 items-center gap-3 border border-border/50 bg-card px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+            variant && "border-t-0 pl-6",
+            canToggle ? "cursor-pointer hover:bg-muted/50" : "cursor-default opacity-60",
             isConnected && "border-foreground/30 bg-muted/45",
         )}
+        data-testid={variant ? "category-tier-option" : "category-single-option"}
         onclick={() => {
             if (isProGated) {
-                import("$lib/utils.js").then(({ openGetProPage }) =>
-                    openGetProPage(),
-                );
+                import("$lib/utils.js").then(({ openGetProPage }) => openGetProPage());
                 return;
             }
-            if (!canToggle) return;
-            toggleList(list);
+            if (canToggle) toggleList(list);
         }}
         aria-pressed={isConnected}
     >
-        <span class="flex min-w-0 flex-1 items-center gap-3">
-            <span
-                class={cn(
-                    "border-border flex size-4 shrink-0 items-center justify-center rounded-sm border",
-                    isConnected &&
-                        "bg-foreground text-background border-foreground",
-                )}
-                aria-hidden="true"
-            >
-                {#if isConnected}
-                    <Check class="size-3" />
-                {/if}
+        <span
+            class={cn(
+                "flex size-4 shrink-0 items-center justify-center rounded-sm border border-border",
+                isConnected && "border-foreground bg-foreground text-background",
+            )}
+            aria-hidden="true"
+        >{#if isConnected}<Check size={12} />{/if}</span>
+
+        {#if !variant}
+            <span class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted" aria-hidden="true" data-testid="category-icon">
+                <PackIcon size={19} strokeWidth={1.75} />
             </span>
-
-            <span class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-foreground" aria-hidden="true" data-testid="category-icon"><PackIcon size={19} strokeWidth={1.75} /></span>
-            <span class="min-w-0 flex-1">
-                <span class="flex min-w-0 flex-wrap items-center gap-2">
-                    <span class="truncate text-sm font-semibold">
-                        {getBlockingListDisplayName(list)}
-                    </span>
-                    {#if isPremium}
-                        <Badge
-                            variant="outline"
-                            class="border-border h-4 shrink-0 rounded-sm bg-transparent px-1.5 font-mono text-[11px] text-muted-foreground"
-                        >
-                            {m.pro_badge()}
-                        </Badge>
-                    {:else if isAceCategory(list)}
-                        <Badge variant="outline"
-                            class="border-border h-4 shrink-0 rounded-sm bg-transparent px-1.5 font-mono text-[11px] text-muted-foreground">
-                            {m.pack_access_free()}
-                        </Badge>
-                    {/if}
+        {/if}
+        <span class="flex min-w-0 flex-1 flex-col gap-1">
+            <span class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-semibold">
+                    {variant
+                        ? (list.requiresPro ? m.catalog_pro_extended() : m.catalog_free_essential())
+                        : getBlockingListDisplayName(list)}
                 </span>
-
+                {#if !variant}
+                    <span class="text-[11px] text-muted-foreground">
+                        {isPremium ? m.pro_badge() : m.pack_access_free()}
+                    </span>
+                {/if}
                 {#if isConnected && isPremium && isFreeUser}
                     <span class="text-xs text-muted-foreground">{m.status_pro_required()}</span>
                 {/if}
-                {#if pair && !isPremium}
-                    <span class="mt-1 block text-xs text-muted-foreground" data-testid="category-tier-comparison">
-                        {m.pack_access_free()} {pair.free.toLocaleString(getLocale())} · {m.pro_badge()} {pair.pro.toLocaleString(getLocale())} {m.domains_lowercase()} · {m.catalog_snapshot_note()}
-                    </span>
-                {/if}
-                {#if list.description || coverage.count !== null || !list.isSynced}
-                    <span
-                        class="text-muted-foreground mt-0.5 flex min-w-0 flex-wrap items-center gap-2 text-xs"
-                    >
-                        {#if list.description}
-                            <span class="min-w-0 truncate">
-                                {list.description}
-                            </span>
-                        {/if}
-                        {#if coverage.count !== null && (!pair || isPremium)}
-                            <span class="shrink-0 font-mono text-[11px]" data-testid="category-coverage">
-                                {coverage.count.toLocaleString(getLocale())} {m.domains_lowercase()}
-                                {#if coverage.source === "catalog"} · {m.catalog_snapshot_note()}{/if}
-                            </span>
-                        {/if}
-                        {#if !list.isSynced}
-                            <Badge
-                                variant="secondary"
-                                class="bg-muted/50 h-4 shrink-0 rounded-sm border-none px-1.5 text-[10px] text-muted-foreground shadow-none"
-                            >
-                                {m.not_downloaded()}
-                            </Badge>
-                        {/if}
-                    </span>
-                {/if}
             </span>
+        </span>
+        <span class="shrink-0 text-right font-mono text-[11px] text-muted-foreground" data-testid="category-coverage">
+            {#if coverage.count !== null}
+                {coverage.count.toLocaleString(getLocale())} {m.domains_lowercase()}
+            {:else}
+                —
+            {/if}
         </span>
     </button>
 {/snippet}
+
+{#snippet categoryRow(group: SitePackCategoryGroup)}
+    {#if group.packs.length > 1}
+        {@const PackIcon = getPackIcon(getSitePackIconSlug(group.packs[0]))}
+        {@const selectedCount = group.packs.filter((pack) => connectedListIds.includes(pack.id)).length}
+        <div class="rounded-sm border border-border/50 bg-card" data-testid="category-family">
+            <button
+                type="button"
+                class="flex min-h-15 w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                data-testid="category-family-toggle"
+                aria-expanded={expandedCategoryNames.includes(group.name)}
+                onclick={() => toggleCategory(group.name)}
+            >
+                <span class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted" aria-hidden="true" data-testid="category-icon">
+                    <PackIcon size={19} strokeWidth={1.75} />
+                </span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-sm font-semibold">{group.name}</span>
+                    <span class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 font-mono text-[11px] text-muted-foreground" data-testid="category-tier-comparison">
+                        {#each group.packs as pack (pack.id)}
+                            <span>
+                                {pack.requiresPro ? m.pro_badge() : m.pack_access_free()}
+                                {getSitePackCoverage(pack).count?.toLocaleString(getLocale()) ?? "—"}
+                            </span>
+                        {/each}
+                        <span>{m.domains_lowercase()}</span>
+                    </span>
+                </span>
+                {#if selectedCount > 0}
+                    <span class="shrink-0 text-foreground"><Check size={16} aria-hidden="true" /><span class="sr-only">{m.block_wizard_category_count({count: selectedCount})}</span></span>
+                {/if}
+                {#if expandedCategoryNames.includes(group.name)}
+                    <ChevronDown size={17} class="shrink-0 text-muted-foreground" aria-hidden="true" />
+                {:else}
+                    <ChevronRight size={17} class="shrink-0 text-muted-foreground" aria-hidden="true" />
+                {/if}
+            </button>
+            {#if expandedCategoryNames.includes(group.name)}
+                <div class="border-t border-border/50" data-testid="category-tier-options">
+                    {#each group.packs as pack (pack.id)}
+                        {@render listRow(pack, true)}
+                    {/each}
+                </div>
+            {/if}
+        </div>
+    {:else}
+        {#each group.packs as pack (pack.id)}
+            {@render listRow(pack, false)}
+        {/each}
+    {/if}
+{/snippet}
+
 
 <div class="space-y-4" id="sites">
     <section class="space-y-3" aria-labelledby="categories-heading">
@@ -301,12 +348,13 @@
             />
         </div>
         {#if filteredCategories.length === 0}
-            <p class="text-muted-foreground py-3 text-sm">{m.no_lists_found()}</p>
+            <p class="py-3 text-sm text-muted-foreground">{m.no_lists_found()}</p>
         {:else}
+            <p class="text-xs text-muted-foreground">{m.catalog_counts_disclaimer()}</p>
             {#if visibleCategories.length > 0}
                 <div class="space-y-1.5" data-testid="category-preview">
-                    {#each visibleCategories as list (list.id)}
-                        {@render listRow(list)}
+                    {#each visibleCategories as group (group.name)}
+                        {@render categoryRow(group)}
                     {/each}
                 </div>
                 {#if !isSearching && primaryCategories.length > CATEGORY_PREVIEW_LIMIT && (showAllCategories || visibleCategories.length < primaryCategories.length)}
@@ -325,16 +373,16 @@
             {#if gatedProCategories.length > 0}
                 {#if isSearching}
                     <div class="space-y-1.5" data-testid="pro-category-search-results">
-                        {#each gatedProCategories as list (list.id)}
-                            {@render listRow(list)}
+                        {#each gatedProCategories as group (group.name)}
+                            {@render categoryRow(group)}
                         {/each}
                     </div>
                 {:else}
                     <details class="pro-categories">
                         <summary>{m.pro_badge()} · {m.block_categories_toggle()}</summary>
                         <div class="space-y-1.5 pt-3" data-testid="pro-category-preview">
-                            {#each visibleProCategories as list (list.id)}
-                                {@render listRow(list)}
+                            {#each visibleProCategories as group (group.name)}
+                                {@render categoryRow(group)}
                             {/each}
                         </div>
                         {#if gatedProCategories.length > CATEGORY_PREVIEW_LIMIT}
@@ -362,7 +410,7 @@
             </div>
             <div class="space-y-1.5">
                 {#each filteredCustomLists as list (list.id)}
-                    {@render listRow(list)}
+                    {@render listRow(list, false)}
                 {/each}
             </div>
         </section>

@@ -67,15 +67,20 @@ See `e2e/network-policy-icons.spec.ts` for custom, default, and legacy icon test
 
 ## Site Pack catalog presentation (2026-11-19)
 
-Categories & Lists groups official Free and Pro Site Packs by display name.
-The Network Block editor retains Free-first and collapsed Pro selection, with
-the same category icons and catalog coverage comparison. Use
-`src/lib/utils/site-pack-presentation.ts` for canonical icon fallback, grouping,
-and coverage: `entriesCount` is the installed count for synchronized packs;
-`src/lib/data/site-packs.json` is only an offline catalog estimate for packs
-not yet downloaded. Never present catalog counts as live or guaranteed.
-User Custom Lists retain their selected icons and are never matched to official
-metadata by name. Keep existing entitlement checks and atomic block saving.
+Categories & Lists displays one row per official category. A category
+with Free and Pro editions expands to reveal two selectable tiers; a category
+with only one edition directly opens its Inspector. Download, update, and lock
+details live in the Inspector rather than repeated on every list row.
+The Network Block editor retains Free-first and collapsed Pro-only selection,
+but displays a shared Free/Pro category only once. Selecting a tier replaces
+the other tier only if its existing draft connection is removable. Never remove
+an initially locked connection, bypass entitlements, or save until Review.
+Use `src/lib/utils/site-pack-presentation.ts` for canonical icons, grouping,
+and coverage. `entriesCount` is the installed count for synchronized packs;
+`src/lib/data/site-packs.json` is an offline estimate for packs not downloaded.
+Explain estimated counts once per list, never in every row.
+Custom Lists retain their own names and icons; never group them by name with
+official categories. Keep existing entitlement checks and atomic block saving.
 The official catalog includes stable icon slugs, independent of localized names.
 
 ## Guided Network Block editor (2026-11-09)

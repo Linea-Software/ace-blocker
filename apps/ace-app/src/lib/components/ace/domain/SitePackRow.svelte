@@ -1,25 +1,17 @@
 <script lang="ts">
     import type { SitePackSchema } from "$engine-client";
     import * as m from "$lib/paraglide/messages.js";
-    import { SvelteDate } from "svelte/reactivity";
     import { getLocale } from "$lib/paraglide/runtime";
     import { getBlockingListDisplayName } from "$lib/utils/category-presentation";
     import { getPackIcon } from "$lib/utils/pack-icons";
     import { getSitePackCoverage, getSitePackIconSlug } from "$lib/utils/site-pack-presentation";
-    import {
-        Check,
-        ChevronRight,
-        CircleAlert,
-        LoaderCircle,
-        LockKeyhole,
-    } from "@lucide/svelte";
+    import { Check, ChevronRight, CircleAlert, LoaderCircle, LockKeyhole } from "@lucide/svelte";
 
     let {
         pack,
-        subtitle,
+        subtitle = "",
         selected = false,
-        grouped = false,
-        hasPair = false,
+        variantOnly = false,
         isPro,
         status,
         progress = 0,
@@ -27,10 +19,9 @@
         onSelect,
     }: {
         pack: SitePackSchema;
-        subtitle: string;
+        subtitle?: string;
         selected?: boolean;
-        grouped?: boolean;
-        hasPair?: boolean;
+        variantOnly?: boolean;
         isPro: boolean;
         status?: "queued" | "downloading" | "completed" | "failed";
         progress?: number;
@@ -38,11 +29,14 @@
         onSelect: (pack: SitePackSchema) => void;
     } = $props();
 
-    const displayName = $derived(getBlockingListDisplayName(pack));
     const PackIcon = $derived(getPackIcon(getSitePackIconSlug(pack)));
     const coverage = $derived(getSitePackCoverage(pack));
     const proRequired = $derived(pack.requiresPro && !isPro);
-
+    const name = $derived(
+        variantOnly
+            ? (pack.requiresPro ? m.catalog_pro_extended() : m.catalog_free_essential())
+            : getBlockingListDisplayName(pack),
+    );
     const stateLabel = $derived.by(() => {
         if (proRequired) return m.status_pro_required();
         if (pack.isLocked) return m.locked();
@@ -50,7 +44,7 @@
         if (status === "completed") return m.pack_sync_completed();
         if (status === "queued") return m.pack_sync_queued();
         if (status === "downloading") return phase ?? m.syncing();
-        return pack.isSynced ? m.downloaded() : m.not_downloaded();
+        return null;
     });
 </script>
 
@@ -61,6 +55,7 @@
     class:pro-required={proRequired}
     class:failed={status === "failed"}
     class:syncing={status === "queued" || status === "downloading"}
+    class:variant-only={variantOnly}
     class="site-pack-row"
     data-testid="site-pack-row"
     data-sync-status={status ?? "idle"}
@@ -69,76 +64,45 @@
     onclick={() => onSelect(pack)}
 >
     <span class="state-rail" aria-hidden="true"></span>
-
+    {#if !variantOnly}
+        <span class="pack-icon" data-testid="site-pack-row-icon" aria-hidden="true">
+            <PackIcon size={18} strokeWidth={1.75} />
+        </span>
+    {/if}
     <span class="identity">
-        <span class="identity-head">
-            <span class="pack-icon" data-testid="site-pack-row-icon" aria-hidden="true"><PackIcon size={19} strokeWidth={1.75} /></span>
-            <strong>{grouped
-                ? (hasPair
-                    ? (pack.requiresPro ? m.catalog_pro_extended() : m.catalog_free_essential())
-                    : (pack.requiresPro ? m.pro_badge() : m.pack_access_free()))
-                : displayName}</strong>
+        <span class="identity-heading">
+            <strong>{name}</strong>
+            {#if !variantOnly && !proRequired}
+                <span class="tier-label">{pack.requiresPro ? m.pro_badge() : m.pack_access_free()}</span>
+            {/if}
         </span>
-        <span class="metadata">
-            {#if !grouped}
-                {#if pack.requiresPro}
-                    <span>{m.pro_badge()}</span>
-                {:else}
-                    <span>{m.pack_access_free()}</span>
-                {/if}
-            {/if}
-            {#if pack.isBundled}
-                <span aria-hidden="true">·</span>
-                <span>{m.pack_included_badge()}</span>
-            {/if}
-            {#if subtitle && !grouped}
-                <span aria-hidden="true">·</span>
-                <span class="subtitle">{subtitle}</span>
-            {/if}
-            <span class="compact-coverage">
-                {coverage.count === null ? "—" : coverage.count.toLocaleString(getLocale())}
-                {m.domains_lowercase()}{#if coverage.source === "catalog"} · {m.catalog_snapshot_note()}{/if}
-            </span>
-        </span>
-    </span>
-
-    <span class="fact">
-        <span>{m.domains_lowercase()}</span>
-        <strong>
-            {coverage.count === null ? "—" : coverage.count.toLocaleString(getLocale())}
-            {#if coverage.source === "catalog"}
-                <span class="catalog-count-note">{m.catalog_snapshot_note()}</span>
-            {/if}
-        </strong>
-    </span>
-
-    <span class="fact">
-        <span>{m.updated_label()}</span>
-        <strong>
-            {pack.lastUpdatedAt
-                ? new SvelteDate(pack.lastUpdatedAt).toLocaleDateString(getLocale())
-                : "—"}
-        </strong>
-    </span>
-
-    <span class="state">
-        {#if proRequired || pack.isLocked}
-            <LockKeyhole size={14} aria-hidden="true" />
-        {:else if status === "failed"}
-            <CircleAlert size={14} aria-hidden="true" />
-        {:else if status === "completed"}
-            <Check size={14} aria-hidden="true" />
-        {:else if status === "queued" || status === "downloading"}
-            <span class="spinner"><LoaderCircle size={14} aria-hidden="true" /></span>
-        {/if}
-        <span>{stateLabel}</span>
-        {#if status === "downloading"}
-            <span class="progress-copy">{Math.round(progress)}%</span>
+        {#if subtitle && !variantOnly && !pack.isRemote}
+            <span class="subtitle">{subtitle}</span>
         {/if}
     </span>
-
-    <ChevronRight size={16} aria-hidden="true" />
-
+    <span class="coverage" data-testid="site-pack-row-coverage">
+        {#if coverage.count !== null}
+            {coverage.count.toLocaleString(getLocale())} {m.domains_lowercase()}
+        {:else}
+            —
+        {/if}
+    </span>
+    {#if stateLabel}
+        <span class="state">
+            {#if proRequired || pack.isLocked}
+                <LockKeyhole size={14} aria-hidden="true" />
+            {:else if status === "failed"}
+                <CircleAlert size={14} aria-hidden="true" />
+            {:else if status === "completed"}
+                <Check size={14} aria-hidden="true" />
+            {:else if status === "queued" || status === "downloading"}
+                <span class="spinner"><LoaderCircle size={14} aria-hidden="true" /></span>
+            {/if}
+            <span>{stateLabel}</span>
+            {#if status === "downloading"}<span>{Math.round(progress)}%</span>{/if}
+        </span>
+    {/if}
+    <span class="chevron"><ChevronRight size={16} aria-hidden="true" /></span>
     {#if status === "queued" || status === "downloading"}
         <span
             class="progress-track"
@@ -147,189 +111,90 @@
             aria-valuemax={100}
             aria-valuenow={Math.round(progress)}
             aria-label={m.pack_sync_progress_aria({ name: pack.name })}
-        >
-            <span style:width={String(Math.round(progress)) + "%"}></span>
-        </span>
+        ><span style:width={Math.round(progress) + "%"}></span></span>
     {/if}
 </button>
 
 <style>
     .site-pack-row {
         position: relative;
+        display: flex;
         width: 100%;
-        min-height: 68px;
-        display: grid;
-        grid-template-columns: 6px minmax(150px, 1.5fr) minmax(72px, 0.45fr) minmax(88px, 0.55fr) minmax(96px, 0.65fr) auto;
+        min-height: 58px;
         align-items: center;
-        gap: 10px;
-        overflow: hidden;
+        gap: 12px;
         border: 0;
         border-bottom: 1px solid var(--border);
-        padding: 0 14px 0 0;
+        padding: 9px 14px 9px 0;
         background: var(--card);
         color: var(--foreground);
         text-align: left;
         cursor: pointer;
         transition: background 140ms ease;
     }
-
-    .site-pack-row:hover,
-    .site-pack-row.selected {
+    .site-pack-row:hover, .site-pack-row.selected {
         background: color-mix(in srgb, var(--muted) 52%, var(--card));
     }
-
-    .site-pack-row.selected {
-        box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--foreground) 22%, transparent);
+    .site-pack-row:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: -2px;
     }
-
     .state-rail {
         align-self: stretch;
+        flex: 0 0 4px;
+        margin-block: -9px;
         background: var(--ace-ash);
     }
-
-    .site-pack-row.locked .state-rail {
-        background: var(--ace-signal);
+    .locked .state-rail, .pro-required .state-rail { background: var(--ace-signal); }
+    .failed .state-rail { background: var(--ace-danger); }
+    .syncing .state-rail { background: var(--ace-information); }
+    .pack-icon {
+        display: grid;
+        flex: 0 0 34px;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--muted);
     }
-
-    .site-pack-row.failed .state-rail {
-        background: var(--ace-danger);
-    }
-
-    .site-pack-row.syncing .state-rail {
-        background: var(--ace-information);
-    }
-
-    .identity {
-        min-width: 0;
-        display: block;
-    }
-
-    .identity-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
-    .pack-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border: 1px solid var(--border); border-radius: 5px; background: var(--muted); color: var(--foreground); }
-    .identity-head > strong {
-        display: block;
+    .identity { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
+    .identity-heading { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .identity-heading strong {
         overflow: hidden;
         font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-
-    .metadata {
-        display: flex;
-        min-width: 0;
-        align-items: center;
-        gap: 5px;
-        margin-top: 4px;
-        margin-left: 42px;
+    .tier-label {
+        flex: 0 0 auto;
         color: var(--muted-foreground);
-        font-size: 11px;
-        line-height: 1.25;
+        font: 500 11px "IBM Plex Mono", monospace;
     }
-
-    .compact-coverage { display: none; }
-    .catalog-count-note { font: 400 10px "IBM Plex Sans", sans-serif; color: var(--muted-foreground); }
-    .subtitle {
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .subtitle { overflow: hidden; color: var(--muted-foreground); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .coverage { flex: 0 0 auto; color: var(--muted-foreground); font: 500 12px "IBM Plex Mono", monospace; white-space: nowrap; }
+    .state { display: flex; align-items: center; gap: 5px; color: var(--muted-foreground); font-size: 11px; white-space: nowrap; }
+    .locked .state, .pro-required .state { color: var(--ace-signal-deep); }
+    .failed .state { color: var(--ace-danger); }
+    .chevron { flex: 0 0 auto; color: var(--muted-foreground); }
+    .variant-only { min-height: 52px; padding-left: 18px; }
+    .variant-only .state-rail { background: transparent; }
+    .progress-track { position: absolute; bottom: 0; left: 4px; right: 0; height: 2px; background: var(--muted); }
+    .progress-track > span { display: block; height: 100%; background: var(--ace-information); }
+    .spinner { animation: spin 900ms linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 650px) {
+        .site-pack-row { flex-wrap: wrap; gap: 6px 10px; }
+        .identity { flex-basis: calc(100% - 105px); }
+        .coverage { margin-left: 48px; }
+        .variant-only .coverage { margin-left: 0; }
+        .state { margin-left: auto; }
+        .chevron { margin-left: auto; }
     }
-
-    .fact {
-        min-width: 0;
-        display: block;
-    }
-
-    .fact > span,
-    .fact > strong {
-        display: block;
-    }
-
-    .fact > span {
-        color: var(--muted-foreground);
-        font-size: 11px;
-    }
-
-    .fact > strong {
-        margin-top: 3px;
-        overflow: hidden;
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 12px;
-        font-weight: 500;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .state {
-        min-width: 0;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 6px;
-        color: var(--muted-foreground);
-        font-size: 11px;
-    }
-
-    .locked .state,
-    .pro-required .state {
-        color: var(--ace-signal-deep);
-    }
-
-    .failed .state {
-        color: var(--ace-danger);
-    }
-
-    .syncing .state {
-        color: var(--ace-information);
-    }
-
-    .progress-copy {
-        font-family: "IBM Plex Mono", monospace;
-    }
-
-    .progress-track {
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        left: 6px;
-        height: 2px;
-        background: color-mix(in srgb, var(--ace-information) 15%, transparent);
-    }
-
-    .progress-track > span {
-        display: block;
-        height: 100%;
-        background: var(--ace-information);
-        transition: width 180ms ease;
-    }
-
-    .spinner {
-        display: inline-flex;
-        animation: spin 900ms linear infinite;
-    }
-
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    @container page (max-width: 560px) {
-        .site-pack-row {
-            grid-template-columns: 6px minmax(0, 1fr) minmax(100px, auto) auto;
-        }
-
-        .fact {
-            display: none;
-        }
-        .compact-coverage { display: block; flex-basis: 100%; font-variant-numeric: tabular-nums; }
-    }
-
     @media (prefers-reduced-motion: reduce) {
-        .spinner {
-            animation: none;
-        }
+        .site-pack-row { transition: none; }
+        .spinner { animation: none; }
     }
 </style>

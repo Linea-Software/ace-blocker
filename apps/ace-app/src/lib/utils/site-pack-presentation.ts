@@ -65,22 +65,9 @@ export function getSitePackCoverage(pack: PackPreview): SitePackCoverage {
         : { count: null, source: "unknown" };
 }
 
-/** A pair exists only if both tiers are explicitly in the curated catalog. */
-export function getCategoryCatalogPair(
-    pack: Pick<SitePackSchema, "id" | "name" | "isRemote" | "requiresPro">,
-): { free: number; pro: number } | null {
-    const entry = getOfficialCatalogEntry(pack);
-    if (!entry) return null;
-    const key = displayNameOf(entry);
-    const free = catalogByNameAndTier.get(`${key}:free`);
-    const pro = catalogByNameAndTier.get(`${key}:pro`);
-    return free && pro ? { free: free.domains_count, pro: pro.domains_count } : null;
-}
-
 export type SitePackCategoryGroup = {
     name: string;
     packs: SitePackSchema[];
-    catalogPair: { free: number; pro: number } | null;
 };
 
 export function groupSitePackCategories(packs: SitePackSchema[]): SitePackCategoryGroup[] {
@@ -91,7 +78,7 @@ export function groupSitePackCategories(packs: SitePackSchema[]): SitePackCatego
         const key = name.toLocaleLowerCase("en-US");
         let group = groups.get(key);
         if (!group) {
-            group = { name, packs: [], catalogPair: getCategoryCatalogPair(pack) };
+            group = { name, packs: [] };
             groups.set(key, group);
         }
         group.packs.push(pack);
