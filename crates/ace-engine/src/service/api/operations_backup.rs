@@ -35,7 +35,7 @@ pub(super) async fn export_backup(
 
 /// The server never receives the account password or plaintext JSON.
 fn cloud_backup_url() -> String {
-    format!("{}/api/v1/backups/", AceServerClient::base_url())
+    format!("{}/api/v1/backups", AceServerClient::base_url())
 }
 
 fn cloud_http_client() -> Result<reqwest::Client, ApiError> {

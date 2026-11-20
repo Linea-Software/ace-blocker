@@ -179,6 +179,15 @@ mod tests {
         assert_ne!(first.salt, second.salt);
         assert_ne!(first.nonce, second.nonce);
         assert_ne!(first.ciphertext, second.ciphertext);
+        let posted = serde_json::to_value(&first).unwrap();
+        assert_eq!(posted["format"], "ace-cloud-e2ee");
+        assert_eq!(posted["formatVersion"], 1);
+        assert_eq!(posted["algorithm"], "aes-256-gcm");
+        assert_eq!(posted["kdf"], "argon2id");
+        assert!(posted["salt"].as_str().is_some());
+        assert!(posted["nonce"].as_str().is_some());
+        assert!(posted["ciphertext"].as_str().is_some());
+        assert_eq!(posted.as_object().unwrap().len(), 7);
         assert!(
             !serde_json::to_string(&first)
                 .unwrap()
