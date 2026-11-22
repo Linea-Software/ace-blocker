@@ -61,6 +61,13 @@ export default function BlockEditorPage() {
         },
     );
 
+    createEffect(
+        () => !!data().block,
+        (editing) => {
+            document.title = `${editing ? m.edit_block() : m.create_block()} · ${m.app_name()}`;
+        },
+    );
+
     return (
         <>
             <Show

@@ -1,5 +1,6 @@
 import { onSettled, Show, type ParentProps } from "solid-js";
 import { Toaster } from "solid-sonner";
+import { CircleCheck, Info, Loader2, OctagonX, TriangleAlert } from "@lucide/solid";
 import { initializeAppLanguage } from "$lib/utils/app-language";
 import { initializeTheme, themeMode } from "$lib/utils/theme";
 import { engineStore } from "$lib/stores/engine";
@@ -45,6 +46,13 @@ function AppShell(props: ParentProps) {
     return (
         <>
             <Toaster
+                icons={{
+                    loading: <Loader2 class="size-4 animate-spin" />,
+                    success: <CircleCheck class="size-4" />,
+                    error: <OctagonX class="size-4" />,
+                    info: <Info class="size-4" />,
+                    warning: <TriangleAlert class="size-4" />,
+                }}
                 position="bottom-right"
                 theme={themeMode()}
                 class="toaster group"

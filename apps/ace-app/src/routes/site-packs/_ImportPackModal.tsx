@@ -8,6 +8,7 @@ import {
 } from "$engine-client";
 import * as m from "$lib/paraglide/messages.js";
 import {
+    ChevronDown,
     FileText,
     FileUp,
     Globe,
@@ -180,7 +181,7 @@ export default function ImportPackModal(props: ImportPackModalProps) {
     return (
         <Show when={props.open}>
             <div
-                class="fixed inset-0 z-[70] grid place-items-center bg-black/70 p-4"
+                class="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4"
                 role="presentation"
                 onClick={(e) => {
                     if (e.target === e.currentTarget) dismiss();
@@ -244,6 +245,7 @@ export default function ImportPackModal(props: ImportPackModalProps) {
                                             </Label>
                                             <Input
                                                 id="name"
+                                                autofocus
                                                 value={packName()}
                                                 onInput={(e) =>
                                                     setPackName(
@@ -316,31 +318,34 @@ export default function ImportPackModal(props: ImportPackModalProps) {
                                         <Label for="pack-format">
                                             {m.pack_format()}
                                         </Label>
-                                        <select
-                                            id="pack-format"
-                                            class="border-border bg-card h-10 w-full rounded-md border px-3 text-sm"
-                                            value={currentSourceFormat()}
-                                            onChange={(e) =>
-                                                setCurrentSourceFormat(
-                                                    e.currentTarget
-                                                        .value as SitePackFormat,
-                                                )
-                                            }
-                                        >
-                                            <For each={formatOptions}>
-                                                {(format) => (
-                                                    <option
-                                                        value={format.value}
-                                                    >
-                                                        {format.label}
-                                                    </option>
-                                                )}
-                                            </For>
-                                        </select>
+                                        <div class="relative">
+                                            <select
+                                                id="pack-format"
+                                                class="border-input h-9 w-full appearance-none rounded-md border bg-transparent px-3 pr-9 text-sm shadow-xs"
+                                                value={currentSourceFormat()}
+                                                onChange={(e) =>
+                                                    setCurrentSourceFormat(
+                                                        e.currentTarget
+                                                            .value as SitePackFormat,
+                                                    )
+                                                }
+                                            >
+                                                <For each={formatOptions}>
+                                                    {(format) => (
+                                                        <option
+                                                            value={format.value}
+                                                        >
+                                                            {format.label}
+                                                        </option>
+                                                    )}
+                                                </For>
+                                            </select>
+                                            <ChevronDown class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground opacity-50" />
+                                        </div>
                                     </div>
                                     <div class="w-full">
                                         <div
-                                            class="bg-muted text-muted-foreground grid w-full grid-cols-2 rounded-md p-1"
+                                            class="bg-muted text-muted-foreground grid h-9 w-full grid-cols-2 items-center rounded-lg p-[3px]"
                                             role="tablist"
                                         >
                                             <button
@@ -352,7 +357,7 @@ export default function ImportPackModal(props: ImportPackModalProps) {
                                                         ? "true"
                                                         : "false"
                                                 }
-                                                class={`flex h-9 items-center justify-center gap-2 rounded-sm text-sm ${currentSourceType() === "url" ? "bg-background font-semibold text-foreground shadow-sm" : ""}`}
+                                                class={`flex h-[calc(100%-1px)] items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium ${currentSourceType() === "url" ? "bg-background text-foreground shadow-sm" : ""}`}
                                                 onClick={() =>
                                                     setCurrentSourceType("url")
                                                 }
@@ -372,7 +377,7 @@ export default function ImportPackModal(props: ImportPackModalProps) {
                                                         ? "true"
                                                         : "false"
                                                 }
-                                                class={`flex h-9 items-center justify-center gap-2 rounded-sm text-sm ${currentSourceType() === "file" ? "bg-background font-semibold text-foreground shadow-sm" : ""}`}
+                                                class={`flex h-[calc(100%-1px)] items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium ${currentSourceType() === "file" ? "bg-background text-foreground shadow-sm" : ""}`}
                                                 onClick={() =>
                                                     setCurrentSourceType("file")
                                                 }

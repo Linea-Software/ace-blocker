@@ -258,7 +258,7 @@ export default function LockModal(props: LockModalProps) {
     return (
         <Show when={props.open}>
             <div
-                class="fixed inset-0 z-[80] grid place-items-center bg-black/70 p-4"
+                class="fixed inset-0 z-[80] grid place-items-center bg-black/50 p-4"
                 role="presentation"
                 onClick={(event) => {
                     if (event.target === event.currentTarget && !isSubmitting())
@@ -275,7 +275,7 @@ export default function LockModal(props: LockModalProps) {
                             props.onOpenChange(false);
                     }}
                 >
-                    <header class="relative border-b border-border bg-card px-5 py-5 text-left sm:px-6">
+                    <header class="relative flex flex-col gap-2 border-b border-border bg-card px-5 py-5 text-left sm:px-6">
                         <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             <ShieldCheck class="size-4" aria-hidden="true" />
                             {m.lock_protection_label()}
@@ -323,6 +323,7 @@ export default function LockModal(props: LockModalProps) {
                                                         <button
                                                             type="button"
                                                             class={`flex w-full items-start gap-3 rounded-md border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selectedKind() === kind ? "border-[var(--ace-signal-deep)] bg-[var(--ace-signal)]/8" : "border-border hover:bg-muted/40"}`}
+                                                            autofocus={kind === "soft_unlockable"}
                                                             aria-pressed={
                                                                 selectedKind() ===
                                                                 kind

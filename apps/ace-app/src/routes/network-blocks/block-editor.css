@@ -161,7 +161,7 @@
     border-radius: 6px;
     background: var(--card);
 }
-.website-manager summary {
+.website-manager > summary {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -170,21 +170,21 @@
     padding: 17px 18px;
     list-style: none;
 }
-.website-manager summary::-webkit-details-marker {
+.website-manager > summary::-webkit-details-marker {
     display: none;
 }
-.website-manager summary:focus-visible {
+.website-manager > summary:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
 }
-.website-manager summary strong,
-.website-manager summary small {
+.website-manager > summary strong,
+.website-manager > summary small {
     display: block;
 }
-.website-manager summary strong {
+.website-manager > summary strong {
     font-size: 15px;
 }
-.website-manager summary small {
+.website-manager > summary small {
     font-size: 13px;
     color: var(--muted-foreground);
     margin-top: 5px;

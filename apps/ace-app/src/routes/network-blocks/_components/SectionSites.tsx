@@ -1,4 +1,5 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
+import "./SectionSites.css";
 import { Dynamic } from "@solidjs/web";
 import { Badge } from "$lib/components/ui/badge/solid";
 import { Input } from "$lib/components/ui/input/solid";
@@ -689,13 +690,6 @@ export default function SectionSites(props: SectionSitesProps) {
                     </section>
                 </div>
             </Show>
-            <style>{`
-                .category-visibility-toggle { display:flex; width:100%; min-height:38px; align-items:center; justify-content:center; margin-top:8px; padding:8px 12px; border:1px solid var(--border); border-radius:4px; background:var(--card); color:var(--foreground); cursor:pointer; font-size:12px; font-weight:600; }
-                .category-visibility-toggle:hover { background:var(--muted); }
-                .category-visibility-toggle:focus-visible { outline:2px solid var(--ring); outline-offset:2px; }
-                .pro-categories { border-top:1px solid var(--border); padding-top:12px; margin-top:10px; }
-                .pro-categories summary { font-size:13px; color:var(--muted-foreground); cursor:pointer; }
-            `}</style>
         </div>
     );
 }
