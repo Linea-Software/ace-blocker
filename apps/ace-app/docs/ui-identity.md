@@ -30,8 +30,8 @@ Recognition target:
 Keep:
 
 - Tauri 2;
-- SvelteKit 2;
-- Svelte 5;
+- SolidJS 2.0 and Solid Router 2;
+- Vite 8 (client-side static build);
 - TypeScript;
 - Bun;
 - Tailwind CSS 4;
@@ -40,16 +40,14 @@ Keep:
 - Vitest;
 - Playwright.
 
-Use **Bits UI as the preferred headless and accessibility component layer** for new Ace-owned UI.
+Use **Solid 2-compatible accessible primitives** for new Ace-owned UI, with Ace-owned styling. The existing Svelte Bits UI implementation is superseded by the Solid 2 port.
 
-The existing code includes shadcn-svelte components.
-These components use the same basic component ecosystem.
-Treat them as **legacy implementation**, not the new visual design system.
+The former frontend used shadcn-svelte and Bits UI. Treat those as legacy implementation details; do not restore Svelte components or their dependencies to the Solid frontend.
 
 Rules:
 
 - Do not add a new shadcn component only to get its default style.
-- You can reuse a legacy shadcn component when you maintain an old screen.
+- Reimplement necessary legacy components in Solid 2, preserving semantics, accessibility, and appearance.
 - New design-system components must own their Ace styles and APIs.
 - Prefer headless component behavior and Ace CSS over generic shadcn layouts.
 - Use Tailwind as an implementation tool. Do not use it as the visual design language.
@@ -65,8 +63,7 @@ For work that creates, redesigns, or materially changes visible UI:
 1. Read this document.
 2. Use `frontend-design`.
 3. Use `ui-ux-pro-max`.
-4. For Svelte code, use `svelte-code-writer`, `svelte-core-bestpractices`, and `svelte-components`.
-   Also use `svelte-runes` when reactive state is involved.
+4. For Solid 2 code, use the *package-pinned* `solid-js/skills/solid-2.0` and `reactivity-diagnostics` skill files, plus the current `CHEATSHEET.md`. Confirm third-party skills against Solid 2 docs before using them.
 5. Use `web-design-guidelines` for the final standards and accessibility review when applicable.
 6. Check important visual changes in actual screenshots, a browser, or the Tauri UI.
 

@@ -5,10 +5,10 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
     await page.setViewportSize({ width: 1200, height: 820 });
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: BlockEditor }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.tsx"),
         ]);
         const host = document.createElement("div");
         host.dataset.testid = "block-editor-fixture";
@@ -85,10 +85,10 @@ test("Safe Search-only blocks expose their coverage and keep the settings in the
     await page.setViewportSize({ width: 800, height: 600 });
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: BlockEditor }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.tsx"),
         ]);
         const host = document.createElement("div");
         host.dataset.testid = "safe-search-editor-fixture";
@@ -145,13 +145,13 @@ test("Safe Search-only blocks expose their coverage and keep the settings in the
 test("Category preview keeps selections, expands, and never truncates search results", async ({ page }) => {
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const svelte = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
-        const deltaModule = new URL("/src/lib/deltas/site-packs-connection-delta.svelte.ts", location.origin).pathname;
-        const userModule = new URL("/src/lib/stores/user-store.svelte.ts", location.origin).pathname;
+        const svelte = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const deltaModule = new URL("/src/lib/deltas/site-packs-connection-delta.ts", location.origin).pathname;
+        const userModule = new URL("/src/lib/stores/user-store.ts", location.origin).pathname;
         const [{ mount }, { default: SectionSites }, { SitePacksConnectionDelta }, { userStore }] =
             await Promise.all([
                 import(/* @vite-ignore */ svelte),
-                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.svelte"),
+                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.tsx"),
                 import(/* @vite-ignore */ deltaModule),
                 import(/* @vite-ignore */ userModule),
             ]);
@@ -218,13 +218,13 @@ test("Category preview keeps selections, expands, and never truncates search res
 test("Pro users switch between Free and Pro tiers without losing locked connections", async ({ page }) => {
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
-        const delta = new URL("/src/lib/deltas/site-packs-connection-delta.svelte.ts", location.origin).pathname;
-        const store = new URL("/src/lib/stores/user-store.svelte.ts", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const delta = new URL("/src/lib/deltas/site-packs-connection-delta.ts", location.origin).pathname;
+        const store = new URL("/src/lib/stores/user-store.ts", location.origin).pathname;
         const [{ mount }, { default: SectionSites }, { SitePacksConnectionDelta }, { userStore }] =
             await Promise.all([
                 import(/* @vite-ignore */ runtime),
-                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.svelte"),
+                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.tsx"),
                 import(/* @vite-ignore */ delta),
                 import(/* @vite-ignore */ store),
             ]);
@@ -252,7 +252,7 @@ test("Pro users switch between Free and Pro tiers without losing locked connecti
     const versions = await page.evaluate(async () => {
         const urls = [...new Set(performance.getEntriesByType("resource")
             .map((entry) => new URL(entry.name))
-            .filter((url) => url.pathname.endsWith("/src/lib/stores/user-store.svelte.ts"))
+            .filter((url) => url.pathname.endsWith("/src/lib/stores/user-store.ts"))
             .map((url) => url.pathname + url.search))];
         for (const url of urls) {
             const { userStore } = await import(/* @vite-ignore */ url);
@@ -278,10 +278,10 @@ test("Editor hints at overflow, then hides the hint at the bottom", async ({ pag
     await page.setViewportSize({ width: 800, height: 600 });
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: BlockEditor }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_BlockEditor.tsx"),
         ]);
         const host = document.createElement("div");
         host.dataset.testid = "editor-scroll-fixture";
@@ -309,14 +309,14 @@ test("Official Site Pack icons and Free/Pro coverage are visible in both selecti
     await page.setViewportSize({ width: 1000, height: 740 });
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const svelte = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
-        const delta = new URL("/src/lib/deltas/site-packs-connection-delta.svelte.ts", location.origin).pathname;
-        const store = new URL("/src/lib/stores/user-store.svelte.ts", location.origin).pathname;
+        const svelte = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const delta = new URL("/src/lib/deltas/site-packs-connection-delta.ts", location.origin).pathname;
+        const store = new URL("/src/lib/stores/user-store.ts", location.origin).pathname;
         const [{ mount }, { default: SectionSites }, { default: SitePackRow }, { SitePacksConnectionDelta }, { userStore }] =
             await Promise.all([
                 import(/* @vite-ignore */ svelte),
-                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.svelte"),
-                import(/* @vite-ignore */ "/src/lib/components/ace/domain/SitePackRow.svelte"),
+                import(/* @vite-ignore */ "/src/routes/network-blocks/_components/SectionSites.tsx"),
+                import(/* @vite-ignore */ "/src/lib/components/ace/domain/SitePackRow.tsx"),
                 import(/* @vite-ignore */ delta),
                 import(/* @vite-ignore */ store),
             ]);

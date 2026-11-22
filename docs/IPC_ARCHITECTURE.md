@@ -15,10 +15,10 @@ The Tauri frontend runs without elevated privileges in the user session.
 - `service/api/transport.rs` establishes remoc connections and serves
   independent clients. There is **no HTTP control listener, OpenAPI service,
   TLS bypass, port discovery or HTTP fallback** in the production runtime.
-- `service/api/bridge.rs` maps the Svelte/Tauri boundary to the typed remoc
+- `service/api/bridge.rs` maps the Solid/Tauri boundary to the typed remoc
   client. `apps/ace-app/src-tauri/src/lib.rs` owns the pipe connection and
   locally reads the capability credential. The WebView never receives the token.
-- `apps/ace-app/src/lib/engine-client/` is a stable Svelte facade. Site pack
+- `apps/ace-app/src/lib/engine-client/` is a stable Solid frontend facade. Site pack
   progress uses typed Rust events over remoc and Tauri Channels, with no SSE
   framing or bytes-to-JSON decoder.
 - The Tauri UI opens public Pro and sign-in URLs in the desktop user's browser.
@@ -85,7 +85,7 @@ recovery state machine and watchdog lease validation remain authoritative.
 - External website authentication, update traffic, and the MITM/blocking proxy
   deliberately remain HTTP(S).
 
-Native Svelte debugging requires Tauri. Vite alone cannot access the Named Pipe.
+Native Solid UI debugging requires Tauri. Vite alone cannot access the Named Pipe.
 Obsolete browser E2E suites that mock HTTP have been removed. The
 remaining static browser tests do not validate IPC. Native Tauri/Windows
 service and installer validation are still required for release.

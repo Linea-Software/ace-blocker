@@ -59,11 +59,11 @@ import {
     Spade,
     Download,
     type LucideIcon,
-} from "@lucide/svelte";
+} from "@lucide/solid";
 
 /**
  * Maps slug strings (the canonical engine values) to Lucide icon components.
- * This is the single source of truth for icon rendering in ace-app.
+ * This is the single source of truth for Solid 2 icon rendering in Ace Blocker.
  */
 export const LIST_ICON_MAP: Record<string, LucideIcon> = {
     // Content & Media

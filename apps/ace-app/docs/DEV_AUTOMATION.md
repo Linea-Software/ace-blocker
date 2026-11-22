@@ -10,11 +10,15 @@ Run these steps from `ace-blocker/apps/ace-app`:
 
 1. Install dependencies with `bun install --frozen-lockfile`.
 2. Start the debug app with `bun run tauri dev`. On Linux, startup also builds and registers the account callback receiver before Vite starts on port 1420. The command builds `target/debug/ace-app`.
-3. Open another terminal and run `bun run test:native`. WDIO starts a **second** instance of the debug binary with its embedded WebDriver driver.
+3. Open another terminal and run `bun run test:native`. WDIO starts a **second** instance of the debug binary with its embedded WebDriver driver. The development build must be compiled through `bun run tauri dev` or `cargo build -p ace-app --bin ace-app` while Vite dev is available. A `tauri build --debug --no-bundle` with Vite **production** assets intentionally does not contain the debug-only guest adapter, so WDIO cannot use that build.
 4. Read `e2e/native/read-only.smoke.spec.ts`. This test opens different screens and saves `ace-native-ui-smoke.png` in the system temporary directory.
 
-The integration uses `wdio.conf.ts`, `src/hooks.client.ts`,
-`src-tauri/src/lib.rs`, and `src-tauri/capabilities/default.json`.
+The integration uses `wdio.conf.ts`, `src/main.tsx`,
+`src-tauri/src/lib.rs`, and `src-tauri/capabilities/default.json`. By default
+`test:native` runs only `read-only.smoke.spec.ts`, including actual Tauri
+`app_version` IPC and an internal-route reload. The localization screenshot
+QA suite is opt-in with `ACE_NATIVE_VISUAL_QA=1` because it changes the selected
+locale and writes screenshots outside the repository.
 
 ## Linux browser login callback during development
 

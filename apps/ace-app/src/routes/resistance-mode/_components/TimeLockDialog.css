@@ -1,0 +1,69 @@
+
+    .lock-dialog-shell {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        max-height: 90dvh;
+    }
+
+    .lock-dialog-heading {
+        display: grid;
+        gap: 6px;
+        padding: 20px 22px 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--card);
+    }
+
+    .lock-dialog-body {
+        display: grid;
+        gap: 16px;
+        min-height: 0;
+        overflow: auto;
+        padding: 20px 22px;
+    }
+
+    .commit-fields {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 132px;
+        gap: 10px;
+    }
+
+    .resulting-expiration {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 10px 12px;
+        border: 1px solid color-mix(in srgb, var(--ace-signal) 42%, var(--border));
+        border-left: 4px solid var(--ace-signal);
+        border-radius: 4px;
+        background: color-mix(in srgb, var(--ace-signal) 8%, var(--card));
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11px;
+    }
+
+    .lock-dialog-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border);
+        background: var(--card);
+    }
+
+    :global(.commit-button) {
+        border: 1px solid var(--ace-signal-deep) !important;
+        border-radius: 4px !important;
+        background: var(--ace-signal) !important;
+        color: var(--ace-ink) !important;
+        font-weight: 600 !important;
+    }
+
+    :global(.commit-button:hover:not(:disabled)) {
+        background: var(--ace-signal-bright) !important;
+    }
+
+    @media (max-width: 560px) {
+        .commit-fields {
+            grid-template-columns: 1fr;
+        }
+    }

@@ -24,7 +24,7 @@ See `crates/ace-engine/src/core/common/domain_types.rs`. It uses `nutype` and ex
 - Validate data when it enters Rust, even if TypeScript already assigned a type. Rust controls authorization and business rules.
 - Treat serialization and deserialization as trust boundaries. Test rejection of invalid data. Test compatibility of the wire and DB forms. A typed field alone does not prove secure deserialization or authorization.
 
-### Svelte/TypeScript
+### SolidJS/TypeScript
 
 - TypeScript types and `as` casts do **not validate input at runtime**. Use existing Zod patterns for untrusted input that needs runtime checks. Derive TypeScript types from the schema when useful.
 - A TypeScript brand separates identities during compilation. It does not validate input. Validate through constructors or parsers when data first enters trusted app code.

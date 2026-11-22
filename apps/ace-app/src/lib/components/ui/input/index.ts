@@ -1,7 +1,2 @@
-import Root from "./input.svelte";
-
-export {
-    Root,
-    //
-    Root as Input,
-};
+/** Public SolidJS 2 component API; Svelte component exports are retired. */
+export * from "./solid";

@@ -56,7 +56,7 @@ test.describe("Getting Started", () => {
             "Categories",
             "Schedules",
             "Locks",
-            "Resistance Mode",
+            "Resistance", // same title as the original Svelte UI
         ]) {
             await expect(
                 conceptsSection.getByText(concept, { exact: true }),
@@ -109,10 +109,15 @@ test("Italian Settings navigation is legible in light and dark themes", async ({
     page,
 }) => {
     await page.goto("/settings");
-    await page.locator("#app-language").selectOption("it");
+    // Paraglide intentionally reloads the static Solid SPA at the same URL.
+    // Await that navigation rather than asserting during the outgoing document.
+    await Promise.all([
+        page.waitForEvent("load", { timeout: 20_000 }),
+        page.locator("#app-language").selectOption("it"),
+    ]);
     await expect(
         page.getByRole("heading", { name: "Impostazioni" }),
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 20_000 });
     const navigationLink = page.getByRole("link", { name: "Impostazioni" });
     await expect(navigationLink).toBeVisible();
     const isNotTruncated = () =>
@@ -134,8 +139,11 @@ test("Italian Settings navigation is legible in light and dark themes", async ({
     await page.screenshot({
         path: "test-results/editorial-settings-it-dark.png",
     });
-    await page.locator("#app-language").selectOption("en");
-    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await Promise.all([
+        page.waitForEvent("load", { timeout: 20_000 }),
+        page.locator("#app-language").selectOption("en"),
+    ]);
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({ timeout: 20_000 });
     await page.screenshot({
         path: "test-results/editorial-settings-en-dark.png",
     });

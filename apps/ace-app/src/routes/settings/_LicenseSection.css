@@ -1,0 +1,131 @@
+
+    .ace-settings-license.settings-section {
+        display: grid;
+        gap: 12px;
+    }
+
+    :is(.ace-settings-license) header {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+    }
+
+    :is(.ace-settings-license) .section-mark {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-left: 3px solid var(--ace-ash);
+        color: var(--muted-foreground);
+    }
+
+    :is(.ace-settings-license) h2 {
+        margin: 0;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    :is(.ace-settings-license) header p {
+        margin: 3px 0 0;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    :is(.ace-settings-license) .license-row {
+        min-height: 78px;
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 14px;
+        border: 1px solid var(--border);
+        border-left: 5px solid var(--ace-ash);
+        border-radius: 5px;
+        background: var(--card);
+    }
+
+    :is(.ace-settings-license) .license-row.pro {
+        border-left-color: var(--ace-success);
+    }
+
+    :is(.ace-settings-license) .plan-mark {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        color: var(--muted-foreground);
+    }
+
+    :is(.ace-settings-license) .pro .plan-mark {
+        color: var(--ace-success);
+    }
+
+    :is(.ace-settings-license) .plan-copy {
+        min-width: 0;
+    }
+
+    :is(.ace-settings-license) .plan-copy h3,
+    :is(.ace-settings-license) .plan-copy span {
+        display: block;
+    }
+
+    :is(.ace-settings-license) .plan-copy h3 {
+        margin: 0;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    :is(.ace-settings-license) .plan-copy span {
+        margin-top: 3px;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    :is(.ace-settings-license) .license-actions {
+        min-width: 0;
+        display: grid;
+        justify-items: start;
+        gap: 7px;
+    }
+
+    :is(.ace-settings-license) .sign-in-action {
+        padding: 4px 0;
+        border: 0;
+        background: transparent;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        text-align: left;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+    }
+
+    :is(.ace-settings-license) .sign-in-action:hover {
+        color: var(--foreground);
+    }
+
+    :is(.ace-settings-license) .sign-in-action:disabled {
+        opacity: 0.5;
+        cursor: wait;
+    }
+
+    @container page (max-width: 700px) {
+        :is(.ace-settings-license) .license-row {
+            grid-template-columns: 38px minmax(0, 1fr);
+        }
+
+        :is(.ace-settings-license) .license-actions {
+            grid-column: 2;
+        }
+    }
+
+    :is(.ace-settings-license) .device-link-panel { border: 1px solid var(--border); border-left: 3px solid var(--ace-amber, #ffb000); padding: 12px 14px; font-size: 13px; line-height: 1.5; background: var(--card); }
+    :is(.ace-settings-license) .device-link-code { margin: 12px 0; font: 600 20px/1.4 "IBM Plex Mono", monospace; letter-spacing: .04em; overflow-wrap: anywhere; }
+    :is(.ace-settings-license) .device-link-error { color: var(--destructive); }

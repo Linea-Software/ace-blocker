@@ -3,10 +3,10 @@ import { expect, test, type Page } from "@playwright/test";
 async function mountResistanceFixture(page: Page, locked = false) {
     await page.goto("/getting-started");
     await page.evaluate(async (isLocked) => {
-        const svelteModule = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const svelteModule = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: ScriptSections }] = await Promise.all([
             import(/* @vite-ignore */ svelteModule),
-            import(/* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.svelte"),
+            import(/* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.tsx"),
         ]);
         const fixture = document.createElement("div");
         fixture.id = "resistance-five-categories-fixture";

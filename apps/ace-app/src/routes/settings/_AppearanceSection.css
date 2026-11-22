@@ -1,0 +1,107 @@
+
+    .ace-settings-appearance.settings-section {
+        display: grid;
+        gap: 12px;
+    }
+
+    :is(.ace-settings-appearance) header {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+    }
+
+    :is(.ace-settings-appearance) .section-mark {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-left: 3px solid var(--ace-ash);
+        color: var(--muted-foreground);
+    }
+
+    :is(.ace-settings-appearance) h2 {
+        margin: 0;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    :is(.ace-settings-appearance) header p,
+    :is(.ace-settings-appearance) .setting-row p {
+        margin: 3px 0 0;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    :is(.ace-settings-appearance) .setting-row {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 13px 14px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--card);
+    }
+
+    :is(.ace-settings-appearance) .setting-row strong {
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    :is(.ace-settings-appearance) .theme-options {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .dark :is(.ace-settings-appearance) .theme-options {
+        border-color: var(--input);
+    }
+
+    :is(.ace-settings-appearance) .theme-options button {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 0;
+        border-right: 1px solid var(--border);
+        padding: 0 10px;
+        background: transparent;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    :is(.ace-settings-appearance) .theme-options button:last-child {
+        border-right: 0;
+    }
+
+    :is(.ace-settings-appearance) .theme-options button:hover {
+        background: var(--muted);
+        color: var(--foreground);
+    }
+
+    :is(.ace-settings-appearance) .theme-options button.active {
+        background: var(--foreground);
+        color: var(--background);
+    }
+
+    @container page (max-width: 560px) {
+        :is(.ace-settings-appearance) .setting-row {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        :is(.ace-settings-appearance) .theme-options {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }

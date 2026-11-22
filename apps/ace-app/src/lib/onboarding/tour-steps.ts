@@ -6,7 +6,10 @@
  * silently degrades to a centered tooltip if the element is not on screen (for
  * example the sidebar, which is collapsed on narrow windows).
  */
-import type { RouteId } from "$app/types";
+/** Routed desktop pages (formerly SvelteKit RouteId). */
+export type RouteId = "/" | "/network-blocks" | "/network-blocks/editor" |
+    "/site-packs" | "/resistance-mode" | "/settings" |
+    "/getting-started" | "/help";
 import * as m from "$lib/paraglide/messages.js";
 
 export type TourPlacement = "top" | "right" | "bottom" | "left";

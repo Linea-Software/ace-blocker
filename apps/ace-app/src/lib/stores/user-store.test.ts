@@ -14,25 +14,21 @@ const accountResponse = (isPro: boolean) =>
     >;
 
 describe("Pro activation content refresh", () => {
-    let store: (typeof import("./user-store.svelte"))["userStore"];
+    let store: (typeof import("./user-store"))["userStore"];
 
     beforeEach(async () => {
         vi.useFakeTimers();
-        // Vitest executes .svelte.ts modules as plain TS; supply a minimal
-        // rune identity for this logic-only test (no component is rendered).
-        vi.stubGlobal("$state", <T>(value: T) => value);
         vi.resetModules();
         vi.clearAllMocks();
         vi.mocked(getAccountInfo).mockResolvedValue(accountResponse(false));
         vi.mocked(refreshAccount).mockResolvedValue(accountResponse(false));
         vi.mocked(triggerContentUpdate).mockResolvedValue({} as Awaited<ReturnType<typeof triggerContentUpdate>>);
-        ({ userStore: store } = await import("./user-store.svelte"));
+        ({ userStore: store } = await import("./user-store"));
         await store.fetch();
     });
 
     afterEach(() => {
         store?.destroy();
-        vi.unstubAllGlobals();
         vi.useRealTimers();
     });
 

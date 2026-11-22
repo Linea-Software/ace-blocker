@@ -1,0 +1,52 @@
+
+    .engine-state{
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--foreground);
+    }
+
+    .engine-state .state-mark{
+        width: 8px;
+        height: 8px;
+        flex: 0 0 8px;
+        border-radius: 50%;
+        background: var(--ace-ash);
+    }
+
+    .engine-state.enforcing .state-mark{
+        background: var(--ace-success);
+    }
+
+    .engine-state.offline .state-mark{
+        background: var(--ace-danger);
+    }
+
+    .engine-state .state-copy{
+        min-width: 0;
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .engine-state strong{
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .engine-state .state-copy > span{
+        overflow: hidden;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 920px) {
+        .engine-state .state-copy > span{
+            display: none;
+        }
+    }

@@ -1,5 +1,7 @@
 # Ace Blocker — Technical Debt Backlog
 
+> **Historical context (pre-SolidJS migration):** Framework-specific SvelteKit findings below document the original `main` baseline. The `solidjs-porting` branch uses SolidJS 2.0 and no longer uses SvelteKit configuration. Current frontend instructions: `apps/ace-app/AGENTS.md` and `apps/ace-app/docs/SOLIDJS_2_PORT.md`.
+
 Follow [REFACTORING_PLAYBOOK.md](REFACTORING_PLAYBOOK.md) for the required audit, implementation, and independent review.
 
 This file records **verified, actionable maintenance work**. It does not list speculative rewrites. Inspect the relevant code before you add an item. Record the specific maintenance cost. Mark an audit finding `candidate` if it still needs verification.

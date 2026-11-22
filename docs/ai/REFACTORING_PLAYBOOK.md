@@ -60,7 +60,7 @@ Before code edits:
 - Make small, mechanical changes. Keep behavior and serialization, IPC, and DB contracts unless you have separate approval.
 - Remove unused code. Do not keep both old and new paths without a reason.
 - Use current language and library features. Do not reimplement utilities that dependencies already provide. Do not share logic only because two functions look alike.
-- Keep local Svelte state local. Share a stable contract only when needed. In Rust, use domain-owned types and fallible validation for real rules. Do not wrap every string.
+- Keep local Solid state local. Share a stable contract only when needed. In Rust, use domain-owned types and fallible validation for real rules. Do not wrap every string.
 - Keep current system contracts, stored data, time meaning, error behavior, reconnect handling, and installer behavior.
 - If a cleanup needs product behavior changes, a new architecture layer, or broad cross-component changes, **propose it as a separate task**.
 - Run targeted checks while you work. Do not hide warnings, omit tests, or weaken validation to get a passing result.
@@ -95,7 +95,7 @@ The reviewer must report **specific findings with file references**. Separate bl
 
 These apply even when a proposed cleanup looks trivial:
 
-- **Separate processes:** Keep `ace-engine` and `ace-watchdog` as independent privileged services. Keep Tauri/Svelte unprivileged. Closing the UI must not stop enforcement.
+- **Separate processes:** Keep `ace-engine` and `ace-watchdog` as independent privileged services. Keep Tauri/Solid unprivileged. Closing the UI must not stop enforcement.
 - **Enforcement:** Keep network and site blocks, schedules, Resistance Mode, stored locks, and unlock or expiry behavior unchanged.
 - **Anti-tampering:** Keep watchdog authentication, fresh heartbeats, recovery, authorized maintenance, Windows SCM settings, and lock-aware uninstall checks.
 - **Privilege/IPC boundaries:** Keep caller checks, named-pipe and endpoint ACLs, input validation, and engine authorization. Do not trust UI input only because it has a type.
@@ -128,7 +128,7 @@ bun run test:unit
 
 Use relevant integration or end-to-end tests and the installer VM test matrix for affected boundaries. **Do not run a repository-wide autofix** for a smaller task. Examples include `cargo clippy --fix`, `cargo fmt`, and mass formatting. Report old warnings separately.
 
-Optional tools include `cargo-machete` for unused dependency candidates (check false positives), `cargo-nextest` for Rust tests, `ast-grep` for reviewed structural edits, and coverage tools for gaps. These tools do not replace code review. Use `cargo metadata`, targeted call-site searches, and Svelte/TypeScript checks for dependency evidence. Do not install tools or set arbitrary limits without a real need. File, line, import, and newtype counts are diagnostic signals, **not goals**.
+Optional tools include `cargo-machete` for unused dependency candidates (check false positives), `cargo-nextest` for Rust tests, `ast-grep` for reviewed structural edits, and coverage tools for gaps. These tools do not replace code review. Use `cargo metadata`, targeted call-site searches, and SolidJS/TypeScript checks for dependency evidence. Do not install tools or set arbitrary limits without a real need. File, line, import, and newtype counts are diagnostic signals, **not goals**.
 
 Treat Skills.sh and local skill packs as optional references. Confirm that `SKILL.md` exists. Review its instructions and scripts. Follow Ace security, service, IPC, and ownership contracts when a general skill conflicts with them. Record the conflict. See [REVIEW_GATES.md](REVIEW_GATES.md).
 

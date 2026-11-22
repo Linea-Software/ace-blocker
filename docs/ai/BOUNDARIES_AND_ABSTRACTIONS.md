@@ -15,7 +15,7 @@ Read the code and its call sites before you propose a dependency direction. The 
 | `crates/ace-engine/src/service/proxy/`, `crates/mitm-proxy/`, `crates/ace-tun/` | Network enforcement, interception, tunnel/OS integration | Preserve non-browser opacity and enforcement decisions; do not turn the proxy into a global application service |
 | `crates/ace-watchdog/`, `crates/ace-watchdog-protocol/` | Independent watchdog service and shared heartbeat wire contract | No lifecycle ownership by Tauri; shared types do not merge services |
 | `apps/ace-app/src-tauri/` | Native user-session adapter, local IPC connection and capability | WebView must not acquire pipe credentials or privileged policy authority |
-| `apps/ace-app/src/lib/engine-client/` | Stable UI-facing engine API facade | No ad hoc local REST, duplicated RPC transports, or direct pipe access from Svelte |
+| `apps/ace-app/src/lib/engine-client/` | Stable UI-facing engine API facade | No ad hoc local REST, duplicated RPC transports, or direct pipe access from Solid |
 | `apps/ace-app/src/routes/`, `src/lib/components/`, `src/lib/stores/` | Route UI, presentational components and deliberately shared UI state | Avoid importing across unrelated feature internals or using global state as an integration bus |
 | `installer/` | Production install, upgrade, service permissions and uninstall gate | UI bundling must not absorb privileged installer responsibilities |
 

@@ -12,7 +12,7 @@ Its code came from the former desktop repositories.
 - `crates/ace-watchdog-protocol/`: shared heartbeat wire types and tests.
 - `crates/ace-update-security/`: signed Windows MSI release manifest, hashes, version policy, and update-phase checks. It has no privileged installer capability.
 - `crates/ace-tun/`, `crates/mitm-proxy/`, and `crates/ace-domain-blocklist/`: engine dependencies.
-- `apps/ace-app/`: SvelteKit UI and Tauri Rust crate. Read `apps/ace-app/AGENTS.md` for component instructions.
+- `apps/ace-app/`: SolidJS 2.0/Vite UI and Tauri Rust crate. Read `apps/ace-app/AGENTS.md` and `apps/ace-app/docs/SOLIDJS_2_PORT.md` for frontend and security instructions.
 - `installer/`: WiX MSI, service configuration, and bundled Site Packs.
 
 The nested component `AGENTS.md` files were written before repository consolidation.

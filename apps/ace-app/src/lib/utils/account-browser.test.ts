@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { isTauri } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { toast } from "svelte-sonner";
+import { toast } from "solid-sonner";
 import {
     ACCOUNT_PAGE_URLS,
     getAccountPageUrl,
@@ -10,7 +10,7 @@ import {
 
 vi.mock("@tauri-apps/api/core", () => ({ isTauri: vi.fn() }));
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn() }));
-vi.mock("svelte-sonner", () => ({ toast: { error: vi.fn() } }));
+vi.mock("solid-sonner", () => ({ toast: { error: vi.fn() } }));
 vi.mock("$lib/paraglide/messages.js", () => ({
     account_browser_open_failed: () => "Could not open your browser",
     account_browser_open_failed_detail: ({ url }: { url: string }) => url,

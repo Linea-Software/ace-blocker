@@ -1,6 +1,6 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { toast } from "svelte-sonner";
+import { toast } from "solid-sonner";
 import * as m from "$lib/paraglide/messages.js";
 
 type AccountPage = "pro" | "sign-in";

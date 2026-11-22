@@ -1,0 +1,351 @@
+
+    .network-policy {
+        position: relative;
+        display: grid;
+        grid-template-columns: 8px minmax(0, 1fr);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: var(--card);
+        transition:
+            border-color 150ms ease,
+            background 150ms ease;
+    }
+
+    .network-policy:hover {
+        border-color: color-mix(in srgb, var(--foreground) 30%, var(--border));
+    }
+
+    .network-policy .state-rail {
+        position: relative;
+        border-right: 1px solid var(--border);
+        background: var(--muted);
+    }
+
+    .network-policy .state-rail span {
+        position: absolute;
+        inset: 0;
+        background: var(--ace-ash);
+    }
+
+    .network-policy.active .state-rail span {
+        background: var(--ace-signal);
+    }
+
+    .network-policy.unscheduled .state-rail span {
+        background: color-mix(in srgb, var(--ace-ash) 55%, var(--muted));
+    }
+
+    .network-policy.disabled .state-rail span {
+        background: var(--ace-ash);
+    }
+
+    .network-policy.locked {
+        border-color: color-mix(in srgb, var(--ace-signal-deep) 58%, var(--border));
+    }
+
+    .network-policy.locked .state-rail {
+        background: var(--ace-signal-deep);
+        border-right-color: var(--ace-signal-deep);
+    }
+
+    .network-policy.locked .state-rail span {
+        background: var(--ace-signal);
+    }
+
+    .network-policy .policy-body {
+        min-width: 0;
+    }
+
+    .network-policy .policy-header {
+        min-width: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 17px 18px 14px;
+    }
+
+    .network-policy .identity {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .network-policy .policy-name-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .network-policy .policy-name-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .network-policy .policy-icon {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        flex: 0 0 40px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--muted);
+        color: var(--foreground);
+    }
+
+    .network-policy .state-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .network-policy .state-word {
+        color: var(--muted-foreground);
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .network-policy.active .state-word {
+        color: var(--ace-signal-deep);
+    }
+
+    .network-policy.unscheduled .state-word {
+        color: var(--muted-foreground);
+    }
+
+    .network-policy h2 {
+        margin: 0;
+        overflow: hidden;
+        color: var(--foreground);
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: clamp(20px, 3cqi, 24px);
+        font-weight: 600;
+        line-height: 1.05;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .network-policy .schedule-copy {
+        min-width: 0;
+        margin: 6px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        overflow: hidden;
+        color: var(--muted-foreground);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 13px;
+        line-height: 1.35;
+    }
+
+    .network-policy .schedule-copy > span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .network-policy .unscheduled-copy {
+        font-family: "IBM Plex Sans", sans-serif;
+    }
+
+    .network-policy .transition-copy {
+        flex: 0 0 auto;
+        padding-left: 9px;
+        border-left: 1px solid var(--border);
+        color: var(--foreground);
+        font-size: 12px;
+    }
+
+    .network-policy .actions {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .network-policy .enable-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        margin-right: 5px;
+        padding-right: 10px;
+        border-right: 1px solid var(--border);
+        color: var(--muted-foreground);
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .network-policy button.enable-switch {
+        display: inline-flex;
+        align-items: center;
+        width: 36px;
+        height: 22px;
+        min-height: 22px;
+        padding: 2px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--muted);
+    }
+
+    .network-policy .enable-switch[aria-checked="true"] {
+        border-color: var(--ace-signal-deep);
+        background: var(--ace-signal);
+    }
+
+    .network-policy .enable-thumb {
+        display: block;
+        width: 16px;
+        height: 16px;
+        flex: 0 0 16px;
+        border-radius: 50%;
+        background: var(--foreground);
+        opacity: 0.7;
+        transition: transform 140ms ease;
+    }
+
+    .network-policy .enable-switch[aria-checked="true"] .enable-thumb {
+        transform: translateX(14px);
+        background: var(--ace-ink);
+        opacity: 1;
+    }
+
+    .network-policy .enable-switch:focus-visible {
+        outline: 2px solid var(--foreground);
+        outline-offset: 3px;
+    }
+
+    .network-policy button {
+        min-height: 36px;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--foreground);
+        cursor: pointer;
+        transition:
+            background 140ms ease,
+            border-color 140ms ease,
+            color 140ms ease;
+    }
+
+    .network-policy .quiet-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 9px;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .network-policy .quiet-action:hover {
+        border-color: var(--border);
+        background: var(--muted);
+        color: var(--foreground);
+    }
+
+    .network-policy .commit-action {
+        border-color: color-mix(in srgb, var(--ace-signal-deep) 45%, var(--border));
+        color: var(--ace-signal-deep);
+    }
+
+    .network-policy .commit-action:hover {
+        border-color: var(--ace-signal-deep);
+        background: color-mix(in srgb, var(--ace-signal) 12%, transparent);
+        color: var(--foreground);
+    }
+
+    .network-policy button:disabled {
+        cursor: not-allowed;
+        opacity: 0.35;
+    }
+
+    /* Locked switches must remain recognizable even when non-interactive. */
+    .network-policy button.enable-switch:disabled {
+        opacity: 0.65;
+    }
+
+    .dark .network-policy button.enable-switch[aria-checked="false"] {
+        border-color: var(--input);
+    }
+
+    .network-policy .policy-grid {
+        display: flex;
+        align-items: center;
+        padding: 10px 18px 13px;
+        border-top: 1px solid var(--border);
+        margin: 0 18px;
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .network-policy .policy-facts {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+        margin: 0;
+        color: var(--ace-text-tertiary);
+        font-size: 12px;
+    }
+
+    .network-policy .policy-facts > div {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 5px;
+        min-width: 0;
+    }
+
+    .network-policy .policy-facts > div + div {
+        padding-left: 16px;
+        border-left: 1px solid var(--border);
+    }
+
+    .network-policy dt {
+        color: var(--ace-text-tertiary);
+    }
+
+    .network-policy dd {
+        margin: 0;
+        color: var(--foreground);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    @container page (max-width: 680px) {
+        .network-policy .policy-header {
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .network-policy .actions {
+            width: 100%;
+        }
+
+        .network-policy .policy-facts {
+            justify-self: stretch;
+        }
+    }
+
+    @container page (max-width: 480px) {
+        .network-policy .policy-name-row { gap: 10px; }
+        .network-policy .policy-icon { width: 36px; height: 36px; flex-basis: 36px; }
+        .network-policy .schedule-copy {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .network-policy .transition-copy {
+            padding-left: 0;
+            border-left: 0;
+        }
+
+        .network-policy .actions {
+            flex-wrap: wrap;
+        }
+    }

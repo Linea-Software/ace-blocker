@@ -30,22 +30,23 @@ describe("ACE native UI (read-only)", () => {
         await link.click();
         const heading = await $("main h1");
         await heading.waitForDisplayed();
-        await expect(heading).toHaveText("Network Blocks");
+        await expect(heading).toHaveText(/.+/);
+        await expect(link).toHaveAttribute("aria-current", "page");
     });
 
-    it("keeps the Create Block inspector flush with the window top", async () => {
-        const create = await $('button*=Create Block');
-        await create.click();
-        const inspector = await $(".inspector");
-        await inspector.waitForDisplayed();
-        const geometry = await browser.execute(() => {
-            const rect = document.querySelector(".inspector")!.getBoundingClientRect();
-            return { top: rect.top, bottom: rect.bottom, height: window.innerHeight };
-        });
-        expect(geometry.top).toBe(0);
-        expect(geometry.bottom).toBe(geometry.height);
-        await browser.saveScreenshot(join(tmpdir(), "ace-native-block-inspector.png"));
-        await $(".inspector .close-button").click();
-        await expect(inspector).not.toExist();
+    it("navigates to Guide and survives a deep-route WebView reload", async () => {
+        const guide = await $('nav a[href="/getting-started"]');
+        await guide.click();
+        const heading = await $("main h1");
+        await heading.waitForDisplayed();
+        await expect(heading).toHaveText(/.+/);
+        await expect(guide).toHaveAttribute("aria-current", "page");
+
+        // A packaged Tauri SPA must resolve a route directly after reload,
+        // including after a Paraglide locale change or application restart.
+        await browser.execute(() => window.location.reload());
+        await heading.waitForDisplayed();
+        await expect(guide).toHaveAttribute("aria-current", "page");
+        await browser.saveScreenshot(join(tmpdir(), "ace-native-guide-reloaded.png"));
     });
 });

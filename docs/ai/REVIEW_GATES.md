@@ -29,7 +29,7 @@ Use this checklist with [REFACTORING_PLAYBOOK.md](REFACTORING_PLAYBOOK.md). It d
 ## Gate 3 — Behavior, tests, and independent diff review
 
 - Add characterization tests for behavior and failure paths that could change. Test accepted and rejected operations where applicable.
-- Run focused Rust, Svelte/TypeScript, and native Tauri/Windows service/installer checks for the affected scope. Do not treat a UI unit test as proof of IPC authorization.
+- Run focused Rust, SolidJS/TypeScript, and native Tauri/Windows service/installer checks for the affected scope. Do not treat a UI unit test as proof of IPC authorization.
 - Review the actual diff and call sites. Check broad renames, generated code, error behavior, persistence order, locks, cancellation, and lifecycle.
 - Record exact commands and results. Label tests as passed, failed, blocked, or not run. State risk when a native or VM check cannot run.
 - Require an independent reviewer to record blocking and optional findings with file and symbol evidence. Do not set a backlog item to `done` before required review and tests finish.

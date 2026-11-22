@@ -1,7 +1,2 @@
-import Root from "./label.svelte";
-
-export {
-    Root,
-    //
-    Root as Label,
-};
+/** Public SolidJS 2 component API; Svelte component exports are retired. */
+export * from "./solid";

@@ -1,17 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ScheduleChanges, type Weekday } from "./schedule-delta.svelte";
+import { ScheduleChanges, type Weekday } from "./schedule-delta";
 
 const monday: Weekday = {
     monday: true, tuesday: false, wednesday: false, thursday: false,
     friday: false, saturday: false, sunday: false,
 };
 
-beforeEach(() => {
-    // Svelte runes are compiled by SvelteKit in the application; the draft's
-    // plain array state is sufficient to check its validation before RPC.
-    vi.stubGlobal("$state", <T>(value: T): T => value);
-});
-afterEach(() => vi.unstubAllGlobals());
 
 describe("schedule delta rejects unsupported engine intervals before staging", () => {
     it("rejects 22:00–02:00 without changing the draft", () => {

@@ -5,10 +5,10 @@ test("Network Block cards display custom and fallback icons without changing the
     await page.setViewportSize({ width: 1200, height: 800 });
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: NetworkPolicy }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/lib/components/ace/domain/NetworkPolicy.svelte"),
+            import(/* @vite-ignore */ "/src/lib/components/ace/domain/NetworkPolicy.tsx"),
         ]);
         const host = document.createElement("div");
         host.dataset.testid = "policy-icon-fixture";

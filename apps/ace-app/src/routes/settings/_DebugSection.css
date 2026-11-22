@@ -1,0 +1,111 @@
+
+    .ace-settings-debug.settings-section {
+        display: grid;
+        gap: 12px;
+    }
+
+    :is(.ace-settings-debug) header {
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+    }
+
+    :is(.ace-settings-debug) .section-mark {
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-left: 3px solid var(--ace-signal);
+        color: var(--muted-foreground);
+    }
+
+    :is(.ace-settings-debug) h2 {
+        margin: 0;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    :is(.ace-settings-debug) header p,
+    :is(.ace-settings-debug) .setting-copy p {
+        margin: 3px 0 0;
+        color: var(--muted-foreground);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    :is(.ace-settings-debug) .setting-row {
+        min-height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 13px 14px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--card);
+    }
+
+    :is(.ace-settings-debug) .setting-copy {
+        min-width: 0;
+    }
+
+    :is(.ace-settings-debug) .setting-copy label,
+    :is(.ace-settings-debug) .setting-copy strong {
+        display: block;
+        font-family: "IBM Plex Sans Condensed", sans-serif;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--foreground);
+    }
+
+    :is(.ace-settings-debug) select,
+    :is(.ace-settings-debug) button {
+        min-height: 38px;
+        flex-shrink: 0;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--background);
+        color: var(--foreground);
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    :is(.ace-settings-debug) button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+
+    :is(.ace-settings-debug) select:focus-visible,
+    :is(.ace-settings-debug) button:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+    }
+
+    :is(.ace-settings-debug) button:hover:not(:disabled) {
+        background: var(--muted);
+    }
+
+    :is(.ace-settings-debug) select:disabled,
+    :is(.ace-settings-debug) button:disabled {
+        cursor: wait;
+        opacity: 0.55;
+    }
+
+    @container page (max-width: 560px) {
+        :is(.ace-settings-debug) .setting-row {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        :is(.ace-settings-debug) select,
+        :is(.ace-settings-debug) button {
+            width: 100%;
+        }
+    }

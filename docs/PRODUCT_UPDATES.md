@@ -32,7 +32,7 @@ Production signing and endpoint configuration are still required:
   is included in the MSI. Normal major upgrades no longer delete root CAs
   through the two explicit certificate-removal custom actions.
 - The release workflow validates that Rust engine/watchdog/verifier, Tauri Rust,
-  Tauri config and Svelte package versions all equal the supplied release
+  Tauri config and Solid frontend package versions all equal the supplied release
   version. Only a correctly Authenticode-signed and pinned MSI may be staged
   on the website. Unapproved releases remain GitHub drafts.
 

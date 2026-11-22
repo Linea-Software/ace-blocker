@@ -81,9 +81,9 @@ test.describe("Desktop UI friction", () => {
         // Browser-only layout fixture: never calls/mutates the real engine.
         await page.evaluate(async () => {
             const storeModules = [
-                "/src/lib/stores/engine.svelte.ts",
-                "/src/lib/stores/dashboard.svelte.ts",
-                "/src/lib/stores/user-store.svelte.ts",
+                "/src/lib/stores/engine.ts",
+                "/src/lib/stores/dashboard.ts",
+                "/src/lib/stores/user-store.ts",
             ];
             const [{ engineStore }, { dashboardStore }, { userStore }] = await Promise.all(
                 storeModules.map((modulePath) => {
@@ -174,9 +174,9 @@ test.describe("Desktop UI friction", () => {
         // Only simulate the browser's reactive UI stores. No engine IPC is used.
         await page.evaluate(async () => {
             const storeModules = [
-                "/src/lib/stores/engine.svelte.ts",
-                "/src/lib/stores/dashboard.svelte.ts",
-                "/src/lib/stores/user-store.svelte.ts",
+                "/src/lib/stores/engine.ts",
+                "/src/lib/stores/dashboard.ts",
+                "/src/lib/stores/user-store.ts",
             ];
             const [{ engineStore }, { dashboardStore }, { userStore }] = await Promise.all(
                 storeModules.map((modulePath) => {
@@ -224,13 +224,13 @@ test("official Pro packs remain identifiable for Free and Pro accounts", async (
     await page.goto("/site-packs");
     await page.evaluate(async () => {
         const svelteModule = new URL(
-            "/node_modules/.vite/deps/svelte.js",
+            "/src/test-fixture-runtime.ts",
             location.origin,
         ).pathname;
         const [{ mount }, { default: SitePackRow }] = await Promise.all([
             import(/* @vite-ignore */ svelteModule),
             import(
-                /* @vite-ignore */ "/src/lib/components/ace/domain/SitePackRow.svelte"
+                /* @vite-ignore */ "/src/lib/components/ace/domain/SitePackRow.tsx"
             ),
         ]);
         const row = {
@@ -274,13 +274,13 @@ test("Resistance logos use the bundled brand colors", async ({ page }) => {
     await page.goto("/getting-started");
     await page.evaluate(async () => {
         const svelteModule = new URL(
-            "/node_modules/.vite/deps/svelte.js",
+            "/src/test-fixture-runtime.ts",
             location.origin,
         ).pathname;
         const [{ mount }, { default: ScriptSections }] = await Promise.all([
             import(/* @vite-ignore */ svelteModule),
             import(
-                /* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.svelte"
+                /* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.tsx"
             ),
         ]);
         const fixture = document.createElement("div");
@@ -331,10 +331,10 @@ test("Resistance logos use the bundled brand colors", async ({ page }) => {
 test("Free users can inspect Resistance interventions without changing them", async ({ page }) => {
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const svelteModule = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const svelteModule = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: ScriptSections }] = await Promise.all([
             import(/* @vite-ignore */ svelteModule),
-            import(/* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.svelte"),
+            import(/* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.tsx"),
         ]);
         const host = document.createElement("div");
         document.body.append(host);
@@ -362,10 +362,10 @@ test("Custom List icon picker stays inside the window and above dialog footer", 
     await page.setViewportSize({ width: 880, height: 720 });
     await page.goto("/site-packs");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: ImportPackModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/site-packs/_ImportPackModal.svelte"),
+            import(/* @vite-ignore */ "/src/routes/site-packs/_ImportPackModal.tsx"),
         ]);
         const host = document.createElement("div");
         document.body.append(host);
@@ -409,10 +409,10 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
     await page.goto("/network-blocks");
     // A local Svelte component fixture; no privileged engine request is sent.
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
         ]);
         const fixture = document.createElement("div");
         document.body.append(fixture);
@@ -453,10 +453,10 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
 test("Reviewing a scheduled lock only offers removal outside active hours", async ({ page }) => {
     await page.goto("/network-blocks");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
         ]);
         mount(LockModal, {
             target: document.body,
@@ -486,10 +486,10 @@ test("Reviewing a scheduled lock only offers removal outside active hours", asyn
 test("An expired time lock offers explicit removal", async ({ page }) => {
     await page.goto("/network-blocks");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
         ]);
         mount(LockModal, {
             target: document.body,
@@ -518,10 +518,10 @@ test("An expired time lock offers explicit removal", async ({ page }) => {
 test("An active scheduled lock cannot be removed from its review modal", async ({ page }) => {
     await page.goto("/network-blocks");
     await page.evaluate(async () => {
-        const runtime = new URL("/node_modules/.vite/deps/svelte.js", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.svelte"),
+            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
         ]);
         mount(LockModal, {
             target: document.body,

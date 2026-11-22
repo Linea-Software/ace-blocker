@@ -1,5 +1,7 @@
 # Ace App — Outstanding Refactoring Audit
 
+> **Historical context (pre-SolidJS migration):** Framework-specific SvelteKit findings below document the original `main` baseline. The `solidjs-porting` branch uses SolidJS 2.0 and no longer uses SvelteKit configuration. Current frontend instructions: `apps/ace-app/AGENTS.md` and `apps/ace-app/docs/SOLIDJS_2_PORT.md`.
+
 **Original audit:** 2026-10-22 · **Last pruned:** 2026-10-22
 
 **Repository:** `C:\Projects\ace-project\ace-blocker`

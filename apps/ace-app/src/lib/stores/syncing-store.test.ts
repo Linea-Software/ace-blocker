@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SyncingStore, type SitePackSyncEntry } from "./syncing-store.svelte";
+import { SyncingStore, type SitePackSyncEntry } from "./syncing-store";
 import type { SitePackCreationStatus } from "$engine-client";
 
 /**

@@ -122,7 +122,7 @@ gates that must pass before publishing a release.
 |------|---------|
 | `ace-engine.exe` | `AceEngine` service: blocking, proxy, local API, lock gate, watchdog heartbeat client |
 | `ace-watchdog.exe` | `AceEngineWatchdog` LocalSystem service: engine recovery and hang detection |
-| `ace-app.exe` | Desktop user interface (Tauri + SvelteKit) |
+| `ace-app.exe` | Desktop user interface (Tauri 2 + SolidJS 2.0) |
 | `ace-redirect.exe` | URL scheme handler (`aceblocker://`) |
 | `install-cert.exe` | MITM root CA certificate installer |
 | `wintun.dll` | WireGuard's signed TUN library (loads its kernel component on demand) |

@@ -9,7 +9,7 @@ Those projects have separate release policies.
 `.github/workflows/ci.yml` runs on pushes to `main`, pull requests, and
 manual dispatch:
 
-- Bun locked install, Svelte/TypeScript checks, Vitest unit tests, and frontend build.
+- Bun locked install, SolidJS 2.0/TypeScript checks, Vitest unit tests, and frontend build.
 - Rust workspace compilation (including Tauri), service release checks,
   engine remoc RPC and schedule tests, and watchdog binary/protocol tests on
   Windows x64 and Linux x64. The full engine test suite also contains
@@ -28,7 +28,7 @@ they are not auto-merged.
 Run **Desktop release candidates (Windows and Linux)** manually from `main`.
 Specify a three-part `version`, such as `0.3.0`. The workflow now rejects
 versions not already aligned in the engine, watchdog, release verifier,
-Tauri Rust/config and Svelte package manifests; the MSI packaging version
+Tauri Rust/config and Solid frontend package manifests; the MSI packaging version
 alone is not authoritative.
 
 After **both** builds pass, the workflow checks artifact hashes and commit provenance.

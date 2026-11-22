@@ -1,7 +1,2 @@
-import Root from "./textarea.svelte";
-
-export {
-    Root,
-    //
-    Root as Textarea,
-};
+/** Public SolidJS 2 component API; Svelte component exports are retired. */
+export * from "./solid";

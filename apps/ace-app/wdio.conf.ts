@@ -9,7 +9,11 @@ const appBinary = fileURLToPath(
 
 export const config: Options.Testrunner = {
     runner: "local",
-    specs: ["./e2e/native/**/*.spec.ts"],
+    // Default native gate is read-only. Spanish screenshot QA changes the
+    // persisted locale and writes files; run it only when explicitly opted in.
+    specs: process.env.ACE_NATIVE_VISUAL_QA === "1"
+        ? ["./e2e/native/**/*.spec.ts"]
+        : ["./e2e/native/read-only.smoke.spec.ts"],
     maxInstances: 1,
     services: [
         [

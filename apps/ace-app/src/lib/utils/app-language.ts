@@ -1,7 +1,7 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { load } from "@tauri-apps/plugin-store";
 import { getLocale, setLocale } from "$lib/paraglide/runtime";
-import { localizationStore } from "$lib/stores/localization.svelte";
+import { localizationStore } from "$lib/stores/localization";
 import {
     loadLanguagePreference,
     resolveAppLocale,
@@ -48,9 +48,12 @@ async function systemLocale(): Promise<string | null> {
 
 async function applyPreference(preference: LanguagePreference) {
     const locale = resolveAppLocale(preference, await systemLocale());
+    // The desktop is now a static Solid SPA; SvelteKit's old server-side
+    // %lang% substitution is gone. Keep the accessible document language current.
+    if (typeof document !== "undefined") document.documentElement.lang = locale;
     if (getLocale() !== locale) {
-        // Paraglide's cookie-backed strategy reloads to update the entire
-        // hydrated app, including text initialized outside Svelte components.
+        // Paraglide reloads this static Solid SPA at the same URL, ensuring
+        // module-scoped labels update to the newly selected locale.
         await setLocale(locale);
     }
 }

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const projectRoot = path.resolve(import.meta.dir, "..");
-const pathsToRemove = [".svelte-kit", "node_modules/.vite"];
+const pathsToRemove = ["node_modules/.vite", "build"];
 
 console.log("Clearing cache...");
 

@@ -1,6 +1,6 @@
 # Build performance audit (2026-11-01)
 
-This audit covers the independent `ace-blocker` workspace and its Tauri/SvelteKit app.
+This historical audit covers the pre-migration Tauri/SvelteKit version of `ace-blocker`. For the current SolidJS 2.0 frontend, see `apps/ace-app/docs/SOLIDJS_2_PORT.md`.
 The values count resolved dependency-graph entries, **not cold-build seconds**.
 They do not measure CI time savings.
 

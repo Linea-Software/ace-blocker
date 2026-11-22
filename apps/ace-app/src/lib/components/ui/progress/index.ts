@@ -1,7 +1,2 @@
-import Root from "./progress.svelte";
-
-export {
-    Root,
-    //
-    Root as Progress,
-};
+/** Public SolidJS 2 component API; Svelte component exports are retired. */
+export * from "./solid";

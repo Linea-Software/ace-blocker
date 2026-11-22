@@ -11,7 +11,7 @@ initial snapshot, not a Git-history merge.
 - `crates/ace-watchdog/`: independent Rust watchdog service executable.
 - `crates/ace-watchdog-protocol/`: shared heartbeat / maintenance protocol.
 - `crates/ace-tun/`, `crates/mitm-proxy/`, `crates/ace-domain-blocklist/`: engine dependencies.
-- `apps/ace-app/`: SvelteKit frontend + Rust Tauri crate in `src-tauri/`.
+- `apps/ace-app/`: SolidJS 2.0/Vite desktop frontend + Rust Tauri crate in `src-tauri/`. See [frontend porting guide](apps/ace-app/docs/SOLIDJS_2_PORT.md).
 - `installer/`: existing WiX 4 MSI installer, including offline site packs.
 
 **Runtime isolation is unchanged.** The engine and watchdog stay separate
