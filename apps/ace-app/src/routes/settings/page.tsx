@@ -21,7 +21,10 @@ function isTheme(value: unknown): value is Theme {
 }
 
 export default function SettingsPage() {
-    const state = { selectedTheme: "system" as Theme, showDebugSettings: import.meta.env.DEV };
+    const state = {
+        selectedTheme: "system" as Theme,
+        showDebugSettings: import.meta.env.DEV,
+    };
     reactiveFields(state, ["selectedTheme", "showDebugSettings"]);
     let userChangedTheme = false;
     let pendingSave: Promise<void> = Promise.resolve();
@@ -33,14 +36,18 @@ export default function SettingsPage() {
         state.selectedTheme = themeMode();
         if (!import.meta.env.DEV && isTauri()) {
             void invoke<boolean>("is_debug_mode")
-                .then(isDebug => { state.showDebugSettings = isDebug; })
-                .catch(() => { state.showDebugSettings = false; });
+                .then((isDebug) => {
+                    state.showDebugSettings = isDebug;
+                })
+                .catch(() => {
+                    state.showDebugSettings = false;
+                });
         }
         settingsStore = load("settings.json");
         void (async () => {
             try {
                 const store = await settingsStore;
-                const saved = await store.get<{value: string}>("theme");
+                const saved = await store.get<{ value: string }>("theme");
                 if (!userChangedTheme && isTheme(saved?.value)) {
                     state.selectedTheme = saved.value;
                     applyTheme(saved.value);
@@ -49,7 +56,6 @@ export default function SettingsPage() {
                 console.error("Failed to load settings store:", error);
             }
         })();
-
     });
 
     function handleThemeChange(value: string) {
@@ -57,19 +63,32 @@ export default function SettingsPage() {
         userChangedTheme = true;
         state.selectedTheme = value;
         applyTheme(value);
-        pendingSave = pendingSave.then(async () => {
-            const store = await (settingsStore ?? load("settings.json"));
-            await store.set("theme", { value });
-            await store.save();
-        }).catch((error: unknown) => {
-            console.error("Failed to save settings:", error);
-        });
+        pendingSave = pendingSave
+            .then(async () => {
+                const store = await (settingsStore ?? load("settings.json"));
+                await store.set("theme", { value });
+                await store.save();
+            })
+            .catch((error: unknown) => {
+                console.error("Failed to save settings:", error);
+            });
     }
 
     return (
-        <PageLayout width="narrow" header={<PageHeader title={m.settings()} subtitle={m.settings_description()} />}>
+        <PageLayout
+            width="narrow"
+            header={
+                <PageHeader
+                    title={m.settings()}
+                    subtitle={m.settings_description()}
+                />
+            }
+        >
             <div class="grid gap-7">
-                <AppearanceSection selectedTheme={state.selectedTheme} onThemeChange={handleThemeChange} />
+                <AppearanceSection
+                    selectedTheme={state.selectedTheme}
+                    onThemeChange={handleThemeChange}
+                />
                 <div class="settings-rule" aria-hidden="true"></div>
                 <LanguageSection />
                 <div class="settings-rule" aria-hidden="true"></div>
@@ -80,10 +99,12 @@ export default function SettingsPage() {
                 <ProductUpdateSection />
                 <div class="settings-rule" aria-hidden="true"></div>
                 <ResistanceScriptsUpdateSection />
-                {state.showDebugSettings ? (<>
-                    <div class="settings-rule" aria-hidden="true"></div>
-                    <DebugSection />
-                </>) : null}
+                {state.showDebugSettings ? (
+                    <>
+                        <div class="settings-rule" aria-hidden="true"></div>
+                        <DebugSection />
+                    </>
+                ) : null}
             </div>
         </PageLayout>
     );

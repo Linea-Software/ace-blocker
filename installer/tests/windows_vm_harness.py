@@ -9,6 +9,7 @@ Usage:
   python3 installer/tests/windows_vm_harness.py install --msi 'C:\Windows\Temp\AceBlocker-0.1.0.msi'
   python3 installer/tests/windows_vm_harness.py uninstall --msi 'C:\Windows\Temp\AceBlocker-0.1.0.msi'
 """
+
 import argparse
 import base64
 import json
@@ -42,7 +43,16 @@ class Guest:
         if arguments is not None:
             request["arguments"] = arguments
         result = subprocess.run(
-            ["virsh", "-c", self.connect, "qemu-agent-command", self.vm, "--timeout", "30", json.dumps(request)],
+            [
+                "virsh",
+                "-c",
+                self.connect,
+                "qemu-agent-command",
+                self.vm,
+                "--timeout",
+                "30",
+                json.dumps(request),
+            ],
             check=False,
             text=True,
             capture_output=True,
@@ -61,7 +71,13 @@ class Guest:
             "guest-exec",
             {
                 "path": "powershell.exe",
-                "arg": ["-NoLogo", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
+                "arg": [
+                    "-NoLogo",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-EncodedCommand",
+                    encoded,
+                ],
                 "capture-output": True,
             },
         )
@@ -71,10 +87,18 @@ class Guest:
             time.sleep(0.5)
             status = self.request("guest-exec-status", {"pid": pid})
             if status.get("exited", False):
+
                 def decode(name: str) -> str:
-                    return base64.b64decode(status.get(name, "")).decode("utf-8", "replace")
-                return ExecResult(status.get("exitcode", 1), decode("out-data"), decode("err-data"))
-        raise GuestError(f"Guest process {pid} did not finish within {timeout}s; may still be running")
+                    return base64.b64decode(status.get(name, "")).decode(
+                        "utf-8", "replace"
+                    )
+
+                return ExecResult(
+                    status.get("exitcode", 1), decode("out-data"), decode("err-data")
+                )
+        raise GuestError(
+            f"Guest process {pid} did not finish within {timeout}s; may still be running"
+        )
 
     def ping(self) -> None:
         self.request("guest-ping")
@@ -98,8 +122,12 @@ def main() -> int:
     inp.add_argument("--command")
     for action in ("install", "uninstall"):
         install = sub.add_parser(action)
-        install.add_argument("--msi", required=True, help="Windows guest-local MSI path")
-        install.add_argument("--log", default=f"C:\\Windows\\Temp\\AceBlocker-{action}.log")
+        install.add_argument(
+            "--msi", required=True, help="Windows guest-local MSI path"
+        )
+        install.add_argument(
+            "--log", default=f"C:\\Windows\\Temp\\AceBlocker-{action}.log"
+        )
 
     args = parser.parse_args()
     guest = Guest(args.vm, args.connect)
@@ -109,18 +137,22 @@ def main() -> int:
             print("OK: QEMU guest agent responsive")
             return 0
         if args.action == "smoke":
-            source = Path(__file__).with_name("win11_smoke.ps1").read_text(encoding="utf-8")
+            source = (
+                Path(__file__).with_name("win11_smoke.ps1").read_text(encoding="utf-8")
+            )
         elif args.action == "ps":
-            source = args.script.read_text(encoding="utf-8") if args.script else args.command
+            source = (
+                args.script.read_text(encoding="utf-8") if args.script else args.command
+            )
         else:
             verb = "/i" if args.action == "install" else "/x"
             # Execute the canonical MSI; never force service shutdown or bypass the uninstall lock check.
             source = (
                 '$ErrorActionPreference = "Stop"; '
-                f'$args = {quoted_ps(verb + " " + chr(34) + args.msi + chr(34) + " /qn /norestart /L*v " + chr(34) + args.log + chr(34))}; '
+                f"$args = {quoted_ps(verb + ' ' + chr(34) + args.msi + chr(34) + ' /qn /norestart /L*v ' + chr(34) + args.log + chr(34))}; "
                 '$p = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -Wait -PassThru; '
                 'Write-Output ("MSI_EXIT_CODE=" + $p.ExitCode); '
-                'if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit $p.ExitCode }'
+                "if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) { exit $p.ExitCode }"
             )
         result = guest.powershell(source, timeout=args.timeout)
         if result.stdout:

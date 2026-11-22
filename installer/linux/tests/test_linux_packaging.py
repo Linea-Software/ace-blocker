@@ -1,4 +1,5 @@
 """Static regression tests for the Linux release delivery of the policy guard."""
+
 from pathlib import Path
 import unittest
 
@@ -16,21 +17,21 @@ class LinuxBrowserPolicyPackagingTests(unittest.TestCase):
             'install -o root -g root -m 0755 "$package_dir/browser-proxy-policy.py"',
             shell,
         )
-        self.assertIn(
-            'Missing or unsafe browser proxy policy manager', shell
-        )
+        self.assertIn("Missing or unsafe browser proxy policy manager", shell)
         self.assertNotIn("browser-proxy-policy.py --enable\n", shell)
         # Installer only displays the opt-in command to a human.
         self.assertIn(
             'echo "To opt in after reviewing its effects: sudo '
-            '$install_dir/browser-proxy-policy.py --enable"', shell
+            '$install_dir/browser-proxy-policy.py --enable"',
+            shell,
         )
 
     def test_linux_release_archives_helper_and_validates_tests(self):
         release = RELEASE.read_text(encoding="utf-8")
         self.assertIn(
-            'install -m 0755 installer/linux/browser-proxy-policy.py '
-            '"release-input/$package/browser-proxy-policy.py"', release
+            "install -m 0755 installer/linux/browser-proxy-policy.py "
+            '"release-input/$package/browser-proxy-policy.py"',
+            release,
         )
         self.assertIn("python3 -m unittest discover -s installer/linux/tests", release)
 

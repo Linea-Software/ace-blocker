@@ -22,7 +22,8 @@ class ReleaseManifestContractTests(unittest.TestCase):
             msi = folder / "AceBlocker-0.2.0.msi"
             msi.write_bytes(b"fixture-msi-not-authenticode-signed")
             args = argparse.Namespace(
-                msi=str(msi), version="0.2.0",
+                msi=str(msi),
+                version="0.2.0",
                 package_url="https://aceblocker.com/release/AceBlocker-0.2.0.msi",
                 publisher_cert_sha256="ab" * 32,
                 minimum_installed_version="0.1.0",
@@ -35,20 +36,31 @@ class ReleaseManifestContractTests(unittest.TestCase):
                 release_manifest.DOMAIN + payload,
             )
             values = json.loads(payload)
-            self.assertEqual(values["sha256"], __import__("hashlib").sha256(msi.read_bytes()).hexdigest())
+            self.assertEqual(
+                values["sha256"],
+                __import__("hashlib").sha256(msi.read_bytes()).hexdigest(),
+            )
             self.assertEqual(values["minimumInstalledVersion"], "0.1.0")
             sig = folder / "signature.bin"
             sig.write_bytes(b"s" * 64)  # invalid cryptographic signature, assembly only
-            release_manifest.assemble(argparse.Namespace(
-                payload=str(folder / "output/release-payload.json"), signature=str(sig),
-                key_id="ace-stable-v1", output=str(folder / "envelope.json"),
-            ))
+            release_manifest.assemble(
+                argparse.Namespace(
+                    payload=str(folder / "output/release-payload.json"),
+                    signature=str(sig),
+                    key_id="ace-stable-v1",
+                    output=str(folder / "envelope.json"),
+                )
+            )
             envelope = json.loads((folder / "envelope.json").read_text())
             self.assertEqual(base64.b64decode(envelope["payload"]), payload)
             self.assertEqual(base64.b64decode(envelope["signature"]), b"s" * 64)
 
     def test_rejects_unsafe_url_version_and_missing_signature(self):
-        for url in ("http://aceblocker.com/a.msi", "file:///a.msi", "https://u:p@example.com/a.msi"):
+        for url in (
+            "http://aceblocker.com/a.msi",
+            "file:///a.msi",
+            "https://u:p@example.com/a.msi",
+        ):
             with self.assertRaises(ValueError):
                 release_manifest.safe_https_url(url)
         for version in ("0.2", "0.2.0-rc.1", "2.01.0", "../0.2.0"):
@@ -61,10 +73,14 @@ class ReleaseManifestContractTests(unittest.TestCase):
             signature = folder / "signature.bin"
             signature.write_bytes(b"")
             with self.assertRaises(ValueError):
-                release_manifest.assemble(argparse.Namespace(
-                    payload=str(payload), signature=str(signature),
-                    key_id="ace-stable-v1", output=str(folder / "env.json"),
-                ))
+                release_manifest.assemble(
+                    argparse.Namespace(
+                        payload=str(payload),
+                        signature=str(signature),
+                        key_id="ace-stable-v1",
+                        output=str(folder / "env.json"),
+                    )
+                )
 
     def test_wix_preserves_cas_and_blocks_locked_upgrades_until_authorized(self):
         tree = ET.parse(ROOT / "installer" / "installer.wxs")

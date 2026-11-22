@@ -69,7 +69,11 @@ pub fn inject_scripts_with_nonce(
         return html_content;
     }
 
-    info!("Injecting {} interventions for host: {} with CSP nonce", scripts.len(), host);
+    info!(
+        "Injecting {} interventions for host: {} with CSP nonce",
+        scripts.len(),
+        host
+    );
 
     let doc = Document::from(html_content);
     modify_meta_csp_with_nonce(&doc, nonce);
@@ -92,13 +96,8 @@ mod tests {
         let scripts = vec!["console.log('test');".to_string()];
         let nonce = "abc123";
 
-        let result = inject_scripts_with_nonce(
-            "example.com",
-            html.to_string(),
-            true,
-            &scripts,
-            nonce,
-        );
+        let result =
+            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, nonce);
 
         assert!(result.contains(r#"nonce="abc123""#));
         assert!(result.contains("console.log('test');"));
@@ -118,13 +117,8 @@ mod tests {
         </head><body></body></html>"#;
         let scripts = vec!["console.log('test');".to_string()];
 
-        let result = inject_scripts_with_nonce(
-            "example.com",
-            html.to_string(),
-            true,
-            &scripts,
-            "abc123",
-        );
+        let result =
+            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, "abc123");
 
         let result_doc = Document::from(result);
         let meta = result_doc.select("meta[http-equiv]").first();
@@ -140,13 +134,8 @@ mod tests {
         </head><body></body></html>"#;
         let scripts = vec!["console.log('test');".to_string()];
 
-        let result = inject_scripts_with_nonce(
-            "example.com",
-            html.to_string(),
-            true,
-            &scripts,
-            "abc123",
-        );
+        let result =
+            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, "abc123");
 
         let result_doc = Document::from(result);
         let content = result_doc
@@ -163,13 +152,8 @@ mod tests {
         let scripts = vec!["console.log('test');".to_string()];
         let nonce = "abc123";
 
-        let result = inject_scripts_with_nonce(
-            "example.com",
-            html.to_string(),
-            false,
-            &scripts,
-            nonce,
-        );
+        let result =
+            inject_scripts_with_nonce("example.com", html.to_string(), false, &scripts, nonce);
 
         assert_eq!(result, html);
     }
@@ -180,13 +164,8 @@ mod tests {
         let scripts: Vec<String> = vec![];
         let nonce = "abc123";
 
-        let result = inject_scripts_with_nonce(
-            "example.com",
-            html.to_string(),
-            true,
-            &scripts,
-            nonce,
-        );
+        let result =
+            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, nonce);
 
         assert_eq!(result, html);
     }

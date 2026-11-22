@@ -57,7 +57,7 @@ Resistance Mode added targets: `POST /resistance-mode/set-lock` (up to 90 days) 
     `http://localhost:1420`, `http://localhost:5173` (with `Vary: Origin`);
     preflight (`OPTIONS`) returns 204 only for allowed origins.
 - CORS alone is not a security boundary. The token provides authentication.
-  The allowlist prevents accidental cross-origin *reads* and reduces the browser attack surface.
+  The allowlist prevents accidental cross-origin _reads_ and reduces the browser attack surface.
 
 ### 3. Explicitly not done (and why)
 
@@ -82,6 +82,7 @@ Resistance Mode added targets: `POST /resistance-mode/set-lock` (up to 90 days) 
 ## Tests
 
 See `src/service/api/mod.rs` unit tests and `tests/api_test/`:
+
 - state-changing request without token → 401;
 - state-changing request with token → succeeds;
 - arbitrary origin (`Origin: https://evil.example`) cannot create a lock

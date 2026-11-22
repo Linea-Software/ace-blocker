@@ -50,4 +50,3 @@ pub(super) async fn delete_user_rule(
     manager.delete_user_defined_entry(user_rule_id)?;
     Ok(())
 }
-

@@ -37,4 +37,3 @@ tauri-plugin-log = "2.9"
 tauri-plugin-store = "2.4.5"
 tauri-plugin-dialog = "2.7.3"
 sys-locale = "0.3"
-

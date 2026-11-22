@@ -8,10 +8,10 @@
       "initialization_options": {
         "server": {
           "extraEnv": {
-            "RUSTUP_TOOLCHAIN": "nightly",
-          },
-        },
-      },
-    },
-  },
+            "RUSTUP_TOOLCHAIN": "nightly"
+          }
+        }
+      }
+    }
+  }
 }

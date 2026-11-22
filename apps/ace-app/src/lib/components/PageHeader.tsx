@@ -3,23 +3,41 @@ import { Show } from "solid-js";
 import { cn } from "$lib/utils";
 
 export default function PageHeader(props: {
-  title: string;
-  subtitle?: string;
-  align?: "center" | "end";
-  mobileCentered?: boolean;
-  class?: string;
-  children?: JSX.Element;
+    title: string;
+    subtitle?: string;
+    align?: "center" | "end";
+    mobileCentered?: boolean;
+    class?: string;
+    children?: JSX.Element;
 }) {
-  return (
-    <div class={cn("page-header", (props.align ?? "end") === "end" ? "page-header--end" : "page-header--center", props.class)}>
-      <div class={cn("page-header__identity", props.mobileCentered && "page-header__identity--mobile-centered")}>
-        <div class="page-header__copy">
-          <h1>{props.title}</h1>
-          <Show when={props.subtitle}><p>{props.subtitle}</p></Show>
-        </div>
-      </div>
-      <Show when={props.children}><div class="page-header__actions">{props.children}</div></Show>
-      <style>{`
+    return (
+        <div
+            class={cn(
+                "page-header",
+                (props.align ?? "end") === "end"
+                    ? "page-header--end"
+                    : "page-header--center",
+                props.class,
+            )}
+        >
+            <div
+                class={cn(
+                    "page-header__identity",
+                    props.mobileCentered &&
+                        "page-header__identity--mobile-centered",
+                )}
+            >
+                <div class="page-header__copy">
+                    <h1>{props.title}</h1>
+                    <Show when={props.subtitle}>
+                        <p>{props.subtitle}</p>
+                    </Show>
+                </div>
+            </div>
+            <Show when={props.children}>
+                <div class="page-header__actions">{props.children}</div>
+            </Show>
+            <style>{`
         .page-header { display: flex; justify-content: space-between; gap: 24px; }
         .page-header--end { align-items: flex-end; }
         .page-header--center { align-items: center; }
@@ -32,6 +50,6 @@ export default function PageHeader(props: {
           .page-header__actions { width: 100%; flex-wrap: wrap; }
         }
       `}</style>
-    </div>
-  );
+        </div>
+    );
 }

@@ -23,7 +23,10 @@ for (const [index, match] of matches.entries()) {
     const op = match[1];
     const next = matches[index + 1];
     // The Rust arms are the only source of argument-field requirements.
-    const arm = bridgeSource.slice(match.index, next?.index ?? bridgeSource.length);
+    const arm = bridgeSource.slice(
+        match.index,
+        next?.index ?? bridgeSource.length,
+    );
     const fields = new Set(
         [...arm.matchAll(/args\.get\("([^"]+)"\)/g)].map((field) => field[1]),
     );
@@ -36,8 +39,11 @@ describe("Rust/Tauri/TypeScript operation contract", () => {
     it("lists exactly the Rust bridge's operation names", () => {
         expect(operations.has("shutdown")).toBe(true);
         expect(Object.keys(rpcParameters)).not.toContain("shutdown");
-        expect([...operations.keys()].filter((op) => !webviewForbidden.has(op)).sort())
-            .toEqual(Object.keys(rpcParameters).sort());
+        expect(
+            [...operations.keys()]
+                .filter((op) => !webviewForbidden.has(op))
+                .sort(),
+        ).toEqual(Object.keys(rpcParameters).sort());
     });
 
     it("maps all required Rust JSON argument keys for every operation", () => {

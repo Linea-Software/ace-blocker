@@ -38,13 +38,13 @@ const TRANSIENT_FAILURE_BACKOFF_MS = 10_000;
  * request instead of stampeding the engine.
  */
 class UserStore {
-    isPro: boolean = (false);
-    tosAccepted: boolean = (true); // ignored until accountInfoLoaded
-    accountInfoLoaded: boolean = (false);
-    accountLoadStatus: "loading" | "error" | "ready" = ("loading");
+    isPro: boolean = false;
+    tosAccepted: boolean = true; // ignored until accountInfoLoaded
+    accountInfoLoaded: boolean = false;
+    accountLoadStatus: "loading" | "error" | "ready" = "loading";
     // Increments when the engine has refreshed Pro content and persisted the
     // latest site-pack catalogue; views can reload without restarting ACE.
-    proContentRevision = (0);
+    proContentRevision = 0;
     private proContentReady = false;
     private proContentSync: Promise<void> | null = null;
     private nextProContentAttempt = 0;
@@ -53,7 +53,13 @@ class UserStore {
     private refreshOnVisible: (() => void) | null = null;
 
     constructor() {
-        reactiveFields(this, ["isPro", "tosAccepted", "accountInfoLoaded", "accountLoadStatus", "proContentRevision"]);
+        reactiveFields(this, [
+            "isPro",
+            "tosAccepted",
+            "accountInfoLoaded",
+            "accountLoadStatus",
+            "proContentRevision",
+        ]);
         this.init();
     }
 
@@ -83,7 +89,10 @@ class UserStore {
     destroy() {
         if (this.refreshOnVisible && typeof window !== "undefined") {
             window.removeEventListener("focus", this.refreshOnVisible);
-            document.removeEventListener("visibilitychange", this.refreshOnVisible);
+            document.removeEventListener(
+                "visibilitychange",
+                this.refreshOnVisible,
+            );
             this.refreshOnVisible = null;
         }
         if (this.transientRetryTimer !== null) {
@@ -106,8 +115,7 @@ class UserStore {
     async refreshAfterLoginOrEntitlementChange(): Promise<void> {
         await this.withCoalescing(async () => {
             try {
-                const { data, error } = await refreshAccount({
-                });
+                const { data, error } = await refreshAccount({});
                 if (error) {
                     // Keep the last known-good entitlement; the periodic
                     // fetch will retry.
@@ -131,7 +139,9 @@ class UserStore {
      * Coalesces concurrent calls: while a refresh is in flight, further
      * triggers await the same operation instead of starting another request.
      */
-    private async withCoalescing(operation: () => Promise<void>): Promise<void> {
+    private async withCoalescing(
+        operation: () => Promise<void>,
+    ): Promise<void> {
         if (this.inFlight) return this.inFlight;
         const run = operation().finally(() => {
             this.inFlight = null;
@@ -145,8 +155,7 @@ class UserStore {
         // logout, engine reconnect) must never overlap.
         await this.withCoalescing(async () => {
             try {
-                const { data, error } = await getAccountInfo({
-                });
+                const { data, error } = await getAccountInfo({});
                 if (error) {
                     // Engine reachable but reported an error: keep the last
                     // known entitlement rather than flipping to Free. This is
@@ -218,7 +227,8 @@ class UserStore {
             this.proContentReady ||
             this.proContentSync ||
             Date.now() < this.nextProContentAttempt
-        ) return;
+        )
+            return;
 
         this.proContentSync = (async () => {
             try {
@@ -229,7 +239,9 @@ class UserStore {
                 if (error?.code === "content_update_unavailable") {
                     // The release server is offline. Nothing was updated, so
                     // keep the installed content and leave the sync retryable.
-                    console.warn("Pro content update unavailable; using installed content.");
+                    console.warn(
+                        "Pro content update unavailable; using installed content.",
+                    );
                     this.nextProContentAttempt = Date.now() + 60_000;
                     return;
                 }
@@ -243,7 +255,9 @@ class UserStore {
                 // Keep the confirmed entitlement even if content is offline;
                 // a later account refresh can retry without hammering the server.
                 if (error instanceof TypeError) {
-                    console.warn("Pro content update connection unavailable; retrying later.");
+                    console.warn(
+                        "Pro content update connection unavailable; retrying later.",
+                    );
                 } else {
                     console.error("Could not refresh Pro content:", error);
                 }

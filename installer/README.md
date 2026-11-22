@@ -37,12 +37,12 @@ setup UI. The installer uses only its checked-in branding files. Test with:
 python -m unittest discover -s installer/tests -p 'test_*.py' -v
 ```
 
-
 ## Prerequisites
 
 - [Rust toolchain](https://rustup.rs/) (for `ace-engine` and `ace-watchdog`)
 - [Bun](https://bun.sh/) (for `ace-app`)
 - [WiX Toolset v4](https://docs.firegiant.com/wix/), including the Util extension:
+
   ```powershell
   dotnet tool install -g wix --version 4.0.5
   & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add -g WixToolset.Util.wixext/4.0.5
@@ -118,17 +118,17 @@ gates that must pass before publishing a release.
 
 ## What gets installed
 
-| File | Purpose |
-|------|---------|
-| `ace-engine.exe` | `AceEngine` service: blocking, proxy, local API, lock gate, watchdog heartbeat client |
-| `ace-watchdog.exe` | `AceEngineWatchdog` LocalSystem service: engine recovery and hang detection |
-| `ace-app.exe` | Desktop user interface (Tauri 2 + SolidJS 2.0) |
-| `ace-redirect.exe` | URL scheme handler (`aceblocker://`) |
-| `install-cert.exe` | MITM root CA certificate installer |
-| `wintun.dll` | WireGuard's signed TUN library (loads its kernel component on demand) |
-| `bundled-packs/*` | Offline site-pack seed data |
-| `shutdown-engine.ps1` | Fail-safe uninstall/upgrade maintenance and graceful-shutdown helper |
-| `verify-product-signature.ps1` | Authenticode + pinned publisher-certificate SHA-256 verifier for staged MSI packages |
+| File                           | Purpose                                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `ace-engine.exe`               | `AceEngine` service: blocking, proxy, local API, lock gate, watchdog heartbeat client |
+| `ace-watchdog.exe`             | `AceEngineWatchdog` LocalSystem service: engine recovery and hang detection           |
+| `ace-app.exe`                  | Desktop user interface (Tauri 2 + SolidJS 2.0)                                        |
+| `ace-redirect.exe`             | URL scheme handler (`aceblocker://`)                                                  |
+| `install-cert.exe`             | MITM root CA certificate installer                                                    |
+| `wintun.dll`                   | WireGuard's signed TUN library (loads its kernel component on demand)                 |
+| `bundled-packs/*`              | Offline site-pack seed data                                                           |
+| `shutdown-engine.ps1`          | Fail-safe uninstall/upgrade maintenance and graceful-shutdown helper                  |
+| `verify-product-signature.ps1` | Authenticode + pinned publisher-certificate SHA-256 verifier for staged MSI packages  |
 
 The obsolete `ace-sentinel` kernel driver is not packaged or modified by this
 installer. The userspace watchdog is intentionally not a kernel/PPL substitute.

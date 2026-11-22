@@ -59,7 +59,6 @@ impl ResistanceModeManager {
         self.lock = lock;
         Ok(())
     }
-
 }
 
 impl Default for ResistanceModeManager {
@@ -116,7 +115,11 @@ mod tests {
     fn active_lock_cannot_be_weakened() {
         let mut manager = ResistanceModeManager::default();
         let end = chrono::Local::now() + chrono::Duration::hours(2);
-        manager.set_lock(Lock::from(crate::core::LockState::ActiveUntilLockEnd { end })).unwrap();
+        manager
+            .set_lock(Lock::from(crate::core::LockState::ActiveUntilLockEnd {
+                end,
+            }))
+            .unwrap();
         assert!(manager.set_lock(Lock::default()).is_err());
     }
 }

@@ -53,10 +53,10 @@ The **Ace Blocker server** is the canonical source of version metadata and downl
 
 These endpoints support the update flow:
 
-| Endpoint | Used For |
-|----------|----------|
-| `GET /api/v1/releases/latest` | Bulk version metadata for **all** assets: engine installer, resistance scripts, and site lists. Returns `GetLatestReleasesVersionDataResponse`. |
-| `GET /api/v1/scripts/resistance-mode` | Download URL + version for the latest resistance scripts zip. Returns `GetResistanceModeScriptsResponse { url, version }`. |
+| Endpoint                              | Used For                                                                                                                                        |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/releases/latest`         | Bulk version metadata for **all** assets: engine installer, resistance scripts, and site lists. Returns `GetLatestReleasesVersionDataResponse`. |
+| `GET /api/v1/scripts/resistance-mode` | Download URL + version for the latest resistance scripts zip. Returns `GetResistanceModeScriptsResponse { url, version }`.                      |
 
 `ContentUpdateService` in `src/service/updater.rs` uses `GET /api/v1/releases/latest` to compare versions. `NetworkManager::download_resistance_scripts()` uses the dedicated scripts endpoint to download the ZIP bundle.
 
@@ -66,11 +66,11 @@ These endpoints support the update flow:
 
 ### Update Cadence
 
-| Trigger | Cadence | Description |
-|---------|---------|-------------|
-| **Startup** | Every engine start, if `last_check > 24h` | Implemented in `src/service/content_updater.rs` via `UPDATE_FETCH_THRESHOLD`. Ensures freshness without aggressive polling. |
-| **Scheduled (Background)** | Every 24 hours while running | Background `tokio` task spawned in `run()` calls `ContentUpdateService::check_for_updates()` then `NetworkManager::apply_pending_content_updates()`. Uses `tokio::time::sleep` (timer wheel) — **no sleeping thread**. |
-| **Manual (API)** | User-initiated | Already exposed via `POST /resistance-mode/download-scripts` and `POST /site-lists/{id}/resync`. |
+| Trigger                    | Cadence                                   | Description                                                                                                                                                                                                            |
+| -------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Startup**                | Every engine start, if `last_check > 24h` | Implemented in `src/service/content_updater.rs` via `UPDATE_FETCH_THRESHOLD`. Ensures freshness without aggressive polling.                                                                                            |
+| **Scheduled (Background)** | Every 24 hours while running              | Background `tokio` task spawned in `run()` calls `ContentUpdateService::check_for_updates()` then `NetworkManager::apply_pending_content_updates()`. Uses `tokio::time::sleep` (timer wheel) — **no sleeping thread**. |
+| **Manual (API)**           | User-initiated                            | Already exposed via `POST /resistance-mode/download-scripts` and `POST /site-lists/{id}/resync`.                                                                                                                       |
 
 > [!NOTE]
 > In **debug** builds the background check interval can be changed at runtime via  
@@ -110,7 +110,7 @@ imports them so a fresh **offline** install has no "ghost" packs:
   Reject corrupt or schema-incompatible bundles without registering or importing data.
   Do not fail startup because of these bundles.
 - Precedence: `valid newer downloaded pack → valid bundled pack →
-  unavailable`. A row already backed by usable local rules is kept unless the
+unavailable`. A row already backed by usable local rules is kept unless the
   bundled content version is a strictly-newer bundle-style (`YYYY.MM.DD`)
   version; versions from the server that are not bundle-style are never
   overwritten (the bundle only fills gaps). Packs the user ignored are never
@@ -126,6 +126,7 @@ imports them so a fresh **offline** install has no "ghost" packs:
 **Update Mechanism**: Compare version strings and check whether the directory exists.
 
 **Flow**:
+
 1. `ContentUpdateService::resistance_scripts_require_update()` compares `resistance_mode_settings.scripts_version` with `GetLatestReleasesVersionDataResponse.resistance.version`.
 2. **Staging (no manager lock)**: Download the bundle with SHA-256 verification, size limits, and retries.
    Extract it to a staging directory with traversal protection.
@@ -145,10 +146,10 @@ See the tracking-removal implementation report for the complete deletion map.
 
 ### Atomicity & Rollback
 
-| Asset | Atomicity Strategy | Rollback on Failure |
-|-------|-------------------|---------------------|
-| **Site Packs** | Temp download/extract → validate → directory swap (same UUID) | Previous pack untouched until the swap; rollback renames it back |
-| **Resistance Scripts** | Temp download/verify/extract → directory swap → reload | Fall back to old `InjectableScriptTree` and old directory |
+| Asset                  | Atomicity Strategy                                            | Rollback on Failure                                              |
+| ---------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Site Packs**         | Temp download/extract → validate → directory swap (same UUID) | Previous pack untouched until the swap; rollback renames it back |
+| **Resistance Scripts** | Temp download/verify/extract → directory swap → reload        | Fall back to old `InjectableScriptTree` and old directory        |
 
 ---
 
@@ -319,14 +320,14 @@ The engine does **not** update ace-app. The app updates its own binary. The engi
 
 ## Recovery & Rollback
 
-| Scenario | Strategy |
-|----------|----------|
-| **Content update fails (any type)** | Keep old data in memory. Log a warning. Retry on the next check cycle (6h or next startup). No user-visible impact. |
-| **Engine binary download fails** | Partial download is discarded. Retry with exponential backoff: 1 min, 5 min, 15 min, then daily. |
-| **Engine binary checksum mismatch** | Delete the staged binary. Log an error. Do NOT proceed to restart. Retry download on next check. |
-| **New engine binary fails to start** | The old binary `ace-engine.old.exe` is kept. If the new one fails to start 3 times within 60 seconds, the watchdog restores the old binary and launches it. |
-| **Certificate broken by update** | The old `ace_ca.pem` and `ace_ca.key` are **never deleted** during an update. The new binary loads the existing certs from `{app_dir}/certs/`. |
-| **Database migration failure on new version** | If the new engine binary runs pending migrations that fail, it will not start successfully. The old binary can be restored (see above). |
+| Scenario                                      | Strategy                                                                                                                                                    |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Content update fails (any type)**           | Keep old data in memory. Log a warning. Retry on the next check cycle (6h or next startup). No user-visible impact.                                         |
+| **Engine binary download fails**              | Partial download is discarded. Retry with exponential backoff: 1 min, 5 min, 15 min, then daily.                                                            |
+| **Engine binary checksum mismatch**           | Delete the staged binary. Log an error. Do NOT proceed to restart. Retry download on next check.                                                            |
+| **New engine binary fails to start**          | The old binary `ace-engine.old.exe` is kept. If the new one fails to start 3 times within 60 seconds, the watchdog restores the old binary and launches it. |
+| **Certificate broken by update**              | The old `ace_ca.pem` and `ace_ca.key` are **never deleted** during an update. The new binary loads the existing certs from `{app_dir}/certs/`.              |
+| **Database migration failure on new version** | If the new engine binary runs pending migrations that fail, it will not start successfully. The old binary can be restored (see above).                     |
 
 ---
 
@@ -339,6 +340,7 @@ All new endpoints are under the `/system` route group (`src/service/api/route_sy
 Return the current update status for all assets.
 
 **Response**:
+
 ```json
 {
   "engine": {
@@ -358,7 +360,12 @@ Return the current update status for all assets.
   },
   "content": {
     "siteListsNeedingUpdate": [
-      { "id": "al-123", "name": "Adult Content", "currentVersion": "1.0", "latestVersion": "1.1" }
+      {
+        "id": "al-123",
+        "name": "Adult Content",
+        "currentVersion": "1.0",
+        "latestVersion": "1.1"
+      }
     ],
     "resistanceScriptsNeedUpdate": false
   }
@@ -370,6 +377,7 @@ Return the current update status for all assets.
 Start the engine binary download and staging process.
 
 **Response (202 Accepted)**:
+
 ```json
 {
   "state": "downloading",
@@ -382,6 +390,7 @@ Start the engine binary download and staging process.
 Read the current engine update state.
 
 **Response**:
+
 ```json
 {
   "state": "downloading|staging|ready|error",
@@ -488,6 +497,7 @@ pub enum UpdateState {
 
 The renamed `Updater` — owns the version metadata cache (`GetLatestReleasesVersionDataResponse`)
 and exposes comparison methods:
+
 - `resistance_scripts_require_update()`
 - `get_site_lists_to_update()`
 - `get_latest_installer_version()` (shared with `UpdateManager`)

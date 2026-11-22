@@ -1,308 +1,307 @@
+.guide-workspace {
+    display: grid;
+    gap: 28px;
+}
 
-    .guide-workspace {
-        display: grid;
-        gap: 28px;
-    }
+h2,
+h3 {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+}
 
-    h2,
-    h3 {
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-    }
+.replay-strip,
+.support-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 16px 17px;
+    border: 1px solid var(--border);
+    border-left: 5px solid var(--ace-ash);
+    border-radius: 5px;
+    background: var(--card);
+}
 
+.replay-strip h2,
+.support-strip h2 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.replay-strip p,
+.support-strip p {
+    margin: 4px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.replay-actions {
+    display: flex;
+    gap: 7px;
+    flex-shrink: 0;
+}
+
+.replay-actions button,
+.support-strip a {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 11px;
+    background: transparent;
+    color: var(--foreground);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.replay-actions button:hover,
+.support-strip a:hover {
+    background: var(--muted);
+}
+
+.guide-section {
+    display: grid;
+    gap: 13px;
+}
+
+.section-heading h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.section-heading p {
+    margin: 4px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.concept-ledger {
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--card);
+}
+
+.concept-row {
+    min-height: 73px;
+    display: grid;
+    grid-template-columns: 37px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--foreground);
+    text-decoration: none;
+    transition: background 140ms ease;
+}
+
+.concept-row:last-child {
+    border-bottom: 0;
+}
+
+.concept-row:hover {
+    background: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+
+.concept-mark {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted-foreground);
+}
+
+.concept-copy {
+    min-width: 0;
+}
+
+.concept-copy strong,
+.concept-copy > span {
+    display: block;
+}
+
+.concept-copy strong {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.concept-copy > span {
+    margin-top: 3px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.open-label {
+    color: var(--muted-foreground);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.setup-line {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--border);
+    list-style: none;
+}
+
+.setup-line li {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 11px;
+    padding: 15px 4px;
+    border-bottom: 1px solid var(--border);
+}
+
+.step-index {
+    padding-top: 2px;
+    color: var(--muted-foreground);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.setup-line h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.setup-line p {
+    margin: 4px 0 0;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+:global(.faq-ledger) {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--card);
+}
+
+.support-strip {
+    border-left-color: var(--ace-signal);
+}
+
+@container page (max-width: 560px) {
     .replay-strip,
     .support-strip {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 24px;
-        padding: 16px 17px;
-        border: 1px solid var(--border);
-        border-left: 5px solid var(--ace-ash);
-        border-radius: 5px;
-        background: var(--card);
-    }
-
-    .replay-strip h2,
-    .support-strip h2 {
-        margin: 0;
-        font-size: 17px;
-        font-weight: 600;
-    }
-
-    .replay-strip p,
-    .support-strip p {
-        margin: 4px 0 0;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.45;
+        align-items: stretch;
+        flex-direction: column;
     }
 
     .replay-actions {
-        display: flex;
-        gap: 7px;
-        flex-shrink: 0;
-    }
-
-    .replay-actions button,
-    .support-strip a {
-        min-height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 0 11px;
-        background: transparent;
-        color: var(--foreground);
-        font-size: 12px;
-        font-weight: 600;
-        text-decoration: none;
-        cursor: pointer;
-    }
-
-    .replay-actions button:hover,
-    .support-strip a:hover {
-        background: var(--muted);
-    }
-
-    .guide-section {
-        display: grid;
-        gap: 13px;
-    }
-
-    .section-heading h2 {
-        margin: 0;
-        font-size: 20px;
-        font-weight: 600;
-    }
-
-    .section-heading p {
-        margin: 4px 0 0;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.45;
-    }
-
-    .concept-ledger {
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        overflow: hidden;
-        background: var(--card);
+        flex-wrap: wrap;
     }
 
     .concept-row {
-        min-height: 73px;
-        display: grid;
-        grid-template-columns: 37px minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 13px;
-        padding: 10px 14px;
-        border-bottom: 1px solid var(--border);
-        color: var(--foreground);
-        text-decoration: none;
-        transition: background 140ms ease;
-    }
-
-    .concept-row:last-child {
-        border-bottom: 0;
-    }
-
-    .concept-row:hover {
-        background: color-mix(in srgb, var(--muted) 45%, transparent);
-    }
-
-    .concept-mark {
-        width: 34px;
-        height: 34px;
-        display: grid;
-        place-items: center;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        color: var(--muted-foreground);
-    }
-
-    .concept-copy {
-        min-width: 0;
-    }
-
-    .concept-copy strong,
-    .concept-copy > span {
-        display: block;
-    }
-
-    .concept-copy strong {
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 15px;
-        font-weight: 600;
-    }
-
-    .concept-copy > span {
-        margin-top: 3px;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.4;
+        grid-template-columns: 37px minmax(0, 1fr);
     }
 
     .open-label {
-        color: var(--muted-foreground);
-        font-size: 12px;
-        font-weight: 600;
+        grid-column: 2;
     }
+}
 
-    .setup-line {
-        margin: 0;
-        padding: 0;
-        border-top: 1px solid var(--border);
-        list-style: none;
-    }
+.setup-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
 
-    .setup-line li {
-        display: grid;
-        grid-template-columns: 32px minmax(0, 1fr);
-        gap: 11px;
-        padding: 15px 4px;
-        border-bottom: 1px solid var(--border);
-    }
+.start-action {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    flex-shrink: 0;
+    padding: 0 13px;
+    border-radius: 4px;
+    background: var(--foreground);
+    color: var(--background);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+}
 
-    .step-index {
-        padding-top: 2px;
-        color: var(--muted-foreground);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 11px;
-        font-weight: 500;
-        font-variant-numeric: tabular-nums;
-    }
+.start-action:hover {
+    opacity: 0.86;
+}
 
-    .setup-line h3 {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 600;
-    }
+.concept-disclosure {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--card);
+}
 
-    .setup-line p {
-        margin: 4px 0 0;
-        color: var(--muted-foreground);
-        font-size: 13px;
-        line-height: 1.5;
-    }
+.concept-disclosure summary {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 15px 18px;
+    cursor: pointer;
+    list-style: none;
+}
 
-    :global(.faq-ledger) {
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        background: var(--card);
-    }
+.concept-disclosure summary::-webkit-details-marker {
+    display: none;
+}
 
-    .support-strip {
-        border-left-color: var(--ace-signal);
-    }
+.concept-disclosure summary:hover {
+    background: var(--muted);
+}
 
-    @container page (max-width: 560px) {
-        .replay-strip,
-        .support-strip {
-            align-items: stretch;
-            flex-direction: column;
-        }
+.concept-disclosure summary small {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+}
 
-        .replay-actions {
-            flex-wrap: wrap;
-        }
+.concept-disclosure summary :global(svg) {
+    flex: 0 0 auto;
+    transition: transform 150ms ease;
+}
 
-        .concept-row {
-            grid-template-columns: 37px minmax(0, 1fr);
-        }
+.concept-disclosure[open] summary :global(svg) {
+    transform: rotate(180deg);
+}
 
-        .open-label {
-            grid-column: 2;
-        }
-    }
+.concept-disclosure .concept-ledger {
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+}
 
+@container page (max-width: 560px) {
     .setup-heading {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
+        align-items: flex-start;
+        flex-direction: column;
     }
+}
 
-    .start-action {
-        min-height: 38px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 9px;
-        flex-shrink: 0;
-        padding: 0 13px;
-        border-radius: 4px;
-        background: var(--foreground);
-        color: var(--background);
-        font-size: 12px;
-        font-weight: 600;
-        text-decoration: none;
-    }
-
-    .start-action:hover {
-        opacity: 0.86;
-    }
-
-    .concept-disclosure {
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        background: var(--card);
-    }
-
-    .concept-disclosure summary {
-        min-height: 76px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 15px 18px;
-        cursor: pointer;
-        list-style: none;
-    }
-
-    .concept-disclosure summary::-webkit-details-marker {
-        display: none;
-    }
-
-    .concept-disclosure summary:hover {
-        background: var(--muted);
-    }
-
-    .concept-disclosure summary small {
-        display: block;
-        margin-top: 5px;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.4;
-    }
-
+@media (prefers-reduced-motion: reduce) {
     .concept-disclosure summary :global(svg) {
-        flex: 0 0 auto;
-        transition: transform 150ms ease;
+        transition: none;
     }
-
-    .concept-disclosure[open] summary :global(svg) {
-        transform: rotate(180deg);
-    }
-
-    .concept-disclosure .concept-ledger {
-        border: 0;
-        border-top: 1px solid var(--border);
-        border-radius: 0;
-    }
-
-    @container page (max-width: 560px) {
-        .setup-heading {
-            align-items: flex-start;
-            flex-direction: column;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .concept-disclosure summary :global(svg) {
-            transition: none;
-        }
-    }
+}

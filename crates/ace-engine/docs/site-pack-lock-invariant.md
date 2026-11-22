@@ -18,24 +18,24 @@ A site pack `P` is **locked** at time `t` only when all these conditions apply:
    is active while `now <= end`; `ActiveDuringSchedule` is active only while the
    block's schedule matches).
 
-All other packs are *unlocked*. This includes missing packs, unsynced packs, and packs referenced only by unlocked blocks.
+All other packs are _unlocked_. This includes missing packs, unsynced packs, and packs referenced only by unlocked blocks.
 
 ## Why the `is_synced` conjunct
 
 An unsynced remote pack has no data to protect, for example after a cache clear.
 Keep this pack downloadable. Otherwise, the lock would reject `resync`.
 The pack could not receive data, even when a locked block already references it.
-Locking an unsynced pack would therefore *weaken* enforcement.
+Locking an unsynced pack would therefore _weaken_ enforcement.
 
 ## Enforced operations
 
-| Operation | Guard result when locked |
-|---|---|
-| `delete_site_pack` (manager + HTTP `DELETE /site-lists/{id}`) | `SitePackIsLocked` → HTTP 423, code `locked` |
-| `resync_site_pack` (download / resync) | `SitePackIsLocked` → HTTP 423, code `locked` |
-| `delete_site_pack_source` | `SitePackIsLocked` → HTTP 423, code `locked` |
-| HTTP delete while pack is *in use* by an unlocked block | HTTP 409, code `conflict` (must disconnect from the block first) |
-| Delete/resync/source-delete while a sync stream is running | `SitePackBusy` → HTTP 409, code `conflict` |
+| Operation                                                     | Guard result when locked                                         |
+| ------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `delete_site_pack` (manager + HTTP `DELETE /site-lists/{id}`) | `SitePackIsLocked` → HTTP 423, code `locked`                     |
+| `resync_site_pack` (download / resync)                        | `SitePackIsLocked` → HTTP 423, code `locked`                     |
+| `delete_site_pack_source`                                     | `SitePackIsLocked` → HTTP 423, code `locked`                     |
+| HTTP delete while pack is _in use_ by an unlocked block       | HTTP 409, code `conflict` (must disconnect from the block first) |
+| Delete/resync/source-delete while a sync stream is running    | `SitePackBusy` → HTTP 409, code `conflict`                       |
 
 Re-evaluate lock state under the manager write lock before each mutation.
 A stale frontend cannot bypass a lock change.

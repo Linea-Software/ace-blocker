@@ -36,7 +36,11 @@ export function parseLockEnd(raw: string): Date | null {
             ? result
             : null;
     }
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(raw)) {
+    if (
+        !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(
+            raw,
+        )
+    ) {
         return null;
     }
     const result = new Date(raw);
@@ -63,7 +67,8 @@ export function validateLockDraft(draft: LockDraft): LockError | null {
     }
     if (draft.original.state === "active_until_lock_end") {
         const previous = parseLockEnd(draft.original.end ?? "");
-        if (previous && end.getTime() <= previous.getTime()) return "date_extension";
+        if (previous && end.getTime() <= previous.getTime())
+            return "date_extension";
     }
     return null;
 }
@@ -72,11 +77,17 @@ export function buildLockPayload(draft: LockDraft): LockPayload | null {
     if (validateLockDraft(draft)) return null;
     if (!draft.enabled) return { lockState: "inactive" };
     return draft.type === "active_until_lock_end"
-        ? { lockState: draft.type, lockEnd: parseLockEnd(draft.end)!.toISOString() }
+        ? {
+              lockState: draft.type,
+              lockEnd: parseLockEnd(draft.end)!.toISOString(),
+          }
         : { lockState: draft.type };
 }
 
-export function isUnchangedLock(original: LockState, payload: LockPayload): boolean {
+export function isUnchangedLock(
+    original: LockState,
+    payload: LockPayload,
+): boolean {
     if (original.state !== payload.lockState) return false;
     if (original.state !== "active_until_lock_end") return true;
     const oldEnd = parseLockEnd(original.end ?? "");

@@ -1,94 +1,94 @@
 {
-  "version": 2,
-  "skills": {
-    "agent-loops": {
-      "source": "solidjs/solid",
-      "commit": "8a9bb265fb089f75ed1cc7f68becafb58567d78f",
-      "sourceType": "github",
-      "skillPath": "packages/diagnostics/skills/agent-loops/SKILL.md",
-      "computedHash": "8577c82ea98108b32b88ade02aaecbddb21a278166638eac2e679c6855574412"
-    },
-    "bun-development": {
-      "source": "sickn33/antigravity-awesome-skills",
-      "sourceType": "github",
-      "skillPath": "skills/bun-development/SKILL.md",
-      "computedHash": ""
-    },
-    "git-commit": {
-      "source": "github/awesome-copilot",
-      "sourceType": "github",
-      "skillPath": "skills/git-commit/SKILL.md",
-      "computedHash": ""
-    },
-    "i18n-localization": {
-      "source": "sickn33/antigravity-awesome-skills",
-      "sourceType": "github",
-      "skillPath": "skills/i18n-localization/SKILL.md",
-      "computedHash": ""
-    },
-    "reactivity-diagnostics": {
-      "source": "solidjs/solid",
-      "commit": "8a9bb265fb089f75ed1cc7f68becafb58567d78f",
-      "sourceType": "github",
-      "skillPath": "packages/solid/skills/reactivity-diagnostics/SKILL.md",
-      "computedHash": "75d737cb83c842dd69ab6b64395710c131e4312b294d0211123840bd063f7bea"
-    },
-    "shadcn": {
-      "source": "shadcn/ui",
-      "sourceType": "github",
-      "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": ""
-    },
-    "solid-2.0": {
-      "source": "solidjs/solid",
-      "commit": "8a9bb265fb089f75ed1cc7f68becafb58567d78f",
-      "sourceType": "github",
-      "skillPath": "packages/solid/skills/solid-2.0/SKILL.md",
-      "computedHash": "634a7ed28608d53a06256221f631c58932b8382dc56ae7a7101bf96e0b8fdf38"
-    },
-    "solidjs-v2-migration": {
-      "source": "khmm12/solidjs-v2-skills",
-      "commit": "7cfa176aee0ee2e7763d9a77b03f87fdb7f64bdb",
-      "sourceType": "github",
-      "skillPath": "skills/solidjs-v2-migration/SKILL.md",
-      "computedHash": "98e93f85debcf655d41faf59e144726b99772ed7ebcda618bb7b53ae2aca4e00"
-    },
-    "solidjs-v2-reviewer": {
-      "source": "khmm12/solidjs-v2-skills",
-      "commit": "7cfa176aee0ee2e7763d9a77b03f87fdb7f64bdb",
-      "sourceType": "github",
-      "skillPath": "skills/solidjs-v2-reviewer/SKILL.md",
-      "computedHash": "53cbc1ab4cbaad8611a5298c29d9dd1e823ae5be3ba3e7cb090a6668d53f4a9c"
-    },
-    "suggest-lucide-icons": {
-      "source": "nweii/agent-stuff",
-      "sourceType": "github",
-      "skillPath": "skills/suggest-lucide-icons/SKILL.md",
-      "computedHash": ""
-    },
-    "tailwind-v4-shadcn": {
-      "source": "secondsky/claude-skills",
-      "sourceType": "github",
-      "skillPath": "plugins/tailwind-v4-shadcn/skills/tailwind-v4-shadcn/SKILL.md",
-      "computedHash": ""
-    },
-    "tauri-v2": {
-      "source": "nodnarbnitram/claude-code-extensions",
-      "sourceType": "github",
-      "skillPath": ".claude/skills/tauri-v2/SKILL.md",
-      "computedHash": ""
-    },
-    "typescript-advanced-types": {
-      "source": "wshobson/agents",
-      "sourceType": "github",
-      "skillPath": "plugins/javascript-typescript/skills/typescript-advanced-types/SKILL.md",
-      "computedHash": ""
-    },
-    "zod": {
-      "source": "pproenca/dot-skills",
-      "sourceType": "github",
-      "skillPath": "skills/.curated/zod/SKILL.md",
-      "computedHash": ""
+    "version": 2,
+    "skills": {
+        "agent-loops": {
+            "source": "solidjs/solid",
+            "commit": "8a9bb265fb089f75ed1cc7f68becafb58567d78f",
+            "sourceType": "github",
+            "skillPath": "packages/diagnostics/skills/agent-loops/SKILL.md",
+            "computedHash": "8577c82ea98108b32b88ade02aaecbddb21a278166638eac2e679c6855574412"
+        },
+        "bun-development": {
+            "source": "sickn33/antigravity-awesome-skills",
+            "sourceType": "github",
+            "skillPath": "skills/bun-development/SKILL.md",
+            "computedHash": ""
+        },
+        "git-commit": {
+            "source": "github/awesome-copilot",
+            "sourceType": "github",
+            "skillPath": "skills/git-commit/SKILL.md",
+            "computedHash": ""
+        },
+        "i18n-localization": {
+            "source": "sickn33/antigravity-awesome-skills",
+            "sourceType": "github",
+            "skillPath": "skills/i18n-localization/SKILL.md",
+            "computedHash": ""
+        },
+        "reactivity-diagnostics": {
+            "source": "solidjs/solid",
+            "commit": "8a9bb265fb089f75ed1cc7f68becafb58567d78f",
+            "sourceType": "github",
+            "skillPath": "packages/solid/skills/reactivity-diagnostics/SKILL.md",
+            "computedHash": "75d737cb83c842dd69ab6b64395710c131e4312b294d0211123840bd063f7bea"
+        },
+        "shadcn": {
+            "source": "shadcn/ui",
+            "sourceType": "github",
+            "skillPath": "skills/shadcn/SKILL.md",
+            "computedHash": ""
+        },
+        "solid-2.0": {
+            "source": "solidjs/solid",
+            "commit": "8a9bb265fb089f75ed1cc7f68becafb58567d78f",
+            "sourceType": "github",
+            "skillPath": "packages/solid/skills/solid-2.0/SKILL.md",
+            "computedHash": "634a7ed28608d53a06256221f631c58932b8382dc56ae7a7101bf96e0b8fdf38"
+        },
+        "solidjs-v2-migration": {
+            "source": "khmm12/solidjs-v2-skills",
+            "commit": "7cfa176aee0ee2e7763d9a77b03f87fdb7f64bdb",
+            "sourceType": "github",
+            "skillPath": "skills/solidjs-v2-migration/SKILL.md",
+            "computedHash": "98e93f85debcf655d41faf59e144726b99772ed7ebcda618bb7b53ae2aca4e00"
+        },
+        "solidjs-v2-reviewer": {
+            "source": "khmm12/solidjs-v2-skills",
+            "commit": "7cfa176aee0ee2e7763d9a77b03f87fdb7f64bdb",
+            "sourceType": "github",
+            "skillPath": "skills/solidjs-v2-reviewer/SKILL.md",
+            "computedHash": "53cbc1ab4cbaad8611a5298c29d9dd1e823ae5be3ba3e7cb090a6668d53f4a9c"
+        },
+        "suggest-lucide-icons": {
+            "source": "nweii/agent-stuff",
+            "sourceType": "github",
+            "skillPath": "skills/suggest-lucide-icons/SKILL.md",
+            "computedHash": ""
+        },
+        "tailwind-v4-shadcn": {
+            "source": "secondsky/claude-skills",
+            "sourceType": "github",
+            "skillPath": "plugins/tailwind-v4-shadcn/skills/tailwind-v4-shadcn/SKILL.md",
+            "computedHash": ""
+        },
+        "tauri-v2": {
+            "source": "nodnarbnitram/claude-code-extensions",
+            "sourceType": "github",
+            "skillPath": ".claude/skills/tauri-v2/SKILL.md",
+            "computedHash": ""
+        },
+        "typescript-advanced-types": {
+            "source": "wshobson/agents",
+            "sourceType": "github",
+            "skillPath": "plugins/javascript-typescript/skills/typescript-advanced-types/SKILL.md",
+            "computedHash": ""
+        },
+        "zod": {
+            "source": "pproenca/dot-skills",
+            "sourceType": "github",
+            "skillPath": "skills/.curated/zod/SKILL.md",
+            "computedHash": ""
+        }
     }
-  }
 }

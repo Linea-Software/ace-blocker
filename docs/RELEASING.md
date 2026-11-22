@@ -54,7 +54,7 @@ missing required executables, scripts or bundled content. This gate checks relea
 It does not prove Authenticode signing or installation safety. Its offline regression tests run in ordinary desktop CI.
 
 **GitHub Actions downloads each workflow artifact as a ZIP**, but the Linux
-deliverable *inside* that ZIP is still `.tar.gz`. Keep the Linux tarball. Tar and gzip are more widely available than `unzip`.
+deliverable _inside_ that ZIP is still `.tar.gz`. Keep the Linux tarball. Tar and gzip are more widely available than `unzip`.
 Upload the inner tarball to the website, not GitHub's outer ZIP.
 
 The individual GitHub Actions artifacts are retained for 14 days; the draft
@@ -96,7 +96,7 @@ the root-owned `/usr/local/share/AceBlocker` directory, and enrolls the user
 identified by `SUDO_USER`. That user must log out and sign in again before the App can authenticate.
 If `SUDO_USER` is absent, explicitly add the intended desktop account to the group. The installer also installs the allowlisted
 `ace-redirect` desktop callback handler and attempts to make it the default
-`aceblocker://` handler for `SUDO_USER`. Verify in the *desktop user's*
+`aceblocker://` handler for `SUDO_USER`. Verify in the _desktop user's_
 session with `xdg-mime query default x-scheme-handler/aceblocker` (expected:
 `ace-blocker-handler.desktop`). If the installer could not set the association,
 run `xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker`

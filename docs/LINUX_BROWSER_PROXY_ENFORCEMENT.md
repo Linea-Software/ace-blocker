@@ -59,7 +59,7 @@ To change the selected browsers, first disable the owned policies.
 Then enable the new selection. The ownership journal is private to root, so the
 `--status` command should also be run with `sudo` after enabling.
 
-This also disables *legitimate* VPN extensions, debugging proxies, and corporate proxies.
+This also disables _legitimate_ VPN extensions, debugging proxies, and corporate proxies.
 It affects all users of the supported browsers.
 The policy stays active outside Ace Blocker's scheduled block times. It does not prevent a user with root access from
 modifying system policies.

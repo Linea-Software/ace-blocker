@@ -9,18 +9,18 @@ See `docs/IPC_ARCHITECTURE.md` and `TECH_DEBT_BACKLOG.md#td-001`.
 
 ## Required native cases
 
-| Case | Setup / invocation | Assertion |
-| --- | --- | --- |
-| Clean install | Install MSI as administrator, launch Ace App as standard user | Engine/watchdog are separate LocalSystem services; app connects to remoc |
-| Capability | Run normal WebView write and a write without a valid capability | Valid write succeeds when allowed; invalid write fails with typed 401/403; capability never reaches JS |
-| Pipe ACL | Inspect `\\.\pipe\AceBlockerEngineControlV1`; test standard and unauthorized/remote access | DACL and engine auth independently reject unauthorized callers |
-| Partial save | Inject failed rename, icon, rule, schedule, pack and safe-search RPCs | No false save success; editor reports uncertainty, refreshes authoritative state and refuses stale retry when refresh fails |
-| Stream | Import and resync normal, terminal FAILED, premature close and dropped connection | COMPLETED alone signals success; EOF/error never does |
-| Reconnect | Restart only engine test service during reads, writes and progress streams | Typed transport error followed by successful reconnect; watchdog still operates independently |
-| Lock | Lock a block; attempt deactivation, schedule loosening, delete and shutdown via WebView | Every prohibited mutation is rejected by engine even if JavaScript is compromised |
-| Maintenance | Use documented installer `ace-engine --request-shutdown` under allowed and locked conditions | Authorized maintenance succeeds only when policy permits; uninstall remains refused while locked |
-| WebView surface | Try an arbitrary `invoke("engine_call", {op:"shutdown",args:{}})` | **After implementation:** a normal WebView request must fail with `status: 403` and `code: desktop_operation_forbidden` before engine connection; confirm in installed Tauri runtime |
-| Browser enforcement | Start browser before engine and after engine; lock and restart services | Enforcement and proxy safeguards remain active independently from UI |
+| Case                | Setup / invocation                                                                           | Assertion                                                                                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Clean install       | Install MSI as administrator, launch Ace App as standard user                                | Engine/watchdog are separate LocalSystem services; app connects to remoc                                                                                                             |
+| Capability          | Run normal WebView write and a write without a valid capability                              | Valid write succeeds when allowed; invalid write fails with typed 401/403; capability never reaches JS                                                                               |
+| Pipe ACL            | Inspect `\\.\pipe\AceBlockerEngineControlV1`; test standard and unauthorized/remote access   | DACL and engine auth independently reject unauthorized callers                                                                                                                       |
+| Partial save        | Inject failed rename, icon, rule, schedule, pack and safe-search RPCs                        | No false save success; editor reports uncertainty, refreshes authoritative state and refuses stale retry when refresh fails                                                          |
+| Stream              | Import and resync normal, terminal FAILED, premature close and dropped connection            | COMPLETED alone signals success; EOF/error never does                                                                                                                                |
+| Reconnect           | Restart only engine test service during reads, writes and progress streams                   | Typed transport error followed by successful reconnect; watchdog still operates independently                                                                                        |
+| Lock                | Lock a block; attempt deactivation, schedule loosening, delete and shutdown via WebView      | Every prohibited mutation is rejected by engine even if JavaScript is compromised                                                                                                    |
+| Maintenance         | Use documented installer `ace-engine --request-shutdown` under allowed and locked conditions | Authorized maintenance succeeds only when policy permits; uninstall remains refused while locked                                                                                     |
+| WebView surface     | Try an arbitrary `invoke("engine_call", {op:"shutdown",args:{}})`                            | **After implementation:** a normal WebView request must fail with `status: 403` and `code: desktop_operation_forbidden` before engine connection; confirm in installed Tauri runtime |
+| Browser enforcement | Start browser before engine and after engine; lock and restart services                      | Enforcement and proxy safeguards remain active independently from UI                                                                                                                 |
 
 For each case, record the VM image and snapshot IDs. Record the test commit and executable hashes. Record the commands and steps. Record the expected and observed status and code. Keep a redacted copy of the console output. Never record capability bytes. Keep service, watchdog, and installer tests in their own test suites. Do not copy privileged logic into the WebView.
 

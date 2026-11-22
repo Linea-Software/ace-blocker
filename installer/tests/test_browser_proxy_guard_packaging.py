@@ -3,6 +3,7 @@
 These are static cross-platform checks. They do NOT claim that Windows browser
 enterprise policies were applied or honored at runtime.
 """
+
 from pathlib import Path
 import unittest
 import xml.etree.ElementTree as ET
@@ -18,7 +19,10 @@ NAMESPACE = {"w": "http://wixtoolset.org/schemas/v4/wxs"}
 class BrowserProxyGuardPackagingTests(unittest.TestCase):
     def test_policy_script_is_staged_and_included(self):
         contents = PACKAGER.read_text(encoding="utf-8")
-        self.assertIn('Copy-Item -LiteralPath $BrowserProxyGuardScript -Destination $Artifacts', contents)
+        self.assertIn(
+            "Copy-Item -LiteralPath $BrowserProxyGuardScript -Destination $Artifacts",
+            contents,
+        )
         root = ET.parse(MSI).getroot()
         matching_files = root.findall(
             ".//w:File[@Name='browser-proxy-extension-policy.ps1']", NAMESPACE
@@ -32,17 +36,22 @@ class BrowserProxyGuardPackagingTests(unittest.TestCase):
     def test_msi_never_enables_policy_silently(self):
         root = ET.parse(MSI).getroot()
         actions = root.findall(".//w:CustomAction", NAMESPACE)
-        self.assertFalse(any(
-            "browser-proxy-extension-policy.ps1" in action.get("ExeCommand", "")
-            and "-Action Enable" in action.get("ExeCommand", "")
-            for action in actions
-        ))
+        self.assertFalse(
+            any(
+                "browser-proxy-extension-policy.ps1" in action.get("ExeCommand", "")
+                and "-Action Enable" in action.get("ExeCommand", "")
+                for action in actions
+            )
+        )
         actions_with_cleanup = [
-            action for action in actions
+            action
+            for action in actions
             if action.get("Id") == "CA_RemoveBrowserProxyGuard"
         ]
         self.assertEqual(len(actions_with_cleanup), 1)
-        self.assertIn("-Action DisableIfOwned", actions_with_cleanup[0].get("ExeCommand", ""))
+        self.assertIn(
+            "-Action DisableIfOwned", actions_with_cleanup[0].get("ExeCommand", "")
+        )
         sequences = root.findall(
             ".//w:Custom[@Action='CA_RemoveBrowserProxyGuard']", NAMESPACE
         )
@@ -58,8 +67,8 @@ class BrowserProxyGuardPackagingTests(unittest.TestCase):
         self.assertIn("Assert-NoUnownedChanges", script)
         self.assertIn("Write-State", script)
         self.assertIn("Read-State", script)
-        self.assertIn('blocked_permissions', script)
-        self.assertIn('Firefox 153', script)
+        self.assertIn("blocked_permissions", script)
+        self.assertIn("Firefox 153", script)
         self.assertIn("ProxyMode", script)
         self.assertIn("Firefox proxy locked", script)
 

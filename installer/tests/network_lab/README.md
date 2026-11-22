@@ -11,20 +11,20 @@ test case. Dozens of test cases may share an environment snapshot.
 
 ## What exists, and what does not
 
-| Function | Current behavior |
-| --- | --- |
-| Approved VM images and installation ISO inventory | Read through `vm_image`, `vm_iso` |
-| Forks with NAT/private NIC, QGA and optional QMP display | `vm(create)` from **human-approved** image names |
-| VM identification and state | `vm(status)`; fail closed on wrong ID/image |
-| Environment snapshot save/restore | `vm_snapshot`, stopped **legacy-BIOS QEMU QCOW2** only |
-| Environment image promotion | `vm_snapshot(promote)` for reusable approved bases |
-| Guest package provisioning/route checks | `vm_guest_status` and `vm_exec` (inside the guest) |
-| Guest file transfers | `vm_upload`, `vm_download` (1 MiB maximum) |
-| Guest GUI | `vm_desktop_screenshot`, `vm_desktop_input` |
-| Two-fork WireGuard setup | QEMU private point-to-point NICs plus guest-only WG/nftables |
-| Fully installed Linux OS from raw ISO | **Not automatic**; installation, QGA and Ace must be provisioned into approved base images first |
-| Windows 11 QEMU UEFI/TPM | **Not supported** by the current NovaGPT Linux QEMU fork backend |
-| Browser-origin anti-bypass assertions | **Not implemented**; marked NOT_RUN, never security PASS |
+| Function                                                 | Current behavior                                                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Approved VM images and installation ISO inventory        | Read through `vm_image`, `vm_iso`                                                                |
+| Forks with NAT/private NIC, QGA and optional QMP display | `vm(create)` from **human-approved** image names                                                 |
+| VM identification and state                              | `vm(status)`; fail closed on wrong ID/image                                                      |
+| Environment snapshot save/restore                        | `vm_snapshot`, stopped **legacy-BIOS QEMU QCOW2** only                                           |
+| Environment image promotion                              | `vm_snapshot(promote)` for reusable approved bases                                               |
+| Guest package provisioning/route checks                  | `vm_guest_status` and `vm_exec` (inside the guest)                                               |
+| Guest file transfers                                     | `vm_upload`, `vm_download` (1 MiB maximum)                                                       |
+| Guest GUI                                                | `vm_desktop_screenshot`, `vm_desktop_input`                                                      |
+| Two-fork WireGuard setup                                 | QEMU private point-to-point NICs plus guest-only WG/nftables                                     |
+| Fully installed Linux OS from raw ISO                    | **Not automatic**; installation, QGA and Ace must be provisioned into approved base images first |
+| Windows 11 QEMU UEFI/TPM                                 | **Not supported** by the current NovaGPT Linux QEMU fork backend                                 |
+| Browser-origin anti-bypass assertions                    | **Not implemented**; marked NOT_RUN, never security PASS                                         |
 
 No subscriptions are required for the owned WireGuard/OpenVPN/TOR tests.
 Proton/Windscribe Free, Tor Browser and I2P desktop clients still require a
@@ -247,7 +247,7 @@ python3 installer/tests/network_lab/run.py connect --env ubuntu-wireguard \
 and a private point-to-point NIC**. NAT may offer a bypass path when the
 tunnel goes down. Do **not** call this configuration a no-leak or kill-switch
 test. For a stronger leak experiment, prepare a separate client image with
-required packages already installed and fork it using *only* the private
+required packages already installed and fork it using _only_ the private
 `connect:*` NIC. Validate DNS, IPv6 and origin-server logs independently.
 This WireGuard fixture is IPv4-only.
 
@@ -273,7 +273,7 @@ python3 installer/tests/network_lab/run.py pointer --env ubuntu-tor \
   --x 12000 --y 9000 --button left
 ```
 
-The `upload` and `download` actions require explicit absolute *guest*
+The `upload` and `download` actions require explicit absolute _guest_
 paths, remain limited to 1 MiB per call and use the NovaGPT Guest Agent.
 Downloaded files and screenshots are written in the private `.artifacts/`
 folder with restrictive permissions; they are not committed to Git.

@@ -1,82 +1,169 @@
-
+.site-pack-row {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    gap: 12px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 9px 14px 9px 0;
+    background: var(--card);
+    color: var(--foreground);
+    text-align: left;
+    cursor: pointer;
+    transition: background 140ms ease;
+}
+.site-pack-row:hover,
+.site-pack-row.selected {
+    background: color-mix(in srgb, var(--muted) 52%, var(--card));
+}
+.site-pack-row:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+}
+.site-pack-row .state-rail {
+    align-self: stretch;
+    flex: 0 0 4px;
+    margin-block: -9px;
+    background: var(--ace-ash);
+}
+.site-pack-row.locked .state-rail,
+.site-pack-row.pro-required .state-rail {
+    background: var(--ace-signal);
+}
+.site-pack-row.failed .state-rail {
+    background: var(--ace-danger);
+}
+.site-pack-row.syncing .state-rail {
+    background: var(--ace-information);
+}
+.site-pack-row .pack-icon {
+    display: grid;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--muted);
+}
+.site-pack-row .identity {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+}
+.site-pack-row .identity-heading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+.site-pack-row .identity-heading strong {
+    overflow: hidden;
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.site-pack-row .tier-label {
+    flex: 0 0 auto;
+    color: var(--muted-foreground);
+    font:
+        500 11px "IBM Plex Mono",
+        monospace;
+}
+.site-pack-row .subtitle {
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.site-pack-row .coverage {
+    flex: 0 0 auto;
+    color: var(--muted-foreground);
+    font:
+        500 12px "IBM Plex Mono",
+        monospace;
+    white-space: nowrap;
+}
+.site-pack-row .state {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted-foreground);
+    font-size: 11px;
+    white-space: nowrap;
+}
+.site-pack-row.locked .state,
+.site-pack-row.pro-required .state {
+    color: var(--ace-signal-deep);
+}
+.site-pack-row.failed .state {
+    color: var(--ace-danger);
+}
+.site-pack-row .chevron {
+    flex: 0 0 auto;
+    color: var(--muted-foreground);
+}
+.site-pack-row.variant-only {
+    min-height: 52px;
+    padding-left: 18px;
+}
+.site-pack-row.variant-only .state-rail {
+    background: transparent;
+}
+.site-pack-row .progress-track {
+    position: absolute;
+    bottom: 0;
+    left: 4px;
+    right: 0;
+    height: 2px;
+    background: var(--muted);
+}
+.site-pack-row .progress-track > span {
+    display: block;
+    height: 100%;
+    background: var(--ace-information);
+}
+.site-pack-row .spinner {
+    animation: spin 900ms linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+@media (max-width: 650px) {
     .site-pack-row {
-        position: relative;
-        display: flex;
-        width: 100%;
-        min-height: 58px;
-        align-items: center;
-        gap: 12px;
-        border: 0;
-        border-bottom: 1px solid var(--border);
-        padding: 9px 14px 9px 0;
-        background: var(--card);
-        color: var(--foreground);
-        text-align: left;
-        cursor: pointer;
-        transition: background 140ms ease;
+        flex-wrap: wrap;
+        gap: 6px 10px;
     }
-    .site-pack-row:hover, .site-pack-row.selected {
-        background: color-mix(in srgb, var(--muted) 52%, var(--card));
+    .site-pack-row .identity {
+        flex-basis: calc(100% - 105px);
     }
-    .site-pack-row:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: -2px;
+    .site-pack-row .coverage {
+        margin-left: 48px;
     }
-    .site-pack-row .state-rail {
-        align-self: stretch;
-        flex: 0 0 4px;
-        margin-block: -9px;
-        background: var(--ace-ash);
+    .site-pack-row.variant-only .coverage {
+        margin-left: 0;
     }
-    .site-pack-row.locked .state-rail, .site-pack-row.pro-required .state-rail { background: var(--ace-signal); }
-    .site-pack-row.failed .state-rail { background: var(--ace-danger); }
-    .site-pack-row.syncing .state-rail { background: var(--ace-information); }
-    .site-pack-row .pack-icon {
-        display: grid;
-        flex: 0 0 34px;
-        width: 34px;
-        height: 34px;
-        place-items: center;
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        background: var(--muted);
+    .site-pack-row .state {
+        margin-left: auto;
     }
-    .site-pack-row .identity { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 3px; }
-    .site-pack-row .identity-heading { display: flex; align-items: center; gap: 9px; min-width: 0; }
-    .site-pack-row .identity-heading strong {
-        overflow: hidden;
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 15px;
-        font-weight: 600;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+    .site-pack-row .chevron {
+        margin-left: auto;
     }
-    .site-pack-row .tier-label {
-        flex: 0 0 auto;
-        color: var(--muted-foreground);
-        font: 500 11px "IBM Plex Mono", monospace;
+}
+@media (prefers-reduced-motion: reduce) {
+    .site-pack-row {
+        transition: none;
     }
-    .site-pack-row .subtitle { overflow: hidden; color: var(--muted-foreground); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-    .site-pack-row .coverage { flex: 0 0 auto; color: var(--muted-foreground); font: 500 12px "IBM Plex Mono", monospace; white-space: nowrap; }
-    .site-pack-row .state { display: flex; align-items: center; gap: 5px; color: var(--muted-foreground); font-size: 11px; white-space: nowrap; }
-    .site-pack-row.locked .state, .site-pack-row.pro-required .state { color: var(--ace-signal-deep); }
-    .site-pack-row.failed .state { color: var(--ace-danger); }
-    .site-pack-row .chevron { flex: 0 0 auto; color: var(--muted-foreground); }
-    .site-pack-row.variant-only { min-height: 52px; padding-left: 18px; }
-    .site-pack-row.variant-only .state-rail { background: transparent; }
-    .site-pack-row .progress-track { position: absolute; bottom: 0; left: 4px; right: 0; height: 2px; background: var(--muted); }
-    .site-pack-row .progress-track > span { display: block; height: 100%; background: var(--ace-information); }
-    .site-pack-row .spinner { animation: spin 900ms linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @media (max-width: 650px) {
-        .site-pack-row { flex-wrap: wrap; gap: 6px 10px; }
-        .site-pack-row .identity { flex-basis: calc(100% - 105px); }
-        .site-pack-row .coverage { margin-left: 48px; }
-        .site-pack-row.variant-only .coverage { margin-left: 0; }
-        .site-pack-row .state { margin-left: auto; }
-        .site-pack-row .chevron { margin-left: auto; }
+    .site-pack-row .spinner {
+        animation: none;
     }
-    @media (prefers-reduced-motion: reduce) {
-        .site-pack-row { transition: none; }
-        .site-pack-row .spinner { animation: none; }
-    }
+}

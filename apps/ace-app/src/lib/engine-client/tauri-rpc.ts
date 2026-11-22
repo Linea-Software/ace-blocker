@@ -14,14 +14,22 @@ type RequestOptions = {
 
 // Only this adapter knows about Tauri. The WebView never handles pipe names,
 // transport credentials or serialized remoc messages.
-function argumentsFor(operation: RpcOperation, options?: RequestOptions): Record<string, unknown> {
+function argumentsFor(
+    operation: RpcOperation,
+    options?: RequestOptions,
+): Record<string, unknown> {
     const data: Record<string, unknown> = {};
     const path = options?.path ?? {};
     for (const param of rpcParameters[operation]) {
         // The current generated RPC contract has no "body"/"query" parameters,
         // but the adapter also supports those transport field names if added.
         const fieldName: string = param;
-        if (fieldName === "payload" || fieldName === "entry" || fieldName === "mode" || fieldName === "body") {
+        if (
+            fieldName === "payload" ||
+            fieldName === "entry" ||
+            fieldName === "mode" ||
+            fieldName === "body"
+        ) {
             data[fieldName] = options?.body;
         } else if (fieldName === "query") {
             data[fieldName] = options?.query ?? {};
@@ -32,7 +40,10 @@ function argumentsFor(operation: RpcOperation, options?: RequestOptions): Record
     return data;
 }
 
-async function rpcRequestInternal(operation: RpcOperation, options?: RequestOptions): Promise<unknown> {
+async function rpcRequestInternal(
+    operation: RpcOperation,
+    options?: RequestOptions,
+): Promise<unknown> {
     try {
         const value = await invoke<unknown>("engine_call", {
             op: operation,
@@ -40,18 +51,28 @@ async function rpcRequestInternal(operation: RpcOperation, options?: RequestOpti
         });
         // Only confirmUnlock embeds its cooldown result in an otherwise
         // successful remoc response. Keep 425 as an explicit typed error.
-        if (operation === "confirmUnlock" && value !== null && typeof value === "object" && "status" in value) {
+        if (
+            operation === "confirmUnlock" &&
+            value !== null &&
+            typeof value === "object" &&
+            "status" in value
+        ) {
             const outcome = value as { status: number; body: unknown };
             if (outcome.status >= 400) {
-                const details = outcome.body && typeof outcome.body === "object"
-                    ? outcome.body : { error: "Unlock confirmation failed" };
+                const details =
+                    outcome.body && typeof outcome.body === "object"
+                        ? outcome.body
+                        : { error: "Unlock confirmation failed" };
                 throw normalizeRpcFailure({
                     ...details,
-                    code: outcome.status === 425 ? "too_early" : "unlock_failed",
+                    code:
+                        outcome.status === 425 ? "too_early" : "unlock_failed",
                     status: outcome.status,
                 });
             }
-            return options?.responseStyle === "data" ? outcome.body : { data: outcome.body };
+            return options?.responseStyle === "data"
+                ? outcome.body
+                : { data: outcome.body };
         }
         return options?.responseStyle === "data" ? value : { data: value };
     } catch (error) {
@@ -61,15 +82,26 @@ async function rpcRequestInternal(operation: RpcOperation, options?: RequestOpti
     }
 }
 
-export function rpcRequest<TResponse, TError = unknown, ThrowOnError extends boolean = false>(
+export function rpcRequest<
+    TResponse,
+    TError = unknown,
+    ThrowOnError extends boolean = false,
+>(
     operation: RpcOperation,
     options?: RequestOptions,
 ): RequestResult<TResponse, TError, ThrowOnError> {
     // The unchecked cast is owned here at the untrusted Tauri serialization seam.
-    return rpcRequestInternal(operation, options) as RequestResult<TResponse, TError, ThrowOnError>;
+    return rpcRequestInternal(operation, options) as RequestResult<
+        TResponse,
+        TError,
+        ThrowOnError
+    >;
 }
 
-export async function rpcStream<TResponse>(operation: RpcOperation, options?: RequestOptions): Promise<RpcStreamResult<TResponse>> {
+export async function rpcStream<TResponse>(
+    operation: RpcOperation,
+    options?: RequestOptions,
+): Promise<RpcStreamResult<TResponse>> {
     const parsed: unknown[] = [];
     let firstUnreadIndex = 0;
     let done = false;
@@ -119,7 +151,10 @@ export async function rpcStream<TResponse>(operation: RpcOperation, options?: Re
                         if (firstUnreadIndex === parsed.length) {
                             parsed.length = 0;
                             firstUnreadIndex = 0;
-                        } else if (firstUnreadIndex >= 64 && firstUnreadIndex * 2 >= parsed.length) {
+                        } else if (
+                            firstUnreadIndex >= 64 &&
+                            firstUnreadIndex * 2 >= parsed.length
+                        ) {
                             parsed.splice(0, firstUnreadIndex);
                             firstUnreadIndex = 0;
                         }

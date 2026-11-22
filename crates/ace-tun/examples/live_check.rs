@@ -92,7 +92,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match redirect.start().await {
         Ok(()) => println!("tunnel up — browse now; Ctrl+C to tear down"),
         Err(ace_tun::Error::NotElevated) => {
-            eprintln!("error: run this as administrator/root (creating a virtual adapter needs privileges)");
+            eprintln!(
+                "error: run this as administrator/root (creating a virtual adapter needs privileges)"
+            );
             return Ok(());
         }
         Err(error) => {

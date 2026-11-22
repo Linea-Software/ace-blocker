@@ -4,7 +4,11 @@ import "./app.css";
 import "./app-shell.css";
 
 // Keep the existing debug-only Tauri/WebdriverIO guest bridge.
-if (import.meta.env.DEV && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+if (
+    import.meta.env.DEV &&
+    typeof window !== "undefined" &&
+    "__TAURI_INTERNALS__" in window
+) {
     void import("@wdio/tauri-plugin");
 }
 

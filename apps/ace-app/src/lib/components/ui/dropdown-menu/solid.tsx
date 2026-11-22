@@ -1,45 +1,353 @@
-import type {JSX} from "@solidjs/web";
-import {createContext,createSignal,useContext,Show} from "solid-js";
-import {cn} from "$lib/utils.js";
+import type { JSX } from "@solidjs/web";
+import { createContext, createSignal, useContext, Show } from "solid-js";
+import { cn } from "$lib/utils.js";
 import * as Popover from "../popover/solid";
-type Div=JSX.HTMLAttributes<HTMLDivElement>;
-type MenuCtx={close:()=>void;open:()=>boolean;setOpen:(v:boolean)=>void};
-const Context=createContext<MenuCtx>();function useMenu(){const x=useContext(Context);if(!x)throw Error("DropdownMenu.Root required");return x}
-export function Root(props:{children?:JSX.Element;open?:boolean;defaultOpen?:boolean;onOpenChange?:(v:boolean)=>void}){
- const [own,setOwn]=createSignal(props.defaultOpen??false);
- const open=()=>props.open??own(),setOpen=(v:boolean)=>{setOwn(v);props.onOpenChange?.(v)};
- return <Context value={{close:()=>setOpen(false),open,setOpen}}><Popover.Root open={open()} onOpenChange={setOpen}>{props.children}</Popover.Root></Context>;
+type Div = JSX.HTMLAttributes<HTMLDivElement>;
+type MenuCtx = {
+    close: () => void;
+    open: () => boolean;
+    setOpen: (v: boolean) => void;
+};
+const Context = createContext<MenuCtx>();
+function useMenu() {
+    const x = useContext(Context);
+    if (!x) throw Error("DropdownMenu.Root required");
+    return x;
 }
-export const Trigger=Popover.Trigger;
-export const Portal=Popover.Portal;
-export function Content(props:Div&{align?:"start"|"center"|"end";sideOffset?:number;side?:"top"|"bottom"|"left"|"right"}){
- return <Popover.Content {...props} data-slot="dropdown-menu-content" role="menu" align={props.align??"start"} sideOffset={props.sideOffset??4} class={cn("bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-end-2 data-[side=right]:slide-in-from-start-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--bits-dropdown-menu-content-available-height) min-w-[8rem] origin-(--bits-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md outline-none",props.class)} onKeyDown={e=>{const items=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role^="menuitem"]:not([aria-disabled="true"])'));if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();const i=items.indexOf(document.activeElement as HTMLElement);items[(i+(e.key==="ArrowDown"?1:items.length-1))%items.length]?.focus()}else if(e.key==="Home"){e.preventDefault();items[0]?.focus()}else if(e.key==="End"){e.preventDefault();items[items.length-1]?.focus()}else if(e.key==="Enter"||e.key===" "){if((document.activeElement as HTMLElement)?.getAttribute("role")?.startsWith("menuitem")){e.preventDefault();(document.activeElement as HTMLElement).click()}}}}>{props.children}</Popover.Content>;
+export function Root(props: {
+    children?: JSX.Element;
+    open?: boolean;
+    defaultOpen?: boolean;
+    onOpenChange?: (v: boolean) => void;
+}) {
+    const [own, setOwn] = createSignal(props.defaultOpen ?? false);
+    const open = () => props.open ?? own(),
+        setOpen = (v: boolean) => {
+            setOwn(v);
+            props.onOpenChange?.(v);
+        };
+    return (
+        <Context value={{ close: () => setOpen(false), open, setOpen }}>
+            <Popover.Root open={open()} onOpenChange={setOpen}>
+                {props.children}
+            </Popover.Root>
+        </Context>
+    );
 }
-export function Group(props:Div){return <div {...props} data-slot="dropdown-menu-group" role="group">{props.children}</div>}
-export function Label(props:Div&{inset?:boolean}){return <div {...props} data-slot="dropdown-menu-label" data-inset={props.inset||undefined} class={cn("px-2 py-1.5 text-sm font-semibold data-[inset]:ps-8",props.class)}>{props.children}</div>}
-export function GroupHeading(props:Div&{inset?:boolean}){return <div {...props} data-slot="dropdown-menu-group-heading" data-inset={props.inset||undefined} class={cn("px-2 py-1.5 text-sm font-semibold data-[inset]:ps-8",props.class)}>{props.children}</div>}
-export function Separator(props:Div){return <div {...props} role="separator" data-slot="dropdown-menu-separator" class={cn("bg-border -mx-1 my-1 h-px",props.class)}/>}
-export function Shortcut(props:JSX.HTMLAttributes<HTMLSpanElement>){return <span {...props} data-slot="dropdown-menu-shortcut" class={cn("text-muted-foreground ms-auto text-xs tracking-widest",props.class)}>{props.children}</span>}
-export function Item(props:Div&{inset?:boolean;variant?:"default"|"destructive";disabled?:boolean;onSelect?:(e:MouseEvent)=>void}){
- const menu=useMenu();
- return <div {...props} data-slot="dropdown-menu-item" role="menuitem" tabindex={props.disabled?-1:0} aria-disabled={props.disabled?"true":undefined} data-disabled={props.disabled||undefined} data-inset={props.inset||undefined} data-variant={props.variant??"default"} onClick={e=>{if(props.disabled)return;(props.onClick as ((e:MouseEvent)=>void)|undefined)?.(e);props.onSelect?.(e);if(!e.defaultPrevented)menu.close()}} class={cn("data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive/10 dark:data-[variant=destructive]:data-highlighted:bg-destructive/20 data-[variant=destructive]:data-highlighted:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:ps-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 focus:bg-accent focus:text-accent-foreground",props.class)}>{props.children}</div>;
+export const Trigger = Popover.Trigger;
+export const Portal = Popover.Portal;
+export function Content(
+    props: Div & {
+        align?: "start" | "center" | "end";
+        sideOffset?: number;
+        side?: "top" | "bottom" | "left" | "right";
+    },
+) {
+    return (
+        <Popover.Content
+            {...props}
+            data-slot="dropdown-menu-content"
+            role="menu"
+            align={props.align ?? "start"}
+            sideOffset={props.sideOffset ?? 4}
+            class={cn(
+                "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-end-2 data-[side=right]:slide-in-from-start-2 data-[side=top]:slide-in-from-bottom-2 z-50 max-h-(--bits-dropdown-menu-content-available-height) min-w-[8rem] origin-(--bits-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-md border p-1 shadow-md outline-none",
+                props.class,
+            )}
+            onKeyDown={(e) => {
+                const items = Array.from(
+                    e.currentTarget.querySelectorAll<HTMLElement>(
+                        '[role^="menuitem"]:not([aria-disabled="true"])',
+                    ),
+                );
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    e.preventDefault();
+                    const i = items.indexOf(
+                        document.activeElement as HTMLElement,
+                    );
+                    items[
+                        (i + (e.key === "ArrowDown" ? 1 : items.length - 1)) %
+                            items.length
+                    ]?.focus();
+                } else if (e.key === "Home") {
+                    e.preventDefault();
+                    items[0]?.focus();
+                } else if (e.key === "End") {
+                    e.preventDefault();
+                    items[items.length - 1]?.focus();
+                } else if (e.key === "Enter" || e.key === " ") {
+                    if (
+                        (document.activeElement as HTMLElement)
+                            ?.getAttribute("role")
+                            ?.startsWith("menuitem")
+                    ) {
+                        e.preventDefault();
+                        (document.activeElement as HTMLElement).click();
+                    }
+                }
+            }}
+        >
+            {props.children}
+        </Popover.Content>
+    );
 }
-type CheckProps=Div&{checked?:boolean;defaultChecked?:boolean;indeterminate?:boolean;disabled?:boolean;onCheckedChange?:(v:boolean)=>void};
-export function CheckboxItem(props:CheckProps){
- const [own,setOwn]=createSignal(props.defaultChecked??false),checked=()=>props.checked??own();
- const menu=useMenu();
- return <div {...props} data-slot="dropdown-menu-checkbox-item" role="menuitemcheckbox" aria-checked={props.indeterminate?"mixed":checked()?"true":"false"} tabindex={props.disabled?-1:0} aria-disabled={props.disabled?"true":undefined} data-disabled={props.disabled||undefined} onClick={()=>{if(props.disabled)return;const next=!checked();setOwn(next);props.onCheckedChange?.(next);menu.close()}} class={cn("focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 ps-8 pe-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",props.class)}><span class="pointer-events-none absolute start-2 flex size-3.5 items-center justify-center"><Show when={checked()||props.indeterminate}><svg class="size-4" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d={props.indeterminate?"M4 12h16":"m20 6-11 11-5-5"}/></svg></Show></span>{props.children}</div>;
+export function Group(props: Div) {
+    return (
+        <div {...props} data-slot="dropdown-menu-group" role="group">
+            {props.children}
+        </div>
+    );
 }
-const RadioContext=createContext<{value:()=>string;setValue:(v:string)=>void}>();
-export function RadioGroup(props:Div&{value?:string;defaultValue?:string;onValueChange?:(v:string)=>void}){
- const [own,setOwn]=createSignal(props.defaultValue??"");
- return <RadioContext value={{value:()=>props.value??own(),setValue:v=>{setOwn(v);props.onValueChange?.(v)}}}><div {...props} data-slot="dropdown-menu-radio-group" role="group">{props.children}</div></RadioContext>;
+export function Label(props: Div & { inset?: boolean }) {
+    return (
+        <div
+            {...props}
+            data-slot="dropdown-menu-label"
+            data-inset={props.inset || undefined}
+            class={cn(
+                "px-2 py-1.5 text-sm font-semibold data-[inset]:ps-8",
+                props.class,
+            )}
+        >
+            {props.children}
+        </div>
+    );
 }
-export function RadioItem(props:Div&{value:string;disabled?:boolean}){
- const radio=useContext(RadioContext),menu=useMenu(),checked=()=>radio?.value()===props.value;
- return <div {...props} data-slot="dropdown-menu-radio-item" role="menuitemradio" tabindex={props.disabled?-1:0} aria-disabled={props.disabled?"true":undefined} aria-checked={checked()?"true":"false"} onClick={()=>{if(props.disabled)return;radio?.setValue(props.value);menu.close()}} class={cn("focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 ps-8 pe-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",props.class)}><span class="pointer-events-none absolute start-2 flex size-3.5 items-center justify-center"><Show when={checked()}><span class="size-2 rounded-full bg-current"/></Show></span>{props.children}</div>;
+export function GroupHeading(props: Div & { inset?: boolean }) {
+    return (
+        <div
+            {...props}
+            data-slot="dropdown-menu-group-heading"
+            data-inset={props.inset || undefined}
+            class={cn(
+                "px-2 py-1.5 text-sm font-semibold data-[inset]:ps-8",
+                props.class,
+            )}
+        >
+            {props.children}
+        </div>
+    );
 }
-export function CheckboxGroup(props:Div&{value?:string[]}){return <div {...props} data-slot="dropdown-menu-checkbox-group" role="group">{props.children}</div>}
-export const Sub=Root,SubContent=Content;
-export function SubTrigger(props:Div&{inset?:boolean}){const menu=useMenu();return <div {...props} data-slot="dropdown-menu-sub-trigger" role="menuitem" tabindex={0} data-inset={props.inset||undefined} onMouseEnter={()=>menu.setOpen(true)} onClick={()=>menu.setOpen(true)} class={cn("data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:ps-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",props.class)}>{props.children}<span class="ms-auto">›</span></div>}
-export {Root as DropdownMenu,Trigger as DropdownMenuTrigger,Portal as DropdownMenuPortal,Content as DropdownMenuContent,Group as DropdownMenuGroup,Label as DropdownMenuLabel,GroupHeading as DropdownMenuGroupHeading,Separator as DropdownMenuSeparator,Shortcut as DropdownMenuShortcut,Item as DropdownMenuItem,CheckboxItem as DropdownMenuCheckboxItem,CheckboxGroup as DropdownMenuCheckboxGroup,RadioGroup as DropdownMenuRadioGroup,RadioItem as DropdownMenuRadioItem,Sub as DropdownMenuSub,SubTrigger as DropdownMenuSubTrigger,SubContent as DropdownMenuSubContent};
+export function Separator(props: Div) {
+    return (
+        <div
+            {...props}
+            role="separator"
+            data-slot="dropdown-menu-separator"
+            class={cn("bg-border -mx-1 my-1 h-px", props.class)}
+        />
+    );
+}
+export function Shortcut(props: JSX.HTMLAttributes<HTMLSpanElement>) {
+    return (
+        <span
+            {...props}
+            data-slot="dropdown-menu-shortcut"
+            class={cn(
+                "text-muted-foreground ms-auto text-xs tracking-widest",
+                props.class,
+            )}
+        >
+            {props.children}
+        </span>
+    );
+}
+export function Item(
+    props: Div & {
+        inset?: boolean;
+        variant?: "default" | "destructive";
+        disabled?: boolean;
+        onSelect?: (e: MouseEvent) => void;
+    },
+) {
+    const menu = useMenu();
+    return (
+        <div
+            {...props}
+            data-slot="dropdown-menu-item"
+            role="menuitem"
+            tabindex={props.disabled ? -1 : 0}
+            aria-disabled={props.disabled ? "true" : undefined}
+            data-disabled={props.disabled || undefined}
+            data-inset={props.inset || undefined}
+            data-variant={props.variant ?? "default"}
+            onClick={(e) => {
+                if (props.disabled) return;
+                (props.onClick as ((e: MouseEvent) => void) | undefined)?.(e);
+                props.onSelect?.(e);
+                if (!e.defaultPrevented) menu.close();
+            }}
+            class={cn(
+                "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:data-highlighted:bg-destructive/10 dark:data-[variant=destructive]:data-highlighted:bg-destructive/20 data-[variant=destructive]:data-highlighted:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:ps-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 focus:bg-accent focus:text-accent-foreground",
+                props.class,
+            )}
+        >
+            {props.children}
+        </div>
+    );
+}
+type CheckProps = Div & {
+    checked?: boolean;
+    defaultChecked?: boolean;
+    indeterminate?: boolean;
+    disabled?: boolean;
+    onCheckedChange?: (v: boolean) => void;
+};
+export function CheckboxItem(props: CheckProps) {
+    const [own, setOwn] = createSignal(props.defaultChecked ?? false),
+        checked = () => props.checked ?? own();
+    const menu = useMenu();
+    return (
+        <div
+            {...props}
+            data-slot="dropdown-menu-checkbox-item"
+            role="menuitemcheckbox"
+            aria-checked={
+                props.indeterminate ? "mixed" : checked() ? "true" : "false"
+            }
+            tabindex={props.disabled ? -1 : 0}
+            aria-disabled={props.disabled ? "true" : undefined}
+            data-disabled={props.disabled || undefined}
+            onClick={() => {
+                if (props.disabled) return;
+                const next = !checked();
+                setOwn(next);
+                props.onCheckedChange?.(next);
+                menu.close();
+            }}
+            class={cn(
+                "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 ps-8 pe-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                props.class,
+            )}
+        >
+            <span class="pointer-events-none absolute start-2 flex size-3.5 items-center justify-center">
+                <Show when={checked() || props.indeterminate}>
+                    <svg
+                        class="size-4"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        fill="none"
+                    >
+                        <path
+                            d={
+                                props.indeterminate
+                                    ? "M4 12h16"
+                                    : "m20 6-11 11-5-5"
+                            }
+                        />
+                    </svg>
+                </Show>
+            </span>
+            {props.children}
+        </div>
+    );
+}
+const RadioContext = createContext<{
+    value: () => string;
+    setValue: (v: string) => void;
+}>();
+export function RadioGroup(
+    props: Div & {
+        value?: string;
+        defaultValue?: string;
+        onValueChange?: (v: string) => void;
+    },
+) {
+    const [own, setOwn] = createSignal(props.defaultValue ?? "");
+    return (
+        <RadioContext
+            value={{
+                value: () => props.value ?? own(),
+                setValue: (v) => {
+                    setOwn(v);
+                    props.onValueChange?.(v);
+                },
+            }}
+        >
+            <div {...props} data-slot="dropdown-menu-radio-group" role="group">
+                {props.children}
+            </div>
+        </RadioContext>
+    );
+}
+export function RadioItem(props: Div & { value: string; disabled?: boolean }) {
+    const radio = useContext(RadioContext),
+        menu = useMenu(),
+        checked = () => radio?.value() === props.value;
+    return (
+        <div
+            {...props}
+            data-slot="dropdown-menu-radio-item"
+            role="menuitemradio"
+            tabindex={props.disabled ? -1 : 0}
+            aria-disabled={props.disabled ? "true" : undefined}
+            aria-checked={checked() ? "true" : "false"}
+            onClick={() => {
+                if (props.disabled) return;
+                radio?.setValue(props.value);
+                menu.close();
+            }}
+            class={cn(
+                "focus:bg-accent focus:text-accent-foreground relative flex cursor-default items-center gap-2 rounded-sm py-1.5 ps-8 pe-2 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                props.class,
+            )}
+        >
+            <span class="pointer-events-none absolute start-2 flex size-3.5 items-center justify-center">
+                <Show when={checked()}>
+                    <span class="size-2 rounded-full bg-current" />
+                </Show>
+            </span>
+            {props.children}
+        </div>
+    );
+}
+export function CheckboxGroup(props: Div & { value?: string[] }) {
+    return (
+        <div {...props} data-slot="dropdown-menu-checkbox-group" role="group">
+            {props.children}
+        </div>
+    );
+}
+export const Sub = Root,
+    SubContent = Content;
+export function SubTrigger(props: Div & { inset?: boolean }) {
+    const menu = useMenu();
+    return (
+        <div
+            {...props}
+            data-slot="dropdown-menu-sub-trigger"
+            role="menuitem"
+            tabindex={0}
+            data-inset={props.inset || undefined}
+            onMouseEnter={() => menu.setOpen(true)}
+            onClick={() => menu.setOpen(true)}
+            class={cn(
+                "data-highlighted:bg-accent data-highlighted:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[inset]:ps-8 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                props.class,
+            )}
+        >
+            {props.children}
+            <span class="ms-auto">›</span>
+        </div>
+    );
+}
+export {
+    Root as DropdownMenu,
+    Trigger as DropdownMenuTrigger,
+    Portal as DropdownMenuPortal,
+    Content as DropdownMenuContent,
+    Group as DropdownMenuGroup,
+    Label as DropdownMenuLabel,
+    GroupHeading as DropdownMenuGroupHeading,
+    Separator as DropdownMenuSeparator,
+    Shortcut as DropdownMenuShortcut,
+    Item as DropdownMenuItem,
+    CheckboxItem as DropdownMenuCheckboxItem,
+    CheckboxGroup as DropdownMenuCheckboxGroup,
+    RadioGroup as DropdownMenuRadioGroup,
+    RadioItem as DropdownMenuRadioItem,
+    Sub as DropdownMenuSub,
+    SubTrigger as DropdownMenuSubTrigger,
+    SubContent as DropdownMenuSubContent,
+};

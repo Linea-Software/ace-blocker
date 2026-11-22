@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { saveNetworkBlock as saveNetworkBlockRpc, type NetworkBlockSchema } from "$engine-client";
+import {
+    saveNetworkBlock as saveNetworkBlockRpc,
+    type NetworkBlockSchema,
+} from "$engine-client";
 import { saveNetworkBlock, type BlockSaveDraft } from "./_save-network-block";
 
 vi.mock("$engine-client", () => ({
@@ -24,17 +27,19 @@ function draft(override: Partial<BlockSaveDraft> = {}): BlockSaveDraft {
             currentRules: [{ rule: "example.com", ruleType: "domain" }],
         },
         schedule: {
-            currentScheduleEntries: [{
-                startTime: "09:00",
-                endTime: "17:00",
-                monday: true,
-                tuesday: false,
-                wednesday: false,
-                thursday: false,
-                friday: false,
-                saturday: false,
-                sunday: false,
-            }],
+            currentScheduleEntries: [
+                {
+                    startTime: "09:00",
+                    endTime: "17:00",
+                    monday: true,
+                    tuesday: false,
+                    wednesday: false,
+                    thursday: false,
+                    friday: false,
+                    saturday: false,
+                    sunday: false,
+                },
+            ],
         },
         packs: { currentConnectedListIds: ["pack-social-free"] },
         ...override,
@@ -51,7 +56,10 @@ beforeEach(() => {
 describe("Network Block atomic save", () => {
     it("sends one complete editor draft in one RPC", async () => {
         const result = await saveNetworkBlock(draft());
-        expect(result).toMatchObject({ kind: "saved", block: { id: "block-1", name: "New name" } });
+        expect(result).toMatchObject({
+            kind: "saved",
+            block: { id: "block-1", name: "New name" },
+        });
         expect(saveNetworkBlockRpc).toHaveBeenCalledExactlyOnceWith({
             body: {
                 id: "block-1",
@@ -60,17 +68,19 @@ describe("Network Block atomic save", () => {
                 safeSearch: true,
                 scheduleMode: "scheduled",
                 rules: [{ rule: "example.com", ruleType: "domain" }],
-                scheduleEntries: [{
-                    startTime: "09:00",
-                    endTime: "17:00",
-                    monday: true,
-                    tuesday: false,
-                    wednesday: false,
-                    thursday: false,
-                    friday: false,
-                    saturday: false,
-                    sunday: false,
-                }],
+                scheduleEntries: [
+                    {
+                        startTime: "09:00",
+                        endTime: "17:00",
+                        monday: true,
+                        tuesday: false,
+                        wednesday: false,
+                        thursday: false,
+                        friday: false,
+                        saturday: false,
+                        sunday: false,
+                    },
+                ],
                 sitePackIds: ["pack-social-free"],
             },
         });
@@ -79,7 +89,9 @@ describe("Network Block atomic save", () => {
     it("creates a block using the same atomic call", async () => {
         await saveNetworkBlock(draft({ block: null }));
         expect(saveNetworkBlockRpc).toHaveBeenCalledOnce();
-        expect(vi.mocked(saveNetworkBlockRpc).mock.calls[0][0].body.id).toBe(null);
+        expect(vi.mocked(saveNetworkBlockRpc).mock.calls[0][0].body.id).toBe(
+            null,
+        );
     });
 
     it("never calls a second operation after a rejected transaction", async () => {
@@ -95,17 +107,23 @@ describe("Network Block atomic save", () => {
 
     it("marks transport loss as uncertain: a COMMIT may have succeeded", async () => {
         vi.mocked(saveNetworkBlockRpc).mockResolvedValue({
-            error: { code: "transport_unavailable", status: 503, error: "connection lost" },
+            error: {
+                code: "transport_unavailable",
+                status: 503,
+                error: "connection lost",
+            },
         } as never);
         expect(await saveNetworkBlock(draft())).toMatchObject({
-            kind: "failed", uncertain: true,
+            kind: "failed",
+            uncertain: true,
         });
     });
 
     it("does not acknowledge malformed or absent save responses", async () => {
         vi.mocked(saveNetworkBlockRpc).mockResolvedValue({ data: {} } as never);
         expect(await saveNetworkBlock(draft())).toMatchObject({
-            kind: "failed", uncertain: true,
+            kind: "failed",
+            uncertain: true,
         });
     });
 });

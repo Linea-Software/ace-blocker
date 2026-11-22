@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getAccountInfo, refreshAccount, triggerContentUpdate } from "$engine-client";
+import {
+    getAccountInfo,
+    refreshAccount,
+    triggerContentUpdate,
+} from "$engine-client";
 import type { AccountInfoResponse } from "$engine-client";
 
 vi.mock("$engine-client", () => ({
@@ -9,9 +13,9 @@ vi.mock("$engine-client", () => ({
 }));
 
 const accountResponse = (isPro: boolean) =>
-    ({ data: { isPro, tosAccepted: true } satisfies AccountInfoResponse }) as Awaited<
-        ReturnType<typeof getAccountInfo>
-    >;
+    ({
+        data: { isPro, tosAccepted: true } satisfies AccountInfoResponse,
+    }) as Awaited<ReturnType<typeof getAccountInfo>>;
 
 describe("Pro activation content refresh", () => {
     let store: (typeof import("./user-store"))["userStore"];
@@ -22,7 +26,9 @@ describe("Pro activation content refresh", () => {
         vi.clearAllMocks();
         vi.mocked(getAccountInfo).mockResolvedValue(accountResponse(false));
         vi.mocked(refreshAccount).mockResolvedValue(accountResponse(false));
-        vi.mocked(triggerContentUpdate).mockResolvedValue({} as Awaited<ReturnType<typeof triggerContentUpdate>>);
+        vi.mocked(triggerContentUpdate).mockResolvedValue(
+            {} as Awaited<ReturnType<typeof triggerContentUpdate>>,
+        );
         ({ userStore: store } = await import("./user-store"));
         await store.fetch();
     });
@@ -53,7 +59,11 @@ describe("Pro activation content refresh", () => {
         const log = vi.spyOn(console, "error").mockImplementation(() => {});
         try {
             vi.mocked(triggerContentUpdate).mockResolvedValueOnce({
-                error: { code: "partial_failure", status: 503, error: "one pack unavailable" },
+                error: {
+                    code: "partial_failure",
+                    status: 503,
+                    error: "one pack unavailable",
+                },
             } as Awaited<ReturnType<typeof triggerContentUpdate>>);
             vi.mocked(refreshAccount).mockResolvedValue(accountResponse(true));
             await store.refreshAfterLoginOrEntitlementChange();
@@ -80,7 +90,9 @@ describe("Pro activation content refresh", () => {
 
     it("keeps Pro and installed content while release metadata is offline, then retries", async () => {
         const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-        const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+        const errorLog = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => {});
         try {
             vi.mocked(triggerContentUpdate).mockResolvedValueOnce({
                 error: {

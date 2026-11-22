@@ -38,7 +38,9 @@ const iconMap: Record<string, { svg: string; hex: string } | undefined> = {
     "youtube.com": siYoutube,
 };
 
-export function getSiteIcon(domain: string): { svg: string; hex: string } | null {
+export function getSiteIcon(
+    domain: string,
+): { svg: string; hex: string } | null {
     const hostname = domain.toLowerCase().replace(/\.$/, "");
     for (const [siteDomain, icon] of Object.entries(iconMap)) {
         // Exact host or real subdomain, never a lookalike (e.g. notyoutube.com).

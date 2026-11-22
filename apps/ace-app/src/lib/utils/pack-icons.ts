@@ -200,7 +200,15 @@ export const LIST_ICONS_GROUPED: Array<{
     },
     {
         category: "Gaming & Entertainment",
-        slugs: ["gaming", "cards", "dice", "trophy", "sword", "puzzle", "sports"],
+        slugs: [
+            "gaming",
+            "cards",
+            "dice",
+            "trophy",
+            "sword",
+            "puzzle",
+            "sports",
+        ],
     },
     {
         category: "Gambling & Risk",

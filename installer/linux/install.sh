@@ -3,7 +3,7 @@
 # Upgrades and removal require authenticated engine maintenance.
 set -euo pipefail
 
-if (( EUID != 0 )); then
+if ((EUID != 0)); then
   echo "Run this installer as root (for example: sudo ./install.sh)." >&2
   exit 1
 fi
@@ -11,9 +11,9 @@ fi
 package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 install_dir=/opt/ace-blocker
 
-if [[ -e "$install_dir/ace-engine" ]] ||
-   systemctl is-active --quiet ace-engine.service ||
-   systemctl is-active --quiet ace-watchdog.service; then
+if [[ -e "$install_dir/ace-engine" ]] \
+  || systemctl is-active --quiet ace-engine.service \
+  || systemctl is-active --quiet ace-watchdog.service; then
   echo "ACE is already installed or running; refusing to replace protected binaries." >&2
   echo "Use authenticated lock-aware maintenance/uninstall first." >&2
   exit 1
@@ -38,15 +38,15 @@ fi
 
 # Ship an optional, root-controlled browser policy manager with every Linux
 # release. Installation alone must not alter Chrome/Chromium/Brave/Firefox policy.
-if [[ ! -f "$package_dir/browser-proxy-policy.py" ||
-      -L "$package_dir/browser-proxy-policy.py" ]]; then
+if [[ ! -f "$package_dir/browser-proxy-policy.py"
+  || -L "$package_dir/browser-proxy-policy.py" ]]; then
   echo "Missing or unsafe browser proxy policy manager" >&2
   exit 1
 fi
 
 # Prevent a partial install when a rolling-release system has replaced or
 # removed the Linux shared libraries expected by the packaged binaries.
-if ! command -v ldd >/dev/null 2>&1; then
+if ! command -v ldd > /dev/null 2>&1; then
   echo "ldd is required to check Linux binary compatibility." >&2
   exit 1
 fi
@@ -64,7 +64,7 @@ for binary in ace-engine ace-watchdog ace-app ace-redirect install-cert; do
 done
 
 # Limit shared data and the installation capability to authorized desktop users.
-if ! getent group ace-blocker >/dev/null; then
+if ! getent group ace-blocker > /dev/null; then
   groupadd --system ace-blocker
 fi
 data_dir=/usr/local/share/AceBlocker
@@ -120,16 +120,16 @@ systemctl is-enabled --quiet ace-engine.service
 systemctl start ace-watchdog.service ace-engine.service
 systemctl is-active --quiet ace-watchdog.service
 systemctl is-active --quiet ace-engine.service
-if command -v update-desktop-database >/dev/null 2>&1; then
+if command -v update-desktop-database > /dev/null 2>&1; then
   update-desktop-database /usr/local/share/applications
 fi
 
 # The engine runs as a system service and cannot register a desktop URL handler
 # for the interactive user's session. The browser callback must start the
 # tightly allowlisted ace-redirect binary, never the privileged engine service.
-if [[ -n "$desktop_user" && "$desktop_user" != root ]] &&
-   command -v xdg-mime >/dev/null 2>&1 &&
-   command -v runuser >/dev/null 2>&1; then
+if [[ -n "$desktop_user" && "$desktop_user" != root ]] \
+  && command -v xdg-mime > /dev/null 2>&1 \
+  && command -v runuser > /dev/null 2>&1; then
   desktop_home="$(getent passwd "$desktop_user" | cut -d: -f6)"
   if ! runuser -u "$desktop_user" -- env HOME="$desktop_home" XDG_CONFIG_HOME="$desktop_home/.config" \
     xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker; then

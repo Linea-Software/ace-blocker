@@ -160,7 +160,9 @@ pub(crate) fn resolve_pid(local: SocketAddr, remote: SocketAddr, is_udp: bool) -
     };
 
     {
-        let cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let cache = CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some((pid, cached_at)) = cache.endpoints.get(&key)
             && now.duration_since(*cached_at) < CACHE_TTL
         {
@@ -172,7 +174,9 @@ pub(crate) fn resolve_pid(local: SocketAddr, remote: SocketAddr, is_udp: bool) -
     let pid = scan_pcblist(&table, local, remote);
 
     if let Some(pid) = pid {
-        let mut cache = CACHE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut cache = CACHE
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         cache.endpoints.insert(key, (pid, now));
         Some(pid)
     } else {
@@ -202,12 +206,12 @@ pub(crate) fn process_name(pid: u32) -> Option<String> {
     // `pbi_comm` is a fixed `MAXCOMLEN`-byte field, not guaranteed
     // NUL-terminated; take everything up to the first NUL.
     let bytes: &[u8] = unsafe {
-        std::slice::from_raw_parts(
-            info.pbsi_comm.as_ptr() as *const u8,
-            info.pbsi_comm.len(),
-        )
+        std::slice::from_raw_parts(info.pbsi_comm.as_ptr() as *const u8, info.pbsi_comm.len())
     };
-    let end = bytes.iter().position(|&byte| byte == 0).unwrap_or(bytes.len());
+    let end = bytes
+        .iter()
+        .position(|&byte| byte == 0)
+        .unwrap_or(bytes.len());
     let name = std::str::from_utf8(&bytes[..end]).ok()?.trim();
     if name.is_empty() {
         None
@@ -292,7 +296,9 @@ fn scan_pcblist(table: &[u8], local: SocketAddr, remote: SocketAddr) -> Option<u
             &table[inpcb_end..socket_end],
             local,
             remote,
-        ) && best.as_ref().is_none_or(|best| candidate.specificity > best.specificity)
+        ) && best
+            .as_ref()
+            .is_none_or(|best| candidate.specificity > best.specificity)
         {
             best = Some(candidate);
         }
@@ -498,7 +504,9 @@ mod tests {
     #[test]
     fn connected_v6_socket_is_attributed() {
         let local_addr = [0xfd, 0, 0x0a, 0xce, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
-        let foreign_addr = [0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x88];
+        let foreign_addr = [
+            0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x88,
+        ];
         let mut table = vec![0u8; XINGPEN_LEN];
         table[0..4].copy_from_slice(&(XINGPEN_LEN as u32).to_le_bytes());
         table.extend(record_pair(777, local_addr, 443, foreign_addr, 53, true));
@@ -552,14 +560,7 @@ mod tests {
     fn wildcard_bind_matches_by_port() {
         let mut table = vec![0u8; XINGPEN_LEN];
         table[0..4].copy_from_slice(&(XINGPEN_LEN as u32).to_le_bytes());
-        table.extend(record_pair(
-            31337,
-            [0; 16],
-            5353,
-            [0; 16],
-            0,
-            false,
-        ));
+        table.extend(record_pair(31337, [0; 16], 5353, [0; 16], 0, false));
 
         let local: SocketAddr = "10.1.2.3:5353".parse().unwrap();
         let remote: SocketAddr = "224.0.0.251:5353".parse().unwrap();

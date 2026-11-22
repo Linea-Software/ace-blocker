@@ -1,5 +1,8 @@
 import { ReactiveMap } from "./reactive-map";
-import type { SitePackCreationStatus, SitePackImportPhase } from "$engine-client";
+import type {
+    SitePackCreationStatus,
+    SitePackImportPhase,
+} from "$engine-client";
 
 /**
  * Per-pack lifecycle status for site-pack downloads / resyncs.
@@ -14,7 +17,8 @@ import type { SitePackCreationStatus, SitePackImportPhase } from "$engine-client
  * The store is keyed by pack id, so any number of packs can download at the
  * same time with fully independent state (no shared/global progress bar).
  */
-export type SitePackSyncStatus = "queued" | "downloading" | "completed" | "failed";
+export type SitePackSyncStatus =
+    "queued" | "downloading" | "completed" | "failed";
 
 export interface SitePackSyncEntry {
     status: SitePackSyncStatus;
@@ -95,8 +99,15 @@ export class SyncingStore {
     }
 
     /** Engine reported progress: mark downloading. */
-    public markProgress(id: string, progress: number, phase?: SitePackImportPhase) {
-        const entry = this.entries.get(id) ?? { status: "queued" as const, progress: 0 };
+    public markProgress(
+        id: string,
+        progress: number,
+        phase?: SitePackImportPhase,
+    ) {
+        const entry = this.entries.get(id) ?? {
+            status: "queued" as const,
+            progress: 0,
+        };
         this.entries.set(id, {
             status: "downloading",
             progress: Math.max(0, Math.min(100, progress)),
@@ -111,14 +122,28 @@ export class SyncingStore {
 
     /** Engine reported completion: 100% and a terminal completed state. */
     public complete(id: string) {
-        const entry = this.entries.get(id) ?? { status: "queued" as const, progress: 0 };
-        this.entries.set(id, { status: "completed", progress: 100, phase: entry.phase });
+        const entry = this.entries.get(id) ?? {
+            status: "queued" as const,
+            progress: 0,
+        };
+        this.entries.set(id, {
+            status: "completed",
+            progress: 100,
+            phase: entry.phase,
+        });
     }
 
     /** Engine reported failure: keep the error for the retry affordance. */
     public fail(id: string, error: string) {
-        const entry = this.entries.get(id) ?? { status: "queued" as const, progress: 0 };
-        this.entries.set(id, { status: "failed", progress: entry.progress, error });
+        const entry = this.entries.get(id) ?? {
+            status: "queued" as const,
+            progress: 0,
+        };
+        this.entries.set(id, {
+            status: "failed",
+            progress: entry.progress,
+            error,
+        });
     }
 
     /** Remove the entry entirely (terminal states included). */
@@ -160,9 +185,17 @@ export class SyncingStore {
             this.begin(id);
             for await (const status of stream) {
                 if ("STARTED" in status) {
-                    this.markProgress(id, status.STARTED.progress, status.STARTED.phase);
+                    this.markProgress(
+                        id,
+                        status.STARTED.progress,
+                        status.STARTED.phase,
+                    );
                 } else if ("IN_PROGRESS" in status) {
-                    this.markProgress(id, status.IN_PROGRESS.progress, status.IN_PROGRESS.phase);
+                    this.markProgress(
+                        id,
+                        status.IN_PROGRESS.progress,
+                        status.IN_PROGRESS.phase,
+                    );
                 } else if ("COMPLETED" in status) {
                     this.complete(id);
                     return "completed";
@@ -182,7 +215,8 @@ export class SyncingStore {
             );
             return "failed";
         } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
+            const message =
+                error instanceof Error ? error.message : String(error);
             this.fail(id, message);
             return "failed";
         }

@@ -14,8 +14,11 @@ export default defineConfig({
     resolve: {
         conditions: ["browser", "development"],
         alias: {
-            "$lib": resolve(import.meta.dirname, "src/lib"),
-            "$engine-client": resolve(import.meta.dirname, "src/lib/engine-client"),
+            $lib: resolve(import.meta.dirname, "src/lib"),
+            "$engine-client": resolve(
+                import.meta.dirname,
+                "src/lib/engine-client",
+            ),
         },
     },
     ssr: { resolve: { conditions: ["browser", "development"] } },

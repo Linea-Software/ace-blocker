@@ -6,18 +6,18 @@ Read [REFACTORING_PLAYBOOK.md](REFACTORING_PLAYBOOK.md) with this guide. Use the
 
 Read the code and its call sites before you propose a dependency direction. The table identifies current responsibilities. It does not claim that all imports follow an ideal dependency graph.
 
-| Area | Owns | Boundary to protect |
-| --- | --- | --- |
-| `crates/ace-engine/src/core/` | Policy concepts, schedules, locks, domain data | Do not make policy semantics depend on UI or transport representation |
-| `crates/ace-engine/src/manager/` | Orchestration of domain state and mutations | Keep mutation authorization, consistency, and persistence ordering explicit |
-| `crates/ace-engine/src/db/` | Diesel/SQLite persistence details | Do not leak DB models into unrelated domain/UI layers without a reason |
-| `crates/ace-engine/src/service/api/` | Typed remoc operations, authorization and transport | Delegates to policy-enforcing operations; never let UI shortcuts bypass them |
-| `crates/ace-engine/src/service/proxy/`, `crates/mitm-proxy/`, `crates/ace-tun/` | Network enforcement, interception, tunnel/OS integration | Preserve non-browser opacity and enforcement decisions; do not turn the proxy into a global application service |
-| `crates/ace-watchdog/`, `crates/ace-watchdog-protocol/` | Independent watchdog service and shared heartbeat wire contract | No lifecycle ownership by Tauri; shared types do not merge services |
-| `apps/ace-app/src-tauri/` | Native user-session adapter, local IPC connection and capability | WebView must not acquire pipe credentials or privileged policy authority |
-| `apps/ace-app/src/lib/engine-client/` | Stable UI-facing engine API facade | No ad hoc local REST, duplicated RPC transports, or direct pipe access from Solid |
-| `apps/ace-app/src/routes/`, `src/lib/components/`, `src/lib/stores/` | Route UI, presentational components and deliberately shared UI state | Avoid importing across unrelated feature internals or using global state as an integration bus |
-| `installer/` | Production install, upgrade, service permissions and uninstall gate | UI bundling must not absorb privileged installer responsibilities |
+| Area                                                                            | Owns                                                                 | Boundary to protect                                                                                             |
+| ------------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `crates/ace-engine/src/core/`                                                   | Policy concepts, schedules, locks, domain data                       | Do not make policy semantics depend on UI or transport representation                                           |
+| `crates/ace-engine/src/manager/`                                                | Orchestration of domain state and mutations                          | Keep mutation authorization, consistency, and persistence ordering explicit                                     |
+| `crates/ace-engine/src/db/`                                                     | Diesel/SQLite persistence details                                    | Do not leak DB models into unrelated domain/UI layers without a reason                                          |
+| `crates/ace-engine/src/service/api/`                                            | Typed remoc operations, authorization and transport                  | Delegates to policy-enforcing operations; never let UI shortcuts bypass them                                    |
+| `crates/ace-engine/src/service/proxy/`, `crates/mitm-proxy/`, `crates/ace-tun/` | Network enforcement, interception, tunnel/OS integration             | Preserve non-browser opacity and enforcement decisions; do not turn the proxy into a global application service |
+| `crates/ace-watchdog/`, `crates/ace-watchdog-protocol/`                         | Independent watchdog service and shared heartbeat wire contract      | No lifecycle ownership by Tauri; shared types do not merge services                                             |
+| `apps/ace-app/src-tauri/`                                                       | Native user-session adapter, local IPC connection and capability     | WebView must not acquire pipe credentials or privileged policy authority                                        |
+| `apps/ace-app/src/lib/engine-client/`                                           | Stable UI-facing engine API facade                                   | No ad hoc local REST, duplicated RPC transports, or direct pipe access from Solid                               |
+| `apps/ace-app/src/routes/`, `src/lib/components/`, `src/lib/stores/`            | Route UI, presentational components and deliberately shared UI state | Avoid importing across unrelated feature internals or using global state as an integration bus                  |
+| `installer/`                                                                    | Production install, upgrade, service permissions and uninstall gate  | UI bundling must not absorb privileged installer responsibilities                                               |
 
 See [IPC_ARCHITECTURE.md](../IPC_ARCHITECTURE.md) for the authoritative current local-control contract. External Ace Server HTTP client code is **separate** from local remoc IPC.
 

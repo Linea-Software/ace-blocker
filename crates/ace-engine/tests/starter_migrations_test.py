@@ -1,4 +1,5 @@
 """First-install baseline: Free, disabled, always-on starter policies."""
+
 from pathlib import Path
 import sqlite3
 import hashlib
@@ -38,18 +39,27 @@ class StarterMigrationsTest(unittest.TestCase):
                 "JOIN network_blocks b ON c.network_block_id = b.id "
                 "JOIN site_packs p ON c.site_pack_id = p.id "
                 "WHERE b.id IN (" + ",".join("?" for _ in BLOCK_IDS) + ") "
-                "ORDER BY b.id", BLOCK_IDS,
+                "ORDER BY b.id",
+                BLOCK_IDS,
             ).fetchall()
-            self.assertEqual(connected, [
-                (BLOCK_IDS[0], "pack-adult-free", 0),
-                (BLOCK_IDS[1], "pack-social-free", 0),
-                (BLOCK_IDS[2], "pack-gambling-free", 0),
-                (BLOCK_IDS[3], "pack-streaming-free", 0),
-            ])
-            self.assertEqual(db.execute(
-                "SELECT COUNT(*) FROM user_defined_rules WHERE network_block_id IN (" +
-                ",".join("?" for _ in BLOCK_IDS) + ")", BLOCK_IDS,
-            ).fetchone()[0], 0)
+            self.assertEqual(
+                connected,
+                [
+                    (BLOCK_IDS[0], "pack-adult-free", 0),
+                    (BLOCK_IDS[1], "pack-social-free", 0),
+                    (BLOCK_IDS[2], "pack-gambling-free", 0),
+                    (BLOCK_IDS[3], "pack-streaming-free", 0),
+                ],
+            )
+            self.assertEqual(
+                db.execute(
+                    "SELECT COUNT(*) FROM user_defined_rules WHERE network_block_id IN ("
+                    + ",".join("?" for _ in BLOCK_IDS)
+                    + ")",
+                    BLOCK_IDS,
+                ).fetchone()[0],
+                0,
+            )
 
     def test_installer_bundle_contains_usable_verified_free_packs(self):
         bundle = Path(__file__).resolve().parents[3] / "installer" / "bundled-packs"
@@ -64,17 +74,30 @@ class StarterMigrationsTest(unittest.TestCase):
             self.assertEqual(len(data), entry["size_bytes"])
             self.assertEqual(data[:16], b"SQLite format 3\x00")
             with sqlite3.connect("file:" + str(file) + "?mode=ro", uri=True) as db:
-                self.assertEqual(db.execute("SELECT COUNT(*) FROM entries").fetchone()[0], count)
-                self.assertEqual(db.execute("SELECT id FROM pack_meta").fetchone()[0], id)
+                self.assertEqual(
+                    db.execute("SELECT COUNT(*) FROM entries").fetchone()[0], count
+                )
+                self.assertEqual(
+                    db.execute("SELECT id FROM pack_meta").fetchone()[0], id
+                )
 
     def test_original_tables_have_final_columns(self):
         with sqlite3.connect(":memory:") as db:
             run_migrations(db)
             blocks = {col[1] for col in db.execute("PRAGMA table_info(network_blocks)")}
             accounts = {col[1] for col in db.execute("PRAGMA table_info(accounts)")}
-            self.assertTrue({"icon", "enabled", "schedule_mode", "schedule_timezone"} <= blocks)
-            self.assertTrue({"tos_accepted_at", "entitlement_token",
-                             "entitlement_public_key", "clock_high_watermark"} <= accounts)
+            self.assertTrue(
+                {"icon", "enabled", "schedule_mode", "schedule_timezone"} <= blocks
+            )
+            self.assertTrue(
+                {
+                    "tos_accepted_at",
+                    "entitlement_token",
+                    "entitlement_public_key",
+                    "clock_high_watermark",
+                }
+                <= accounts
+            )
 
 
 if __name__ == "__main__":

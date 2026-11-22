@@ -80,13 +80,19 @@ export class UserDefinedRulesDelta {
             return;
         }
         const tempId = newTempId();
-        this.changes = [...this.changes, { type: "ADD", rule, ruleType, tempId }];
-        this.currentState = [...this.currentState, {
-            id: tempId,
-            networkBlockId: "",
-            rule,
-            ruleType,
-        }];
+        this.changes = [
+            ...this.changes,
+            { type: "ADD", rule, ruleType, tempId },
+        ];
+        this.currentState = [
+            ...this.currentState,
+            {
+                id: tempId,
+                networkBlockId: "",
+                rule,
+                ruleType,
+            },
+        ];
     }
 
     /**
@@ -119,9 +125,7 @@ export class UserDefinedRulesDelta {
     }
 
     /** Look up the original rule by its persistent ID. */
-    private getOriginalRule(
-        ruleId: string,
-    ): UserDefinedRuleSchema | undefined {
+    private getOriginalRule(ruleId: string): UserDefinedRuleSchema | undefined {
         return this.initialRules.find((r) => r.id === ruleId);
     }
 

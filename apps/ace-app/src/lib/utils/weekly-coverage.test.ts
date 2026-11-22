@@ -161,10 +161,10 @@ describe("hourBuckets / formatDayCoverage", () => {
 describe("interactive coverage editing", () => {
     it("subtracts a range and preserves both sides", () => {
         expect(
-            subtractRange(
-                [{ start: 8 * 60, end: 18 * 60 }],
-                { start: 12 * 60, end: 14 * 60 },
-            ),
+            subtractRange([{ start: 8 * 60, end: 18 * 60 }], {
+                start: 12 * 60,
+                end: 14 * 60,
+            }),
         ).toEqual([
             { start: 8 * 60, end: 12 * 60 },
             { start: 14 * 60, end: 18 * 60 },

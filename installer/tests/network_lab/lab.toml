@@ -9,7 +9,7 @@ artifacts = ".artifacts"
 
 [vms.ubuntu]
 image = "ubuntu-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                    # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 4
 memory_mb = 8192
 networks = ["nat"]
@@ -18,7 +18,7 @@ guest_agent = true
 
 [vms.arch]
 image = "arch-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 4
 memory_mb = 8192
 networks = ["nat"]
@@ -27,7 +27,7 @@ guest_agent = true
 
 [vms.cachyos]
 image = "cachyos-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                     # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 4
 memory_mb = 8192
 networks = ["nat"]
@@ -36,7 +36,7 @@ guest_agent = true
 
 [vms.windows]
 image = "windows-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                     # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 4
 memory_mb = 8192
 networks = ["nat"]
@@ -45,7 +45,7 @@ guest_agent = true
 
 [vms.ubuntu-wg]
 image = "ubuntu-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                                  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 4
 memory_mb = 8192
 networks = ["nat", "connect:ace-ubuntu"]
@@ -54,7 +54,7 @@ guest_agent = true
 
 [vms.arch-wg]
 image = "arch-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                                # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 4
 memory_mb = 8192
 networks = ["nat", "connect:ace-arch"]
@@ -63,7 +63,7 @@ guest_agent = true
 
 [vms.cachyos-wg]
 image = "cachyos-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                                   # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 4
 memory_mb = 8192
 networks = ["nat", "connect:ace-cachyos"]
@@ -72,7 +72,7 @@ guest_agent = true
 
 [vms.gateway]
 image = "ubuntu-ace-ready"
-id = ""  # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
+id = ""                                                                          # Set to the NovaGPT vm-<16hex> identifier; never a libvirt domain
 cpus = 2
 memory_mb = 4096
 networks = ["nat", "listen:ace-ubuntu", "listen:ace-arch", "listen:ace-cachyos"]
@@ -307,73 +307,171 @@ snapshot = "wireguard-gateway-base"
 [[cases]]
 id = "LAB-01"
 kind = "baseline"
-environments = ["ubuntu-direct", "arch-direct", "cachyos-direct", "windows-direct"]
+environments = [
+  "ubuntu-direct",
+  "arch-direct",
+  "cachyos-direct",
+  "windows-direct",
+]
 expected = "Baseline service/route information only; requires subsequent browser evidence"
 
 [[cases]]
 id = "LAB-02"
 kind = "routing"
-environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn"]
+environments = [
+  "ubuntu-wireguard",
+  "arch-wireguard",
+  "cachyos-wireguard",
+  "windows-wireguard",
+  "ubuntu-openvpn",
+  "arch-openvpn",
+  "cachyos-openvpn",
+]
 expected = "Record both original route and VPN route; compare protected browser behavior separately"
 
 [[cases]]
 id = "LAB-03"
 kind = "browser-guard"
-environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser", "ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+environments = [
+  "ubuntu-tor",
+  "arch-tor",
+  "cachyos-tor",
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+]
 expected = "Record Linux browser proxy-policy status; do not enable it without opt-in"
 
 [[cases]]
 id = "VPN-01"
 kind = "browser"
-environments = ["ubuntu-direct", "arch-direct", "cachyos-direct", "windows-direct"]
+environments = [
+  "ubuntu-direct",
+  "arch-direct",
+  "cachyos-direct",
+  "windows-direct",
+]
 expected = "With no VPN, blocked origin must be denied and allowed origin reachable"
 
 [[cases]]
 id = "VPN-02"
 kind = "browser"
-environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard"]
+environments = [
+  "ubuntu-wireguard",
+  "arch-wireguard",
+  "cachyos-wireguard",
+  "windows-wireguard",
+]
 expected = "IPv4 WireGuard lab tunnel only; verify IPv6 separately, and require real blocked/allowed browser-origin evidence"
 
 [[cases]]
 id = "VPN-03"
 kind = "browser"
-environments = ["ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn", "ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard"]
+environments = [
+  "ubuntu-openvpn",
+  "arch-openvpn",
+  "cachyos-openvpn",
+  "ubuntu-wireguard",
+  "arch-wireguard",
+  "cachyos-wireguard",
+  "windows-wireguard",
+]
 expected = "Split tunnel includes/excludes browser; blocked origin must remain denied"
 
 [[cases]]
 id = "VPN-04"
 kind = "browser"
-environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+environments = [
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+]
 expected = "Real provider extension disconnected/connected; compare guard off and on"
 
 [[cases]]
 id = "VPN-05"
 kind = "browser"
-environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+environments = [
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+]
 expected = "Optional managed browser-policy guard must prevent proxy-based bypass when enabled"
 
 [[cases]]
 id = "VPN-06"
 kind = "manual"
-environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton", "ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard"]
+environments = [
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+  "ubuntu-wireguard",
+  "arch-wireguard",
+  "cachyos-wireguard",
+  "windows-wireguard",
+]
 expected = "Desktop VPN plus proxy extension concurrently; record all routes and DNS"
 
 [[cases]]
 id = "VPN-07"
 kind = "browser"
-environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton", "ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn"]
+environments = [
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+  "ubuntu-wireguard",
+  "arch-wireguard",
+  "cachyos-wireguard",
+  "windows-wireguard",
+  "ubuntu-openvpn",
+  "arch-openvpn",
+  "cachyos-openvpn",
+]
 expected = "VPN starts before/after engine and browser; policy remains enforced"
 
 [[cases]]
 id = "VPN-08"
 kind = "manual"
-environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn", "ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+environments = [
+  "ubuntu-wireguard",
+  "arch-wireguard",
+  "cachyos-wireguard",
+  "windows-wireguard",
+  "ubuntu-openvpn",
+  "arch-openvpn",
+  "cachyos-openvpn",
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+]
 expected = "Disconnect/reconnect, kill switch and server change preserve or visibly degrade enforcement"
 
 [[cases]]
 id = "VPN-09"
 kind = "manual"
-environments = ["ubuntu-wireguard", "arch-wireguard", "cachyos-wireguard", "windows-wireguard", "ubuntu-openvpn", "arch-openvpn", "cachyos-openvpn", "ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton"]
+environments = [
+  "ubuntu-wireguard",
+  "arch-wireguard",
+  "cachyos-wireguard",
+  "windows-wireguard",
+  "ubuntu-openvpn",
+  "arch-openvpn",
+  "cachyos-openvpn",
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+]
 expected = "DoH IPv6 QUIC and UDP paths do not open uninspected browser egress"
 
 [[cases]]
@@ -385,13 +483,29 @@ expected = "Opaque HTTPS proxy on ports 443/4443/8443 must be observed/blocked o
 [[cases]]
 id = "VPN-11"
 kind = "browser"
-environments = ["ubuntu-socks", "arch-socks", "cachyos-socks", "ubuntu-tor", "arch-tor", "cachyos-tor"]
+environments = [
+  "ubuntu-socks",
+  "arch-socks",
+  "cachyos-socks",
+  "ubuntu-tor",
+  "arch-tor",
+  "cachyos-tor",
+]
 expected = "Local SOCKS/HTTP proxy cannot convert a blocked browser origin into untracked egress"
 
 [[cases]]
 id = "VPN-12"
 kind = "manual"
-environments = ["ubuntu-proton", "arch-proton", "cachyos-proton", "windows-proton", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+environments = [
+  "ubuntu-proton",
+  "arch-proton",
+  "cachyos-proton",
+  "windows-proton",
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+]
 expected = "Repeat with supported browsers/profiles and record process identities"
 
 [[cases]]
@@ -403,13 +517,46 @@ expected = "Use real free provider when authenticated snapshot is available; do 
 [[cases]]
 id = "VPN-14"
 kind = "routing"
-environments = ["ubuntu-direct", "ubuntu-wireguard", "ubuntu-openvpn", "ubuntu-tor", "ubuntu-tor-browser", "ubuntu-socks", "ubuntu-i2p", "ubuntu-proton", "ubuntu-windscribe", "arch-direct", "arch-wireguard", "arch-openvpn", "arch-tor", "arch-tor-browser", "arch-socks", "arch-i2p", "arch-proton", "arch-windscribe", "cachyos-direct", "cachyos-wireguard", "cachyos-openvpn", "cachyos-tor", "cachyos-tor-browser", "cachyos-socks", "cachyos-i2p", "cachyos-proton", "cachyos-windscribe"]
+environments = [
+  "ubuntu-direct",
+  "ubuntu-wireguard",
+  "ubuntu-openvpn",
+  "ubuntu-tor",
+  "ubuntu-tor-browser",
+  "ubuntu-socks",
+  "ubuntu-i2p",
+  "ubuntu-proton",
+  "ubuntu-windscribe",
+  "arch-direct",
+  "arch-wireguard",
+  "arch-openvpn",
+  "arch-tor",
+  "arch-tor-browser",
+  "arch-socks",
+  "arch-i2p",
+  "arch-proton",
+  "arch-windscribe",
+  "cachyos-direct",
+  "cachyos-wireguard",
+  "cachyos-openvpn",
+  "cachyos-tor",
+  "cachyos-tor-browser",
+  "cachyos-socks",
+  "cachyos-i2p",
+  "cachyos-proton",
+  "cachyos-windscribe",
+]
 expected = "Inspect Linux RPDB, nftables and TUN/route changes across distributions"
 
 [[cases]]
 id = "TOR-01"
 kind = "browser"
-environments = ["ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+environments = [
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+]
 expected = "Tor Browser reaches allowed site but not an active blocked origin"
 
 [[cases]]
@@ -427,19 +574,37 @@ expected = "Tor daemon and torsocks installed, port 9050 listening; infrastructu
 [[cases]]
 id = "TOR-04"
 kind = "manual"
-environments = ["ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+environments = [
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+]
 expected = "Tor Browser with obfs4 bridge; record actual origin outcome and bridge availability"
 
 [[cases]]
 id = "TOR-05"
 kind = "manual"
-environments = ["ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+environments = [
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+]
 expected = "Snowflake/WebTunnel transports; distinguish network failure from blocked-origin bypass"
 
 [[cases]]
 id = "TOR-06"
 kind = "browser"
-environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+environments = [
+  "ubuntu-tor",
+  "arch-tor",
+  "cachyos-tor",
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+]
 expected = "Start TOR before/after Ace and compare traffic enforcement"
 
 [[cases]]
@@ -457,13 +622,29 @@ expected = "Nondefault SOCKS ports/process aliases cannot bypass browser protect
 [[cases]]
 id = "TOR-09"
 kind = "browser"
-environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+environments = [
+  "ubuntu-tor",
+  "arch-tor",
+  "cachyos-tor",
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+]
 expected = "Loopback, remote DNS, IPv6 and new browser profiles remain accounted for"
 
 [[cases]]
 id = "TOR-10"
 kind = "manual"
-environments = ["ubuntu-tor", "arch-tor", "cachyos-tor", "ubuntu-tor-browser", "arch-tor-browser", "cachyos-tor-browser", "windows-tor-browser"]
+environments = [
+  "ubuntu-tor",
+  "arch-tor",
+  "cachyos-tor",
+  "ubuntu-tor-browser",
+  "arch-tor-browser",
+  "cachyos-tor-browser",
+  "windows-tor-browser",
+]
 expected = "Cross-distro and Windows TOR behavior recorded separately"
 
 [[cases]]

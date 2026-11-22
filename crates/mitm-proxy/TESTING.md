@@ -33,26 +33,26 @@ the process.
 
 ### Unit tests (`src/` — in-module `#[cfg(test)]`)
 
-| Module | Tests | What they cover |
-|--------|-------|-----------------|
-| `config` | 4 | Builder field defaults, CA paths, `with_http3`/`install_ca`/`verify_upstream` |
-| `error` | 4 | `ProxyError` variants display correctly |
-| `inspect` | 7 | `NoopInspector`, custom inspectors, mutation, `RequestAction::Respond`, `Protocol::Display`, `ConnMeta` |
-| `ca` | 10 | Root generation (SKI, BasicConstraints), leaf issuance (CN+SAN, IP SAN, AKI presence, AKI matches CA's SKI, validity ≤398 days, signature verification against CA), `load_or_generate` persistence |
-| `cert_resolver` | 4 | Cert minting by SNI, Arc caching, IP SNI, separate cache entries per host |
-| `tls` | 5 | Server ALPN (TCP/H3), client config with/without verification, ALPN set |
-| `util` | 11 | `authority_display` (default/non-default ports), `absolute_uri` (upgrade/passthrough), `snapshot_request_head`, `strip_hop_by_hop` (all 9 headers), `ensure_host_header` (h1/h2/h3/already-present) |
+| Module          | Tests | What they cover                                                                                                                                                                                     |
+| --------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config`        | 4     | Builder field defaults, CA paths, `with_http3`/`install_ca`/`verify_upstream`                                                                                                                       |
+| `error`         | 4     | `ProxyError` variants display correctly                                                                                                                                                             |
+| `inspect`       | 7     | `NoopInspector`, custom inspectors, mutation, `RequestAction::Respond`, `Protocol::Display`, `ConnMeta`                                                                                             |
+| `ca`            | 10    | Root generation (SKI, BasicConstraints), leaf issuance (CN+SAN, IP SAN, AKI presence, AKI matches CA's SKI, validity ≤398 days, signature verification against CA), `load_or_generate` persistence  |
+| `cert_resolver` | 4     | Cert minting by SNI, Arc caching, IP SNI, separate cache entries per host                                                                                                                           |
+| `tls`           | 5     | Server ALPN (TCP/H3), client config with/without verification, ALPN set                                                                                                                             |
+| `util`          | 11    | `authority_display` (default/non-default ports), `absolute_uri` (upgrade/passthrough), `snapshot_request_head`, `strip_hop_by_hop` (all 9 headers), `ensure_host_header` (h1/h2/h3/already-present) |
 
 ### Integration tests (`tests/`)
 
-| Test file | Tests | Protocol | What they cover |
-|-----------|-------|----------|-----------------|
-| `ca_tests.rs` | 3 | — | First-run CA generation, second-run reuse, leaf cache reuse |
-| `cli_tests.rs` | 8 | — | Compile binary `--help`/`--version`, `--listen`, `--http3`, `--ca-dir`, `--insecure-upstream`, starts without `--install-ca`, defaults shown in help |
-| `inspector_tests.rs` | 4 | HTTPS | Observer counts calls, request header mutation, response body mutation, `RequestAction::Respond` blocks upstream |
-| `proxy_http1.rs` | 4 | HTTP/1.1 | Plaintext forward, CONNECT MITM GET, CONNECT MITM POST body round-trip, custom header |
-| `proxy_http2.rs` | 3 | HTTP/2 | CONNECT+MITM GET, POST body, two concurrent multiplexed streams on one h2 connection |
-| `proxy_http3.rs` | 7 | HTTP/3 (QUIC) | GET/POST/FIN, Alt-Svc stripping, selective TLS SNI denial, HTTP/3 authority coalescing denial, blocking inspector without upstream |
+| Test file            | Tests | Protocol      | What they cover                                                                                                                                      |
+| -------------------- | ----- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ca_tests.rs`        | 3     | —             | First-run CA generation, second-run reuse, leaf cache reuse                                                                                          |
+| `cli_tests.rs`       | 8     | —             | Compile binary `--help`/`--version`, `--listen`, `--http3`, `--ca-dir`, `--insecure-upstream`, starts without `--install-ca`, defaults shown in help |
+| `inspector_tests.rs` | 4     | HTTPS         | Observer counts calls, request header mutation, response body mutation, `RequestAction::Respond` blocks upstream                                     |
+| `proxy_http1.rs`     | 4     | HTTP/1.1      | Plaintext forward, CONNECT MITM GET, CONNECT MITM POST body round-trip, custom header                                                                |
+| `proxy_http2.rs`     | 3     | HTTP/2        | CONNECT+MITM GET, POST body, two concurrent multiplexed streams on one h2 connection                                                                 |
+| `proxy_http3.rs`     | 7     | HTTP/3 (QUIC) | GET/POST/FIN, Alt-Svc stripping, selective TLS SNI denial, HTTP/3 authority coalescing denial, blocking inspector without upstream                   |
 
 All integration tests use hermetically-bound local echo servers on
 `127.0.0.1:0` (ephemeral ports). The proxy runs **in-process** via

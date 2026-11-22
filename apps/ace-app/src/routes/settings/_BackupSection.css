@@ -1,238 +1,260 @@
+.ace-settings-backup.settings-section {
+    display: grid;
+    gap: 12px;
+}
 
-    .ace-settings-backup.settings-section {
-        display: grid;
-        gap: 12px;
+:is(.ace-settings-backup, .ace-settings-backup-dialog) header {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .section-mark {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-left: 3px solid var(--ace-ash);
+    color: var(--muted-foreground);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) h2,
+:is(.ace-settings-backup, .ace-settings-backup-dialog) h3 {
+    margin: 0;
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) h2 {
+    font-size: 18px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) header p {
+    margin: 3px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-ledger {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--card);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-row {
+    min-height: 88px;
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 13px;
+    padding: 14px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .backup-row
+    + .backup-row {
+    border-top: 1px solid var(--border);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-row.restricted {
+    background: color-mix(in srgb, var(--muted) 22%, var(--card));
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .row-mark {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted-foreground);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .row-copy {
+    min-width: 0;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .row-copy h3 {
+    font-size: 15px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .row-copy p {
+    max-width: 520px;
+    margin: 4px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .last-sync {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted-foreground);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 7px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .row-actions
+    button:not(.pro-action) {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 11px;
+    background: transparent;
+    color: var(--foreground);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.dark
+    :is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .row-actions
+    button:not(.pro-action) {
+    border-color: var(--input);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .row-actions
+    button:not(.pro-action):hover:not(:disabled) {
+    background: var(--muted);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .row-actions
+    button:not(.pro-action):disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .import-warning {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--ace-danger) 35%, var(--border));
+    border-radius: 4px;
+    color: var(--ace-danger);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field {
+    display: grid;
+    gap: 7px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .cloud-password-field
+    label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .cloud-password-field
+    input {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid var(--input);
+    border-radius: 4px;
+    padding: 8px 11px;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 14px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .cloud-password-field
+    input:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .cloud-password-field
+    input[aria-invalid="true"] {
+    border-color: var(--ace-danger);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field p {
+    margin: 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .cloud-password-field
+    .cloud-password-error {
+    color: var(--ace-danger);
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-submit {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 12px;
+    background: var(--foreground);
+    color: var(--background);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .cloud-password-submit:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog)
+    .cloud-password-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+:is(.ace-settings-backup, .ace-settings-backup-dialog) .spinner {
+    animation: backup-spin 900ms linear infinite;
+}
+
+@keyframes backup-spin {
+    to {
+        transform: rotate(360deg);
     }
+}
 
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) header {
-        display: grid;
-        grid-template-columns: 28px minmax(0, 1fr);
-        gap: 8px;
-        align-items: start;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .section-mark {
-        width: 24px;
-        height: 24px;
-        display: grid;
-        place-items: center;
-        border-left: 3px solid var(--ace-ash);
-        color: var(--muted-foreground);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) h2,
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) h3 {
-        margin: 0;
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-weight: 600;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) h2 {
-        font-size: 18px;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) header p {
-        margin: 3px 0 0;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.4;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-ledger {
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        background: var(--card);
-    }
-
+@container page (max-width: 600px) {
     :is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-row {
-        min-height: 88px;
-        display: grid;
-        grid-template-columns: 36px minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 13px;
-        padding: 14px;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-row + .backup-row {
-        border-top: 1px solid var(--border);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-row.restricted {
-        background: color-mix(in srgb, var(--muted) 22%, var(--card));
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-mark {
-        width: 34px;
-        height: 34px;
-        display: grid;
-        place-items: center;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        color: var(--muted-foreground);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-copy {
-        min-width: 0;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-copy h3 {
-        font-size: 15px;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-copy p {
-        max-width: 520px;
-        margin: 4px 0 0;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.45;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .last-sync {
-        display: block;
-        margin-top: 5px;
-        color: var(--muted-foreground);
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 12px;
+        grid-template-columns: 36px minmax(0, 1fr);
     }
 
     :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 7px;
+        grid-column: 2;
+        justify-content: flex-start;
+        flex-wrap: wrap;
     }
+}
 
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-actions button:not(.pro-action) {
-        min-height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 0 11px;
-        background: transparent;
-        color: var(--foreground);
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .dark :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-actions button:not(.pro-action) {
-        border-color: var(--input);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-actions button:not(.pro-action):hover:not(:disabled) {
-        background: var(--muted);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-actions button:not(.pro-action):disabled {
-        cursor: not-allowed;
-        opacity: 0.45;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .import-warning {
-        width: 36px;
-        height: 36px;
-        display: grid;
-        place-items: center;
-        border: 1px solid color-mix(in srgb, var(--ace-danger) 35%, var(--border));
-        border-radius: 4px;
-        color: var(--ace-danger);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field {
-        display: grid;
-        gap: 7px;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field label {
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field input {
-        width: 100%;
-        min-height: 38px;
-        border: 1px solid var(--input);
-        border-radius: 4px;
-        padding: 8px 11px;
-        background: var(--background);
-        color: var(--foreground);
-        font-size: 14px;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field input:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: 2px;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field input[aria-invalid="true"] {
-        border-color: var(--ace-danger);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field p {
-        margin: 0;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.45;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-field .cloud-password-error {
-        color: var(--ace-danger);
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-submit {
-        display: inline-flex;
-        min-height: 36px;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 0 12px;
-        background: var(--foreground);
-        color: var(--background);
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-submit:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: 2px;
-    }
-
-    :is(.ace-settings-backup, .ace-settings-backup-dialog) .cloud-password-submit:disabled {
-        cursor: not-allowed;
-        opacity: 0.5;
-    }
-
+@media (prefers-reduced-motion: reduce) {
     :is(.ace-settings-backup, .ace-settings-backup-dialog) .spinner {
-        animation: backup-spin 900ms linear infinite;
+        animation: none;
     }
-
-    @keyframes backup-spin {
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    @container page (max-width: 600px) {
-        :is(.ace-settings-backup, .ace-settings-backup-dialog) .backup-row {
-            grid-template-columns: 36px minmax(0, 1fr);
-        }
-
-        :is(.ace-settings-backup, .ace-settings-backup-dialog) .row-actions {
-            grid-column: 2;
-            justify-content: flex-start;
-            flex-wrap: wrap;
-        }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        :is(.ace-settings-backup, .ace-settings-backup-dialog) .spinner {
-            animation: none;
-        }
-    }
+}

@@ -2,6 +2,7 @@
 
 These checks do not install the MSI or change production services.
 """
+
 import struct
 import unittest
 import xml.etree.ElementTree as ET
@@ -23,14 +24,14 @@ class InstallerBrandingTests(unittest.TestCase):
         self.assertEqual(struct.unpack_from("<HHH", ico), (0, 1, 7))
         sizes = []
         for i in range(7):
-            w, h, colors, reserved, planes, depth, data_size, offset = struct.unpack_from(
-                "<BBBBHHII", ico, 6 + i * 16
+            w, h, colors, reserved, planes, depth, data_size, offset = (
+                struct.unpack_from("<BBBBHHII", ico, 6 + i * 16)
             )
             width, height = w or 256, h or 256
             self.assertEqual(width, height)
             self.assertEqual(planes, 1)
             self.assertEqual(depth, 32)
-            self.assertEqual(ico[offset:offset + 8], b"\x89PNG\r\n\x1a\n")
+            self.assertEqual(ico[offset : offset + 8], b"\x89PNG\r\n\x1a\n")
             self.assertEqual(
                 struct.unpack_from(">II", ico, offset + 16), (width, height)
             )
@@ -72,10 +73,12 @@ class InstallerBrandingTests(unittest.TestCase):
 
         badge = nodes["Installer badge · amber disk"]
         separator = nodes["Installer badge · minimal separation"]
-        self.assertEqual((float(badge.get("cx")), float(badge.get("cy"))),
-                         (248.0, 248.0))
-        self.assertEqual((float(separator.get("cx")), float(separator.get("cy"))),
-                         (248.0, 248.0))
+        self.assertEqual(
+            (float(badge.get("cx")), float(badge.get("cy"))), (248.0, 248.0)
+        )
+        self.assertEqual(
+            (float(separator.get("cx")), float(separator.get("cy"))), (248.0, 248.0)
+        )
         self.assertEqual(float(badge.get("r")), 48.0)
         self.assertEqual(float(separator.get("r")) - float(badge.get("r")), 7.0)
 
@@ -98,11 +101,16 @@ class InstallerBrandingTests(unittest.TestCase):
 
     def test_setup_dialog_uses_bitmap(self):
         binaries = self.wix.findall(".//w:Binary", NS)
-        images = [item for item in binaries if item.get("Id") == "AceInstallerDialogLogo"]
+        images = [
+            item for item in binaries if item.get("Id") == "AceInstallerDialogLogo"
+        ]
         self.assertEqual(len(images), 1)
-        self.assertEqual(images[0].get("SourceFile"),
-                         r"branding\ace-icon-installer-dark.bmp")
-        controls = self.wix.findall(".//w:Dialog[@Id='InstallConfirmDlg']/w:Control", NS)
+        self.assertEqual(
+            images[0].get("SourceFile"), r"branding\ace-icon-installer-dark.bmp"
+        )
+        controls = self.wix.findall(
+            ".//w:Dialog[@Id='InstallConfirmDlg']/w:Control", NS
+        )
         logo = [control for control in controls if control.get("Id") == "InstallerLogo"]
         self.assertEqual(len(logo), 1)
         self.assertEqual(logo[0].get("Type"), "Bitmap")
@@ -110,8 +118,9 @@ class InstallerBrandingTests(unittest.TestCase):
 
     def test_installer_icon_not_reused_for_application_shortcuts(self):
         shortcuts = self.wix.findall(".//w:Shortcut", NS)
-        self.assertEqual({entry.get("Id") for entry in shortcuts},
-                         {"SC_StartMenu", "SC_Desktop"})
+        self.assertEqual(
+            {entry.get("Id") for entry in shortcuts}, {"SC_StartMenu", "SC_Desktop"}
+        )
         for shortcut in shortcuts:
             self.assertIsNone(shortcut.get("Icon"))
             self.assertEqual(shortcut.get("Target"), "[INSTALLFOLDER]ace-app.exe")

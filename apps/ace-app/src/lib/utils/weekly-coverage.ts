@@ -129,7 +129,9 @@ export function computeWeeklyCoverage(
 
 /** Sorts and merges overlapping/adjacent minute ranges into a union. */
 export function mergeRanges(ranges: MinuteRange[]): MinuteRange[] {
-    const sorted = [...ranges].sort((a, b) => a.start - b.start || a.end - b.end);
+    const sorted = [...ranges].sort(
+        (a, b) => a.start - b.start || a.end - b.end,
+    );
     const merged: MinuteRange[] = [];
     for (const range of sorted) {
         const last = merged[merged.length - 1];
@@ -278,7 +280,11 @@ export function hourBuckets(ranges: MinuteRange[]): boolean[] {
     for (const range of ranges) {
         const firstHour = Math.floor(range.start / 60);
         const lastHourExclusive = Math.ceil(range.end / 60);
-        for (let hour = firstHour; hour < lastHourExclusive && hour < 24; hour++) {
+        for (
+            let hour = firstHour;
+            hour < lastHourExclusive && hour < 24;
+            hour++
+        ) {
             hours[hour] = true;
         }
     }

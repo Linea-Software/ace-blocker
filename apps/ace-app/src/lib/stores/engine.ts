@@ -6,8 +6,8 @@ import { ping } from "$engine-client";
  * are not web-facing concerns after the typed IPC migration.
  */
 class EngineStore {
-    isReady = (false);
-    isAlive = (false);
+    isReady = false;
+    isAlive = false;
 
     constructor() {
         reactiveFields(this, ["isReady", "isAlive"]);

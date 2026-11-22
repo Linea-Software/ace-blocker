@@ -56,7 +56,7 @@ Use this command to test callback dispatch without an API key or account change:
 xdg-open 'aceblocker://account/invalid-test-route'
 ```
 
-The expected result is exit status 0 and a message that the route is *not in the forward allowlist*.
+The expected result is exit status 0 and a message that the route is _not in the forward allowlist_.
 This result means that the launcher was found and the engine callback receiver rejected an unsafe URL.
 Do **not** test with an invented `apiKey`.
 A key on the allowed endpoint can change the real account.

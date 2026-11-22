@@ -90,31 +90,31 @@ The default `NoInterceptDecider` intercepts nothing.
 
 ### ProxyConfig fields
 
-| Field | Type | Default |
-|-------|------|---------|
-| `listen_addr` | `SocketAddr` | (required) |
-| `http3_addr` | `Option<SocketAddr>` | `None` |
-| `ca_cert_path` | `PathBuf` | `{ca_dir}/mitm_ca.pem` |
-| `ca_key_path` | `PathBuf` | `{ca_dir}/mitm_ca.key` |
-| `install_ca` | `bool` | `false` |
-| `verify_upstream` | `bool` | `true` |
+| Field             | Type                 | Default                |
+| ----------------- | -------------------- | ---------------------- |
+| `listen_addr`     | `SocketAddr`         | (required)             |
+| `http3_addr`      | `Option<SocketAddr>` | `None`                 |
+| `ca_cert_path`    | `PathBuf`            | `{ca_dir}/mitm_ca.pem` |
+| `ca_key_path`     | `PathBuf`            | `{ca_dir}/mitm_ca.key` |
+| `install_ca`      | `bool`               | `false`                |
+| `verify_upstream` | `bool`               | `true`                 |
 
 ### Inspect module (pub)
 
-| Type | Role |
-|------|------|
-| `Protocol` | Enum: `Http1`, `Http2`, `Http3` |
-| `ConnMeta` | Connection metadata: client_addr, protocol, is_tls, authority |
-| `RequestAction` | `Continue` or `Respond(BufferedResponse)` for decrypted HTTP |
-| `ConnectAction` | `Continue`, `Respond(BufferedResponse)` or `Intercept(BufferedResponse)` for TLS-local synthetic blocks |
-| `ResponseAction` | `Continue` |
-| `RequestInspector` trait | `fn inspect_request(&self, meta, req) -> RequestAction` |
-| `ResponseInspector` trait | `fn inspect_response(&self, meta, req_head, res) -> ResponseAction` |
-| `Inspectors` | Bundle holding `Arc<dyn RequestInspector>` + `Arc<dyn ResponseInspector>` |
-| `NoopInspector` | Forwards everything unchanged |
-| `LoggingInspector` | Logs one-line summaries at INFO |
-| `BufferedRequest` | `Request<Bytes>` |
-| `BufferedResponse` | `Response<Bytes>` |
+| Type                      | Role                                                                                                    |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `Protocol`                | Enum: `Http1`, `Http2`, `Http3`                                                                         |
+| `ConnMeta`                | Connection metadata: client_addr, protocol, is_tls, authority                                           |
+| `RequestAction`           | `Continue` or `Respond(BufferedResponse)` for decrypted HTTP                                            |
+| `ConnectAction`           | `Continue`, `Respond(BufferedResponse)` or `Intercept(BufferedResponse)` for TLS-local synthetic blocks |
+| `ResponseAction`          | `Continue`                                                                                              |
+| `RequestInspector` trait  | `fn inspect_request(&self, meta, req) -> RequestAction`                                                 |
+| `ResponseInspector` trait | `fn inspect_response(&self, meta, req_head, res) -> ResponseAction`                                     |
+| `Inspectors`              | Bundle holding `Arc<dyn RequestInspector>` + `Arc<dyn ResponseInspector>`                               |
+| `NoopInspector`           | Forwards everything unchanged                                                                           |
+| `LoggingInspector`        | Logs one-line summaries at INFO                                                                         |
+| `BufferedRequest`         | `Request<Bytes>`                                                                                        |
+| `BufferedResponse`        | `Response<Bytes>`                                                                                       |
 
 ## ACE HTTP/3 admission contract
 
@@ -161,18 +161,18 @@ It skips chain validation but still checks cryptographic signatures.
 
 ## Key dependency versions
 
-| Crate | Version | Notes |
-|-------|---------|-------|
-| h3 | 0.0.8 | HTTP/3 protocol |
-| h3-quinn | 0.0.10 | h3 transport over quinn |
-| quinn | 0.11.11 | QUIC transport |
-| rustls | 0.23.42 | ring provider, tls12 |
-| rcgen | 0.14.8 | features pem, x509-parser |
-| hyper | 1 | features full |
-| hyper-util | 0.1.20 | features full |
-| tokio-rustls | 0.26.4 | ring, logging, tls12 |
-| x509-parser | 0.17 | features verify (dev only) |
-| tokio | 1.53.1 | features full |
+| Crate        | Version | Notes                      |
+| ------------ | ------- | -------------------------- |
+| h3           | 0.0.8   | HTTP/3 protocol            |
+| h3-quinn     | 0.0.10  | h3 transport over quinn    |
+| quinn        | 0.11.11 | QUIC transport             |
+| rustls       | 0.23.42 | ring provider, tls12       |
+| rcgen        | 0.14.8  | features pem, x509-parser  |
+| hyper        | 1       | features full              |
+| hyper-util   | 0.1.20  | features full              |
+| tokio-rustls | 0.26.4  | ring, logging, tls12       |
+| x509-parser  | 0.17    | features verify (dev only) |
+| tokio        | 1.53.1  | features full              |
 
 ## Rebuilding while process is running
 

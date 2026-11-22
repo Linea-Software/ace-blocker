@@ -26,7 +26,7 @@ The `enforcementStatus` reasons, in priority order, are:
 5. `no_scripts_enabled` — all interventions disabled.
 6. `operational` — eligible, enabled, valid scripts loaded.
 
-`operational` shows overall readiness. It does not guarantee success on every browser or site. CSP, network tunnels, and site changes can prevent individual scripts from running. The UI distinguishes *configured* from *currently operational*.
+`operational` shows overall readiness. It does not guarantee success on every browser or site. CSP, network tunnels, and site changes can prevent individual scripts from running. The UI distinguishes _configured_ from _currently operational_.
 
 ## API and backup
 

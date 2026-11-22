@@ -19,14 +19,14 @@ The WinDivert design intercepted individual packets and reverse-mapped each one
 to its owning process to decide what to do with it. Three problems were
 structural rather than incidental:
 
-| Problem | Why it happened | How this crate avoids it |
-|---|---|---|
-| **HTTP/3 leaked past blocking.** Instagram and YouTube loaded despite matching block rules. | The per-packet `GetExtendedUdpTable` lookup raced UDP socket setup. On a miss the flow was passed through *uninspected*. | Attribution happens once per **flow**, at open. The SYN could not exist unless the socket already did, so there is nothing to race. Browser QUIC is now conservatively intercepted through the local H3 endpoint or dropped, and unknown QUIC never goes direct — see below. |
-| **NAT bookkeeping.** Destination rewriting needed a table mapping ephemeral ports back to real destinations, plus checksum fixups. | Packet-level redirection destroys the original destination. | Under a TUN the destination is simply in the IP header. No rewriting, no table. |
-| **IPv6 bypassed everything.** | The capture filter was `ip and (...)`, which never matched IPv6. | The netstack handles both families identically; IPv6 addressing and routes are installed by default. |
+| Problem                                                                                                                            | Why it happened                                                                                                          | How this crate avoids it                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **HTTP/3 leaked past blocking.** Instagram and YouTube loaded despite matching block rules.                                        | The per-packet `GetExtendedUdpTable` lookup raced UDP socket setup. On a miss the flow was passed through _uninspected_. | Attribution happens once per **flow**, at open. The SYN could not exist unless the socket already did, so there is nothing to race. Browser QUIC is now conservatively intercepted through the local H3 endpoint or dropped, and unknown QUIC never goes direct — see below. |
+| **NAT bookkeeping.** Destination rewriting needed a table mapping ephemeral ports back to real destinations, plus checksum fixups. | Packet-level redirection destroys the original destination.                                                              | Under a TUN the destination is simply in the IP header. No rewriting, no table.                                                                                                                                                                                              |
+| **IPv6 bypassed everything.**                                                                                                      | The capture filter was `ip and (...)`, which never matched IPv6.                                                         | The netstack handles both families identically; IPv6 addressing and routes are installed by default.                                                                                                                                                                         |
 
 A later attempt to fix attribution with a second WinDivert handle on the Socket
-layer made things worse: QUIC still leaked *and* ordinary sites stopped loading.
+layer made things worse: QUIC still leaked _and_ ordinary sites stopped loading.
 That is the failure mode this crate is designed against.
 
 ## Design
@@ -71,11 +71,11 @@ All Windows route/address configuration uses IP Helper APIs rather than
 ACE's own upstream sockets must be distinguishable from application sockets or
 they would recursively enter the tunnel. Relay setup therefore fails closed:
 
-| OS | Relay escape |
-|---|---|
+| OS      | Relay escape                                                                                                                                                                                                                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Windows | Before every relay connection, enumerate the current routes, exclude ACE's WinTun interface, choose the best remaining route, then apply `IP_UNICAST_IF` / `IPV6_UNICAST_IF`. This follows Wi-Fi/Ethernet/VPN changes without a stale startup-time pin. |
-| Linux | Apply `SO_MARK`; policy routing skips ACE's capture table and lets the normal RPDB choose the current egress, including an active VPN. |
-| macOS | `IP_BOUND_IF` / `IPV6_BOUND_IF` using the startup connectivity snapshot. |
+| Linux   | Apply `SO_MARK`; policy routing skips ACE's capture table and lets the normal RPDB choose the current egress, including an active VPN.                                                                                                                  |
+| macOS   | `IP_BOUND_IF` / `IPV6_BOUND_IF` using the startup connectivity snapshot.                                                                                                                                                                                |
 
 On Windows, `IP_UNICAST_IF` takes the interface index in **network** byte order
 while `IPV6_UNICAST_IF` takes it in **host** byte order. The encoding is tested
@@ -123,11 +123,11 @@ itself** — the safety property does not depend on our cleanup code running.
 
 ## Requirements
 
-* **Windows:** administrator privileges (WinTun and the WFP dynamic policy both
+- **Windows:** administrator privileges (WinTun and the WFP dynamic policy both
   require elevation) and `wintun.dll` next to the executable — see below.
-* **Linux:** root or `CAP_NET_ADMIN`, plus the `nft` userspace command. The same
+- **Linux:** root or `CAP_NET_ADMIN`, plus the `nft` userspace command. The same
   capability covers TUN setup, policy routing, `SO_MARK`, and nftables changes.
-* **macOS:** root (utun creation requires root or the packet-tunnel
+- **macOS:** root (utun creation requires root or the packet-tunnel
   entitlement).
 
 `TunRedirect::start` returns `Error::NotElevated` so callers can degrade
@@ -166,7 +166,7 @@ kernel component load.
 ### Licensing
 
 WinTun is by WireGuard LLC / Jason A. Donenfeld and is released under the
-**GPLv2 *or* the MIT license** — see `thirdparty/wintun/LICENSE.txt`. We
+**GPLv2 _or_ the MIT license** — see `thirdparty/wintun/LICENSE.txt`. We
 redistribute under the MIT option, which requires only that the copyright and
 permission notice accompany the distribution. The installer ships that file as
 `WINTUN-LICENSE.txt`; `build.ps1` fails if it is missing, so the obligation
@@ -199,13 +199,13 @@ to send as SNI upstream, so DNS snooping is load-bearing, not just diagnostic.
 
 ## Known gaps
 
-* **Only ICMP echo is relayed on Windows.** Ordinary `ping` works through a raw
+- **Only ICMP echo is relayed on Windows.** Ordinary `ping` works through a raw
   socket pinned to the current non-ACE route, but other ICMP/unknown transport
   messages are still not proxied through the userland stack.
-* **UDP `Proxy` rules degrade to direct.** UDP cannot be tunnelled through an
+- **UDP `Proxy` rules degrade to direct.** UDP cannot be tunnelled through an
   HTTP `CONNECT` proxy, so a `Proxy` action on a UDP flow relays it directly
   rather than dropping it.
-* **Captured multicast/broadcast is a fallback drop.** Windows demotes WinTun's
+- **Captured multicast/broadcast is a fallback drop.** Windows demotes WinTun's
   auto-created group routes so mDNS/SSDP/LLMNR stay on the LAN; Linux and macOS
   likewise keep group traffic on the host's normal topology. If such traffic
   nevertheless reaches the netstack, it is dropped rather than incorrectly

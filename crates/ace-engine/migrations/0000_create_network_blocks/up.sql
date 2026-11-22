@@ -7,6 +7,5 @@ CREATE TABLE IF NOT EXISTS network_blocks (
     icon TEXT,
     enabled BOOLEAN NOT NULL DEFAULT 1,
     schedule_timezone TEXT NOT NULL DEFAULT '__legacy_system_timezone__',
-    schedule_mode TEXT NOT NULL DEFAULT 'always'
-        CHECK (schedule_mode IN ('always', 'scheduled'))
+    schedule_mode TEXT NOT NULL DEFAULT 'always' CHECK (schedule_mode IN ('always', 'scheduled'))
 );

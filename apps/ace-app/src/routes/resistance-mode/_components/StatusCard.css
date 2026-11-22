@@ -1,96 +1,95 @@
+.resistance-state {
+    display: grid;
+    grid-template-columns: 6px minmax(0, 1fr);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+}
 
-    .resistance-state {
-        display: grid;
-        grid-template-columns: 6px minmax(0, 1fr);
-        overflow: hidden;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: var(--card);
-    }
+.state-rail {
+    background: var(--ace-ash);
+}
 
-    .state-rail {
-        background: var(--ace-ash);
-    }
+.state-operational .state-rail {
+    background: var(--ace-success);
+}
 
-    .state-operational .state-rail {
-        background: var(--ace-success);
-    }
+.state-degraded .state-rail,
+.state-pro-required .state-rail {
+    background: var(--ace-information);
+}
 
-    .state-degraded .state-rail,
-    .state-pro-required .state-rail {
-        background: var(--ace-information);
-    }
+.state-locked .state-rail {
+    background: var(--ace-signal);
+}
 
-    .state-locked .state-rail {
-        background: var(--ace-signal);
-    }
+.state-offline .state-rail {
+    background: var(--ace-danger);
+}
 
-    .state-offline .state-rail {
-        background: var(--ace-danger);
-    }
+.resistance-state.locked:not(.state-offline) {
+    border-color: color-mix(in srgb, var(--ace-signal) 48%, var(--border));
+}
 
-    .resistance-state.locked:not(.state-offline) {
-        border-color: color-mix(in srgb, var(--ace-signal) 48%, var(--border));
-    }
+.state-body,
+.state-copy {
+    min-width: 0;
+}
 
-    .state-body,
-    .state-copy {
-        min-width: 0;
-    }
+.master-row {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 14px 18px;
+}
 
-    .master-row {
-        min-height: 76px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        padding: 14px 18px;
-    }
+h2 {
+    margin: 0;
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.1;
+}
 
-    h2 {
-        margin: 0;
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 19px;
-        font-weight: 600;
-        line-height: 1.1;
-    }
+.status-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 5px;
+    margin: 5px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+}
 
-    .status-line {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 5px;
-        margin: 5px 0 0;
-        color: var(--muted-foreground);
-        font-size: 12px;
-        line-height: 1.4;
-    }
+.status-line strong {
+    color: var(--foreground);
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+}
 
-    .status-line strong {
-        color: var(--foreground);
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 13px;
-        font-weight: 600;
-    }
+.state-operational .status-line strong {
+    color: var(--ace-success);
+}
 
-    .state-operational .status-line strong {
-        color: var(--ace-success);
-    }
+.state-degraded .status-line strong,
+.state-pro-required .status-line strong {
+    color: var(--ace-information);
+}
 
-    .state-degraded .status-line strong,
-    .state-pro-required .status-line strong {
-        color: var(--ace-information);
-    }
+.state-offline .status-line strong {
+    color: var(--ace-danger);
+}
 
-    .state-offline .status-line strong {
-        color: var(--ace-danger);
-    }
+.separator {
+    color: var(--ace-ash);
+}
 
-    .separator {
-        color: var(--ace-ash);
-    }
-
-    .loading-state {
-        max-width: 280px;
-        margin-top: 8px;
-    }
+.loading-state {
+    max-width: 280px;
+    margin-top: 8px;
+}

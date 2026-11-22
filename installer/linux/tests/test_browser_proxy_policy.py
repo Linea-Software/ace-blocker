@@ -2,6 +2,7 @@
 
 All test modifications happen in TemporaryDirectory, never in real /etc or /var.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -83,7 +84,9 @@ class LinuxBrowserProxyPolicyTests(unittest.TestCase):
 
     def test_refuse_conflicting_chrome_policy_without_state(self):
         other = self.path("/etc/opt/chrome/policies/managed/corporate.json")
-        self.put(other, b'{"ExtensionSettings":{"*":{"installation_mode":"allowed"}}}\n')
+        self.put(
+            other, b'{"ExtensionSettings":{"*":{"installation_mode":"allowed"}}}\n'
+        )
         with self.assertRaisesRegex(mod.PolicyError, "Existing chrome policy"):
             self.manager.enable(["chrome"])
         self.assertFalse(self.path(mod.STATE_FILE).exists())
@@ -127,12 +130,14 @@ class LinuxBrowserProxyPolicyTests(unittest.TestCase):
     def test_failed_interrupted_enable_can_be_rolled_back(self):
         original = self.manager.atomic_write
         policy_writes = []
+
         def fail_after_first_policy(path, data, mode, gid=None):
             if path != self.path(mod.STATE_FILE):
                 policy_writes.append(path)
                 if len(policy_writes) == 2:
                     raise OSError("simulated interrupted enable")
             return original(path, data, mode, gid)
+
         self.manager.atomic_write = fail_after_first_policy
         with self.assertRaisesRegex(OSError, "simulated interrupted"):
             self.manager.enable(["chrome", "chromium"])

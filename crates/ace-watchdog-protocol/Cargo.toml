@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-nutype = { version = "~0.8", features = ["serde", "schemars08", "derive_unchecked"] }
+nutype = { version = "~0.8", features = [
+  "serde",
+  "schemars08",
+  "derive_unchecked",
+] }
 serde = { version = "~1.0", features = ["derive"] }
 uuid = { version = "~1.29", features = ["v4", "v7", "serde"] }
 

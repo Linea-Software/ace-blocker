@@ -15,10 +15,17 @@ describe("websiteHostname", () => {
     });
 
     it.each([
-        "", "example", "a..com", "example_.com", "http://",
-        "ftp://example.com", "javascript:alert(1)",
-        "https://person@example.com", "example.com other.com",
-        "https://example.com@evil.test", "http:/example.com",
+        "",
+        "example",
+        "a..com",
+        "example_.com",
+        "http://",
+        "ftp://example.com",
+        "javascript:alert(1)",
+        "https://person@example.com",
+        "example.com other.com",
+        "https://example.com@evil.test",
+        "http:/example.com",
         "*.example.com",
     ])("rejects invalid website %s", (input) => {
         expect(websiteHostname(input)).toBeNull();
@@ -27,16 +34,22 @@ describe("websiteHostname", () => {
 
 describe("parseWebsiteList", () => {
     it("normalizes pasted links, whitespace and comma-separated domains", () => {
-        expect(parseWebsiteList(
-            "https://Instagram.com/reels\nreddit.com, youtube.com x.com",
-            [],
-        )).toEqual({
+        expect(
+            parseWebsiteList(
+                "https://Instagram.com/reels\nreddit.com, youtube.com x.com",
+                [],
+            ),
+        ).toEqual({
             websites: ["instagram.com", "reddit.com", "youtube.com", "x.com"],
             skipped: [],
         });
     });
     it("skips duplicates, known domains and invalid entries", () => {
-        expect(parseWebsiteList("a.com\na.com invalid https://b.com/p", ["a.com"]))
-            .toEqual({ websites: ["b.com"], skipped: ["a.com", "a.com", "invalid"] });
+        expect(
+            parseWebsiteList("a.com\na.com invalid https://b.com/p", ["a.com"]),
+        ).toEqual({
+            websites: ["b.com"],
+            skipped: ["a.com", "a.com", "invalid"],
+        });
     });
 });

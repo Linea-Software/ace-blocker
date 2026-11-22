@@ -1,5 +1,4 @@
-
-    .settings-rule {
-        height: 1px;
-        background: color-mix(in srgb, var(--border) 72%, transparent);
-    }
+.settings-rule {
+    height: 1px;
+    background: color-mix(in srgb, var(--border) 72%, transparent);
+}

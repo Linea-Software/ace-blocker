@@ -41,16 +41,27 @@ hyper = { version = "1", features = ["full"] }
 hyper-util = { version = "0.1.21", features = ["full"] }
 quinn = { version = "0.11.12", optional = true }
 rcgen = { version = "0.14.10", features = ["pem", "x509-parser"] }
-rustls = { version = "0.23.45", default-features = false, features = ["ring", "logging", "std", "tls12"] }
+rustls = { version = "0.23.45", default-features = false, features = [
+  "ring",
+  "logging",
+  "std",
+  "tls12",
+] }
 rustls-pemfile = "2.2.0"
 rustls-pki-types = "1.15.1"
 rustls-platform-verifier = "0.7.1"
 thiserror = "2.0.21"
 time = "0.3.55"
 tokio = { version = "1.53.2", features = ["full"] }
-tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "logging", "tls12"] }
+tokio-rustls = { version = "0.26.6", default-features = false, features = [
+  "ring",
+  "logging",
+  "tls12",
+] }
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"], optional = true }
+tracing-subscriber = { version = "0.3.23", features = [
+  "env-filter",
+], optional = true }
 
 [dev-dependencies]
 # Integration-test diagnostics remain available without building the CLI.

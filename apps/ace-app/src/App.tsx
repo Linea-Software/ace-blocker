@@ -19,32 +19,57 @@ function AppShell(props: ParentProps) {
     });
 
     const legalGateLoading = () =>
-        !engineStore.isReady || (engineStore.isAlive && !userStore.accountInfoLoaded);
+        !engineStore.isReady ||
+        (engineStore.isAlive && !userStore.accountInfoLoaded);
     const showTosModal = () =>
-        engineStore.isAlive && userStore.accountInfoLoaded && !userStore.tosAccepted;
+        engineStore.isAlive &&
+        userStore.accountInfoLoaded &&
+        !userStore.tosAccepted;
     const legalGateActive = () => legalGateLoading() || showTosModal();
     const showOnboardingWizard = () =>
-        engineStore.isAlive && userStore.accountInfoLoaded && userStore.tosAccepted &&
-        onboardingStore.loaded && !onboardingStore.wizardCompleted && !onboardingStore.tourRunning;
+        engineStore.isAlive &&
+        userStore.accountInfoLoaded &&
+        userStore.tosAccepted &&
+        onboardingStore.loaded &&
+        !onboardingStore.wizardCompleted &&
+        !onboardingStore.tourRunning;
     // The first-run wizard is a true modal: keyboard and pointer interaction
     // with the workspace must remain disabled until it is dismissed.
     const shellBlocked = () => legalGateActive() || showOnboardingWizard();
     const showTutorialTour = () =>
-        !legalGateActive() && onboardingStore.loaded && onboardingStore.tourRunning &&
+        !legalGateActive() &&
+        onboardingStore.loaded &&
+        onboardingStore.tourRunning &&
         !onboardingStore.tourCompleted;
 
     return (
         <>
-            <Toaster position="bottom-right" theme={themeMode()} class="toaster group" style={{ "--normal-bg": "var(--popover)", "--normal-text": "var(--popover-foreground)", "--normal-border": "var(--border)" }} />
-            <Show when={legalGateActive()} fallback={
-                <Show when={showOnboardingWizard()}><OnboardingWizard /></Show>
-            }>
+            <Toaster
+                position="bottom-right"
+                theme={themeMode()}
+                class="toaster group"
+                style={{
+                    "--normal-bg": "var(--popover)",
+                    "--normal-text": "var(--popover-foreground)",
+                    "--normal-border": "var(--border)",
+                }}
+            />
+            <Show
+                when={legalGateActive()}
+                fallback={
+                    <Show when={showOnboardingWizard()}>
+                        <OnboardingWizard />
+                    </Show>
+                }
+            >
                 <TosModal
                     loading={legalGateLoading()}
                     loadFailed={userStore.accountLoadStatus === "error"}
                 />
             </Show>
-            <Show when={showTutorialTour()}><TutorialTour /></Show>
+            <Show when={showTutorialTour()}>
+                <TutorialTour />
+            </Show>
             <div
                 class="app-shell"
                 inert={shellBlocked()}

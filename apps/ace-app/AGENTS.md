@@ -36,7 +36,7 @@ Solid 2 specifics:
 - `createEffect(compute, apply)` uses **two arguments**. A Solid 1 or React
   single-callback effect is not an equivalent.
 - Prefer computed values over effects. Use `onSettled(() => { setup();
-  return cleanup; })` for mount/dispose resources and listeners.
+return cleanup; })` for mount/dispose resources and listeners.
 - `@solidjs/web` owns JSX and DOM rendering, `@solidjs/router` v2 owns
   navigation, and `@solidjs/vite-plugin` compiles the frontend.
 - Keep component CSS scoped to a component class; the old Svelte compiler
@@ -52,22 +52,22 @@ Solid 2 specifics:
 
 ## Project map
 
-| Path | Responsibility |
-| --- | --- |
-| `src/main.tsx` | Static WebView entry; debug-only native WDIO bridge |
-| `src/App.tsx`, `src/router.tsx` | Legal gate, onboarding, shell, lazy routes |
-| `src/routes/**/*.tsx` | Dashboard, Network Blocks, Resistance, Categories, Settings, Guide, Help |
-| `src/lib/components/**/*.tsx` | Ace-branded components and Solid 2 UI primitives |
-| `src/lib/stores/**/*.ts` | Reactive state and engine subscriptions |
-| `src/lib/deltas/**/*.ts` | Staged policy and schedule changes |
-| `src/lib/engine-client/` | Stable typed remoc RPC interface |
-| `src/lib/paraglide/` | **Generated** i18n code; do not edit manually |
-| `src/lib/utils/pack-icons.ts` | Canonical icon slug registry, including legacy IDs |
-| `src/lib/utils/theme.ts` | `mode-watcher-mode` preference compatibility |
-| `src-tauri/` | Rust Tauri wrapper, native commands and capabilities |
-| `static/`, `src/app.css` | Official Ace icon assets and global design tokens |
-| `vite.config.ts`, `index.html` | Static bundle; `build/` is Tauri's `frontendDist` |
-| `messages/*.json` | Paraglide messages; English is the source language |
+| Path                            | Responsibility                                                           |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| `src/main.tsx`                  | Static WebView entry; debug-only native WDIO bridge                      |
+| `src/App.tsx`, `src/router.tsx` | Legal gate, onboarding, shell, lazy routes                               |
+| `src/routes/**/*.tsx`           | Dashboard, Network Blocks, Resistance, Categories, Settings, Guide, Help |
+| `src/lib/components/**/*.tsx`   | Ace-branded components and Solid 2 UI primitives                         |
+| `src/lib/stores/**/*.ts`        | Reactive state and engine subscriptions                                  |
+| `src/lib/deltas/**/*.ts`        | Staged policy and schedule changes                                       |
+| `src/lib/engine-client/`        | Stable typed remoc RPC interface                                         |
+| `src/lib/paraglide/`            | **Generated** i18n code; do not edit manually                            |
+| `src/lib/utils/pack-icons.ts`   | Canonical icon slug registry, including legacy IDs                       |
+| `src/lib/utils/theme.ts`        | `mode-watcher-mode` preference compatibility                             |
+| `src-tauri/`                    | Rust Tauri wrapper, native commands and capabilities                     |
+| `static/`, `src/app.css`        | Official Ace icon assets and global design tokens                        |
+| `vite.config.ts`, `index.html`  | Static bundle; `build/` is Tauri's `frontendDist`                        |
+| `messages/*.json`               | Paraglide messages; English is the source language                       |
 
 The installed desktop application has **no NodeJS/SSR process** and no
 frontend HTTP API for local policy control. The browser-only development preview

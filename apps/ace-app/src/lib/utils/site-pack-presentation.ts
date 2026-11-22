@@ -1,6 +1,9 @@
 import type { SitePackSchema } from "$engine-client";
 import catalogJson from "$lib/data/site-packs.json";
-import { getBlockingListDisplayName, isAceCategory } from "./category-presentation";
+import {
+    getBlockingListDisplayName,
+    isAceCategory,
+} from "./category-presentation";
 
 /**
  * UI catalog snapshot, not a live server count. An installed pack's
@@ -28,7 +31,13 @@ const catalogByNameAndTier = new Map(
 
 type PackPreview = Pick<
     SitePackSchema,
-    "id" | "name" | "isRemote" | "requiresPro" | "icon" | "isSynced" | "entriesCount"
+    | "id"
+    | "name"
+    | "isRemote"
+    | "requiresPro"
+    | "icon"
+    | "isSynced"
+    | "entriesCount"
 >;
 
 export function getOfficialCatalogEntry(
@@ -44,7 +53,10 @@ export function getOfficialCatalogEntry(
 }
 
 export function getSitePackIconSlug(
-    pack: Pick<SitePackSchema, "id" | "name" | "isRemote" | "requiresPro" | "icon">,
+    pack: Pick<
+        SitePackSchema,
+        "id" | "name" | "isRemote" | "requiresPro" | "icon"
+    >,
 ): string {
     // User-imported icons are never replaced with an Ace category icon.
     return pack.icon || getOfficialCatalogEntry(pack)?.icon || "globe";
@@ -70,7 +82,9 @@ export type SitePackCategoryGroup = {
     packs: SitePackSchema[];
 };
 
-export function groupSitePackCategories(packs: SitePackSchema[]): SitePackCategoryGroup[] {
+export function groupSitePackCategories(
+    packs: SitePackSchema[],
+): SitePackCategoryGroup[] {
     const groups = new Map<string, SitePackCategoryGroup>();
     for (const pack of packs) {
         if (!isAceCategory(pack)) continue;
@@ -86,9 +100,10 @@ export function groupSitePackCategories(packs: SitePackSchema[]): SitePackCatego
     return [...groups.values()]
         .map((group) => ({
             ...group,
-            packs: group.packs.sort((a, b) =>
-                Number(a.requiresPro) - Number(b.requiresPro) ||
-                a.name.localeCompare(b.name),
+            packs: group.packs.sort(
+                (a, b) =>
+                    Number(a.requiresPro) - Number(b.requiresPro) ||
+                    a.name.localeCompare(b.name),
             ),
         }))
         .sort((a, b) => a.name.localeCompare(b.name));

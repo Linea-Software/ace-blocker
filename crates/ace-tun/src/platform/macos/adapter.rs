@@ -79,9 +79,7 @@ impl TunAdapter {
         if let Some(physical) = iface.v4_index {
             adapter.install_route(physical, IpAddr::V4(MULTICAST_V4), MULTICAST_V4_PREFIX)?;
         }
-        if ipv6
-            && let Some(physical) = iface.v6_index
-        {
+        if ipv6 && let Some(physical) = iface.v6_index {
             adapter.install_route(physical, IpAddr::V6(MULTICAST_V6), MULTICAST_V6_PREFIX)?;
         }
 
@@ -256,10 +254,7 @@ fn open_device() -> Result<(OwnedFd, u32)> {
     // SAFETY: `name` is a live C string.
     let ifindex = unsafe { libc::if_nametoindex(name.as_ptr()) };
     if ifindex == 0 {
-        return Err(Error::netcfg(
-            "if_nametoindex",
-            io::Error::last_os_error(),
-        ));
+        return Err(Error::netcfg("if_nametoindex", io::Error::last_os_error()));
     }
 
     tracing::debug!("utun device '{assigned}' up (ifindex {ifindex})");

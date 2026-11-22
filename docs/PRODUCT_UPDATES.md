@@ -89,14 +89,14 @@ The base64 payload is JSON with camelCase property names:
 ```
 
 **Example only:** The publication path above is not guaranteed to exist.
-The envelope's `key_id` selects the *embedded* trust key, not a network-
+The envelope's `key_id` selects the _embedded_ trust key, not a network-
 supplied key; only `ace-stable-v1` is accepted. Unknown fields, unknown
 channels, prereleases, incorrect OS/architecture, insecure URLs, absent/
 invalid signatures, wrong hashes, wrong pinned publisher identities, and
 downgrades are all rejected.
 
 The installed version and caller-supplied version floor can prevent replay
-of a *previously* authorized release. A privileged,
+of a _previously_ authorized release. A privileged,
 durable floor is required before install is enabled to block a revoked
 version on devices that skipped newer releases. The current engine uses
 the installed version as the floor: it **does not** persist a revocation

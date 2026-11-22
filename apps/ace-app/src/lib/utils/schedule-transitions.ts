@@ -19,7 +19,10 @@ export type ScheduleTransition = {
 
 function parseMinute(value: string | null | undefined): number {
     const [hours = "0", minutes = "0"] = (value ?? "00:00").split(":");
-    return (Number.parseInt(hours, 10) || 0) * 60 + (Number.parseInt(minutes, 10) || 0);
+    return (
+        (Number.parseInt(hours, 10) || 0) * 60 +
+        (Number.parseInt(minutes, 10) || 0)
+    );
 }
 
 function dayKey(date: Date): DayKey {

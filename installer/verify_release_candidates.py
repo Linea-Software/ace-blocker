@@ -3,6 +3,7 @@
 
 A candidate is not an approved, Authenticode-signed public release.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -15,13 +16,26 @@ from pathlib import Path
 
 MAX_PACKAGE_BYTES = 100 * 1024 * 1024
 MAX_EXPANDED_BYTES = 512 * 1024 * 1024
-REQUIRED_LINUX = frozenset({
-    "ace-engine", "ace-watchdog", "ace-redirect", "install-cert", "ace-app",
-    "install.sh", "browser-proxy-policy.py", "migrate-legacy-data.sh",
-    "ace-blocker.desktop", "ace-blocker-handler.desktop", "ace-blocker.png",
-    "RELEASING.md", "bundled-packs/manifest.json",
-})
-ELF_FILES = frozenset({"ace-engine", "ace-watchdog", "ace-redirect", "install-cert", "ace-app"})
+REQUIRED_LINUX = frozenset(
+    {
+        "ace-engine",
+        "ace-watchdog",
+        "ace-redirect",
+        "install-cert",
+        "ace-app",
+        "install.sh",
+        "browser-proxy-policy.py",
+        "migrate-legacy-data.sh",
+        "ace-blocker.desktop",
+        "ace-blocker-handler.desktop",
+        "ace-blocker.png",
+        "RELEASING.md",
+        "bundled-packs/manifest.json",
+    }
+)
+ELF_FILES = frozenset(
+    {"ace-engine", "ace-watchdog", "ace-redirect", "install-cert", "ace-app"}
+)
 MSI_MAGIC = bytes.fromhex("d0cf11e0a1b11ae1")
 
 
@@ -36,9 +50,12 @@ def sha256_file(path: Path) -> str:
 def verify_msi(path: Path) -> None:
     with path.open("rb") as source:
         header = source.read(512)
-    if (len(header) != 512 or header[:8] != MSI_MAGIC or
-        header[28:30] != b"\xfe\xff" or
-        header[30:32] not in (b"\x09\x00", b"\x0c\x00")):
+    if (
+        len(header) != 512
+        or header[:8] != MSI_MAGIC
+        or header[28:30] != b"\xfe\xff"
+        or header[30:32] not in (b"\x09\x00", b"\x0c\x00")
+    ):
         raise ValueError("Not an MSI compound-file header")
 
 
@@ -52,8 +69,11 @@ def verify_setup(path: Path, manifest_path: Path, version: str) -> None:
     if len(header) < 256 or header[:2] != b"MZ":
         raise ValueError("Not a Windows Setup PE executable")
     pe_offset = struct.unpack_from("<I", header, 0x3C)[0]
-    if (pe_offset + 6 > len(header) or header[pe_offset:pe_offset + 4] != b"PE\x00\x00"
-        or struct.unpack_from("<H", header, pe_offset + 4)[0] != 0x8664):
+    if (
+        pe_offset + 6 > len(header)
+        or header[pe_offset : pe_offset + 4] != b"PE\x00\x00"
+        or struct.unpack_from("<H", header, pe_offset + 4)[0] != 0x8664
+    ):
         raise ValueError("Setup is not an x86-64 Windows PE executable")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
     if manifest.get("setupFile") != expected:
@@ -71,9 +91,13 @@ def verify_linux(path: Path, version: str) -> None:
             if index >= 4096:
                 raise ValueError("Too many tar entries")
             parts = member.name.removesuffix("/").split("/")
-            if (not parts or parts[0] != root or
-                any(part in ("", ".", "..") for part in parts) or
-                "\\" in member.name or member.name.startswith("/")):
+            if (
+                not parts
+                or parts[0] != root
+                or any(part in ("", ".", "..") for part in parts)
+                or "\\" in member.name
+                or member.name.startswith("/")
+            ):
                 raise ValueError(f"Unsafe or out-of-root tar path: {member.name!r}")
             if not (member.isfile() or member.isdir()):
                 raise ValueError("Archive contains a link or special file")
@@ -93,8 +117,8 @@ def verify_linux(path: Path, version: str) -> None:
                 raise ValueError("Unreadable tar member")
             prefix = source.read(20)
             if name in ELF_FILES and (
-                prefix[:6] != bytes((127, 69, 76, 70, 2, 1)) or
-                prefix[18:20] != b"\x3e\x00"
+                prefix[:6] != bytes((127, 69, 76, 70, 2, 1))
+                or prefix[18:20] != b"\x3e\x00"
             ):
                 raise ValueError(f"Not an x86-64 Linux ELF executable: {name}")
             # Drain content so gzip integrity/truncation is checked.
@@ -106,10 +130,18 @@ def verify_linux(path: Path, version: str) -> None:
 
 
 def verify_candidate(
-    path: Path, manifest_path: Path, version: str, platform: str, commit: str, repository: str
+    path: Path,
+    manifest_path: Path,
+    version: str,
+    platform: str,
+    commit: str,
+    repository: str,
 ) -> None:
-    expected = (f"AceBlocker-{version}.msi" if platform == "windows" else
-                f"AceBlocker-{version}-linux-x64.tar.gz")
+    expected = (
+        f"AceBlocker-{version}.msi"
+        if platform == "windows"
+        else f"AceBlocker-{version}-linux-x64.tar.gz"
+    )
     if path.name != expected or not 0 < path.stat().st_size <= MAX_PACKAGE_BYTES:
         raise ValueError(f"Expected nonempty {expected} (max 100 MiB)")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig"))
@@ -145,10 +177,26 @@ def main() -> None:
     args = parser.parse_args()
     if not re.fullmatch(r"\d+\.\d+\.\d+", args.version):
         parser.error("Version must be X.Y.Z")
-    verify_candidate(args.windows, args.windows_manifest, args.version, "windows", args.commit, args.repository)
+    verify_candidate(
+        args.windows,
+        args.windows_manifest,
+        args.version,
+        "windows",
+        args.commit,
+        args.repository,
+    )
     verify_setup(args.windows_setup, args.windows_manifest, args.version)
-    verify_candidate(args.linux, args.linux_manifest, args.version, "linux", args.commit, args.repository)
-    print("Windows MSI, Setup EXE, and Linux release artifacts passed structure, hash and provenance checks.")
+    verify_candidate(
+        args.linux,
+        args.linux_manifest,
+        args.version,
+        "linux",
+        args.commit,
+        args.repository,
+    )
+    print(
+        "Windows MSI, Setup EXE, and Linux release artifacts passed structure, hash and provenance checks."
+    )
 
 
 if __name__ == "__main__":

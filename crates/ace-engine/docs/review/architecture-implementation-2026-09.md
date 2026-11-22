@@ -15,13 +15,13 @@
 
 ## 1. Baseline (Phase 1) and final state
 
-| Check | Baseline (HEAD `3f7413d`) | After this pass |
-|---|---|---|
-| `cargo fmt --check` | ❌ many files unformatted | ✅ `cargo fmt --check` clean |
-| `cargo check --workspace` | ✅ | ✅ |
-| `cargo test --workspace --no-fail-fast` | ❌ lib 119/6 failed; `api_test` 33/15 failed | ✅ **lib 135/135; api_test 48/48; ace-domain-blocklist 54/54; resistance_rules_test 1/1** |
-| `cargo clippy --workspace --all-targets -- -D warnings` | ❌ 436 lib warnings (gate red) | ✅ clean (incl. `--features dev-tools`) |
-| Baseline log | `docs/review/baseline-2026-09.log` (kept) | — |
+| Check                                                   | Baseline (HEAD `3f7413d`)                    | After this pass                                                                           |
+| ------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `cargo fmt --check`                                     | ❌ many files unformatted                    | ✅ `cargo fmt --check` clean                                                              |
+| `cargo check --workspace`                               | ✅                                           | ✅                                                                                        |
+| `cargo test --workspace --no-fail-fast`                 | ❌ lib 119/6 failed; `api_test` 33/15 failed | ✅ **lib 135/135; api_test 48/48; ace-domain-blocklist 54/54; resistance_rules_test 1/1** |
+| `cargo clippy --workspace --all-targets -- -D warnings` | ❌ 436 lib warnings (gate red)               | ✅ clean (incl. `--features dev-tools`)                                                   |
+| Baseline log                                            | `docs/review/baseline-2026-09.log` (kept)    | —                                                                                         |
 
 All 21 baseline failures came from outdated tests. The causes included renamed
 routes (`/sites-lists`→`/site-lists` and `/usage`→`/report/usage`), the 90-day
@@ -208,9 +208,9 @@ silently removes the registration.
   activated with an all-day schedule (schedule-only activation semantics);
   the exceptions test now proves the block is genuinely active.
 - Integration tests: `/sites-lists`→`/site-lists`, `/usage`→`/report/usage`,
-  >90-day locks capped to 30 days, `account_test` asserts the harness-forced
-  Pro, `misc_test` dev-route assertions fixed (the client helper had stale
-  `/debug/*` paths — also fixed).
+  > 90-day locks capped to 30 days, `account_test` asserts the harness-forced
+  > Pro, `misc_test` dev-route assertions fixed (the client helper had stale
+  > `/debug/*` paths — also fixed).
 - The two `progress.rs` failures were removed with the dead module (see §5).
 
 ### 4.2 Test infra made deterministic (TESTINFRA-01)
@@ -244,7 +244,7 @@ silently removes the registration.
 - `cargo fmt --all --check` is clean.
 - `azure-pipelines.yml` now matches the workspace: `cargo fmt --all --check`,
   `cargo test --workspace --no-fail-fast`, clippy with `--workspace
-  --all-targets --features dev-tools -D warnings`, and an OpenAPI drift check
+--all-targets --features dev-tools -D warnings`, and an OpenAPI drift check
   (regenerate `docs/openapi.json` + `git diff --exit-code`).
 
 ---
@@ -255,7 +255,7 @@ silently removes the registration.
 
 - **`UpdateManager`** (`src/manager/update/`, ~600 lines + tests) — zero
   production callers; `/system/update/check` already reported `available:
-  false` (SIMP-02, DEAD-01).
+false` (SIMP-02, DEAD-01).
 - **`ProgressTracker`/`ChildProgress`** (`src/core/common/progress.rs`, ~300
   lines; `into_receiver()` was `unimplemented!()`) (SIMP-05, DEAD-05) — its
   two failing tests went with it.
@@ -266,7 +266,7 @@ silently removes the registration.
   vestigial.
 - **`core/programs/**`** (ProgramPaths/ProgramCertificates — dead since the
   program-blocking feature was removed) and the `ProgramList*` error variants
-  + their API mappings.
+  - their API mappings.
 - **Dead accessors**: `get_all_network_block_models`, `is_network_block_active`,
   `set_user_defined_entries`, `remove_schedule_entry` + `Schedule::remove_entry`,
   `SitePack::resync`/`resync_internal`, `get_usage_tracker`,
@@ -294,7 +294,7 @@ them would require app-SDK and migration changes. The chosen rule was
 `process_usage_report` and `advance_day` return early in static mode
 (MGR-04). This avoids unused ladder work and changes to dynamic fields on
 each usage report. MGR-06 is also fixed. The restricted usage history
-loader formerly read the *same* day 10 times. It now reads 10 distinct days.
+loader formerly read the _same_ day 10 times. It now reads 10 distinct days.
 
 ### Correctness/doc fixes folded in
 
@@ -318,12 +318,12 @@ loader formerly read the *same* day 10 times. It now reads 10 distinct days.
 
 ## 6. Skills used and how they shaped the work
 
-| Skill | Where it influenced the work |
-|---|---|
-| `rust-simplification-review` (project-local) | Phase 5 inventory discipline: count uses before deleting; DELETE over refactor; the tracking-pipeline and `PunishmentLock` deletions followed its single-call-site rule |
-| `windows-network-lifecycle-analysis` (project-local) | Phase 3 lifecycle matrix: uninstall gate scenarios, service-stop refusal vs installer `ServiceControl`, shutdown ordering |
-| `evidence-based-refactoring` (project-local) | Every claim re-verified against source (e.g. the `#[cfg(test)]` test-dir bug, the installer `Stop="both"` finding, `zip`'s sanitize-vs-reject behavior); risk bucketing kept the dynamic-resistance change conservative |
-| `rust-best-practices` / `rust-patterns` / `rust-testing` / `rust-async-patterns` (session) | `#[expect]` over `#[allow]`, error propagation (API-02), atomic-swap rollback paths, `try_stream!`/pin discipline, test quality (no vacuous tests) |
+| Skill                                                                                      | Where it influenced the work                                                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rust-simplification-review` (project-local)                                               | Phase 5 inventory discipline: count uses before deleting; DELETE over refactor; the tracking-pipeline and `PunishmentLock` deletions followed its single-call-site rule                                                 |
+| `windows-network-lifecycle-analysis` (project-local)                                       | Phase 3 lifecycle matrix: uninstall gate scenarios, service-stop refusal vs installer `ServiceControl`, shutdown ordering                                                                                               |
+| `evidence-based-refactoring` (project-local)                                               | Every claim re-verified against source (e.g. the `#[cfg(test)]` test-dir bug, the installer `Stop="both"` finding, `zip`'s sanitize-vs-reject behavior); risk bucketing kept the dynamic-resistance change conservative |
+| `rust-best-practices` / `rust-patterns` / `rust-testing` / `rust-async-patterns` (session) | `#[expect]` over `#[allow]`, error propagation (API-02), atomic-swap rollback paths, `try_stream!`/pin discipline, test quality (no vacuous tests)                                                                      |
 
 The three project-local skills from the review were sufficient. The work
 did not require a new skill.

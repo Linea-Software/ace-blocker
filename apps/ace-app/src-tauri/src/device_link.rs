@@ -65,7 +65,9 @@ fn http_client() -> Result<Client, String> {
 }
 
 #[tauri::command]
-pub async fn device_link_start(state: State<'_, DeviceLinkState>) -> Result<DeviceLinkStart, String> {
+pub async fn device_link_start(
+    state: State<'_, DeviceLinkState>,
+) -> Result<DeviceLinkStart, String> {
     let reply = http_client()?
         .post(format!("{SITE_ORIGIN}/api/device-link/start"))
         .json(&json!({}))
@@ -83,7 +85,10 @@ pub async fn device_link_start(state: State<'_, DeviceLinkState>) -> Result<Devi
         return Err("Invalid account linking challenge".into());
     }
     // Session-only; a restart discards the secret. Never serialize this.
-    let mut current = state.0.lock().map_err(|_| "Device link unavailable".to_owned())?;
+    let mut current = state
+        .0
+        .lock()
+        .map_err(|_| "Device link unavailable".to_owned())?;
     *current = Some(Challenge {
         code: response.device_code,
         expires: Instant::now() + Duration::from_secs(response.expires_in),
@@ -99,11 +104,22 @@ pub async fn device_link_start(state: State<'_, DeviceLinkState>) -> Result<Devi
 #[tauri::command]
 pub async fn device_link_poll(state: State<'_, DeviceLinkState>) -> Result<DeviceLinkPoll, String> {
     let session = {
-        state.0.lock().map_err(|_| "Device link unavailable".to_owned())?.clone()
-    }.ok_or_else(|| "No active device link".to_owned())?;
+        state
+            .0
+            .lock()
+            .map_err(|_| "Device link unavailable".to_owned())?
+            .clone()
+    }
+    .ok_or_else(|| "No active device link".to_owned())?;
     if session.expires <= Instant::now() {
-        *state.0.lock().map_err(|_| "Device link unavailable".to_owned())? = None;
-        return Ok(DeviceLinkPoll { state: "expired".into(), retry_after: 0 });
+        *state
+            .0
+            .lock()
+            .map_err(|_| "Device link unavailable".to_owned())? = None;
+        return Ok(DeviceLinkPoll {
+            state: "expired".into(),
+            retry_after: 0,
+        });
     }
     let reply = http_client()?
         .post(format!("{SITE_ORIGIN}/api/device-link/poll"))
@@ -111,7 +127,9 @@ pub async fn device_link_poll(state: State<'_, DeviceLinkState>) -> Result<Devic
         .send()
         .await
         .map_err(|_| "Could not contact the Ace account server".to_owned())?;
-    let response: ServerPoll = reply.json().await
+    let response: ServerPoll = reply
+        .json()
+        .await
         .map_err(|_| "Invalid account server reply".to_owned())?;
     match response.state.as_str() {
         "pending" | "slow_down" => Ok(DeviceLinkPoll {
@@ -119,18 +137,35 @@ pub async fn device_link_poll(state: State<'_, DeviceLinkState>) -> Result<Devic
             retry_after: response.retry_after.unwrap_or(5).max(5),
         }),
         "expired" | "consumed" => {
-            let mut active = state.0.lock().map_err(|_| "Device link unavailable".to_owned())?;
-            if active.as_ref().is_some_and(|active| active.code == session.code) {
+            let mut active = state
+                .0
+                .lock()
+                .map_err(|_| "Device link unavailable".to_owned())?;
+            if active
+                .as_ref()
+                .is_some_and(|active| active.code == session.code)
+            {
                 *active = None;
             }
-            Ok(DeviceLinkPoll { state: response.state, retry_after: 0 })
+            Ok(DeviceLinkPoll {
+                state: response.state,
+                retry_after: 0,
+            })
         }
         "authorized" => {
-            let key = response.api_key.filter(|key| !key.is_empty())
+            let key = response
+                .api_key
+                .filter(|key| !key.is_empty())
                 .ok_or_else(|| "Missing account authorization".to_owned())?;
             {
-                let mut active = state.0.lock().map_err(|_| "Device link unavailable".to_owned())?;
-                if !active.as_ref().is_some_and(|active| active.code == session.code) {
+                let mut active = state
+                    .0
+                    .lock()
+                    .map_err(|_| "Device link unavailable".to_owned())?;
+                if !active
+                    .as_ref()
+                    .is_some_and(|active| active.code == session.code)
+                {
                     return Err("Device link was cancelled".into());
                 }
                 *active = None;
@@ -144,7 +179,10 @@ pub async fn device_link_poll(state: State<'_, DeviceLinkState>) -> Result<Devic
             )
             .await
             .map_err(|_| "Could not import the account into Ace Blocker".to_owned())?;
-            Ok(DeviceLinkPoll { state: "linked".into(), retry_after: 0 })
+            Ok(DeviceLinkPoll {
+                state: "linked".into(),
+                retry_after: 0,
+            })
         }
         _ => Err("Unexpected device link state".into()),
     }
@@ -152,6 +190,9 @@ pub async fn device_link_poll(state: State<'_, DeviceLinkState>) -> Result<Devic
 
 #[tauri::command]
 pub fn device_link_cancel(state: State<'_, DeviceLinkState>) -> Result<(), String> {
-    *state.0.lock().map_err(|_| "Device link unavailable".to_owned())? = None;
+    *state
+        .0
+        .lock()
+        .map_err(|_| "Device link unavailable".to_owned())? = None;
     Ok(())
 }

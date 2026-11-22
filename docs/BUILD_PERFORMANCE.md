@@ -4,12 +4,12 @@ This historical audit covers the pre-migration Tauri/SvelteKit version of `ace-b
 The values count resolved dependency-graph entries, **not cold-build seconds**.
 They do not measure CI time savings.
 
-| Metric | Before | After |
-| --- | ---: | ---: |
-| Root `Cargo.lock` entries (all targets/features) | 892 | 854 |
-| Families with multiple locked versions | 81 | 68 |
-| `ace-engine` Linux normal + build graph entries | 470 | 411 |
-| `ace-app` Linux normal + build graph entries | 646 | 570 |
+| Metric                                           | Before | After |
+| ------------------------------------------------ | -----: | ----: |
+| Root `Cargo.lock` entries (all targets/features) |    892 |   854 |
+| Families with multiple locked versions           |     81 |    68 |
+| `ace-engine` Linux normal + build graph entries  |    470 |   411 |
+| `ace-app` Linux normal + build graph entries     |    646 |   570 |
 
 Run `cargo tree -p ace-engine --target x86_64-unknown-linux-gnu -e normal,build`
 to inspect the engine production graph. Run the equivalent command for `ace-app`.
@@ -36,7 +36,7 @@ without representative measurements. The release settings `opt-level = "z"` and
 `lto = "thin"` favor smaller shipped artifacts. Changes require a product decision.
 Windows already uses `lld-link.exe`.
 
-The official guide suggests `debug = "line-tables-only"` for *workspace* code
+The official guide suggests `debug = "line-tables-only"` for _workspace_ code
 when backtraces are necessary. This audit keeps `debug = false`.
 It adds no nightly flags, experimental backends, or linker changes.
 
@@ -44,7 +44,7 @@ It adds no nightly flags, experimental backends, or linker changes.
 
 - Frontend assets are built once, uploaded, and reused by both native jobs.
   This prerequisite can extend the critical path while it reduces duplicate work.
-  Measure GitHub Actions workflow *wall clock* time, not total CPU time.
+  Measure GitHub Actions workflow _wall clock_ time, not total CPU time.
 - PRs retain Rust all-target checks and existing selected tests. Release-profile
   validation runs on `main` and manual dispatch instead of every PR.
 - A separate non-PR job runs the opt-in proxy CLI and HTTP/3 tests.

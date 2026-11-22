@@ -7,23 +7,36 @@ import {
 } from "$engine-client";
 
 class DashboardStore {
-    isLoading = (true);
-    loadError = (false);
+    isLoading = true;
+    loadError = false;
     /** Today's aggregate blocked-attempts count (computed locally from block
      *  decisions; no usage or per-site data). */
-    blockedAttempts: number = (0);
-    activeBlocksCount = (0);
-    totalBlocksCount = (0);
-    networkBlocks: NetworkBlockSchema[] = ([]);
-    networkBlockSnapshots: NetworkBlockSnapshot[] = ([]);
+    blockedAttempts: number = 0;
+    activeBlocksCount = 0;
+    totalBlocksCount = 0;
+    networkBlocks: NetworkBlockSchema[] = [];
+    networkBlockSnapshots: NetworkBlockSnapshot[] = [];
 
-    engineEnabled = (false);
-    isLocked = (false);
-    lockEndRaw: string | null = (null);
-    resistanceStatus: EnforcementStatus = ("disabled");
+    engineEnabled = false;
+    isLocked = false;
+    lockEndRaw: string | null = null;
+    resistanceStatus: EnforcementStatus = "disabled";
 
     constructor() {
-        reactiveFields(this, ["isLoading", "loadError", "blockedAttempts", "activeBlocksCount", "totalBlocksCount", "networkBlocks", "networkBlockSnapshots", "engineEnabled", "isLocked", "lockEndRaw", "resistanceStatus"]);}
+        reactiveFields(this, [
+            "isLoading",
+            "loadError",
+            "blockedAttempts",
+            "activeBlocksCount",
+            "totalBlocksCount",
+            "networkBlocks",
+            "networkBlockSnapshots",
+            "engineEnabled",
+            "isLocked",
+            "lockEndRaw",
+            "resistanceStatus",
+        ]);
+    }
 
     async refresh() {
         this.loadError = false;

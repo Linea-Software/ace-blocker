@@ -29,12 +29,16 @@ export async function loadNetworkBlocks(): Promise<NetworkBlocksLoad> {
     const response = await getDashboardSnapshot();
     if (response.error) {
         console.error("Failed to fetch dashboard snapshot", response.error);
-        return { blocks: [], engineOffline: !engineStore.isAlive, loadError: engineStore.isAlive };
+        return {
+            blocks: [],
+            engineOffline: !engineStore.isAlive,
+            loadError: engineStore.isAlive,
+        };
     }
 
     const snapshots: NetworkBlockSnapshot[] = response.data?.blocks ?? [];
     return {
-        blocks: snapshots.map(snapshot => ({
+        blocks: snapshots.map((snapshot) => ({
             ...snapshot.block,
             lockInfo: snapshot.lock ?? null,
             schedules: snapshot.scheduleEntries,

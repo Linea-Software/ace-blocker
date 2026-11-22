@@ -5,6 +5,7 @@ The payload MUST be signed externally over DOMAIN || payload_bytes with
 Ed25519. The authenticated website publishes the envelope only after manual
 approval, Authenticode validation and public-key signature verification.
 """
+
 import argparse
 import base64
 import hashlib
@@ -27,8 +28,12 @@ def safe_version(text: str) -> str:
 def safe_https_url(text: str) -> str:
     value = urlsplit(text)
     if (
-        value.scheme != "https" or not value.hostname or value.username
-        or value.password or value.fragment or not value.netloc
+        value.scheme != "https"
+        or not value.hostname
+        or value.username
+        or value.password
+        or value.fragment
+        or not value.netloc
     ):
         raise ValueError("Package URL must be an absolute credential-free HTTPS URL")
     return text
@@ -41,7 +46,11 @@ def prepare(args: argparse.Namespace) -> None:
     if not HEX256.fullmatch(args.publisher_cert_sha256):
         raise ValueError("Publisher certificate SHA-256 is required")
     version = safe_version(args.version)
-    minimum = safe_version(args.minimum_installed_version) if args.minimum_installed_version else None
+    minimum = (
+        safe_version(args.minimum_installed_version)
+        if args.minimum_installed_version
+        else None
+    )
     package_url = safe_https_url(args.package_url)
     digest = hashlib.sha256()
     with source.open("rb") as stream:
@@ -60,7 +69,9 @@ def prepare(args: argparse.Namespace) -> None:
     }
     output = Path(args.output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps(release, separators=(",", ":"), ensure_ascii=True, sort_keys=True).encode()
+    payload = json.dumps(
+        release, separators=(",", ":"), ensure_ascii=True, sort_keys=True
+    ).encode()
     (output / "release-payload.json").write_bytes(payload)
     (output / "release-signing-input.bin").write_bytes(DOMAIN + payload)
     print("Unsigned payload and domain-separated signing input prepared.")
@@ -84,7 +95,9 @@ def assemble(args: argparse.Namespace) -> None:
         "signature": base64.b64encode(signature).decode("ascii"),
         "key_id": args.key_id,
     }
-    Path(args.output).write_text(json.dumps(envelope, indent=2) + "\n", encoding="utf-8")
+    Path(args.output).write_text(
+        json.dumps(envelope, indent=2) + "\n", encoding="utf-8"
+    )
     print("Envelope assembled (cryptographic verification must precede publication).")
 
 

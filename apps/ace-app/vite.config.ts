@@ -21,7 +21,9 @@ export default defineConfig({
     resolve: {
         alias: {
             $lib: fileURLToPath(new URL("./src/lib", import.meta.url)),
-            "$engine-client": fileURLToPath(new URL("./src/lib/engine-client", import.meta.url)),
+            "$engine-client": fileURLToPath(
+                new URL("./src/lib/engine-client", import.meta.url),
+            ),
         },
     },
     build: { outDir: "build", emptyOutDir: true },

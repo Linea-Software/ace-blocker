@@ -1,29 +1,39 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Desktop UI friction", () => {
-    test("Developer settings expose local license and consent controls in dev", async ({ page }) => {
+    test("Developer settings expose local license and consent controls in dev", async ({
+        page,
+    }) => {
         await page.setViewportSize({ width: 800, height: 600 });
         await page.goto("/settings");
 
         // Browser-only smoke: controls are rendered, but no privileged RPC is
         // called because the real engine is only available inside Tauri.
-        await expect(page.getByText("Developer diagnostics", { exact: true })).toBeAttached();
+        await expect(
+            page.getByText("Developer diagnostics", { exact: true }),
+        ).toBeAttached();
         await expect(page.locator("#debug-license-policy option")).toHaveText([
             "Default (saved license)",
             "Free (simulated)",
             "Pro (simulated)",
         ]);
-        await expect(page.getByRole("button", {
-            name: "Replay consent dialog",
-            includeHidden: true,
-        })).toHaveCount(1);
+        await expect(
+            page.getByRole("button", {
+                name: "Replay consent dialog",
+                includeHidden: true,
+            }),
+        ).toHaveCount(1);
     });
 
-    test("Categories keeps its primary action visible in a small window", async ({ page }) => {
+    test("Categories keeps its primary action visible in a small window", async ({
+        page,
+    }) => {
         await page.setViewportSize({ width: 800, height: 600 });
         await page.goto("/site-packs");
 
-        const importAction = page.getByRole("button", { name: /Import Custom List/ });
+        const importAction = page.getByRole("button", {
+            name: /Import Custom List/,
+        });
         await expect(importAction).toBeVisible({ timeout: 15_000 });
         const bounds = await importAction.boundingBox();
         expect(bounds).not.toBeNull();
@@ -51,7 +61,9 @@ test.describe("Desktop UI friction", () => {
         await expect(search).toHaveValue("");
     });
 
-    test("Navigation remains reachable when window height is constrained", async ({ page }) => {
+    test("Navigation remains reachable when window height is constrained", async ({
+        page,
+    }) => {
         await page.setViewportSize({ width: 800, height: 300 });
         await page.goto("/getting-started");
         const settingsLink = page.getByRole("navigation").getByRole("link", {
@@ -62,19 +74,31 @@ test.describe("Desktop UI friction", () => {
         await expect(settingsLink).toBeInViewport();
     });
 
-    test("Offline Blocks does not offer an unusable create action", async ({ page }) => {
+    test("Offline Blocks does not offer an unusable create action", async ({
+        page,
+    }) => {
         await page.goto("/network-blocks");
-        await expect(page.getByRole("heading", { name: "Network Blocks" })).toBeVisible({
+        await expect(
+            page.getByRole("heading", { name: "Network Blocks" }),
+        ).toBeVisible({
             timeout: 15_000,
         });
-        await expect(page.getByRole("button", { name: "Create Block" })).toBeDisabled();
-        await expect(page.getByRole("link", { name: "Getting Started" })).toBeVisible();
+        await expect(
+            page.getByRole("button", { name: "Create Block" }),
+        ).toBeDisabled();
+        await expect(
+            page.getByRole("link", { name: "Getting Started" }),
+        ).toBeVisible();
     });
 
-    test("Control fills large screens without overflowing compact windows", async ({ page }) => {
+    test("Control fills large screens without overflowing compact windows", async ({
+        page,
+    }) => {
         await page.setViewportSize({ width: 1200, height: 800 });
         await page.goto("/");
-        await expect(page.getByRole("heading", { name: "Control" })).toBeVisible({
+        await expect(
+            page.getByRole("heading", { name: "Control" }),
+        ).toBeVisible({
             timeout: 15_000,
         });
 
@@ -85,17 +109,23 @@ test.describe("Desktop UI friction", () => {
                 "/src/lib/stores/dashboard.ts",
                 "/src/lib/stores/user-store.ts",
             ];
-            const [{ engineStore }, { dashboardStore }, { userStore }] = await Promise.all(
-                storeModules.map((modulePath) => {
-                    // HMR appends ?t=...; a bare import would create a second
-                    // store instance and leave the actual Control view offline.
-                    const loaded = performance.getEntriesByType("resource")
-                        .map((entry) => new URL(entry.name))
-                        .filter((url) => url.pathname === modulePath)
-                        .at(-1);
-                    return import(/* @vite-ignore */ (loaded ? loaded.pathname + loaded.search : modulePath));
-                }),
-            );
+            const [{ engineStore }, { dashboardStore }, { userStore }] =
+                await Promise.all(
+                    storeModules.map((modulePath) => {
+                        // HMR appends ?t=...; a bare import would create a second
+                        // store instance and leave the actual Control view offline.
+                        const loaded = performance
+                            .getEntriesByType("resource")
+                            .map((entry) => new URL(entry.name))
+                            .filter((url) => url.pathname === modulePath)
+                            .at(-1);
+                        return import(
+                            /* @vite-ignore */ loaded
+                                ? loaded.pathname + loaded.search
+                                : modulePath
+                        );
+                    }),
+                );
             userStore.accountInfoLoaded = true;
             userStore.tosAccepted = true;
             dashboardStore.loadError = false;
@@ -105,27 +135,40 @@ test.describe("Desktop UI friction", () => {
             dashboardStore.blockedAttempts = 12;
             dashboardStore.engineEnabled = true;
             dashboardStore.resistanceStatus = "operational";
-            dashboardStore.networkBlockSnapshots = Array.from({ length: 7 }, (_, index) => ({
-                block: {
-                    id: `test-${index}`,
-                    name: `Policy ${index}`,
-                    isActive: true,
-                    enabled: true,
-                    isLocked: index === 0,
-                    scheduleMode: index === 0 ? "scheduled" : "always",
-                    lockState: { state: index === 0 ? "active" : "inactive" },
-                },
-                scheduleEntries: index === 0
-                    ? [{
-                        startTime: "06:00",
-                        endTime: "22:00",
-                        sunday: true, monday: true, tuesday: true,
-                        wednesday: true, thursday: true, friday: true, saturday: true,
-                    }]
-                    : [],
-                sitePackConnectionCount: 1,
-                userRulesCount: 2,
-            })) as typeof dashboardStore.networkBlockSnapshots;
+            dashboardStore.networkBlockSnapshots = Array.from(
+                { length: 7 },
+                (_, index) => ({
+                    block: {
+                        id: `test-${index}`,
+                        name: `Policy ${index}`,
+                        isActive: true,
+                        enabled: true,
+                        isLocked: index === 0,
+                        scheduleMode: index === 0 ? "scheduled" : "always",
+                        lockState: {
+                            state: index === 0 ? "active" : "inactive",
+                        },
+                    },
+                    scheduleEntries:
+                        index === 0
+                            ? [
+                                  {
+                                      startTime: "06:00",
+                                      endTime: "22:00",
+                                      sunday: true,
+                                      monday: true,
+                                      tuesday: true,
+                                      wednesday: true,
+                                      thursday: true,
+                                      friday: true,
+                                      saturday: true,
+                                  },
+                              ]
+                            : [],
+                    sitePackConnectionCount: 1,
+                    userRulesCount: 2,
+                }),
+            ) as typeof dashboardStore.networkBlockSnapshots;
             engineStore.isAlive = true;
         });
 
@@ -142,9 +185,17 @@ test.describe("Desktop UI friction", () => {
         await expect(board.locator(".preview-footer")).toBeVisible();
         await expect(board.locator(".sealed-note")).toHaveCount(1);
         await expect(board.locator(".upcoming-list li")).toHaveCount(4);
-        await expect(board.getByRole("heading", { name: "Upcoming schedule" })).toBeVisible();
-        await expect(board.getByRole("link", { name: /Resistance/ })).toBeVisible();
-        await expect(board.getByRole("heading", { name: "What does locking a block do?" })).toHaveCount(0);
+        await expect(
+            board.getByRole("heading", { name: "Upcoming schedule" }),
+        ).toBeVisible();
+        await expect(
+            board.getByRole("link", { name: /Resistance/ }),
+        ).toBeVisible();
+        await expect(
+            board.getByRole("heading", {
+                name: "What does locking a block do?",
+            }),
+        ).toHaveCount(0);
 
         for (const width of [1600, 1200, 800, 580, 400, 320]) {
             await page.setViewportSize({ width, height: 800 });
@@ -153,21 +204,30 @@ test.describe("Desktop UI friction", () => {
                 const pageLayout = element.closest(".page-layout")!;
                 return {
                     layoutWidth: pageLayout.getBoundingClientRect().width,
-                    columnCount: getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+                    columnCount:
+                        getComputedStyle(grid).gridTemplateColumns.split(" ")
+                            .length,
                     scrollWidth: element.scrollWidth,
                     clientWidth: element.clientWidth,
                 };
             });
             expect(measurements.layoutWidth).toBeLessThanOrEqual(1280);
-            expect(measurements.scrollWidth).toBeLessThanOrEqual(measurements.clientWidth + 1);
+            expect(measurements.scrollWidth).toBeLessThanOrEqual(
+                measurements.clientWidth + 1,
+            );
             expect(measurements.columnCount).toBe(width >= 1200 ? 2 : 1);
             if (width === 1200 || width === 580) {
-                await page.screenshot({ path: `test-results/ui-audit/control-populated-${width}.png`, fullPage: true });
+                await page.screenshot({
+                    path: `test-results/ui-audit/control-populated-${width}.png`,
+                    fullPage: true,
+                });
             }
         }
     });
 
-    test("Control shows a direct create action without extra panels when empty", async ({ page }) => {
+    test("Control shows a direct create action without extra panels when empty", async ({
+        page,
+    }) => {
         await page.setViewportSize({ width: 900, height: 700 });
         await page.goto("/");
 
@@ -178,15 +238,21 @@ test.describe("Desktop UI friction", () => {
                 "/src/lib/stores/dashboard.ts",
                 "/src/lib/stores/user-store.ts",
             ];
-            const [{ engineStore }, { dashboardStore }, { userStore }] = await Promise.all(
-                storeModules.map((modulePath) => {
-                    const loaded = performance.getEntriesByType("resource")
-                        .map((entry) => new URL(entry.name))
-                        .filter((url) => url.pathname === modulePath)
-                        .at(-1);
-                    return import(/* @vite-ignore */ (loaded ? loaded.pathname + loaded.search : modulePath));
-                }),
-            );
+            const [{ engineStore }, { dashboardStore }, { userStore }] =
+                await Promise.all(
+                    storeModules.map((modulePath) => {
+                        const loaded = performance
+                            .getEntriesByType("resource")
+                            .map((entry) => new URL(entry.name))
+                            .filter((url) => url.pathname === modulePath)
+                            .at(-1);
+                        return import(
+                            /* @vite-ignore */ loaded
+                                ? loaded.pathname + loaded.search
+                                : modulePath
+                        );
+                    }),
+                );
             userStore.accountInfoLoaded = true;
             userStore.tosAccepted = true;
             dashboardStore.loadError = false;
@@ -204,17 +270,26 @@ test.describe("Desktop UI friction", () => {
         await expect(board.locator(".status-band")).toBeVisible();
         await expect(board.locator(".enforcement-row")).toHaveCount(0);
         await expect(board.locator(".resistance-strip")).toBeVisible();
-        await expect(board.getByRole("link", { name: "Create Block" })).toHaveAttribute(
-            "href", /\/network-blocks\/editor/,
-        );
-        await expect(board.getByRole("heading", { name: "What does locking a block do?" })).toHaveCount(0);
+        await expect(
+            board.getByRole("link", { name: "Create Block" }),
+        ).toHaveAttribute("href", /\/network-blocks\/editor/);
+        await expect(
+            board.getByRole("heading", {
+                name: "What does locking a block do?",
+            }),
+        ).toHaveCount(0);
 
         const dimensions = await board.evaluate((node) => ({
             scrollWidth: node.scrollWidth,
             clientWidth: node.clientWidth,
         }));
-        expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth + 1);
-        await page.screenshot({ path: "test-results/ui-audit/control-empty.png", fullPage: true });
+        expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+            dimensions.clientWidth + 1,
+        );
+        await page.screenshot({
+            path: "test-results/ui-audit/control-empty.png",
+            fullPage: true,
+        });
     });
 });
 
@@ -328,44 +403,74 @@ test("Resistance logos use the bundled brand colors", async ({ page }) => {
     );
 });
 
-test("Free users can inspect Resistance interventions without changing them", async ({ page }) => {
+test("Free users can inspect Resistance interventions without changing them", async ({
+    page,
+}) => {
     await page.goto("/getting-started");
     await page.evaluate(async () => {
-        const svelteModule = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const svelteModule = new URL(
+            "/src/test-fixture-runtime.ts",
+            location.origin,
+        ).pathname;
         const [{ mount }, { default: ScriptSections }] = await Promise.all([
             import(/* @vite-ignore */ svelteModule),
-            import(/* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.tsx"),
+            import(
+                /* @vite-ignore */ "/src/routes/resistance-mode/_components/ScriptSections.tsx"
+            ),
         ]);
         const host = document.createElement("div");
         document.body.append(host);
         mount(ScriptSections, {
             target: host,
             props: {
-                scripts: [{ id: "youtube_hide_feed", domain: "youtube.com", name: "Hide feed", description: "Hide recommended videos", isEnabled: true }],
+                scripts: [
+                    {
+                        id: "youtube_hide_feed",
+                        domain: "youtube.com",
+                        name: "Hide feed",
+                        description: "Hide recommended videos",
+                        isEnabled: true,
+                    },
+                ],
                 settings: { enabled: false, enforcementStatus: "not_pro" },
                 engineOnline: true,
                 isPro: false,
                 locked: false,
-                onToggleScript: () => { throw new Error("Free toggles must not mutate"); },
-                onToggleGroup: () => { throw new Error("Free bulk toggles must not mutate"); },
+                onToggleScript: () => {
+                    throw new Error("Free toggles must not mutate");
+                },
+                onToggleGroup: () => {
+                    throw new Error("Free bulk toggles must not mutate");
+                },
                 onSync: () => {},
             },
         });
     });
-    await expect(page.locator('[data-testid="rm-category-feeds"]')).toBeVisible();
+    await expect(
+        page.locator('[data-testid="rm-category-feeds"]'),
+    ).toBeVisible();
     await page.getByTestId("rm-category-disclosure-feeds").click();
-    await page.getByRole("button", { name: "Show interventions for youtube.com" }).click();
-    await expect(page.locator('[data-testid="rm-script-switch"]')).toBeDisabled();
+    await page
+        .getByRole("button", { name: "Show interventions for youtube.com" })
+        .click();
+    await expect(
+        page.locator('[data-testid="rm-script-switch"]'),
+    ).toBeDisabled();
 });
 
-test("Custom List icon picker stays inside the window and above dialog footer", async ({ page }) => {
+test("Custom List icon picker stays inside the window and above dialog footer", async ({
+    page,
+}) => {
     await page.setViewportSize({ width: 880, height: 720 });
     await page.goto("/site-packs");
     await page.evaluate(async () => {
-        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin)
+            .pathname;
         const [{ mount }, { default: ImportPackModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/site-packs/_ImportPackModal.tsx"),
+            import(
+                /* @vite-ignore */ "/src/routes/site-packs/_ImportPackModal.tsx"
+            ),
         ]);
         const host = document.createElement("div");
         document.body.append(host);
@@ -379,40 +484,64 @@ test("Custom List icon picker stays inside the window and above dialog footer", 
 
     const desktop = await iconPanel.evaluate((el) => {
         const box = el.getBoundingClientRect();
-        const trigger = document.querySelector('button[aria-label="Choose icon"]')!.getBoundingClientRect();
-        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom,
-            triggerLeft: trigger.left, width: innerWidth, height: innerHeight };
+        const trigger = document
+            .querySelector('button[aria-label="Choose icon"]')!
+            .getBoundingClientRect();
+        return {
+            left: box.left,
+            right: box.right,
+            top: box.top,
+            bottom: box.bottom,
+            triggerLeft: trigger.left,
+            width: innerWidth,
+            height: innerHeight,
+        };
     });
     expect(desktop.left).toBeGreaterThanOrEqual(10);
     expect(desktop.right).toBeLessThanOrEqual(desktop.width - 10);
     expect(desktop.top).toBeGreaterThanOrEqual(10);
     expect(desktop.bottom).toBeLessThanOrEqual(desktop.height - 10);
     expect(desktop.right).toBeLessThan(desktop.triggerLeft);
-    await page.screenshot({ path: "test-results/ui-audit/32-picker-fixed-desktop.png" });
+    await page.screenshot({
+        path: "test-results/ui-audit/32-picker-fixed-desktop.png",
+    });
 
     await page.setViewportSize({ width: 430, height: 680 });
     await expect(iconPanel).toBeVisible();
     const compact = await iconPanel.evaluate((el) => {
         const box = el.getBoundingClientRect();
-        return { left: box.left, right: box.right, top: box.top, bottom: box.bottom,
-            width: innerWidth, height: innerHeight };
+        return {
+            left: box.left,
+            right: box.right,
+            top: box.top,
+            bottom: box.bottom,
+            width: innerWidth,
+            height: innerHeight,
+        };
     });
     expect(compact.left).toBeGreaterThanOrEqual(10);
     expect(compact.right).toBeLessThanOrEqual(compact.width - 10);
     expect(compact.top).toBeGreaterThanOrEqual(10);
     expect(compact.bottom).toBeLessThanOrEqual(compact.height - 10);
-    await page.screenshot({ path: "test-results/ui-audit/33-picker-fixed-compact.png" });
+    await page.screenshot({
+        path: "test-results/ui-audit/33-picker-fixed-compact.png",
+    });
 });
 
-test("Lock setup explains each mode and rejects an unscheduled or undated hard lock", async ({ page }) => {
+test("Lock setup explains each mode and rejects an unscheduled or undated hard lock", async ({
+    page,
+}) => {
     await page.setViewportSize({ width: 840, height: 720 });
     await page.goto("/network-blocks");
     // A local Svelte component fixture; no privileged engine request is sent.
     await page.evaluate(async () => {
-        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin)
+            .pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
+            import(
+                /* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"
+            ),
         ]);
         const fixture = document.createElement("div");
         document.body.append(fixture);
@@ -421,7 +550,8 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
             props: {
                 open: true,
                 onEditSchedule: (selected: { name: string }) => {
-                    document.documentElement.dataset.lockScheduleRequested = selected.name;
+                    document.documentElement.dataset.lockScheduleRequested =
+                        selected.name;
                 },
                 block: {
                     id: "lock-fixture",
@@ -436,27 +566,49 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
         });
     });
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("heading", { name: "Protect this Network Block" })).toBeVisible();
-    await expect(dialog.getByRole("button", { name: /Reflection lock/ })).toHaveAttribute("aria-pressed", "true");
-    await dialog.getByRole("button", { name: /During scheduled hours/ }).click();
+    await expect(
+        dialog.getByRole("heading", { name: "Protect this Network Block" }),
+    ).toBeVisible();
+    await expect(
+        dialog.getByRole("button", { name: /Reflection lock/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await dialog
+        .getByRole("button", { name: /During scheduled hours/ })
+        .click();
     await expect(dialog.getByRole("alert")).toContainText("Add a schedule");
-    await expect(dialog.getByRole("button", { name: "Review lock" })).toBeDisabled();
+    await expect(
+        dialog.getByRole("button", { name: "Review lock" }),
+    ).toBeDisabled();
     await dialog.getByRole("button", { name: "Edit block schedule" }).click();
-    await expect(page.locator("html")).toHaveAttribute("data-lock-schedule-requested", "Focus");
+    await expect(page.locator("html")).toHaveAttribute(
+        "data-lock-schedule-requested",
+        "Focus",
+    );
     await dialog.getByRole("button", { name: /Until a date and time/ }).click();
-    await expect(dialog.getByRole("alert")).toContainText("Choose a date and time");
-    await expect(dialog.getByRole("button", { name: "Review lock" })).toBeDisabled();
+    await expect(dialog.getByRole("alert")).toContainText(
+        "Choose a date and time",
+    );
+    await expect(
+        dialog.getByRole("button", { name: "Review lock" }),
+    ).toBeDisabled();
     await dialog.getByRole("button", { name: /Reflection lock/ }).click();
-    await expect(dialog.getByRole("button", { name: "Enable reflection lock" })).toBeEnabled();
+    await expect(
+        dialog.getByRole("button", { name: "Enable reflection lock" }),
+    ).toBeEnabled();
 });
 
-test("Reviewing a scheduled lock only offers removal outside active hours", async ({ page }) => {
+test("Reviewing a scheduled lock only offers removal outside active hours", async ({
+    page,
+}) => {
     await page.goto("/network-blocks");
     await page.evaluate(async () => {
-        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin)
+            .pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
+            import(
+                /* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"
+            ),
         ]);
         mount(LockModal, {
             target: document.body,
@@ -469,27 +621,45 @@ test("Reviewing a scheduled lock only offers removal outside active hours", asyn
                     isActive: false,
                     isLocked: false,
                     lockState: { state: "active_during_schedule" },
-                    schedules: [{ monday: true, startTime: "09:00", endTime: "17:00" }],
+                    schedules: [
+                        { monday: true, startTime: "09:00", endTime: "17:00" },
+                    ],
                 },
             },
         });
     });
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("heading", { name: "Review protection" })).toBeVisible();
+    await expect(
+        dialog.getByRole("heading", { name: "Review protection" }),
+    ).toBeVisible();
     await dialog.getByRole("button", { name: "Remove scheduled lock" }).click();
-    await expect(dialog.getByText("The scheduled lock will be removed.", { exact: false })).toBeVisible();
-    await dialog.getByRole("button", { name: "Remove scheduled lock" }).last().click();
-    await expect(dialog.getByText("Remove the scheduled lock?", { exact: false })).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Confirm removal" })).toBeVisible();
+    await expect(
+        dialog.getByText("The scheduled lock will be removed.", {
+            exact: false,
+        }),
+    ).toBeVisible();
+    await dialog
+        .getByRole("button", { name: "Remove scheduled lock" })
+        .last()
+        .click();
+    await expect(
+        dialog.getByText("Remove the scheduled lock?", { exact: false }),
+    ).toBeVisible();
+    await expect(
+        dialog.getByRole("button", { name: "Confirm removal" }),
+    ).toBeVisible();
 });
 
 test("An expired time lock offers explicit removal", async ({ page }) => {
     await page.goto("/network-blocks");
     await page.evaluate(async () => {
-        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin)
+            .pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
+            import(
+                /* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"
+            ),
         ]);
         mount(LockModal, {
             target: document.body,
@@ -501,7 +671,10 @@ test("An expired time lock offers explicit removal", async ({ page }) => {
                     enabled: true,
                     isActive: false,
                     isLocked: false,
-                    lockState: { state: "active_until_lock_end", end: "2025-01-01T12:00:00" },
+                    lockState: {
+                        state: "active_until_lock_end",
+                        end: "2025-01-01T12:00:00",
+                    },
                     schedules: [],
                 },
             },
@@ -510,18 +683,30 @@ test("An expired time lock offers explicit removal", async ({ page }) => {
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText(/Expired on/)).toBeVisible();
     await dialog.getByRole("button", { name: "Remove expired lock" }).click();
-    await expect(dialog.getByText(/expired time lock will be removed/)).toBeVisible();
-    await dialog.getByRole("button", { name: "Remove expired lock" }).last().click();
-    await expect(dialog.getByRole("button", { name: "Confirm removal" })).toBeVisible();
+    await expect(
+        dialog.getByText(/expired time lock will be removed/),
+    ).toBeVisible();
+    await dialog
+        .getByRole("button", { name: "Remove expired lock" })
+        .last()
+        .click();
+    await expect(
+        dialog.getByRole("button", { name: "Confirm removal" }),
+    ).toBeVisible();
 });
 
-test("An active scheduled lock cannot be removed from its review modal", async ({ page }) => {
+test("An active scheduled lock cannot be removed from its review modal", async ({
+    page,
+}) => {
     await page.goto("/network-blocks");
     await page.evaluate(async () => {
-        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin).pathname;
+        const runtime = new URL("/src/test-fixture-runtime.ts", location.origin)
+            .pathname;
         const [{ mount }, { default: LockModal }] = await Promise.all([
             import(/* @vite-ignore */ runtime),
-            import(/* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"),
+            import(
+                /* @vite-ignore */ "/src/routes/network-blocks/_components/_LockModal.tsx"
+            ),
         ]);
         mount(LockModal, {
             target: document.body,
@@ -534,35 +719,81 @@ test("An active scheduled lock cannot be removed from its review modal", async (
                     isActive: true,
                     isLocked: true,
                     lockState: { state: "active_during_schedule" },
-                    schedules: [{ monday: true, startTime: "09:00", endTime: "17:00" }],
+                    schedules: [
+                        { monday: true, startTime: "09:00", endTime: "17:00" },
+                    ],
                 },
             },
         });
     });
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("heading", { name: "Review protection" })).toBeVisible();
-    await expect(dialog.getByText("Changes are restricted during the current scheduled period.")).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Remove scheduled lock" })).toHaveCount(0);
-    await expect(dialog.getByRole("button", { name: "Close" }).first()).toBeVisible();
+    await expect(
+        dialog.getByRole("heading", { name: "Review protection" }),
+    ).toBeVisible();
+    await expect(
+        dialog.getByText(
+            "Changes are restricted during the current scheduled period.",
+        ),
+    ).toBeVisible();
+    await expect(
+        dialog.getByRole("button", { name: "Remove scheduled lock" }),
+    ).toHaveCount(0);
+    await expect(
+        dialog.getByRole("button", { name: "Close" }).first(),
+    ).toBeVisible();
 });
 
-
-test("Categories list shows one compact row per family and expands only paired tiers", async ({ page }) => {
+test("Categories list shows one compact row per family and expands only paired tiers", async ({
+    page,
+}) => {
     await page.setViewportSize({ width: 1180, height: 840 });
     await page.addInitScript(() => {
         const base = {
-            description: "", icon: null, isRemote: true, isSynced: false,
-            entriesCount: 0, isBundled: false, isLocked: false,
-            lastUpdatedAt: null, version: "2026.11",
+            description: "",
+            icon: null,
+            isRemote: true,
+            isSynced: false,
+            entriesCount: 0,
+            isBundled: false,
+            isLocked: false,
+            lastUpdatedAt: null,
+            version: "2026.11",
         };
         const sitePacks = [
-            { ...base, id: "pack-adult-free", name: "Adult Websites — Free", requiresPro: false },
-            { ...base, id: "pack-adult-pro", name: "Adult Websites — Pro", requiresPro: true },
-            { ...base, id: "pack-gambling-free", name: "Gambling Websites — Free", requiresPro: false },
-            { ...base, id: "pack-gambling-pro", name: "Gambling Websites — Pro", requiresPro: true },
-            { ...base, id: "pack-ai-tools-pro", name: "AI Tools Websites — Pro", requiresPro: true },
+            {
+                ...base,
+                id: "pack-adult-free",
+                name: "Adult Websites — Free",
+                requiresPro: false,
+            },
+            {
+                ...base,
+                id: "pack-adult-pro",
+                name: "Adult Websites — Pro",
+                requiresPro: true,
+            },
+            {
+                ...base,
+                id: "pack-gambling-free",
+                name: "Gambling Websites — Free",
+                requiresPro: false,
+            },
+            {
+                ...base,
+                id: "pack-gambling-pro",
+                name: "Gambling Websites — Pro",
+                requiresPro: true,
+            },
+            {
+                ...base,
+                id: "pack-ai-tools-pro",
+                name: "AI Tools Websites — Pro",
+                requiresPro: true,
+            },
         ];
-        (window as unknown as { __TAURI_INTERNALS__: unknown }).__TAURI_INTERNALS__ = {
+        (
+            window as unknown as { __TAURI_INTERNALS__: unknown }
+        ).__TAURI_INTERNALS__ = {
             invoke: async (cmd: string, args: { op?: string }) => {
                 if (cmd === "engine_call" && args?.op === "getAllSitePacks") {
                     return { sitePacks };
@@ -580,21 +811,42 @@ test("Categories list shows one compact row per family and expands only paired t
 
     const familyRows = page.getByTestId("site-pack-family");
     await expect(familyRows).toHaveCount(3);
-    await expect(page.getByText("Coverage for packs not downloaded is estimated.")).toBeVisible();
+    await expect(
+        page.getByText("Coverage for packs not downloaded is estimated."),
+    ).toBeVisible();
     await expect(page.getByTestId("category-family-toggle")).toHaveCount(2);
     await expect(page.getByTestId("site-pack-row")).toHaveCount(1);
     await expect(page.getByTestId("category-family-options")).toHaveCount(0);
-    await expect(familyRows.first().getByTestId("site-pack-tier-comparison")).toContainText("2,644,357");
+    await expect(
+        familyRows.first().getByTestId("site-pack-tier-comparison"),
+    ).toContainText("2,644,357");
 
-    await page.screenshot({ path: "test-results/categories-simplified-desktop.png", fullPage: true });
+    await page.screenshot({
+        path: "test-results/categories-simplified-desktop.png",
+        fullPage: true,
+    });
 
     await familyRows.first().getByTestId("category-family-toggle").click();
-    await expect(familyRows.first().getByTestId("category-family-options").getByTestId("site-pack-row")).toHaveCount(2);
-    await expect(familyRows.first().getByTestId("site-pack-row-icon")).toHaveCount(0);
+    await expect(
+        familyRows
+            .first()
+            .getByTestId("category-family-options")
+            .getByTestId("site-pack-row"),
+    ).toHaveCount(2);
+    await expect(
+        familyRows.first().getByTestId("site-pack-row-icon"),
+    ).toHaveCount(0);
     await expect(familyRows.first().getByText("Pro · Extended")).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 750 });
-    await page.screenshot({ path: "test-results/categories-simplified-mobile.png", fullPage: true });
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    await page.screenshot({
+        path: "test-results/categories-simplified-mobile.png",
+        fullPage: true,
+    });
+    const overflow = await page.evaluate(
+        () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth,
+    );
     expect(overflow).toBeLessThanOrEqual(1);
 });

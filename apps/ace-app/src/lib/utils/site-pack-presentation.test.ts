@@ -8,7 +8,10 @@ import {
     groupSitePackCategories,
 } from "./site-pack-presentation";
 
-function pack(id: string, changes: Partial<SitePackSchema> = {}): SitePackSchema {
+function pack(
+    id: string,
+    changes: Partial<SitePackSchema> = {},
+): SitePackSchema {
     const source = catalog.find((item) => item.id === id);
     if (!source) throw new Error("Missing test catalog entry " + id);
     return {
@@ -35,7 +38,9 @@ describe("official site-pack presentation", () => {
     });
 
     it("finds remote UUID categories by exact tier-specific names", () => {
-        const category = pack("pack-adult-pro", { id: "019bd28a-9417-7aef-a30e-44a95a7e7e2c" });
+        const category = pack("pack-adult-pro", {
+            id: "019bd28a-9417-7aef-a30e-44a95a7e7e2c",
+        });
         expect(getOfficialCatalogEntry(category)?.id).toBe("pack-adult-pro");
         expect(getSitePackIconSlug(category)).toBe("adult");
     });
@@ -57,22 +62,30 @@ describe("official site-pack presentation", () => {
             count: 454090,
             source: "catalog",
         });
-        expect(getSitePackCoverage({ ...remote, isSynced: true, entriesCount: 9 })).toEqual({
+        expect(
+            getSitePackCoverage({ ...remote, isSynced: true, entriesCount: 9 }),
+        ).toEqual({
             count: 9,
             source: "installed",
         });
         const custom = { ...remote, id: "custom", isRemote: false };
-        expect(getSitePackCoverage(custom)).toEqual({ count: null, source: "unknown" });
+        expect(getSitePackCoverage(custom)).toEqual({
+            count: null,
+            source: "unknown",
+        });
     });
 
     it("groups Free and Pro under one name without changing underlying IDs", () => {
         const groups = groupSitePackCategories([
-            pack("pack-gambling-pro"), pack("pack-gambling-free"),
-            pack("pack-streaming-free"), pack("pack-anime-manga-pro"),
+            pack("pack-gambling-pro"),
+            pack("pack-gambling-free"),
+            pack("pack-streaming-free"),
+            pack("pack-anime-manga-pro"),
         ]);
         const gambling = groups.find((group) => group.name === "Gambling");
         expect(gambling?.packs.map((entry) => entry.id)).toEqual([
-            "pack-gambling-free", "pack-gambling-pro",
+            "pack-gambling-free",
+            "pack-gambling-pro",
         ]);
         expect(groups.length).toBe(3);
     });

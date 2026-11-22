@@ -18,7 +18,9 @@ function event(partial: SitePackCreationStatus): SitePackCreationStatus {
     return partial;
 }
 
-function streamOf(...events: SitePackCreationStatus[]): AsyncIterable<SitePackCreationStatus> {
+function streamOf(
+    ...events: SitePackCreationStatus[]
+): AsyncIterable<SitePackCreationStatus> {
     return (async function* () {
         for (const item of events) yield item;
     })();
@@ -57,10 +59,34 @@ describe("SyncingStore per-pack state model", () => {
         const outcome = await store.handleSyncStream(
             "pack-a",
             streamOf(
-                event({ STARTED: { phase: "INITIALIZING", progress: 2, site_pack_id: "pack-a" } }),
-                event({ IN_PROGRESS: { phase: "DOWNLOADING", progress: 47, site_pack_id: "pack-a" } }),
-                event({ IN_PROGRESS: { phase: "IMPORTING", progress: 88, site_pack_id: "pack-a" } }),
-                event({ COMPLETED: { phase: "COMPLETED", progress: 100, site_pack_id: "pack-a" } }),
+                event({
+                    STARTED: {
+                        phase: "INITIALIZING",
+                        progress: 2,
+                        site_pack_id: "pack-a",
+                    },
+                }),
+                event({
+                    IN_PROGRESS: {
+                        phase: "DOWNLOADING",
+                        progress: 47,
+                        site_pack_id: "pack-a",
+                    },
+                }),
+                event({
+                    IN_PROGRESS: {
+                        phase: "IMPORTING",
+                        progress: 88,
+                        site_pack_id: "pack-a",
+                    },
+                }),
+                event({
+                    COMPLETED: {
+                        phase: "COMPLETED",
+                        progress: 100,
+                        site_pack_id: "pack-a",
+                    },
+                }),
             ),
         );
 
@@ -76,7 +102,13 @@ describe("SyncingStore per-pack state model", () => {
         const outcome = await store.handleSyncStream(
             "pack-a",
             streamOf(
-                event({ IN_PROGRESS: { phase: "DOWNLOADING", progress: 30, site_pack_id: "pack-a" } }),
+                event({
+                    IN_PROGRESS: {
+                        phase: "DOWNLOADING",
+                        progress: 30,
+                        site_pack_id: "pack-a",
+                    },
+                }),
                 event({ FAILED: { error: "connection reset" } }),
             ),
         );
@@ -101,8 +133,20 @@ describe("SyncingStore per-pack state model", () => {
         const outcome = await store.handleSyncStream(
             "pack-a",
             streamOf(
-                event({ IN_PROGRESS: { phase: "DOWNLOADING", progress: 20, site_pack_id: "pack-a" } }),
-                event({ COMPLETED: { phase: "COMPLETED", progress: 100, site_pack_id: "pack-a" } }),
+                event({
+                    IN_PROGRESS: {
+                        phase: "DOWNLOADING",
+                        progress: 20,
+                        site_pack_id: "pack-a",
+                    },
+                }),
+                event({
+                    COMPLETED: {
+                        phase: "COMPLETED",
+                        progress: 100,
+                        site_pack_id: "pack-a",
+                    },
+                }),
             ),
         );
 
@@ -120,7 +164,13 @@ describe("SyncingStore per-pack state model", () => {
         const outcome = await store.handleSyncStream(
             "pack-a",
             streamOf(
-                event({ IN_PROGRESS: { phase: "IMPORTING", progress: 99, site_pack_id: "pack-a" } }),
+                event({
+                    IN_PROGRESS: {
+                        phase: "IMPORTING",
+                        progress: 99,
+                        site_pack_id: "pack-a",
+                    },
+                }),
             ),
         );
 
@@ -136,7 +186,11 @@ describe("SyncingStore per-pack state model", () => {
             async *[Symbol.asyncIterator]() {
                 throw new Error("stream crashed");
                 yield event({
-                    IN_PROGRESS: { phase: "DOWNLOADING", progress: 5, site_pack_id: "pack-a" },
+                    IN_PROGRESS: {
+                        phase: "DOWNLOADING",
+                        progress: 5,
+                        site_pack_id: "pack-a",
+                    },
                 });
             },
         });
@@ -155,7 +209,13 @@ describe("SyncingStore per-pack state model", () => {
         const outcome = await store.handleSyncStream(
             "pack-a",
             streamOf(
-                event({ IN_PROGRESS: { phase: "DOWNLOADING", progress: 60, site_pack_id: "pack-a" } }),
+                event({
+                    IN_PROGRESS: {
+                        phase: "DOWNLOADING",
+                        progress: 60,
+                        site_pack_id: "pack-a",
+                    },
+                }),
                 // stream ends here without a terminal event
             ),
         );
@@ -185,7 +245,13 @@ describe("SyncingStore per-pack state model", () => {
         const outcome = await store.handleSyncStream(
             "pack-a",
             streamOf(
-                event({ STARTED: { phase: "INITIALIZING", progress: 1, site_pack_id: "pack-a" } }),
+                event({
+                    STARTED: {
+                        phase: "INITIALIZING",
+                        progress: 1,
+                        site_pack_id: "pack-a",
+                    },
+                }),
             ),
         );
 

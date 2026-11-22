@@ -1,36 +1,104 @@
-
-    .ace-settings-resistance-scripts-update.settings-section { display: grid; gap: 12px; }
-    :is(.ace-settings-resistance-scripts-update) header { display: grid; grid-template-columns: 28px minmax(0,1fr); gap: 8px; align-items: start; }
-    :is(.ace-settings-resistance-scripts-update) .section-mark {
-        display: grid; width: 24px; height: 24px; place-items: center;
-        border-left: 3px solid var(--ace-ash); color: var(--muted-foreground);
+.ace-settings-resistance-scripts-update.settings-section {
+    display: grid;
+    gap: 12px;
+}
+:is(.ace-settings-resistance-scripts-update) header {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+}
+:is(.ace-settings-resistance-scripts-update) .section-mark {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border-left: 3px solid var(--ace-ash);
+    color: var(--muted-foreground);
+}
+:is(.ace-settings-resistance-scripts-update) h2 {
+    margin: 0;
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+}
+:is(.ace-settings-resistance-scripts-update) header p {
+    margin: 3px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+}
+:is(.ace-settings-resistance-scripts-update) .update-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--card);
+    padding: 16px;
+}
+:is(.ace-settings-resistance-scripts-update) .update-details {
+    min-width: 0;
+}
+:is(.ace-settings-resistance-scripts-update) .version-label {
+    color: var(--muted-foreground);
+    font-size: 12px;
+}
+:is(.ace-settings-resistance-scripts-update) .version-number {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 18px;
+    font-weight: 600;
+}
+:is(.ace-settings-resistance-scripts-update) .update-details p {
+    margin: 8px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+}
+:is(.ace-settings-resistance-scripts-update) .refresh-button {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    padding: 9px 12px;
+    color: var(--foreground);
+    font-size: 12px;
+    cursor: pointer;
+}
+:is(.ace-settings-resistance-scripts-update)
+    .refresh-button:hover:not(:disabled) {
+    background: var(--accent);
+}
+:is(.ace-settings-resistance-scripts-update) .refresh-button:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+:is(.ace-settings-resistance-scripts-update) .refresh-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+:is(.ace-settings-resistance-scripts-update) .spinning {
+    animation: spin 1.4s linear infinite;
+}
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
-    :is(.ace-settings-resistance-scripts-update) h2 {
-        margin: 0; font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 18px; font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) {
+    :is(.ace-settings-resistance-scripts-update) .spinning {
+        animation: none;
     }
-    :is(.ace-settings-resistance-scripts-update) header p { margin: 3px 0 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.4; }
+}
+@media (max-width: 500px) {
     :is(.ace-settings-resistance-scripts-update) .update-row {
-        display: flex; justify-content: space-between; align-items: center;
-        gap: 16px; border: 1px solid var(--border); border-radius: 5px;
-        background: var(--card); padding: 16px;
+        flex-direction: column;
+        align-items: stretch;
     }
-    :is(.ace-settings-resistance-scripts-update) .update-details { min-width: 0; }
-    :is(.ace-settings-resistance-scripts-update) .version-label { color: var(--muted-foreground); font-size: 12px; }
-    :is(.ace-settings-resistance-scripts-update) .version-number { font-family: "IBM Plex Mono", monospace; font-size: 18px; font-weight: 600; }
-    :is(.ace-settings-resistance-scripts-update) .update-details p { margin: 8px 0 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.4; }
-    :is(.ace-settings-resistance-scripts-update) .refresh-button {
-        display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center;
-        gap: 8px; min-height: 40px; border: 1px solid var(--border); border-radius: 4px;
-        background: transparent; padding: 9px 12px; color: var(--foreground);
-        font-size: 12px; cursor: pointer;
-    }
-    :is(.ace-settings-resistance-scripts-update) .refresh-button:hover:not(:disabled) { background: var(--accent); }
-    :is(.ace-settings-resistance-scripts-update) .refresh-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-    :is(.ace-settings-resistance-scripts-update) .refresh-button:disabled { cursor: not-allowed; opacity: .55; }
-    :is(.ace-settings-resistance-scripts-update) .spinning { animation: spin 1.4s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @media (prefers-reduced-motion: reduce) {
-        :is(.ace-settings-resistance-scripts-update) .spinning { animation: none; }
-    }
-    @media (max-width: 500px) { :is(.ace-settings-resistance-scripts-update) .update-row { flex-direction: column; align-items: stretch; } }
+}

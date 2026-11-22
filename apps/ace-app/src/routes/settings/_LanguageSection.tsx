@@ -13,39 +13,52 @@ export default function LanguageSection() {
         if (!isLanguagePreference(value) || state.busy) return;
         state.error = false;
         state.busy = true;
-        try { await changeAppLanguage(value); }
-        catch (cause) {
+        try {
+            await changeAppLanguage(value);
+        } catch (cause) {
             console.error("Failed to save app language:", cause);
             state.error = true;
-        } finally { state.busy = false; }
+        } finally {
+            state.busy = false;
+        }
     }
     return (
         <section class="settings-section ace-settings-language">
-    <header>
-        <span class="section-mark" aria-hidden="true"><Languages size={16} /></span>
-        <div>
-            <h2>{m.settings_language_title()}</h2>
-            <p>{m.settings_language_description()}</p>
-        </div>
-    </header>
-    <div class="setting-row">
-        <label for="app-language">{m.settings_language_label()}</label>
-        <select
-            id="app-language"
-            value={localizationStore.language}
-            disabled={state.busy}
-            onChange={(event) => void changeLanguage(event.currentTarget.value)}
-        >
-            <option value="system">{m.settings_language_system()}</option>
-            <option value="en">English</option>
-            <option value="it">Italiano</option>
-            <option value="de">Deutsch</option>
-            <option value="es">Español</option>
-        </select>
-    </div>
-    {state.error ? (<>
-        <p class="error" role="alert">{m.settings_language_save_failed()}</p>
-    </>) : null}
-</section>
+            <header>
+                <span class="section-mark" aria-hidden="true">
+                    <Languages size={16} />
+                </span>
+                <div>
+                    <h2>{m.settings_language_title()}</h2>
+                    <p>{m.settings_language_description()}</p>
+                </div>
+            </header>
+            <div class="setting-row">
+                <label for="app-language">{m.settings_language_label()}</label>
+                <select
+                    id="app-language"
+                    value={localizationStore.language}
+                    disabled={state.busy}
+                    onChange={(event) =>
+                        void changeLanguage(event.currentTarget.value)
+                    }
+                >
+                    <option value="system">
+                        {m.settings_language_system()}
+                    </option>
+                    <option value="en">English</option>
+                    <option value="it">Italiano</option>
+                    <option value="de">Deutsch</option>
+                    <option value="es">Español</option>
+                </select>
+            </div>
+            {state.error ? (
+                <>
+                    <p class="error" role="alert">
+                        {m.settings_language_save_failed()}
+                    </p>
+                </>
+            ) : null}
+        </section>
     );
 }

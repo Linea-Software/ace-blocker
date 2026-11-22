@@ -5,7 +5,10 @@ import { createRoot, createSignal, getOwner } from "solid-js";
  * Svelte runes with native Solid 2 signals. Every field has an independently
  * tracked getter and setter, so changes propagate to existing consumers.
  */
-export function reactiveFields<T extends object>(target: T, keys: readonly string[]): void {
+export function reactiveFields<T extends object>(
+    target: T,
+    keys: readonly string[],
+): void {
     const attach = () => {
         for (const key of keys) {
             // Business operations may stage multiple draft mutations in one

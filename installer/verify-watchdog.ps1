@@ -3,51 +3,53 @@
 
 [CmdletBinding()]
 param(
-    [switch]$ExerciseRecovery,
-    [int]$RecoveryTimeoutSeconds = 45
+    [switch] $ExerciseRecovery,
+    [int] $RecoveryTimeoutSeconds = 45
 )
 
 $ErrorActionPreference = "Stop"
 
-function Write-Section([string]$title) {
+function Write-Section ([string] $title) {
     Write-Host ""
     Write-Host "=== $title ===" -ForegroundColor Cyan
 }
 
-function Invoke-Sc([string[]]$arguments) {
+function Invoke-Sc ([string[]] $arguments) {
     & "$env:SystemRoot\System32\sc.exe" @arguments
     if ($LASTEXITCODE -ne 0) {
         throw "sc.exe $($arguments -join ' ') failed with exit code $LASTEXITCODE"
     }
 }
 
-function Get-ServiceProcessId([string]$serviceName) {
+function Get-ServiceProcessId ([string] $serviceName) {
     $service = Get-CimInstance Win32_Service -Filter "Name='$serviceName'"
     if (-not $service) {
         throw "Service '$serviceName' is not installed."
     }
-    return [uint32]$service.ProcessId
+    return [uint32] $service.ProcessId
 }
 
-function Wait-ForRunningServiceWithNewPid(
-    [string]$serviceName,
-    [uint32]$oldProcessId,
-    [int]$timeoutSeconds
+function Wait-ForRunningServiceWithNewPid (
+    [string] $serviceName,
+    [uint32] $oldProcessId,
+    [int] $timeoutSeconds
 ) {
     $deadline = (Get-Date).AddSeconds($timeoutSeconds)
     while ((Get-Date) -lt $deadline) {
         $service = Get-CimInstance Win32_Service -Filter "Name='$serviceName'"
-        if ($service -and $service.State -eq "Running" -and
-            [uint32]$service.ProcessId -ne 0 -and
-            [uint32]$service.ProcessId -ne $oldProcessId) {
-            return [uint32]$service.ProcessId
+        if (
+            $service -and $service.State -eq "Running" -and
+            [uint32] $service.ProcessId -ne 0 -and
+            [uint32] $service.ProcessId -ne $oldProcessId
+        ) {
+            return [uint32] $service.ProcessId
         }
         Start-Sleep -Milliseconds 500
     }
     throw "Timed out waiting for '$serviceName' to recover with a new PID."
 }
 
-function Exercise-ServiceKillRecovery([string]$serviceName) {
+function Exercise-ServiceKillRecovery ([string] $serviceName) {
     $oldProcessId = Get-ServiceProcessId $serviceName
     if ($oldProcessId -eq 0) {
         throw "Service '$serviceName' has no running process."
@@ -55,33 +57,34 @@ function Exercise-ServiceKillRecovery([string]$serviceName) {
 
     Write-Host "Killing $serviceName PID $oldProcessId once..."
     Stop-Process -Id $oldProcessId -Force
-    $newProcessId = Wait-ForRunningServiceWithNewPid `
-        $serviceName $oldProcessId $RecoveryTimeoutSeconds
+    $newProcessId = Wait-ForRunningServiceWithNewPid $serviceName $oldProcessId $RecoveryTimeoutSeconds
     Write-Host "PASS: $serviceName recovered as PID $newProcessId" -ForegroundColor Green
 }
 
 Write-Section "Service configuration"
-foreach ($serviceName in @("AceEngine", "AceEngineWatchdog")) {
+foreach ($serviceName in @( "AceEngine", "AceEngineWatchdog" )) {
     Write-Host "-- $serviceName --" -ForegroundColor Yellow
-    Invoke-Sc @("qc", $serviceName)
-    Invoke-Sc @("qfailure", $serviceName)
-    Invoke-Sc @("qfailureflag", $serviceName)
-    Invoke-Sc @("qsidtype", $serviceName)
-    Invoke-Sc @("sdshow", $serviceName)
-    Get-CimInstance Win32_Service -Filter "Name='$serviceName'" |
-        Select-Object Name, State, StartMode, PathName, ProcessId |
-        Format-List
+    Invoke-Sc @( "qc", $serviceName )
+    Invoke-Sc @( "qfailure", $serviceName )
+    Invoke-Sc @( "qfailureflag", $serviceName )
+    Invoke-Sc @( "qsidtype", $serviceName )
+    Invoke-Sc @( "sdshow", $serviceName )
+    Get-CimInstance Win32_Service -Filter "Name='$serviceName'"
+        | Select-Object Name, State, StartMode, PathName, ProcessId
+        | Format-List
 }
 
 $installDir = Join-Path $env:ProgramFiles "Ace Blocker"
 $programDataDir = Join-Path $env:ProgramData "LineaSoftware\AceBlocker"
 
 Write-Section "Installed file ACLs"
-foreach ($path in @(
-    (Join-Path $installDir "ace-engine.exe"),
-    (Join-Path $installDir "ace-watchdog.exe"),
-    (Join-Path $installDir "wintun.dll")
-)) {
+foreach (
+    $path in @(
+        (Join-Path $installDir "ace-engine.exe"),
+        (Join-Path $installDir "ace-watchdog.exe"),
+        (Join-Path $installDir "wintun.dll")
+    )
+) {
     if (Test-Path -LiteralPath $path) {
         & "$env:SystemRoot\System32\icacls.exe" $path
     } else {
@@ -124,4 +127,5 @@ Write-Section "Manual validation still required"
    remain possible; this design is not administrator-proof.
 9. Inspect $programDataDir\logs\ace-watchdog.log for recovery/heartbeat/
    maintenance events and confirm it contains no application secrets.
-"@ | Write-Host
+"@
+    | Write-Host

@@ -8,10 +8,17 @@ import { loadBlockEditor, type BlockEditorLoad } from "./_data";
 export default function BlockEditorPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const requestedId = createMemo(() => new URLSearchParams(location.search).get("block"));
-    const section = createMemo(() => new URLSearchParams(location.search).get("section"));
+    const requestedId = createMemo(() =>
+        new URLSearchParams(location.search).get("block"),
+    );
+    const section = createMemo(() =>
+        new URLSearchParams(location.search).get("section"),
+    );
     const [data, setData] = createSignal<BlockEditorLoad>({
-        block: null, requestedId: requestedId(), engineOffline: false, loadError: false,
+        block: null,
+        requestedId: requestedId(),
+        engineOffline: false,
+        loadError: false,
     });
     const [loading, setLoading] = createSignal(true);
     const [lockOpen, setLockOpen] = createSignal(false);
@@ -34,7 +41,12 @@ export default function BlockEditorPage() {
         } catch (error) {
             if (generation !== requestGeneration) return;
             console.error("Failed to load network block editor", error);
-            setData({ block: null, requestedId: id, engineOffline: false, loadError: true });
+            setData({
+                block: null,
+                requestedId: id,
+                engineOffline: false,
+                loadError: true,
+            });
         } finally {
             if (generation === requestGeneration) setLoading(false);
         }
@@ -51,27 +63,56 @@ export default function BlockEditorPage() {
 
     return (
         <>
-            <Show when={!loading() && data().requestedId === requestedId()} fallback={<div role="status" class="editor-error">{m.loading_block_configuration()}</div>}>
-                <Show when={!data().engineOffline && !data().loadError && (!requestedId() || data().block)}
+            <Show
+                when={!loading() && data().requestedId === requestedId()}
+                fallback={
+                    <div role="status" class="editor-error">
+                        {m.loading_block_configuration()}
+                    </div>
+                }
+            >
+                <Show
+                    when={
+                        !data().engineOffline &&
+                        !data().loadError &&
+                        (!requestedId() || data().block)
+                    }
                     fallback={
-                        <main class="editor-error" role="alert" data-requested-block={requestedId() ?? "new"}>
+                        <main
+                            class="editor-error"
+                            role="alert"
+                            data-requested-block={requestedId() ?? "new"}
+                        >
                             <h1>{m.network_blocks_load_failed_title()}</h1>
                             <p>{m.network_blocks_load_failed_description()}</p>
                             <a href="/network-blocks">{m.cancel()}</a>
                         </main>
-                    }>
-                    <BlockEditor block={data().block} step={editorStep()} onStepChange={setEditorStep}
+                    }
+                >
+                    <BlockEditor
+                        block={data().block}
+                        step={editorStep()}
+                        onStepChange={setEditorStep}
                         onClose={returnToList}
-                        onProtect={() => { if (data().block) setLockOpen(true); }}
-                        onSave={() => { void returnToList(); }} />
+                        onProtect={() => {
+                            if (data().block) setLockOpen(true);
+                        }}
+                        onSave={() => {
+                            void returnToList();
+                        }}
+                    />
                 </Show>
             </Show>
-            <LockModal open={lockOpen()} onOpenChange={setLockOpen}
-                block={data().block} onSave={refresh}
+            <LockModal
+                open={lockOpen()}
+                onOpenChange={setLockOpen}
+                block={data().block}
+                onSave={refresh}
                 onEditSchedule={() => {
                     setLockOpen(false);
                     setEditorStep(1);
-                }} />
+                }}
+            />
             <style>{`
                 .editor-error { max-width: 660px; margin: 50px auto; padding: 26px; border: 1px solid var(--border); background: var(--card); }
                 .editor-error h1 { font: 600 26px "IBM Plex Sans Condensed", sans-serif; }

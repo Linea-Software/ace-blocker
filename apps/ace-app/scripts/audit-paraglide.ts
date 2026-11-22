@@ -43,7 +43,10 @@ function scanDirectory(directory: string): void {
         scannedFiles++;
 
         for (const [, alias] of imports) {
-            const escapedAlias = alias.replace(/[.*+?^\u0024{}()|[\]\\]/g, "\\$&");
+            const escapedAlias = alias.replace(
+                /[.*+?^\u0024{}()|[\]\\]/g,
+                "\\$&",
+            );
             const properties = new RegExp(
                 `\\b${escapedAlias}\\.([A-Za-z_$][\\w$]*)\\b`,
                 "g",
@@ -68,9 +71,9 @@ scanDirectory(join(root, "src"));
 
 const keys = Object.keys(english);
 const unused = keys.filter((key) => !referenced.has(key));
-const missing = [...referenced].filter(
-    (key) => !Object.hasOwn(english, key),
-).sort();
+const missing = [...referenced]
+    .filter((key) => !Object.hasOwn(english, key))
+    .sort();
 
 console.log(
     `Paraglide EN: ${keys.length} keys, ${referenced.size} referenced, ${scannedFiles} source files scanned.`,

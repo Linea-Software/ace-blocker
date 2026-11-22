@@ -1,10 +1,12 @@
 <a id="ace-blocker-desktop--localizzazione-con-llm"></a>
+
 # Ace Blocker Desktop — LLM localization workflow
 
 This guide supplements `ace-blocker-site/docs/LLM_LOCALIZATION_WORKFLOW.md` when both repositories are available.
 You can also use this guide without the website repository.
 
 <a id="come-operare"></a>
+
 ## Procedure
 
 1. Use `apps/ace-app/messages/en.json` as the source catalog. Inspect the actual screen and behavior before translation. Use complete features of 20–50 keys per batch, not isolated words.
@@ -15,6 +17,7 @@ You can also use this guide without the website repository.
 6. Save changes only to the requested `messages/{locale}.json` files. Do not reorder unrelated entries. Run `bun run i18n:audit` and `bun run check` from `apps/ace-app`. The audit **checks EN references, not locale coverage**. Run applicable tests. Record the model/version, date, reviewer, and unresolved keys.
 
 <a id="glossario-minimo-da-approvare"></a>
+
 ## Minimum glossary for approval
 
 - **Network Block:** A configuration that blocks sites or categories according to rules and times. Proposed Italian term: `blocco di rete`.
@@ -30,6 +33,7 @@ For `control_lock_help_detail`, avoid the literal “il blocco blocca...”.
 Explain that Lock protects changes but does not expand the list of filtered sites.
 
 <a id="stato-iniziale-verificato-2026-11-06"></a>
+
 ## Verified initial state (2026-11-06)
 
 Paraglide configures `en`, `de`, `it`, `es`, `fr`, `pt`, and `pt-BR`.
@@ -38,6 +42,7 @@ The other locales contained 0 keys. These counts are a snapshot, not verified UI
 Do not mark a language complete only because it is declared in `project.inlang/settings.json`.
 
 <a id="stato-dopo-la-prima-implementazione-2026-11-06"></a>
+
 ## State after the first implementation (2026-11-06)
 
 After the initial snapshot, the app's English and Italian catalogs each contained 731 keys.
@@ -48,6 +53,7 @@ This does **not** certify native-speaker review or legal validation.
 Complete an additional editorial review of locks, dates, and privacy.
 
 <a id="checklist-finale"></a>
+
 ## Final checklist
 
 - Verify valid JSON, unchanged keys and placeholders, and no invented feature claims.
@@ -56,7 +62,7 @@ Complete an additional editorial review of locks, dates, and privacy.
 - Verify compilation, checks, tests, and visual screenshots of principal screens.
 - Include the unresolved-key list and updated glossary in the same PR.
 
-The shared `.agents/skills/i18n-localization/SKILL.md` helps with *technical* localization: keys, placeholders, fallbacks, and RTL.
+The shared `.agents/skills/i18n-localization/SKILL.md` helps with _technical_ localization: keys, placeholders, fallbacks, and RTL.
 It does not replace this editorial workflow.
 The codebase uses Paraglide with `m.nome_chiave()` and Bun.
 Do not follow generic React/Next or npm examples from community skills.

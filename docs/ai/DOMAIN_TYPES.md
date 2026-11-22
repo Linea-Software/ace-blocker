@@ -7,6 +7,7 @@ Use this guide for audits and refactors that affect Rust entities, stored data, 
 Use `String`, `u32`, or `boolean` for data without special constraints. Use a domain type for an identity, a value with important rules, a unit or clock meaning, a secret, or values that can be confused. Do not add a branded type or newtype only to increase type count.
 
 Before you propose a new type, identify:
+
 - Invalid states or mistaken value combinations that the current code permits.
 - The owner of the meaning and validation rule. Check whether a standard or library type already models it.
 - Boundaries that accept untrusted input: UI forms, storage, remote APIs, RPC, and files.
@@ -34,13 +35,13 @@ See `crates/ace-engine/src/core/common/domain_types.rs`. It uses `nutype` and ex
 
 ## Practical design examples
 
-| Symptom | Prefer | Avoid |
-| --- | --- | --- |
-| An arbitrary string stands for a validated external URL | A standard URL parser, or a specific validated URL type only if business invariants demand one | Regex-only parsing or an unchecked `as Url` cast |
-| Two different IDs are interchangeable `string`/`Uuid` | Existing ID wrappers/newtypes scoped to the owning domain | Exposing all IDs as raw strings throughout internal code |
-| Unclear schedule duration, timezone or units | Explicit duration/timezone semantics and tests around boundaries | Unlabelled `number`/`u64` or silently changing stored time interpretation |
-| A secret gets logged in common debugging output | A secret-owning type whose formatting/serialization is intentionally constrained | `Debug`/`Display` of credential values |
-| Similar fields in two unrelated subsystems | Independent types until a **shared meaning** is established | One generic object with optional fields and branching behavior |
+| Symptom                                                 | Prefer                                                                                         | Avoid                                                                     |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| An arbitrary string stands for a validated external URL | A standard URL parser, or a specific validated URL type only if business invariants demand one | Regex-only parsing or an unchecked `as Url` cast                          |
+| Two different IDs are interchangeable `string`/`Uuid`   | Existing ID wrappers/newtypes scoped to the owning domain                                      | Exposing all IDs as raw strings throughout internal code                  |
+| Unclear schedule duration, timezone or units            | Explicit duration/timezone semantics and tests around boundaries                               | Unlabelled `number`/`u64` or silently changing stored time interpretation |
+| A secret gets logged in common debugging output         | A secret-owning type whose formatting/serialization is intentionally constrained               | `Debug`/`Display` of credential values                                    |
+| Similar fields in two unrelated subsystems              | Independent types until a **shared meaning** is established                                    | One generic object with optional fields and branching behavior            |
 
 ## Review / regression requirements
 

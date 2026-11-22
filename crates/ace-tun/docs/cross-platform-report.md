@@ -26,14 +26,14 @@ These modules compile without changes on other operating systems.
 
 **The Windows-specific surface is small and well-contained** — five modules:
 
-| Module | Windows mechanism |
-|---|---|
-| `adapter.rs` | `wintun` crate: adapter create, session, teardown |
-| `netcfg.rs` | IP Helper APIs (`iphlpapi.dll`): addresses, routes, metrics, best-route probe |
-| `dial.rs` | `IP_UNICAST_IF` / `IPV6_UNICAST_IF` socket pinning |
-| `process.rs` | `GetExtendedTcpTable` / `GetExtendedUdpTable` + `OpenProcess` |
-| `device.rs` | blocking WinTun session → tokio async device (reader thread) |
-| `build.rs` | copies `wintun.dll` next to binaries (already Windows-gated) |
+| Module       | Windows mechanism                                                             |
+| ------------ | ----------------------------------------------------------------------------- |
+| `adapter.rs` | `wintun` crate: adapter create, session, teardown                             |
+| `netcfg.rs`  | IP Helper APIs (`iphlpapi.dll`): addresses, routes, metrics, best-route probe |
+| `dial.rs`    | `IP_UNICAST_IF` / `IPV6_UNICAST_IF` socket pinning                            |
+| `process.rs` | `GetExtendedTcpTable` / `GetExtendedUdpTable` + `OpenProcess`                 |
+| `device.rs`  | blocking WinTun session → tokio async device (reader thread)                  |
+| `build.rs`   | copies `wintun.dll` next to binaries (already Windows-gated)                  |
 
 The existing implementation already separates flow decisions, QUIC policy,
 fail-open behavior, DNS inspection, HTTP CONNECT/SOCKS5 relay, and watchdog
@@ -65,21 +65,21 @@ app ──routes──▶ [adapter+netcfg] ──▶ [device] ──▶ [ipstack
         [dns cache] ◄── UDP 53 snoop            (portable)
 ```
 
-| Layer | Portable? | Notes |
-|---|---|---|
-| `netstack.rs` | ✅ | Uses `ipstack` (narrowlink), flow-level decision, QUIC drop, group-address drop, DNS snoop hook. No OS calls at all. |
-| `rule.rs` | ✅ | Pure matching logic, heavy unit-test coverage. |
-| `dns.rs` | ✅ | Pure DNS wire parsing. |
-| `proxy.rs` | ✅ | Pure tokio sockets (HTTP CONNECT / SOCKS5). |
-| `config.rs`, `callback.rs`, `state.rs` | ✅ | Pure data/logic. |
-| `error.rs` | ✅ / ⚠️ | Ports as-is; add per-OS variants (e.g. `NotElevated` semantics differ). |
-| `lib.rs` (builder, start/stop, watchdog) | ✅ / ⚠️ | The only Windows hook is `PhysicalInterface::discover` (used pre-start) and `TunAdapter::create`. |
-| `adapter.rs` | ❌ | WinTun only. |
-| `netcfg.rs` | ❌ | IP Helper only. |
-| `dial.rs` | ❌ | `IP_UNICAST_IF` semantics differ per OS (see §4.1). |
-| `process.rs` | ❌ | Windows socket tables only. |
-| `device.rs` | ⚠️ | The `AsyncRead/AsyncWrite` contract is portable; the backend is WinTun. |
-| `build.rs` | ⚠️ | Already no-ops off Windows; nothing to do. |
+| Layer                                    | Portable? | Notes                                                                                                                |
+| ---------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| `netstack.rs`                            | ✅        | Uses `ipstack` (narrowlink), flow-level decision, QUIC drop, group-address drop, DNS snoop hook. No OS calls at all. |
+| `rule.rs`                                | ✅        | Pure matching logic, heavy unit-test coverage.                                                                       |
+| `dns.rs`                                 | ✅        | Pure DNS wire parsing.                                                                                               |
+| `proxy.rs`                               | ✅        | Pure tokio sockets (HTTP CONNECT / SOCKS5).                                                                          |
+| `config.rs`, `callback.rs`, `state.rs`   | ✅        | Pure data/logic.                                                                                                     |
+| `error.rs`                               | ✅ / ⚠️   | Ports as-is; add per-OS variants (e.g. `NotElevated` semantics differ).                                              |
+| `lib.rs` (builder, start/stop, watchdog) | ✅ / ⚠️   | The only Windows hook is `PhysicalInterface::discover` (used pre-start) and `TunAdapter::create`.                    |
+| `adapter.rs`                             | ❌        | WinTun only.                                                                                                         |
+| `netcfg.rs`                              | ❌        | IP Helper only.                                                                                                      |
+| `dial.rs`                                | ❌        | `IP_UNICAST_IF` semantics differ per OS (see §4.1).                                                                  |
+| `process.rs`                             | ❌        | Windows socket tables only.                                                                                          |
+| `device.rs`                              | ⚠️        | The `AsyncRead/AsyncWrite` contract is portable; the backend is WinTun.                                              |
+| `build.rs`                               | ⚠️        | Already no-ops off Windows; nothing to do.                                                                           |
 
 **`ipstack::IpStack::new(cfg, device)` accepts any `AsyncRead + AsyncWrite`
 device that frames one IP packet per read or write.** The current `TunDevice`
@@ -91,14 +91,14 @@ meets this contract. Replacing only its backend minimizes the change.
 
 ### 3.1 The TUN device layer (all well-trodden)
 
-| OS | Native device | Notes |
-|---|---|---|
-| Windows | WinTun (in-kernel driver, DLL-carried) | Already done, and done well (signed 0.14.1 DLL vendored, no `netsh`, real error codes). |
-| Linux | `/dev/net/tun` + `TUNSETIFF` | Kernel module `tun`; `IFF_TUN \| IFF_NO_PI` gives raw IP packets. Requires `CAP_NET_ADMIN`. Non-persistent by default: **device dies with the last fd → routes die with the interface → hard-kill is safe**, exactly like WinTun. |
-| macOS | `utunN` via `com.apple.net.utun_control` kernel control socket (or `/dev/utunN`) | **4-byte AF header on every packet** (must be stripped on read, prepended on write — `tun-rs`'s `packet_information(false)` handles this). Requires root. Non-persistent: fd close removes the interface. |
-| FreeBSD/OpenBSD/NetBSD | `/dev/tun` | `TUNSIFMODE` ioctls; similar to Linux but ioctl-based; route config via `route_manager` crate. |
-| Android | `VpnService.Builder.establish()` fd | No root; app-level VPN; attribution is per-UID, not per-PID. |
-| iOS/tvOS | `NEPacketTunnelProvider` fd | Same; no process attribution at all. |
+| OS                     | Native device                                                                    | Notes                                                                                                                                                                                                                             |
+| ---------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows                | WinTun (in-kernel driver, DLL-carried)                                           | Already done, and done well (signed 0.14.1 DLL vendored, no `netsh`, real error codes).                                                                                                                                           |
+| Linux                  | `/dev/net/tun` + `TUNSETIFF`                                                     | Kernel module `tun`; `IFF_TUN \| IFF_NO_PI` gives raw IP packets. Requires `CAP_NET_ADMIN`. Non-persistent by default: **device dies with the last fd → routes die with the interface → hard-kill is safe**, exactly like WinTun. |
+| macOS                  | `utunN` via `com.apple.net.utun_control` kernel control socket (or `/dev/utunN`) | **4-byte AF header on every packet** (must be stripped on read, prepended on write — `tun-rs`'s `packet_information(false)` handles this). Requires root. Non-persistent: fd close removes the interface.                         |
+| FreeBSD/OpenBSD/NetBSD | `/dev/tun`                                                                       | `TUNSIFMODE` ioctls; similar to Linux but ioctl-based; route config via `route_manager` crate.                                                                                                                                    |
+| Android                | `VpnService.Builder.establish()` fd                                              | No root; app-level VPN; attribution is per-UID, not per-PID.                                                                                                                                                                      |
+| iOS/tvOS               | `NEPacketTunnelProvider` fd                                                      | Same; no process attribution at all.                                                                                                                                                                                              |
 
 `tun-rs` v2.8.8 supports all of the above (Windows, Linux, macOS, the three
 BSDs, Android, iOS, tvOS, OpenHarmony) with sync + tokio async APIs, TAP mode,
@@ -107,11 +107,11 @@ and Linux TSO/GSO offload + multi-queue. Its Linux device layer is high quality
 
 ### 3.2 Addressing & routing
 
-| OS | Recommended mechanism |
-|---|---|
-| Windows | IP Helper (`CreateUnicastIpAddressEntry`, `CreateIpForwardEntry2`, `SetIpInterfaceEntry`) — what ace-tun does today. Best-in-class; keep it. |
-| Linux | **netlink rtnetlink** (`RTM_NEWADDR` / `RTM_NEWROUTE`). Rust crates: `rtnetlink` (rust-netlink) or `netlink-packet-route` + `netlink-sys`. Alternative: `netconfig-rs` (used by tun-rs, netlink-based on Linux). Avoid shelling to `ip` — same "no output parsing" argument as the README's case against `netsh`. |
-| macOS | No netlink. Two options: (a) `SIOCAIFADDR`/`SIOCSIFMTU`/`SIOCSIFFLAGS` ioctls for addresses (what tun-rs does) + the `/sbin/route` command for routes (what `route_manager` does — the same approach WireGuard's macOS client uses), or (b) SystemConfiguration APIs (`SCDynamicStoreCopy`…) for routes, which is heavier and still undocumented-ish. Pragmatic choice: **ioctls + `route` command**, wrapped with strict error checking. |
+| OS      | Recommended mechanism                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Windows | IP Helper (`CreateUnicastIpAddressEntry`, `CreateIpForwardEntry2`, `SetIpInterfaceEntry`) — what ace-tun does today. Best-in-class; keep it.                                                                                                                                                                                                                                                                                              |
+| Linux   | **netlink rtnetlink** (`RTM_NEWADDR` / `RTM_NEWROUTE`). Rust crates: `rtnetlink` (rust-netlink) or `netlink-packet-route` + `netlink-sys`. Alternative: `netconfig-rs` (used by tun-rs, netlink-based on Linux). Avoid shelling to `ip` — same "no output parsing" argument as the README's case against `netsh`.                                                                                                                         |
+| macOS   | No netlink. Two options: (a) `SIOCAIFADDR`/`SIOCSIFMTU`/`SIOCSIFFLAGS` ioctls for addresses (what tun-rs does) + the `/sbin/route` command for routes (what `route_manager` does — the same approach WireGuard's macOS client uses), or (b) SystemConfiguration APIs (`SCDynamicStoreCopy`…) for routes, which is heavier and still undocumented-ish. Pragmatic choice: **ioctls + `route` command**, wrapped with strict error checking. |
 
 **Split-default routing works on each target OS.** Routes `0.0.0.0/1` and
 `128.0.0.0/1` (and `::/1` and `8000::/1`) have longer prefixes than a
@@ -128,27 +128,27 @@ metric. (Linux route metrics exist but are unnecessary here.)
 ### 3.3 Loop prevention (pinning outbound sockets) — the subtle part
 
 The engine's own upstream connections must bypass the tunnel. Today:
-`IP_UNICAST_IF` / `IPV6_UNICAST_IF`, discovered *before* routes are installed.
+`IP_UNICAST_IF` / `IPV6_UNICAST_IF`, discovered _before_ routes are installed.
 
 Verified per-OS semantics (this is the trap the README warns about, now with a
 full table):
 
-| OS | Option | Byte order | Notes |
-|---|---|---|---|
-| Windows | `IP_UNICAST_IF` | **network** | (current ace-tun code, correct) |
-| Windows | `IPV6_UNICAST_IF` | **host** | (current ace-tun code, correct) |
-| Linux | `IP_UNICAST_IF` (= 50) | **network** | kernel does `ifindex = ntohl(val)` — confirmed in `net/ipv4/ip_sockglue.c` |
-| Linux | `IPV6_UNICAST_IF` (= 76) | **network** | kernel does `ntohl(val)` too — confirmed in `net/ipv6/ipv6_sockglue.c`. **Differs from Windows!** |
-| macOS | `IP_BOUND_IF` (= 25) | **host** | plain `int` ifindex; xnu `in_pcbbind` path |
-| macOS | `IPV6_BOUND_IF` (= 125) | **host** | plain `int` ifindex |
+| OS      | Option                   | Byte order  | Notes                                                                                             |
+| ------- | ------------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
+| Windows | `IP_UNICAST_IF`          | **network** | (current ace-tun code, correct)                                                                   |
+| Windows | `IPV6_UNICAST_IF`        | **host**    | (current ace-tun code, correct)                                                                   |
+| Linux   | `IP_UNICAST_IF` (= 50)   | **network** | kernel does `ifindex = ntohl(val)` — confirmed in `net/ipv4/ip_sockglue.c`                        |
+| Linux   | `IPV6_UNICAST_IF` (= 76) | **network** | kernel does `ntohl(val)` too — confirmed in `net/ipv6/ipv6_sockglue.c`. **Differs from Windows!** |
+| macOS   | `IP_BOUND_IF` (= 25)     | **host**    | plain `int` ifindex; xnu `in_pcbbind` path                                                        |
+| macOS   | `IPV6_BOUND_IF` (= 125)  | **host**    | plain `int` ifindex                                                                               |
 
 Windows uses network byte order for IPv4 and host byte order for IPv6.
 **Linux uses network byte order for both families.** The platform backend
 must select the byte order. Unit tests must cover each OS.
 
 Bonus Linux difference: Linux's `IP_UNICAST_IF` returns `EADDRNOTAVAIL` if the
-ifindex doesn't exist (an *error*), whereas Windows silently pins to a
-nonexistent interface (a *hang*). The Linux failure mode is friendlier; log it
+ifindex doesn't exist (an _error_), whereas Windows silently pins to a
+nonexistent interface (a _hang_). The Linux failure mode is friendlier; log it
 either way. Linux alternative: `SO_BINDTODEVICE` (name-based, needs
 `CAP_NET_RAW`, no byte-order trap) — but it conflicts with the
 "discovered index" design, so `IP_UNICAST_IF` is the closer port. macOS has no
@@ -160,7 +160,7 @@ The product must identify the process that owns each flow. Each OS has a
 different method:
 
 **Linux — netlink sock_diag (the `ss` mechanism).**
-`NETLINK_SOCK_DIAG` + `inet_diag_req_v2` returns, per socket, the socket *inode*
+`NETLINK_SOCK_DIAG` + `inet_diag_req_v2` returns, per socket, the socket _inode_
 (`idiag_inode`) for both TCP and UDP. Map inode → PID by scanning
 `/proc/<pid>/fd/*` symlinks (`socket:[<inode>]`) — that is literally what
 `ss -tunp` does. Then `/proc/<pid>/comm` or `/proc/<pid>/exe` gives the process
@@ -168,12 +168,13 @@ name (compare against `chrome`, `firefox`, … — note: **no `.exe` suffix on
 Linux**, so the engine's rule strings need normalizing, see §5).
 Rust crates: `netlink-packet-sock-diag` + `netlink-sys` (actively maintained).
 Caveats:
+
 - **Cost:** one netlink round-trip per flow is heavier than the Windows table
   dump. Mitigate with a short-TTL cache (pid by `(family, ip, port)` for
   ~250 ms) and/or batch queries (`ss`-style dumps).
 - Root sees all sockets; non-root sees only its own — the engine runs
   privileged anyway.
-- `/proc/net/tcp` is *not* a substitute: it exposes UID, not PID.
+- `/proc/net/tcp` is _not_ a substitute: it exposes UID, not PID.
 
 **macOS — sysctl PCB lists.**
 `sysctl net.inet.tcp.pcblist_n` / `net.inet.udp.pcblist_n` return tagged,
@@ -191,11 +192,11 @@ rules would not work there. That is a product decision, not an engineering one.
 
 ### 3.5 Privilege model
 
-| OS | Required | Detect with |
-|---|---|---|
-| Windows | Administrator token | `TOKEN_ELEVATION` (existing `is_elevated()`) |
-| Linux | `CAP_NET_ADMIN` (root usually) | `capget`, or just attempt `TUNSETIFF` and map `EPERM` → a clear error |
-| macOS | root (euid 0) | `geteuid() == 0` |
+| OS      | Required                       | Detect with                                                           |
+| ------- | ------------------------------ | --------------------------------------------------------------------- |
+| Windows | Administrator token            | `TOKEN_ELEVATION` (existing `is_elevated()`)                          |
+| Linux   | `CAP_NET_ADMIN` (root usually) | `capget`, or just attempt `TUNSETIFF` and map `EPERM` → a clear error |
+| macOS   | root (euid 0)                  | `geteuid() == 0`                                                      |
 
 The engine handles `Error::NotElevated` without stopping. It logs
 "running WITHOUT traffic interception" and retries in the background.
@@ -211,17 +212,17 @@ sufficient. Section 8 describes later firewall safeguards.
 
 ### 3.7 Known-gaps parity check
 
-| Gap (from README) | Linux | macOS |
-|---|---|---|
-| ICMP not proxied | same (ipstack surfaces it as `UnknownTransport`; dropped) | same |
-| UDP `Proxy` degrades to direct | same (HTTP CONNECT cannot tunnel UDP) | same |
-| Multicast/broadcast dropped → **LAN discovery breaks** | same, *but easier to fix*: add `224.0.0.0/4` and `ff00::/8` routes via the discovered physical NIC instead of deleting auto-routes (there is no auto-`224.0.0.0/4`-on-tun on Linux; you just don't install it). | same, fix like Linux |
+| Gap (from README)                                      | Linux                                                                                                                                                                                                           | macOS                |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| ICMP not proxied                                       | same (ipstack surfaces it as `UnknownTransport`; dropped)                                                                                                                                                       | same                 |
+| UDP `Proxy` degrades to direct                         | same (HTTP CONNECT cannot tunnel UDP)                                                                                                                                                                           | same                 |
+| Multicast/broadcast dropped → **LAN discovery breaks** | same, _but easier to fix_: add `224.0.0.0/4` and `ff00::/8` routes via the discovered physical NIC instead of deleting auto-routes (there is no auto-`224.0.0.0/4`-on-tun on Linux; you just don't install it). | same, fix like Linux |
 
 The group-drop path also has one Windows-specific behaviour that does not port:
-Windows *auto-creates* a `224.0.0.0/4` route on the tunnel interface; Unixes
+Windows _auto-creates_ a `224.0.0.0/4` route on the tunnel interface; Unixes
 don't. On Unix the multicast packets reach the tunnel only because the `/1`
 routes cover them — so the README's "better fix" (keep multicast on the
-physical NIC) is the *default* approach on Unix: add explicit group routes via
+physical NIC) is the _default_ approach on Unix: add explicit group routes via
 the physical interface during `start()`, and optionally keep dropping them via
 rules if that is preferred.
 
@@ -292,6 +293,7 @@ for uniformity).
 ### 4.2 What to take from `tun-rs` (the reference clone)
 
 **Take:**
+
 - The Linux device implementation (`src/platform/linux/device.rs`, `sys.rs`) —
   solid handling of `TUNSETIFF`, `IFF_NO_PI`, offload negotiation, fd setup.
   Either depend on `tun-rs` (features `async_tokio`, layer 3 only) or vendor
@@ -302,6 +304,7 @@ for uniformity).
 - The `route_manager` approach for macOS routes (or its crate).
 
 **Do not take:**
+
 - Its Windows path (`netsh.rs`, `winreg`-based driver installation, no signed
   DLL bundling, no elevation check) — strictly worse than current ace-tun.
 - Its config surface (DeviceBuilder with `name`/`ipv4`/`ipv6` strings) — ace-tun
@@ -311,12 +314,12 @@ for uniformity).
 
 ### 4.3 Dependency plan
 
-| Target | Add | Purpose |
-|---|---|---|
-| Linux | `tun-rs` (or vendored linux device), `rtnetlink` (+ `netlink-packet-route`), `netlink-packet-sock-diag` + `netlink-sys`, `libc` | device; addressing/routing; attribution; constants |
-| macOS | `libc`, `route_manager` (or hand-rolled `route` wrapper), sysctl code (hand-rolled) | device ioctls; routes; attribution |
-| all | `socket2` already present (has `bind_device` on Unix if needed) | pinning |
-| Windows | unchanged | — |
+| Target  | Add                                                                                                                             | Purpose                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Linux   | `tun-rs` (or vendored linux device), `rtnetlink` (+ `netlink-packet-route`), `netlink-packet-sock-diag` + `netlink-sys`, `libc` | device; addressing/routing; attribution; constants |
+| macOS   | `libc`, `route_manager` (or hand-rolled `route` wrapper), sysctl code (hand-rolled)                                             | device ioctls; routes; attribution                 |
+| all     | `socket2` already present (has `bind_device` on Unix if needed)                                                                 | pinning                                            |
+| Windows | unchanged                                                                                                                       | —                                                  |
 
 `wintun`, `windows` crate, and `build.rs` stay Windows-only deps (cargo
 handles that automatically with `[target.'cfg(windows)'.dependencies]`).
@@ -335,6 +338,7 @@ unchanged.
 ## 5. Phased migration plan
 
 ### Phase 0 — Pure refactor (no behaviour change, ~2–3 days)
+
 1. Move `adapter.rs`/`netcfg.rs`/`dial.rs`/`process.rs` into
    `platform/windows/`; introduce the `Backend`/`ProcessTable` seams; make
    `lib.rs` go through them.
@@ -343,13 +347,14 @@ unchanged.
 3. Add the per-OS byte-order table as a doc + unit tests gated per target.
 
 ### Phase 1 — Linux (target: `x86_64-unknown-linux-gnu`, ~1–1.5 weeks)
+
 1. **Device:** depend on `tun-rs` (async feature) or vendor its linux device;
    wrap in `TunDevice`'s contract via `AsyncFd`. `IFF_NO_PI`, MTU 1500, no
    offload (netstack doesn't need it; can come later).
 2. **Netcfg:** `rtnetlink` — add `10.63.7.1/24`, `fd00:ace:7::1/64`, MTU,
    up-flag, the four split-default routes, plus (optionally) the multicast
    group routes via the physical NIC. No metric step.
-3. **Dial:** `IP_UNICAST_IF`/`IPV6_UNICAST_IF` with the *network-order* encoder
+3. **Dial:** `IP_UNICAST_IF`/`IPV6_UNICAST_IF` with the _network-order_ encoder
    for **both** families (Linux rule, differs from Windows v6).
 4. **Process:** sock_diag query → inode → `/proc` scan → `/proc/<pid>/comm`;
    cache with ~250 ms TTL.
@@ -358,6 +363,7 @@ unchanged.
    test hard-kill (`kill -9`) leaves routing intact; QUIC drop (Chrome + `--disable-quic` fallback); IPv6; multicast LAN discovery.
 
 ### Phase 2 — macOS (target: `aarch64-apple-darwin` / `x86_64-apple-darwin`, ~2–3 weeks)
+
 1. **Device:** utun via `utun_control`; strip/prepend the 4-byte AF header;
    `AsyncFd` wrapping.
 2. **Netcfg:** `SIOCAIFADDR` (addresses), `SIOCSIFMTU`, `SIOCSIFFLAGS`;
@@ -371,6 +377,7 @@ unchanged.
    same checklist as Linux.
 
 ### Phase 3 — Hardening, docs, CI (1 week, can overlap)
+
 - GitHub Actions matrix: `windows-latest` (admin by default), `ubuntu-latest`
   (`sudo modprobe tun` in CI setup), `macos-14`.
 - Port `live_check.rs` into a per-OS harness (the CONNECT proxy part is
@@ -382,6 +389,7 @@ unchanged.
   (requires rethinking attribution → UID, and a separate app shell).
 
 ### Out of scope for now (call out, don't build)
+
 - TSO/GSO offload, multi-queue (Linux perf later).
 - eBPF-based attribution (more accurate, much more work; sock_diag suffices
   for the flow-open model).
@@ -459,7 +467,7 @@ no longer use `IP_UNICAST_IF` or `SO_BINDTODEVICE`.
 ### 8.2 Linux TCP attribution needs the flow's remote endpoint
 
 §3.4 assumed a local-endpoint query suffices (as on Windows). It does not:
-the kernel hashes *established* TCP sockets by the full four-tuple, so
+the kernel hashes _established_ TCP sockets by the full four-tuple, so
 `inet_diag_find_one_icsk` cannot find them from the local endpoint alone. The
 `ProcessTable` seam now takes the flow's remote endpoint, and the Linux
 backend queries a small sequence of socket-id orientations (established
@@ -493,7 +501,7 @@ The macOS backend in `src/platform/macos/` uses the same interfaces as
 Linux. It compiles and passes Clippy for `x86_64-apple-darwin` and
 `aarch64-apple-darwin` on the Windows development computer. Linking test
 binaries requires a macOS SDK. **No tests have run on a real Mac.** Test
-the items marked *needs a Mac* first. The code uses structure layouts and
+the items marked _needs a Mac_ first. The code uses structure layouts and
 ioctl numbers from macOS 14 xnu sources (see Section 7). Compile-time
 assertions and unit tests check these definitions. The `pcblist_n` parser
 tests use synthetic tables. Run them with `cargo test` on a Mac.
@@ -507,7 +515,7 @@ tests use synthetic tables. Run them with `cargo test` on a Mac.
 - **AF header** (`device.rs`) — utun prepends a 4-byte protocol-family header
   to every datagram. It is big-endian on the wire (`xnu`'s `utun_input`
   byte-swaps with `ntohl`); writes prepend `AF_INET` (2) / `AF_INET6` (30) as
-  `u32::to_be_bytes`, reads strip 4 bytes. *Needs a Mac:* the end-to-end
+  `u32::to_be_bytes`, reads strip 4 bytes. _Needs a Mac:_ the end-to-end
   framing.
 - **Netcfg** (`netcfg.rs`) — addresses via `SIOCAIFADDR` / `SIOCAIFADDR_IN6`
   (v4 broadcast slot = the address itself, point-to-point with no peer; v6
@@ -516,12 +524,12 @@ tests use synthetic tables. Run them with `cargo test` on a Mac.
   (`add -inet6/-inet <dest>/<prefix> -interface <if>`; delete by destination
   only). Exit-code handling: `File exists` on add and `not in table` /
   `No such process` on delete count as success (idempotent). Physical
-  interface discovery parses `route -n get` output. *Needs a Mac:* the route
+  interface discovery parses `route -n get` output. _Needs a Mac:_ the route
   command's exact stderr strings on current macOS, and whether IPv6 `::/1`
   needs `-inet6` passed before `add` on any supported version.
 - **Dial** (`dial.rs`) — `IP_BOUND_IF` (25) / `IPV6_BOUND_IF` (125), plain
   host-order index for both families (libc constants pinned by a test).
-  Loopback destinations are left unpinned; *needs a Mac:* confirm the local
+  Loopback destinations are left unpinned; _needs a Mac:_ confirm the local
   table accepts an `ifscope`-constrained lookup to 127/8 (the Linux kernel
   rejects it, which is why the skip exists).
 - **Process** (`process.rs`) — `net.inet.{tcp,udp}.pcblist_n` via
@@ -533,7 +541,7 @@ tests use synthetic tables. Run them with `cargo test` on a Mac.
   Matching scores records (full four-tuple > specific local > wildcard) so an
   accepted socket beats the listener it hangs off. Kernel < 10.15 fails open
   (no `pcblist_n` → `None`). Process names via `proc_pidinfo`
-  (`PROC_PIDT_SHORTBSDINFO` → `pbi_comm`, no `.exe`). *Needs a Mac:* the
+  (`PROC_PIDT_SHORTBSDINFO` → `pbi_comm`, no `.exe`). _Needs a Mac:_ the
   `so_last_pid` value for live flows, the 250 ms cache's hit rate, and the
   table-walk against real kernels (several macOS versions).
 - **Privilege** — `geteuid() == 0`, mapped to `Error::NotElevated`; `EPERM`

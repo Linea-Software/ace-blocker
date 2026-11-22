@@ -1,2 +1,4 @@
 DROP TABLE IF EXISTS pack_meta;
+
+
 DROP TABLE IF EXISTS entries;

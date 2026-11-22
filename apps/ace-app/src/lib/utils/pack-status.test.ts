@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-    derivePackStatus,
-    isPackReady,
-    type PackStatus,
-} from "./pack-status";
+import { derivePackStatus, isPackReady, type PackStatus } from "./pack-status";
 import type { SitePackSchema } from "$engine-client";
 
 function pack(overrides: Partial<SitePackSchema>): SitePackSchema {
@@ -36,7 +32,9 @@ describe("derivePackStatus", () => {
             false,
         );
         expect(status).toBe<PackStatus>("bundled-ready");
-        expect(isPackReady(pack({ isSynced: true, isBundled: true }))).toBe(true);
+        expect(isPackReady(pack({ isSynced: true, isBundled: true }))).toBe(
+            true,
+        );
     });
 
     it("reports downloaded data as downloaded-ready", () => {
@@ -59,7 +57,10 @@ describe("derivePackStatus", () => {
     it("keeps a stale 'synced' claim from being treated as ready when it is actually unavailable", () => {
         // Defensive: if the engine ever reports synced with no entries, we
         // classify it as unavailable instead of downloaded-ready.
-        const status = derivePackStatus(pack({ isSynced: false, entriesCount: 0 }), false);
+        const status = derivePackStatus(
+            pack({ isSynced: false, entriesCount: 0 }),
+            false,
+        );
         expect(status).not.toBe("downloaded-ready");
     });
 });

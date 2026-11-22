@@ -8,8 +8,11 @@ import { computeWeeklyCoverage } from "$lib/utils/weekly-coverage";
  */
 export function isSupportedSchedulePeriod(start: string, end: string): boolean {
     const format = /^([01]\d|2[0-3]):[0-5]\d$/;
-    return format.test(start) && format.test(end)
-        && (end >= start || end === "00:00");
+    return (
+        format.test(start) &&
+        format.test(end) &&
+        (end >= start || end === "00:00")
+    );
 }
 
 /** UI preview only; the privileged engine must independently authorize writes.
@@ -22,19 +25,22 @@ export function isStrictlyMoreRestrictiveThan(
 ): boolean {
     // The Rust ScheduleEntry constructor rejects other overnight ranges.
     // Do not advertise a preview as valid for an engine-invalid draft.
-    if (!newSchedule.every((entry) =>
-        isSupportedSchedulePeriod(entry.startTime, entry.endTime)
-    )) return false;
+    if (
+        !newSchedule.every((entry) =>
+            isSupportedSchedulePeriod(entry.startTime, entry.endTime),
+        )
+    )
+        return false;
 
     const previous = computeWeeklyCoverage(oldSchedule);
     const proposed = computeWeeklyCoverage(newSchedule);
     return previous.every((oldDay, index) =>
         oldDay.ranges.every((needed) =>
             proposed[index].ranges.some(
-                (candidate) => candidate.start <= needed.start
-                    && candidate.end >= needed.end,
+                (candidate) =>
+                    candidate.start <= needed.start &&
+                    candidate.end >= needed.end,
             ),
         ),
     );
 }
-

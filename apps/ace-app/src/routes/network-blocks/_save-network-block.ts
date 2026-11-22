@@ -22,7 +22,9 @@ export type BlockSaveResult =
     | { kind: "saved"; block: NetworkBlockSchema }
     | { kind: "failed"; error: unknown; uncertain: boolean };
 
-export async function saveNetworkBlock(draft: BlockSaveDraft): Promise<BlockSaveResult> {
+export async function saveNetworkBlock(
+    draft: BlockSaveDraft,
+): Promise<BlockSaveResult> {
     try {
         const result = await saveNetworkBlockRpc({
             body: {
@@ -36,8 +38,26 @@ export async function saveNetworkBlock(draft: BlockSaveDraft): Promise<BlockSave
                     ruleType,
                 })),
                 scheduleEntries: draft.schedule.currentScheduleEntries.map(
-                    ({ startTime, endTime, monday, tuesday, wednesday, thursday, friday, saturday, sunday }) => ({
-                        startTime, endTime, monday, tuesday, wednesday, thursday, friday, saturday, sunday,
+                    ({
+                        startTime,
+                        endTime,
+                        monday,
+                        tuesday,
+                        wednesday,
+                        thursday,
+                        friday,
+                        saturday,
+                        sunday,
+                    }) => ({
+                        startTime,
+                        endTime,
+                        monday,
+                        tuesday,
+                        wednesday,
+                        thursday,
+                        friday,
+                        saturday,
+                        sunday,
                     }),
                 ),
                 sitePackIds: [...draft.packs.currentConnectedListIds],
@@ -54,7 +74,11 @@ export async function saveNetworkBlock(draft: BlockSaveDraft): Promise<BlockSave
             };
         }
         if (!result.data?.networkBlock) {
-            return { kind: "failed", error: new Error("Missing save acknowledgement"), uncertain: true };
+            return {
+                kind: "failed",
+                error: new Error("Missing save acknowledgement"),
+                uncertain: true,
+            };
         }
         return { kind: "saved", block: result.data.networkBlock };
     } catch (error) {

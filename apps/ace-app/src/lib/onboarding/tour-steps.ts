@@ -7,9 +7,15 @@
  * example the sidebar, which is collapsed on narrow windows).
  */
 /** Routed desktop pages (formerly SvelteKit RouteId). */
-export type RouteId = "/" | "/network-blocks" | "/network-blocks/editor" |
-    "/site-packs" | "/resistance-mode" | "/settings" |
-    "/getting-started" | "/help";
+export type RouteId =
+    | "/"
+    | "/network-blocks"
+    | "/network-blocks/editor"
+    | "/site-packs"
+    | "/resistance-mode"
+    | "/settings"
+    | "/getting-started"
+    | "/help";
 import * as m from "$lib/paraglide/messages.js";
 
 export type TourPlacement = "top" | "right" | "bottom" | "left";

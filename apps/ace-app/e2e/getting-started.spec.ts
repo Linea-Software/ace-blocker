@@ -143,7 +143,9 @@ test("Italian Settings navigation is legible in light and dark themes", async ({
         page.waitForEvent("load", { timeout: 20_000 }),
         page.locator("#app-language").selectOption("en"),
     ]);
-    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible({
+        timeout: 20_000,
+    });
     await page.screenshot({
         path: "test-results/editorial-settings-en-dark.png",
     });

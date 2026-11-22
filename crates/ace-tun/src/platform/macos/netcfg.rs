@@ -270,9 +270,7 @@ pub(crate) fn add_route(ifindex: u32, dest: IpAddr, prefix_len: u8) -> io::Resul
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         // Adding a route that is already in the table is not a failure.
-        if output.status.code() == Some(1)
-            && stderr.to_ascii_lowercase().contains("file exists")
-        {
+        if output.status.code() == Some(1) && stderr.to_ascii_lowercase().contains("file exists") {
             // fall through — the route is present, which is the goal
         } else {
             return Err(route_error("add", &stderr));
@@ -447,7 +445,9 @@ mod tests {
         );
         assert_eq!(
             netmask_v6(128),
-            Ipv6Addr::new(0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff)
+            Ipv6Addr::new(
+                0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff
+            )
         );
     }
 
@@ -457,7 +457,10 @@ mod tests {
     fn v4_sockaddr_embeds_address_at_sin_addr_offset() {
         let addr = Ipv4Addr::new(10, 63, 7, 1);
         let sockaddr = v4_sockaddr(addr);
-        assert_eq!(sockaddr.sa_len, std::mem::size_of::<libc::sockaddr_in>() as u8);
+        assert_eq!(
+            sockaddr.sa_len,
+            std::mem::size_of::<libc::sockaddr_in>() as u8
+        );
         assert_eq!(sockaddr.sa_family, libc::AF_INET as libc::sa_family_t);
         assert_eq!(
             &sockaddr.sa_data[..4],
@@ -471,7 +474,10 @@ mod tests {
     fn v6_sockaddr_embeds_address() {
         let addr = Ipv6Addr::new(0xfd00, 0x0ace, 7, 0, 0, 0, 0, 1);
         let sockaddr = v6_sockaddr(addr);
-        assert_eq!(sockaddr.sin6_len, std::mem::size_of::<libc::sockaddr_in6>() as u8);
+        assert_eq!(
+            sockaddr.sin6_len,
+            std::mem::size_of::<libc::sockaddr_in6>() as u8
+        );
         assert_eq!(sockaddr.sin6_family, libc::AF_INET6 as libc::sa_family_t);
         assert_eq!(sockaddr.sin6_addr.s6_addr, addr.octets());
     }

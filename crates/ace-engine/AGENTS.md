@@ -260,7 +260,6 @@ Never log the raw API key.
 
 ---
 
-
 ## 📖 Further Documentation
 
 - Root docs/IPC_ARCHITECTURE.md: Typed remoc control service.
@@ -279,12 +278,12 @@ Root security boundaries and Ace-specific architecture/type guides take priority
 
 The following Rust skill references may help with idiomatic patterns, ownership, error handling, and testing **when their actual instructions are accessible**.
 
-| Skill | Description | When to Use |
-| :------------ | :----------------------------- | :---------- |
-| **rust-best-practices** | Idiomatic Rust conventions, ownership patterns, and error handling | General Rust development, code reviews |
-| **rust-async-patterns** | Tokio async patterns, futures, and concurrent programming | Async code, network operations, concurrent tasks |
-| **rust-testing** | Unit tests, integration tests, property-based testing, and mocking | Writing or updating tests |
-| **rust-patterns** | Common Rust design patterns and idiomatic implementations | Structuring new features, refactoring |
+| Skill                   | Description                                                        | When to Use                                      |
+| :---------------------- | :----------------------------------------------------------------- | :----------------------------------------------- |
+| **rust-best-practices** | Idiomatic Rust conventions, ownership patterns, and error handling | General Rust development, code reviews           |
+| **rust-async-patterns** | Tokio async patterns, futures, and concurrent programming          | Async code, network operations, concurrent tasks |
+| **rust-testing**        | Unit tests, integration tests, property-based testing, and mocking | Writing or updating tests                        |
+| **rust-patterns**       | Common Rust design patterns and idiomatic implementations          | Structuring new features, refactoring            |
 
 > [!IMPORTANT]
 > If a referenced Rust skill is actually present, consult it as optional specialist guidance. If absent, use the repository's tests, code and docs; do not claim it was consulted.
@@ -295,18 +294,18 @@ The following Rust skill references may help with idiomatic patterns, ownership,
 
 To avoid deprecated or nonexistent APIs, **ALWAYS read local documentation** before implementing or refactoring external library code.
 
-| Library       | Summary (`.llms.txt`)          | Full API Docs (`.llms-full.txt`)    |
-| :------------ | :----------------------------- | :---------------------------------- |
-| **Axum**      | `docs/libs/axum.llms.txt`      | `docs/libs/axum.llms-full.txt`      |
-| **Tokio**     | `docs/libs/tokio.llms.txt`     | `docs/libs/tokio.llms-full.txt`     |
-| **Diesel**    | `docs/libs/diesel.llms.txt`    | `docs/libs/diesel.llms-full.txt`    |
-| **Serde**     | `docs/libs/serde.llms.txt`     | `docs/libs/serde.llms-full.txt`     |
-| **Reqwest**   | `docs/libs/reqwest.llms.txt`   | `docs/libs/reqwest.llms-full.txt`   |
+| Library        | Summary (`.llms.txt`)           | Full API Docs (`.llms-full.txt`)     |
+| :------------- | :------------------------------ | :----------------------------------- |
+| **Axum**       | `docs/libs/axum.llms.txt`       | `docs/libs/axum.llms-full.txt`       |
+| **Tokio**      | `docs/libs/tokio.llms.txt`      | `docs/libs/tokio.llms-full.txt`      |
+| **Diesel**     | `docs/libs/diesel.llms.txt`     | `docs/libs/diesel.llms-full.txt`     |
+| **Serde**      | `docs/libs/serde.llms.txt`      | `docs/libs/serde.llms-full.txt`      |
+| **Reqwest**    | `docs/libs/reqwest.llms.txt`    | `docs/libs/reqwest.llms-full.txt`    |
 | **mitm-proxy** | `docs/libs/mitm-proxy.llms.txt` | `docs/libs/mitm-proxy.llms-full.txt` |
-| **Utoipa**    | `docs/libs/utoipa.llms.txt`    | `docs/libs/utoipa.llms-full.txt`    |
-| **Chrono**    | `docs/libs/chrono.llms.txt`    | `docs/libs/chrono.llms-full.txt`    |
-| **Tracing**   | `docs/libs/tracing.llms.txt`   | `docs/libs/tracing.llms-full.txt`   |
-| **Axum Test** | `docs/libs/axum-test.llms.txt` | `docs/libs/axum-test.llms-full.txt` |
+| **Utoipa**     | `docs/libs/utoipa.llms.txt`     | `docs/libs/utoipa.llms-full.txt`     |
+| **Chrono**     | `docs/libs/chrono.llms.txt`     | `docs/libs/chrono.llms-full.txt`     |
+| **Tracing**    | `docs/libs/tracing.llms.txt`    | `docs/libs/tracing.llms-full.txt`    |
+| **Axum Test**  | `docs/libs/axum-test.llms.txt`  | `docs/libs/axum-test.llms-full.txt`  |
 
 > [!IMPORTANT]
 > If a library is not listed here, or the documentation seems outdated, use search tools to find the latest documentation and update these files.
@@ -316,4 +315,5 @@ To avoid deprecated or nonexistent APIs, **ALWAYS read local documentation** bef
 The independent `src/service/product_update.rs` polls a **signed** release feed only when public trust roots and endpoint are embedded in the build. It stages verified MSIs in the protected ProgramData cache and checks the pinned Authenticode publisher, but it never executes Windows Installer or requests watchdog maintenance. `ace-update-security` owns manifest signature/hash/version/state rules; the ordinary content updater is unrelated. The Windows installer upgrade path is still lock-gated until a privileged one-time authorized maintenance protocol is implemented. Consult `../../docs/PRODUCT_UPDATES.md` before modifying these boundaries. No prior public/legacy release compatibility is required.
 
 ## Remoc local IPC
+
 Read the root docs/IPC_ARCHITECTURE.md. Local REST control and port discovery have been removed. Extend the existing typed remoc RPC trait instead of adding HTTP endpoints.

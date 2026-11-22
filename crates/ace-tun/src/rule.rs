@@ -286,9 +286,7 @@ impl CompiledRule {
         // run against whatever the platform resolves (`chrome` on Linux);
         // compare both sides without the `.exe` suffix.
         let name = strip_exe_suffix(process_name);
-        self.process_matchers
-            .iter()
-            .any(|m| m.is_match(name))
+        self.process_matchers.iter().any(|m| m.is_match(name))
     }
 
     fn matches_target(&self, dest: IpAddr, dest_port: u16, domain: Option<&str>) -> bool {
@@ -746,11 +744,13 @@ mod tests {
         let set = RuleSet::new(&rules);
         // Linux process names carry no suffix.
         assert_eq!(
-            set.evaluate("chrome", v4("1.2.3.4"), 443, false, None).action,
+            set.evaluate("chrome", v4("1.2.3.4"), 443, false, None)
+                .action,
             RuleAction::Block
         );
         assert_eq!(
-            set.evaluate("brave", v4("1.2.3.4"), 443, false, None).action,
+            set.evaluate("brave", v4("1.2.3.4"), 443, false, None)
+                .action,
             RuleAction::Block
         );
         // Windows names still match (both sides normalized).
@@ -761,7 +761,8 @@ mod tests {
         );
         // Unrelated process does not match.
         assert_eq!(
-            set.evaluate("firefox", v4("1.2.3.4"), 443, false, None).action,
+            set.evaluate("firefox", v4("1.2.3.4"), 443, false, None)
+                .action,
             RuleAction::Direct
         );
     }
@@ -796,7 +797,8 @@ mod tests {
             RuleAction::Block
         );
         assert_eq!(
-            set.evaluate("chromium", v4("1.2.3.4"), 443, false, None).action,
+            set.evaluate("chromium", v4("1.2.3.4"), 443, false, None)
+                .action,
             RuleAction::Direct
         );
     }

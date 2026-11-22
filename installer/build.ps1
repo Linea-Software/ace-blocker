@@ -12,8 +12,8 @@
     CI may call package.ps1 with explicitly built workspace artifacts.
 #>
 param(
-    [string]$Version,
-    [string]$OutputDir
+    [string] $Version,
+    [string] $OutputDir
 )
 
 $ErrorActionPreference = "Stop"
@@ -60,7 +60,9 @@ Push-Location $AppDir
 try {
     # The product MSI is assembled below by our WiX packager. Avoid
     # redundant Tauri-generated installers and normalize CI for Tauri CLI.
-    if ($env:CI -eq '1') { $env:CI = 'true' }
+    if ($env:CI -eq '1') {
+        $env:CI = 'true'
+    }
     bun run tauri build --no-bundle
     if ($LASTEXITCODE -ne 0) {
         throw "ace-app build failed."
@@ -69,7 +71,9 @@ try {
     Pop-Location
 }
 
-$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "ace-installer-$PID-$([Guid]::NewGuid().ToString('N'))"
+$tempRoot = Join-Path (
+    [System.IO.Path]::GetTempPath()
+) "ace-installer-$PID-$([Guid]::NewGuid().ToString('N'))"
 $engineInput = Join-Path $tempRoot "engine"
 $appInput = Join-Path $tempRoot "app"
 New-Item -ItemType Directory -Path $engineInput -Force | Out-Null
@@ -77,7 +81,14 @@ New-Item -ItemType Directory -Path $appInput -Force | Out-Null
 
 try {
     $engineTarget = Join-Path $ScriptDir "..\target\release"
-    foreach ($name in @("ace-engine.exe", "ace-watchdog.exe", "ace-redirect.exe", "install-cert.exe")) {
+    foreach (
+        $name in @(
+            "ace-engine.exe",
+            "ace-watchdog.exe",
+            "ace-redirect.exe",
+            "install-cert.exe"
+        )
+    ) {
         $source = Join-Path $engineTarget $name
         if (-not (Test-Path -LiteralPath $source)) {
             throw "$name not found at '$source'."
@@ -86,8 +97,12 @@ try {
     }
 
     $wintunRoot = Join-Path $ScriptDir "..\crates\ace-tun\thirdparty\wintun"
-    Copy-Item -LiteralPath (Join-Path $wintunRoot "bin\amd64\wintun.dll") -Destination $engineInput
-    Copy-Item -LiteralPath (Join-Path $wintunRoot "LICENSE.txt") -Destination (Join-Path $engineInput "WINTUN-LICENSE.txt")
+    Copy-Item -LiteralPath (
+        Join-Path $wintunRoot "bin\amd64\wintun.dll"
+    ) -Destination $engineInput
+    Copy-Item -LiteralPath (Join-Path $wintunRoot "LICENSE.txt") -Destination (
+        Join-Path $engineInput "WINTUN-LICENSE.txt"
+    )
 
     $appBinary = Join-Path $ScriptDir "..\target\release\ace-app.exe"
     if (-not (Test-Path -LiteralPath $appBinary)) {

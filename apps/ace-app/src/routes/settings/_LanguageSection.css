@@ -1,24 +1,76 @@
-
-    .ace-settings-language.settings-section { display: grid; gap: 12px; }
-    :is(.ace-settings-language) header { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: start; }
-    :is(.ace-settings-language) .section-mark { width: 24px; height: 24px; display: grid; place-items: center; border-left: 3px solid var(--ace-ash); color: var(--muted-foreground); }
-    :is(.ace-settings-language) h2 { margin: 0; font: 600 18px "IBM Plex Sans Condensed", sans-serif; }
-    :is(.ace-settings-language) header p { margin: 3px 0 0; color: var(--muted-foreground); font-size: 12px; line-height: 1.4; }
+.ace-settings-language.settings-section {
+    display: grid;
+    gap: 12px;
+}
+:is(.ace-settings-language) header {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+    align-items: start;
+}
+:is(.ace-settings-language) .section-mark {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-left: 3px solid var(--ace-ash);
+    color: var(--muted-foreground);
+}
+:is(.ace-settings-language) h2 {
+    margin: 0;
+    font:
+        600 18px "IBM Plex Sans Condensed",
+        sans-serif;
+}
+:is(.ace-settings-language) header p {
+    margin: 3px 0 0;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    line-height: 1.4;
+}
+:is(.ace-settings-language) .setting-row {
+    min-height: 72px;
+    padding: 13px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--card);
+}
+:is(.ace-settings-language) label {
+    font:
+        600 14px "IBM Plex Sans Condensed",
+        sans-serif;
+}
+:is(.ace-settings-language) select {
+    width: min(100%, 215px);
+    min-height: 38px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--background);
+    color: var(--foreground);
+    font:
+        500 13px "IBM Plex Sans",
+        sans-serif;
+    cursor: pointer;
+}
+:is(.ace-settings-language) select:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+:is(.ace-settings-language) .error {
+    color: var(--destructive);
+    font-size: 12px;
+}
+@container page (max-width: 560px) {
     :is(.ace-settings-language) .setting-row {
-        min-height: 72px; padding: 13px 14px; display: flex; align-items: center;
-        justify-content: space-between; gap: 16px;
-        border: 1px solid var(--border); border-radius: 5px; background: var(--card);
+        align-items: stretch;
+        flex-direction: column;
     }
-    :is(.ace-settings-language) label { font: 600 14px "IBM Plex Sans Condensed", sans-serif; }
     :is(.ace-settings-language) select {
-        width: min(100%, 215px); min-height: 38px; padding: 7px 10px;
-        border: 1px solid var(--border); border-radius: 4px;
-        background: var(--background); color: var(--foreground); font: 500 13px "IBM Plex Sans", sans-serif;
-        cursor: pointer;
+        width: 100%;
     }
-    :is(.ace-settings-language) select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-    :is(.ace-settings-language) .error { color: var(--destructive); font-size: 12px; }
-    @container page (max-width: 560px) {
-        :is(.ace-settings-language) .setting-row { align-items: stretch; flex-direction: column; }
-        :is(.ace-settings-language) select { width: 100%; }
-    }
+}

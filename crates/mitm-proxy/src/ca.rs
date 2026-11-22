@@ -13,7 +13,7 @@ use std::path::Path;
 #[cfg(target_os = "linux")]
 use std::path::PathBuf;
 
-use eyre::{eyre, Context};
+use eyre::{Context, eyre};
 use rcgen::{
     BasicConstraints, CertificateParams, DistinguishedName, DnType, ExtendedKeyUsagePurpose, IsCa,
     Issuer, KeyPair, KeyUsagePurpose, SanType,
@@ -469,17 +469,15 @@ mod tests {
         assert!(!parsed.subject().to_string().is_empty());
 
         // Subject Key Identifier should be present
-        let has_ski = parsed
-            .extensions()
-            .iter()
-            .any(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_KEY_IDENTIFIER);
+        let has_ski = parsed.extensions().iter().any(|extension| {
+            extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_KEY_IDENTIFIER
+        });
         assert!(has_ski, "CA must have Subject Key Identifier");
 
         // BasicConstraints extension should be present on a CA
-        let has_bc = parsed
-            .extensions()
-            .iter()
-            .any(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_BASIC_CONSTRAINTS);
+        let has_bc = parsed.extensions().iter().any(|extension| {
+            extension.oid == x509_parser::oid_registry::OID_X509_EXT_BASIC_CONSTRAINTS
+        });
         assert!(has_bc, "CA must have BasicConstraints extension");
     }
 
@@ -501,10 +499,9 @@ mod tests {
         );
 
         // SAN has DNS:example.com
-        let has_san = parsed
-            .extensions()
-            .iter()
-            .any(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_ALT_NAME);
+        let has_san = parsed.extensions().iter().any(|extension| {
+            extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_ALT_NAME
+        });
         assert!(has_san, "leaf must have SAN");
     }
 
@@ -523,7 +520,9 @@ mod tests {
         let ca_ski_ext = ca_parsed
             .extensions()
             .iter()
-            .find(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_KEY_IDENTIFIER)
+            .find(|extension| {
+                extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_KEY_IDENTIFIER
+            })
             .expect("CA must have SKI extension");
         let ski_key_id = match ca_ski_ext.parsed_extension() {
             ParsedExtension::SubjectKeyIdentifier(ski) => ski.0.to_vec(),
@@ -534,7 +533,9 @@ mod tests {
         let leaf_aki_ext = leaf_parsed
             .extensions()
             .iter()
-            .find(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_AUTHORITY_KEY_IDENTIFIER)
+            .find(|extension| {
+                extension.oid == x509_parser::oid_registry::OID_X509_EXT_AUTHORITY_KEY_IDENTIFIER
+            })
             .expect("leaf must have AKI extension");
         let aki_key_id = match leaf_aki_ext.parsed_extension() {
             ParsedExtension::AuthorityKeyIdentifier(aki) => aki
@@ -586,10 +587,9 @@ mod tests {
         );
 
         // SAN should be present
-        let has_san = parsed
-            .extensions()
-            .iter()
-            .any(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_ALT_NAME);
+        let has_san = parsed.extensions().iter().any(|extension| {
+            extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_ALT_NAME
+        });
         assert!(has_san, "leaf must have SAN");
     }
 
@@ -601,10 +601,9 @@ mod tests {
         let (chain, _) = ca.issue_leaf("example.com").unwrap();
         let parsed = parse_der(chain[0].as_ref());
 
-        let aki = parsed
-            .extensions()
-            .iter()
-            .any(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_AUTHORITY_KEY_IDENTIFIER);
+        let aki = parsed.extensions().iter().any(|extension| {
+            extension.oid == x509_parser::oid_registry::OID_X509_EXT_AUTHORITY_KEY_IDENTIFIER
+        });
         assert!(aki, "leaf must have Authority Key Identifier");
     }
 
@@ -647,17 +646,15 @@ mod tests {
         assert_ne!(ca_der, leaf_der, "CA and leaf must differ");
 
         // Leaf must have AKI extension
-        let has_aki = leaf_parsed
-            .extensions()
-            .iter()
-            .any(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_AUTHORITY_KEY_IDENTIFIER);
+        let has_aki = leaf_parsed.extensions().iter().any(|extension| {
+            extension.oid == x509_parser::oid_registry::OID_X509_EXT_AUTHORITY_KEY_IDENTIFIER
+        });
         assert!(has_aki, "leaf must have Authority Key Identifier");
 
         // CA must have SKI extension
-        let has_ski = ca_parsed
-            .extensions()
-            .iter()
-            .any(|extension| extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_KEY_IDENTIFIER);
+        let has_ski = ca_parsed.extensions().iter().any(|extension| {
+            extension.oid == x509_parser::oid_registry::OID_X509_EXT_SUBJECT_KEY_IDENTIFIER
+        });
         assert!(has_ski, "CA must have Subject Key Identifier");
     }
 

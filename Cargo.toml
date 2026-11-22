@@ -1,23 +1,23 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/ace-domain-blocklist",
-    "crates/ace-engine",
-    "crates/ace-tun",
-    "crates/ace-watchdog",
-    "crates/ace-watchdog-protocol",
-    "crates/ace-update-security",
-    "crates/mitm-proxy",
-    "apps/ace-app/src-tauri",
+  "crates/ace-domain-blocklist",
+  "crates/ace-engine",
+  "crates/ace-tun",
+  "crates/ace-watchdog",
+  "crates/ace-watchdog-protocol",
+  "crates/ace-update-security",
+  "crates/mitm-proxy",
+  "apps/ace-app/src-tauri",
 ]
 default-members = [
-    "crates/ace-domain-blocklist",
-    "crates/ace-engine",
-    "crates/ace-tun",
-    "crates/ace-watchdog",
-    "crates/ace-watchdog-protocol",
-    "crates/ace-update-security",
-    "crates/mitm-proxy",
+  "crates/ace-domain-blocklist",
+  "crates/ace-engine",
+  "crates/ace-tun",
+  "crates/ace-watchdog",
+  "crates/ace-watchdog-protocol",
+  "crates/ace-update-security",
+  "crates/mitm-proxy",
 ]
 
 [profile.release]

@@ -63,7 +63,7 @@ For work that creates, redesigns, or materially changes visible UI:
 1. Read this document.
 2. Use `frontend-design`.
 3. Use `ui-ux-pro-max`.
-4. For Solid 2 code, use the *package-pinned* `solid-js/skills/solid-2.0` and `reactivity-diagnostics` skill files, plus the current `CHEATSHEET.md`. Confirm third-party skills against Solid 2 docs before using them.
+4. For Solid 2 code, use the _package-pinned_ `solid-js/skills/solid-2.0` and `reactivity-diagnostics` skill files, plus the current `CHEATSHEET.md`. Confirm third-party skills against Solid 2 docs before using them.
 5. Use `web-design-guidelines` for the final standards and accessibility review when applicable.
 6. Check important visual changes in actual screenshots, a browser, or the Tauri UI.
 

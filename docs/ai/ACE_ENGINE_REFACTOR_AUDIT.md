@@ -19,28 +19,28 @@
 
 ## Components reviewed
 
-| Area | Evidence / entry point | Focus |
-| --- | --- | --- |
-| Startup and lifecycle | `src/main.rs`, `src/lib.rs`, `src/platform.rs`, `src/watchdog.rs`, `src/lock_check.rs` | Startup, failover, SCM separation, maintenance/uninstall |
-| Rules and domain models | `src/core/common/{domain_types,schedule,lock,injectable_scripts}.rs`, `src/core/network_block/{mod,user_defined_rules,regex_rules}.rs` | Type invariants, parsing, schedules, policy cache |
-| Site packs | `src/core/network_block/site_pack/{mod,site_pack_db,importer/*}.rs` | Staging, errors, DB, identifiers, downloads |
-| Coordination | `src/manager/network/{mod,site_pack,network_blocks,network_blocks_to_site_pack,resistance_mode,schedule,backup}.rs`, `src/manager/account.rs` | DB and memory, locks, separate responsibilities |
-| Persistence | `src/db.rs`, `src/db/{schedule_repo,site_pack_repo,...}.rs`, migrations | Transactions, failures, SQL model |
-| Service and control | `src/service/api/{rpc,transport,bridge,security,operations_*}.rs` | Trust boundary, authorization, error mapping |
-| Updates and proxy | `src/service/{content_updater,bundled_site_packs,proxy/*}.rs`, `src/core/utils/file_download.rs` | Staging, memory limits, locks, content |
-| Utilities, tests, and generation | `src/bin/*`, `build.rs`, `docs/rest-api.md`, `Cargo.toml` | Old artifacts, developer tools, coverage, documentation |
+| Area                             | Evidence / entry point                                                                                                                        | Focus                                                    |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Startup and lifecycle            | `src/main.rs`, `src/lib.rs`, `src/platform.rs`, `src/watchdog.rs`, `src/lock_check.rs`                                                        | Startup, failover, SCM separation, maintenance/uninstall |
+| Rules and domain models          | `src/core/common/{domain_types,schedule,lock,injectable_scripts}.rs`, `src/core/network_block/{mod,user_defined_rules,regex_rules}.rs`        | Type invariants, parsing, schedules, policy cache        |
+| Site packs                       | `src/core/network_block/site_pack/{mod,site_pack_db,importer/*}.rs`                                                                           | Staging, errors, DB, identifiers, downloads              |
+| Coordination                     | `src/manager/network/{mod,site_pack,network_blocks,network_blocks_to_site_pack,resistance_mode,schedule,backup}.rs`, `src/manager/account.rs` | DB and memory, locks, separate responsibilities          |
+| Persistence                      | `src/db.rs`, `src/db/{schedule_repo,site_pack_repo,...}.rs`, migrations                                                                       | Transactions, failures, SQL model                        |
+| Service and control              | `src/service/api/{rpc,transport,bridge,security,operations_*}.rs`                                                                             | Trust boundary, authorization, error mapping             |
+| Updates and proxy                | `src/service/{content_updater,bundled_site_packs,proxy/*}.rs`, `src/core/utils/file_download.rs`                                              | Staging, memory limits, locks, content                   |
+| Utilities, tests, and generation | `src/bin/*`, `build.rs`, `docs/rest-api.md`, `Cargo.toml`                                                                                     | Old artifacts, developer tools, coverage, documentation  |
 
 ## Priority queue
 
-| ID | Priority | Status | Area | Reason / next action |
-| --- | --- | --- | --- | --- |
-| AE-11 | P1 | implementation, VM pending | Script bundle activation | Journal and startup recovery are implemented. Five simulated crash points and SQL rollback have tests. Real Windows kill/restart tests remain. |
-| AE-13 | P2 | implementation, stress pending | Content updater | Service snapshots and a single-flight gate are separate from the metadata mutex. Manual and background paths share the gate. Stress and cancellation tests remain. |
-| AE-14 | P2 | implementation, integration pending | API bridge | 27 calls are simpler. A test compares 63 RPC methods. Tauri, status 425, and Windows reconnect tests remain. |
-| AE-15 | P2 | partial | Schedule/minute semantics | Seconds and fractions are rejected. Midnight and merge tests pass. DST and integrated round-trip tests remain. |
-| AE-17 | P2 | implementation, stress pending | Site-pack importer | Downloads use a bounded downloader. Progress remains available. Ten importer tests pass. Cancellation and multiple-source tests remain. |
-| AE-19 | P2 | partial | Test | `OnceLock<TempDir>` owns fixtures. Recovery tests use injected paths. Global Settings overrides remain. |
-| AE-26 | P2 | partial | Typed error propagation | Resistance Mode load and updater history now propagate `Err`. DB corruption tests pass. Audit of other consumers and boundaries remains. |
+| ID    | Priority | Status                              | Area                      | Reason / next action                                                                                                                                               |
+| ----- | -------- | ----------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| AE-11 | P1       | implementation, VM pending          | Script bundle activation  | Journal and startup recovery are implemented. Five simulated crash points and SQL rollback have tests. Real Windows kill/restart tests remain.                     |
+| AE-13 | P2       | implementation, stress pending      | Content updater           | Service snapshots and a single-flight gate are separate from the metadata mutex. Manual and background paths share the gate. Stress and cancellation tests remain. |
+| AE-14 | P2       | implementation, integration pending | API bridge                | 27 calls are simpler. A test compares 63 RPC methods. Tauri, status 425, and Windows reconnect tests remain.                                                       |
+| AE-15 | P2       | partial                             | Schedule/minute semantics | Seconds and fractions are rejected. Midnight and merge tests pass. DST and integrated round-trip tests remain.                                                     |
+| AE-17 | P2       | implementation, stress pending      | Site-pack importer        | Downloads use a bounded downloader. Progress remains available. Ten importer tests pass. Cancellation and multiple-source tests remain.                            |
+| AE-19 | P2       | partial                             | Test                      | `OnceLock<TempDir>` owns fixtures. Recovery tests use injected paths. Global Settings overrides remain.                                                            |
+| AE-26 | P2       | partial                             | Typed error propagation   | Resistance Mode load and updater history now propagate `Err`. DB corruption tests pass. Audit of other consumers and boundaries remains.                           |
 
 ---
 
@@ -97,16 +97,16 @@
 3. **Schedule precision and remaining errors:** AE-15 and AE-26. Make contracts and errors explicit. Keep the approved policy unchanged.
 4. **Scoped P2 improvements:** AE-17 and AE-19. Reuse download functions carefully and isolate tests.
 
-## Verification matrix to use *before* implementation
+## Verification matrix to use _before_ implementation
 
-| Domain | Minimum tests |
-| --- | --- |
-| Policy/lock/DB | `cargo test -p ace-engine --lib -- --test-threads=1`, targeted DB write-failure tests, reboot round trip, locked/unlocked |
-| RPC/security | `cargo test -p ace-engine --lib` (remoc), Named Pipe DACL/capability in Windows VM, release debug gates |
-| Import/backup | Staging/cancellation, current backup, SQLite fault injection, checksum/zip bomb, path traversal, retry |
-| Proxy/sitepack | `service::proxy` tests, HTTP/HTTPS tunnel, DOM/script injection, no decryption of non-browser traffic, cache invalidation |
-| Watchdog/installer | `cargo test -p ace-watchdog-protocol` and Windows VM SCM/recovery/maintenance/uninstall gate |
-| Rust compile | `cargo fmt --all --check` (read-only), `cargo check -p ace-engine --all-targets`, targeted lint without autofix |
-| Audit/documentation | **Independent** architecture, domain/type, and correctness diff reviews. Update paths and test gates. |
+| Domain              | Minimum tests                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Policy/lock/DB      | `cargo test -p ace-engine --lib -- --test-threads=1`, targeted DB write-failure tests, reboot round trip, locked/unlocked |
+| RPC/security        | `cargo test -p ace-engine --lib` (remoc), Named Pipe DACL/capability in Windows VM, release debug gates                   |
+| Import/backup       | Staging/cancellation, current backup, SQLite fault injection, checksum/zip bomb, path traversal, retry                    |
+| Proxy/sitepack      | `service::proxy` tests, HTTP/HTTPS tunnel, DOM/script injection, no decryption of non-browser traffic, cache invalidation |
+| Watchdog/installer  | `cargo test -p ace-watchdog-protocol` and Windows VM SCM/recovery/maintenance/uninstall gate                              |
+| Rust compile        | `cargo fmt --all --check` (read-only), `cargo check -p ace-engine --all-targets`, targeted lint without autofix           |
+| Audit/documentation | **Independent** architecture, domain/type, and correctness diff reviews. Update paths and test gates.                     |
 
 **Last recorded gates (2026-10-22):** `cargo test -p ace-engine --lib -- --test-threads=1`: **252/252** passed. The four-thread parallel suite had **251/251** passes before the last recovery test was added. `cargo check -p ace-engine --all-targets --all-features` passed. `cargo test -p ace-watchdog-protocol`: **3/3** passed. `git diff --check` passed. Windows VM tests for services and installer did not finish. Real-crash recovery and independent review remain open. `cargo fmt --all --check` reported pre-existing formatting differences in other, unchanged source files. See `ACE_ENGINE_REFACTOR_DECISIONS.md` for product decisions and `TECH_DEBT_BACKLOG.md` for general technical debt.

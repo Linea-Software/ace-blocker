@@ -8,13 +8,13 @@ Use **[thiserror](https://docs.rs/thiserror)** for structured error variants at 
 
 ## 📦 Why `eyre`
 
-| Concern | `eyre` solution |
-|---|---|
-| **Context** | `.wrap_err("while loading site list")` — attach a human-readable layer at every call site |
-| **Root cause** | `.source()` chain preserved through every `wrap_err` / `?` |
-| **Backtraces** | `color-eyre` captures a `Backtrace` on every `eyre::Report` at the point of creation |
+| Concern           | `eyre` solution                                                                                 |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| **Context**       | `.wrap_err("while loading site list")` — attach a human-readable layer at every call site       |
+| **Root cause**    | `.source()` chain preserved through every `wrap_err` / `?`                                      |
+| **Backtraces**    | `color-eyre` captures a `Backtrace` on every `eyre::Report` at the point of creation            |
 | **Ad-hoc errors** | `eyre::eyre!("port {} is in use", port)` — no need for a custom error type for one-off failures |
-| **Early returns** | `bail!("incompatible config")` and `ensure!(port > 0, "invalid port")` |
+| **Early returns** | `bail!("incompatible config")` and `ensure!(port > 0, "invalid port")`                          |
 
 ---
 
@@ -174,36 +174,36 @@ Every REST API error response has the shape:
 
 ### Stable codes
 
-| Code | HTTP | Meaning |
-|---|---|---|
-| `not_found` | 404 | Resource not found |
-| `bad_request` | 400 | Generic invalid request |
-| `invalid_request_body` | 400 | Body failed to parse/validate |
-| `invalid_lock_request` | 400 | Lock payload rejected by `Lock::from_raw` |
-| `unsupported_lock_state` | 400 | Resistance Mode lock state not in the v1 beta contract (`inactive`, `active_until_lock_end` only) |
-| `unsupported_mode` | 400 | Dynamic Resistance Mode requested (not available in v1 beta) |
-| `forbidden` | 403 | Generic authorization failure |
-| `resistance_locked` | 403 | Action refused because the Resistance Mode lock is active |
-| `pro_plan_required` | 403 | Ace Blocker Pro plan required |
-| `pro_status_check_failed` | 403 | API key missing/invalid or Pro check failed (e.g. script download without entitlement) |
-| `conflict` | 409 | Resource in use — a site pack attached to a network block, or a site pack with a sync already in flight (`SitePackBusy`) |
-| `unauthorized` | 401 | Credential required/invalid (including `capability_required`) |
-| `capability_required` | 401 | State-changing request without a valid `X-Ace-Capability` token |
-| `locked` | 423 | Operation refused while a lock is active (shutdown gate, locked network block, or locked site pack) |
-| `internal` | 500 | Unexpected internal failure |
-| `scripts_unavailable` | 503 | Script catalog missing/corrupt or reload failed |
-| `script_download_failed` | 502 | Download/verify/extract of scripts failed |
+| Code                      | HTTP | Meaning                                                                                                                  |
+| ------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------ |
+| `not_found`               | 404  | Resource not found                                                                                                       |
+| `bad_request`             | 400  | Generic invalid request                                                                                                  |
+| `invalid_request_body`    | 400  | Body failed to parse/validate                                                                                            |
+| `invalid_lock_request`    | 400  | Lock payload rejected by `Lock::from_raw`                                                                                |
+| `unsupported_lock_state`  | 400  | Resistance Mode lock state not in the v1 beta contract (`inactive`, `active_until_lock_end` only)                        |
+| `unsupported_mode`        | 400  | Dynamic Resistance Mode requested (not available in v1 beta)                                                             |
+| `forbidden`               | 403  | Generic authorization failure                                                                                            |
+| `resistance_locked`       | 403  | Action refused because the Resistance Mode lock is active                                                                |
+| `pro_plan_required`       | 403  | Ace Blocker Pro plan required                                                                                            |
+| `pro_status_check_failed` | 403  | API key missing/invalid or Pro check failed (e.g. script download without entitlement)                                   |
+| `conflict`                | 409  | Resource in use — a site pack attached to a network block, or a site pack with a sync already in flight (`SitePackBusy`) |
+| `unauthorized`            | 401  | Credential required/invalid (including `capability_required`)                                                            |
+| `capability_required`     | 401  | State-changing request without a valid `X-Ace-Capability` token                                                          |
+| `locked`                  | 423  | Operation refused while a lock is active (shutdown gate, locked network block, or locked site pack)                      |
+| `internal`                | 500  | Unexpected internal failure                                                                                              |
+| `scripts_unavailable`     | 503  | Script catalog missing/corrupt or reload failed                                                                          |
+| `script_download_failed`  | 502  | Download/verify/extract of scripts failed                                                                                |
 
 ---
 
 ## 📋 Quick reference
 
-| Situation | Tool |
-|---|---|
-| I need to return early with a message | `bail!("reason")` |
-| I need to wrap an existing error with context | `.wrap_err("context")` |
-| I need dynamic context | `.wrap_err_with(|| format!(...))` |
-| I need to check a boolean invariant | `ensure!(cond, "message")` |
-| My function returns `Option<T>` and I need `Result<T>` | `.wrap_err("expected value")` |
+| Situation                                               | Tool                               |
+| ------------------------------------------------------- | ---------------------------------- |
+| I need to return early with a message                   | `bail!("reason")`                  |
+| I need to wrap an existing error with context           | `.wrap_err("context")`             |
+| I need dynamic context                                  | `.wrap_err_with(                   |     | format!(...))` |
+| I need to check a boolean invariant                     | `ensure!(cond, "message")`         |
+| My function returns `Option<T>` and I need `Result<T>`  | `.wrap_err("expected value")`      |
 | I'm at a library boundary and callers match on variants | `#[derive(thiserror::Error)]` enum |
-| I'm wiring things together (glue code) | `eyre::Result<T>` |
+| I'm wiring things together (glue code)                  | `eyre::Result<T>`                  |

@@ -70,10 +70,12 @@ Before code edits:
 Use a **separate reviewer or fresh AI context** where possible. Review the actual diff against the baseline. Do not rely only on the implementer's report.
 
 Complete **two separate design reviews** before the general correctness review:
+
 - **Architecture/abstraction review:** Check ownership, new dependencies, module independence, import direction, state lifetime, shared-code reasons, and unnecessary coupling.
 - **Domain/types review:** Check real invariants, constructors, parsers, input validation, trust boundaries, existing types, untrusted deserialization, secret handling, and unnecessary wrappers.
 
 Follow the fuller checklist in [REVIEW_GATES.md](REVIEW_GATES.md). Review for:
+
 - preserved behavior and complete migration of affected call sites;
 - new or weakened security boundaries, failure modes, races, or unchecked errors;
 - regressions in startup/recovery, restart, shutdown, and uninstall paths;

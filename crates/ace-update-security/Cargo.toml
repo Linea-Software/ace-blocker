@@ -7,7 +7,9 @@ publish = false
 
 [dependencies]
 base64 = "0.23.1"
-ed25519-dalek = { version = "3.0.0", default-features = false, features = ["fast"] }
+ed25519-dalek = { version = "3.0.0", default-features = false, features = [
+  "fast",
+] }
 hex = "0.4.3"
 semver = "1.0.28"
 serde = { version = "1", features = ["derive"] }

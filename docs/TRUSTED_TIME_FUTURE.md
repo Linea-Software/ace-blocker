@@ -7,20 +7,20 @@ The feature is **not yet validated on a Windows VM**.
 ## Approved decisions (binding)
 
 - **Primary authority:** Cloudflare Roughtime over UDP, `roughtime.cloudflare.com:2003`; pin the published Ed25519 root `0GD7c3yP8xEc4Zl2zeuN2SlLvDVVocjsPSL8/Rl/7zg=`. Cloudflare identifies the service as beta and can rotate the root.
-Root-key changes require an authenticated, reviewed app release.
-Never trust a root key received through DNS.
+  Root-key changes require an authenticated, reviewed app release.
+  Never trust a root key received through DNS.
 - **Authenticated protocol:** the `roughtime 0.2.1` client verifies delegation, Ed25519 signatures, nonce/Merkle binding, delegation validity and its anti-rollback floor. Do not use unauthenticated NTP or HTTP `Date` as an alternative authority.
-No Ace-hosted endpoint is involved.
+  No Ace-hosted endpoint is involved.
 - **Cadence:** after a successful sample, refresh every **60 minutes**, not every 5 or 10. Start with one due request on engine startup. Failed attempts use bounded timeout, exponential backoff (starting at 120 seconds, capped near 60 minutes) and jitter. A local wakeup checks elapsed monotonic time every minute, including after resume.
-It does *not* send network requests before they are due.
-Never query per site, network flow, lock check, or editor visit. The independent installer `--check-locks` process may perform **one** separately authenticated sample per uninstall check (not an engine polling mechanism).
-- **Time model:** every authenticated sample is an interval, not an exact instant. Include signed uncertainty radius, measured total request/response time and bounded oscillator drift (500 ppm) while advancing with monotonic uptime. Use the interval lower bound to decide whether a lock *has certainly expired*.
-Never authorize an early unlock from an optimistic timestamp. `GetTickCount64` is selected on Windows for time elapsed across sleep/hibernation; the process `Instant` is used on other platforms. Neither is persisted across reboots.
+  It does _not_ send network requests before they are due.
+  Never query per site, network flow, lock check, or editor visit. The independent installer `--check-locks` process may perform **one** separately authenticated sample per uninstall check (not an engine polling mechanism).
+- **Time model:** every authenticated sample is an interval, not an exact instant. Include signed uncertainty radius, measured total request/response time and bounded oscillator drift (500 ppm) while advancing with monotonic uptime. Use the interval lower bound to decide whether a lock _has certainly expired_.
+  Never authorize an early unlock from an optimistic timestamp. `GetTickCount64` is selected on Windows for time elapsed across sleep/hibernation; the process `Instant` is used on other platforms. Neither is persisted across reboots.
 - **Persistence:** save a high-water/rollback floor under shared engine data, independent of local wall time. Updates are serialized across engine and installer with a separate advisory lock file and replace-on-rename, avoiding truncation and stale-process rollback. On the next boot, the value remains only a floor.
-It is **never** an elapsed clock across reboots.
-Current time is not trusted until a new response is verified. An outage cannot silently substitute an unauthenticated source.
+  It is **never** an elapsed clock across reboots.
+  Current time is not trusted until a new response is verified. An outage cannot silently substitute an unauthenticated source.
 - **Failure behavior:** existing filtering and services continue. Existing timed locks remain active when their expiry cannot be verified; the uninstall gate makes the same conservative decision, while an explicitly inactive state remains inactive. New timed locks require a valid trusted reference to enforce the 90-day limit.
-An outage does not disable the tunnel, proxy, or Internet.
+  An outage does not disable the tunnel, proxy, or Internet.
 - **Cooldowns:** the five-minute soft-unlock delay uses an in-memory monotonic `Instant`; challenges disappear on service restart. A new timed deadline must be strictly later than the authenticated interval; upgrading a soft lock to a timed lock with less than five minutes remaining is rejected.
 - **Time zones:** schedules carry a persisted IANA zone in `network_blocks.schedule_timezone`, captured at block creation; matching uses authenticated UTC converted to that zone via `chrono-tz`, including daylight-saving transitions. Changing Windows time zone does not silently change existing windows. Timed lock deadlines persist as RFC3339 absolute instants and compare as UTC, separately from civil schedule time. Non-authenticated/stale time must not be used to weaken scheduled locks.
 - **No change:** never set the Windows clock. Engine, watchdog, Tauri, typed Named Pipe/remoc IPC, installer gates, WinTun/WFP/nftables, and browser-only TLS decryption remain separate.
@@ -30,7 +30,7 @@ An outage does not disable the tunnel, proxy, or Internet.
 - `trusted_time.rs`: pin, sampling, refresh/backoff, quality and UTC interval, persisted floor.
 - `core/common/lock.rs`, `core/network_block/mod.rs`, `manager/network/`, `manager/resistance/`: lock guards use the shared trusted reference, not local wall time, including Resistance Mode and policy mutations.
 - `core/common/unlock_challenge.rs`: monotonic cooldown.
-- `lock_check.rs` and `main.rs`: separate read-only SQLite uninstall gate with an independent Roughtime query; the shared *time floor* may be updated separately, but no database writes are made.
+- `lock_check.rs` and `main.rs`: separate read-only SQLite uninstall gate with an independent Roughtime query; the shared _time floor_ may be updated separately, but no database writes are made.
 - `core/common/schedule.rs`, `db/`, initial `0000_create_network_blocks` schema: pinned zone and DST semantics; local JSON backup exports and restores it. **Existing rows** initially carry a migration sentinel, which the engine resolves to the host's IANA zone at first upgrade before loading policy. Legacy offset-less timed deadlines are converted once to RFC3339 using that pinned zone, conservatively choosing the later instant for ambiguous DST times. Subsequent Windows timezone changes cannot rewrite the pinned zone or deadlines. If the host timezone was already changed before the first upgrade, the historical zone cannot be recovered; validate such installations before release.
 - RPC and frontend lock forms now use offset-bearing UTC timestamps. A new timezone-aware cloud backup schema is **not** yet available: cloud export refuses non-UTC scheduled blocks, and cloud import refuses scheduled blocks when the source zone cannot be established. Local backup remains available.
 - Unit/regression tests use synthetic times and forged invalid packets, not Cloudflare production load. Before shipping: native Windows test of GetTickCount64 suspend/hibernate/reboot behavior, named-pipe/installer access and ACL, clean MSI upgrade, Cloudflare UDP blocked, key rotation and affected browser/TUN flows.

@@ -15,25 +15,46 @@ describe("Spanish native screenshot and language switch (temporary QA)", () => {
         console.log("Native selected language before QA:", initial);
         try {
             await language.selectByAttribute("value", "es");
-            await browser.waitUntil(async () => (await $("h2").getText()).includes("Idioma") || (await $("body").getText()).includes("Idioma de la aplicación"), {timeout:20000});
-            await browser.saveScreenshot(join(root, "app-es-settings-native.png"));
+            await browser.waitUntil(
+                async () =>
+                    (await $("h2").getText()).includes("Idioma") ||
+                    (await $("body").getText()).includes(
+                        "Idioma de la aplicación",
+                    ),
+                { timeout: 20000 },
+            );
+            await browser.saveScreenshot(
+                join(root, "app-es-settings-native.png"),
+            );
             const pages = [
-                ["/", "control"], ["/network-blocks","blocks"], ["/resistance-mode","resistance"],
-                ["/site-packs","categories"], ["/getting-started","guide"]
+                ["/", "control"],
+                ["/network-blocks", "blocks"],
+                ["/resistance-mode", "resistance"],
+                ["/site-packs", "categories"],
+                ["/getting-started", "guide"],
             ];
-            for(const [route,name] of pages) {
-                const link=await $('nav a[href$="'+route+'"]');
+            for (const [route, name] of pages) {
+                const link = await $('nav a[href$="' + route + '"]');
                 if (await link.isExisting()) {
-                    await link.click(); await browser.pause(500);
-                    await browser.saveScreenshot(join(root, "app-es-"+name+"-native.png"));
-                    console.log("Native screenshot:",name, (await $("body").getText()).slice(0,80).replace(/\n/g," "));
+                    await link.click();
+                    await browser.pause(500);
+                    await browser.saveScreenshot(
+                        join(root, "app-es-" + name + "-native.png"),
+                    );
+                    console.log(
+                        "Native screenshot:",
+                        name,
+                        (await $("body").getText())
+                            .slice(0, 80)
+                            .replace(/\n/g, " "),
+                    );
                 }
             }
         } finally {
-            const settingsAgain=await $('nav a[href$="/settings"]');
-            if(await settingsAgain.isExisting()) {
+            const settingsAgain = await $('nav a[href$="/settings"]');
+            if (await settingsAgain.isExisting()) {
                 await settingsAgain.click();
-                const select=await $("#app-language");
+                const select = await $("#app-language");
                 await select.waitForDisplayed();
                 await select.selectByAttribute("value", initial as string);
             }

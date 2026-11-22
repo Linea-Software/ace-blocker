@@ -10,6 +10,7 @@ Examples:
   python3 installer/tests/windows_vm_desktop.py key KEY_LEFTMETA KEY_R
   python3 installer/tests/windows_vm_desktop.py type 'C:\Program Files\Ace Blocker\ace-app.exe'
 """
+
 import argparse
 import json
 from pathlib import Path
@@ -24,25 +25,45 @@ PREVIEW_HEIGHT = 600
 def virsh(vm: str, *args: str) -> None:
     result = subprocess.run(
         ["virsh", "-c", "qemu:///session", *args],
-        text=True, capture_output=True, timeout=25, check=False,
+        text=True,
+        capture_output=True,
+        timeout=25,
+        check=False,
     )
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or result.stdout.strip())
 
 
 def qmp(vm: str, events: list[dict]) -> None:
-    virsh(vm, "qemu-monitor-command", vm, json.dumps({
-        "execute": "input-send-event", "arguments": {"events": events},
-    }))
+    virsh(
+        vm,
+        "qemu-monitor-command",
+        vm,
+        json.dumps(
+            {
+                "execute": "input-send-event",
+                "arguments": {"events": events},
+            }
+        ),
+    )
 
 
 def click(vm: str, x: int, y: int, count: int) -> None:
     if not 0 <= x < PREVIEW_WIDTH or not 0 <= y < PREVIEW_HEIGHT:
         raise ValueError("coordinates must be inside the 960x600 preview")
-    qmp(vm, [
-        {"type": "abs", "data": {"axis": "x", "value": round(x / PREVIEW_WIDTH * 32767)}},
-        {"type": "abs", "data": {"axis": "y", "value": round(y / PREVIEW_HEIGHT * 32767)}},
-    ])
+    qmp(
+        vm,
+        [
+            {
+                "type": "abs",
+                "data": {"axis": "x", "value": round(x / PREVIEW_WIDTH * 32767)},
+            },
+            {
+                "type": "abs",
+                "data": {"axis": "y", "value": round(y / PREVIEW_HEIGHT * 32767)},
+            },
+        ],
+    )
     time.sleep(0.12)
     for _ in range(count):
         qmp(vm, [{"type": "btn", "data": {"button": "left", "down": True}}])
@@ -58,11 +79,15 @@ def key(vm: str, keys: list[str]) -> None:
 def type_text(vm: str, value: str) -> None:
     punct = {
         ":": ["KEY_LEFTSHIFT", "KEY_SEMICOLON"],
-        "\\": ["KEY_BACKSLASH"], "-": ["KEY_MINUS"],
-        ".": ["KEY_DOT"], "/": ["KEY_SLASH"],
-        " ": ["KEY_SPACE"], '"': ["KEY_LEFTSHIFT", "KEY_APOSTROPHE"],
+        "\\": ["KEY_BACKSLASH"],
+        "-": ["KEY_MINUS"],
+        ".": ["KEY_DOT"],
+        "/": ["KEY_SLASH"],
+        " ": ["KEY_SPACE"],
+        '"': ["KEY_LEFTSHIFT", "KEY_APOSTROPHE"],
         "_": ["KEY_LEFTSHIFT", "KEY_MINUS"],
-        "=": ["KEY_EQUAL"], "@": ["KEY_LEFTSHIFT", "KEY_2"],
+        "=": ["KEY_EQUAL"],
+        "@": ["KEY_LEFTSHIFT", "KEY_2"],
     }
     for char in value:
         if char in punct:
@@ -82,10 +107,20 @@ def screenshot(vm: str, out: Path) -> None:
     full.parent.mkdir(parents=True, exist_ok=True)
     try:
         virsh(vm, "screenshot", vm, str(full))
-        process = subprocess.run([
-            "magick", str(full), "-resize", f"{PREVIEW_WIDTH}x{PREVIEW_HEIGHT}",
-            "-strip", str(out),
-        ], check=False, text=True, capture_output=True, timeout=30)
+        process = subprocess.run(
+            [
+                "magick",
+                str(full),
+                "-resize",
+                f"{PREVIEW_WIDTH}x{PREVIEW_HEIGHT}",
+                "-strip",
+                str(out),
+            ],
+            check=False,
+            text=True,
+            capture_output=True,
+            timeout=30,
+        )
         if process.returncode:
             raise RuntimeError(process.stderr)
     finally:
@@ -106,7 +141,9 @@ def main() -> None:
     p = sub.add_parser("type")
     p.add_argument("text")
     p = sub.add_parser("screenshot")
-    p.add_argument("--out", type=Path, default=Path(__file__).with_name(".vm-preview.png"))
+    p.add_argument(
+        "--out", type=Path, default=Path(__file__).with_name(".vm-preview.png")
+    )
     args = parser.parse_args()
     if args.action in ("click", "double-click"):
         click(args.vm, args.x, args.y, 2 if args.action == "double-click" else 1)

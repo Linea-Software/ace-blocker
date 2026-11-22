@@ -7,11 +7,11 @@ Invoke only from an approved signing/release environment.
 #>
 param(
     [Parameter(Mandatory = $true)]
-    [string]$MsiPath,
-
+    [string] $MsiPath,
     [Parameter(Mandatory = $true)]
-    [string]$ExpectedPublisherCertSha256
+    [string] $ExpectedPublisherCertSha256
 )
+
 $ErrorActionPreference = "Stop"
 
 if ($ExpectedPublisherCertSha256 -notmatch '^[a-fA-F0-9]{64}$') {
@@ -19,16 +19,20 @@ if ($ExpectedPublisherCertSha256 -notmatch '^[a-fA-F0-9]{64}$') {
 }
 $resolved = (Resolve-Path -LiteralPath $MsiPath -ErrorAction Stop).Path
 $signature = Get-AuthenticodeSignature -LiteralPath $resolved
-if ($signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
-    $null -eq $signature.SignerCertificate) {
+if (
+    $signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
+    $null -eq $signature.SignerCertificate
+) {
     throw "MSI Authenticode signature is not valid: $($signature.Status)"
 }
 # Use the DER bytes directly: PowerShell 5.1 can run with .NET Framework
 # versions that lack the GetCertHashString(HashAlgorithmName) overload.
 $sha256 = [System.Security.Cryptography.SHA256]::Create()
 try {
-    $actualBytes = $sha256.ComputeHash($signature.SignerCertificate.GetRawCertData())
-    $actual = ([System.BitConverter]::ToString($actualBytes)).Replace("-", "")
+    $actualBytes = $sha256.ComputeHash(
+        $signature.SignerCertificate.GetRawCertData()
+    )
+    $actual = ([System.BitConverter]::ToString($actualBytes)).Replace( "-", "" )
 } finally {
     $sha256.Dispose()
 }
@@ -37,7 +41,9 @@ if ($actual -ne $ExpectedPublisherCertSha256) {
 }
 $hasCodeSigningEku = $false
 foreach ($extension in $signature.SignerCertificate.Extensions) {
-    if ($extension -is [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]) {
+    if (
+        $extension -is [System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]
+    ) {
         foreach ($usage in $extension.EnhancedKeyUsages) {
             if ($usage.Value -eq '1.3.6.1.5.5.7.3.3') {
                 $hasCodeSigningEku = $true

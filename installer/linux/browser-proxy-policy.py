@@ -5,6 +5,7 @@ No browser policy is installed by the normal Ace installer. Run --enable
 explicitly as root. All I/O is confined to system policy directories and a
 root-only ownership journal. Tests use PolicyManager(root=temp_dir).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -37,12 +38,22 @@ FIREFOX_POLICY = {
     "ExtensionSettings": {"*": {"blocked_permissions": ["proxy"]}},
     "Proxy": {"Mode": "none", "Locked": True},
 }
-CHROMIUM_CONFLICTS = frozenset({
-    "ExtensionSettings", "ExtensionInstallAllowlist", "ExtensionInstallBlocklist",
-    "ExtensionInstallForcelist", "ExtensionInstallSources", "ExtensionAllowedTypes",
-    "ProxyMode", "ProxySettings", "ProxyPacUrl", "ProxyServer",
-    "ProxyBypassList", "ProxyServerMode",
-})
+CHROMIUM_CONFLICTS = frozenset(
+    {
+        "ExtensionSettings",
+        "ExtensionInstallAllowlist",
+        "ExtensionInstallBlocklist",
+        "ExtensionInstallForcelist",
+        "ExtensionInstallSources",
+        "ExtensionAllowedTypes",
+        "ProxyMode",
+        "ProxySettings",
+        "ProxyPacUrl",
+        "ProxyServer",
+        "ProxyBypassList",
+        "ProxyServerMode",
+    }
+)
 FIREFOX_ALTERNATES = (
     "/usr/lib/firefox/distribution/policies.json",
     "/usr/lib64/firefox/distribution/policies.json",
@@ -64,7 +75,9 @@ def digest(data: bytes) -> str:
 
 
 def json_bytes(value: object) -> bytes:
-    return (json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n").encode("utf-8")
+    return (
+        json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    ).encode("utf-8")
 
 
 def parse_object(data: bytes, location: Path) -> dict:
@@ -152,8 +165,15 @@ class PolicyManager:
         finally:
             os.close(fd)
 
-    def atomic_write(self, path: Path, data: bytes, mode: int, gid: int | None = None) -> None:
-        self.make_directories(path, 0o700 if path in (self.location(STATE_FILE), self.location(LOCK_FILE)) else 0o755)
+    def atomic_write(
+        self, path: Path, data: bytes, mode: int, gid: int | None = None
+    ) -> None:
+        self.make_directories(
+            path,
+            0o700
+            if path in (self.location(STATE_FILE), self.location(LOCK_FILE))
+            else 0o755,
+        )
         self.check_ancestors(path)
         if path.is_symlink():
             raise PolicyError(f"Refusing symbolic link: {path}")
@@ -179,10 +199,14 @@ class PolicyManager:
         self.check_ancestors(lock_path)
         if lock_path.is_symlink():
             raise PolicyError(f"Unsafe lock file: {lock_path}")
-        fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        fd = os.open(
+            lock_path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600
+        )
         try:
             info = os.fstat(fd)
-            if not stat.S_ISREG(info.st_mode) or (self.actual_system and info.st_uid != 0):
+            if not stat.S_ISREG(info.st_mode) or (
+                self.actual_system and info.st_uid != 0
+            ):
                 raise PolicyError(f"Unsafe lock file ownership or type: {lock_path}")
             fcntl.flock(fd, fcntl.LOCK_EX)
             yield
@@ -206,23 +230,32 @@ class PolicyManager:
                 raise PolicyError("Duplicate browser in policy journal")
             seen.add(browser)
             if entry.get("path") != BROWSERS[browser]:
-                raise PolicyError("Policy journal path does not match allowed policy path")
+                raise PolicyError(
+                    "Policy journal path does not match allowed policy path"
+                )
             before = entry.get("before")
             if before is not None:
                 try:
                     raw = base64.b64decode(before, validate=True)
                 except (ValueError, TypeError) as error:
                     raise PolicyError("Invalid saved original policy") from error
-                if len(raw) > MAX_POLICY_BYTES or digest(raw) != entry.get("before_sha256"):
+                if len(raw) > MAX_POLICY_BYTES or digest(raw) != entry.get(
+                    "before_sha256"
+                ):
                     raise PolicyError("Saved original policy checksum mismatch")
             before_mode = entry.get("before_mode")
             before_gid = entry.get("before_gid")
             if before is not None and (
-                not isinstance(before_mode, int) or not 0 <= before_mode <= 0o777
-                or not isinstance(before_gid, int) or before_gid < 0
+                not isinstance(before_mode, int)
+                or not 0 <= before_mode <= 0o777
+                or not isinstance(before_gid, int)
+                or before_gid < 0
             ):
                 raise PolicyError("Invalid saved original file permissions")
-            if not isinstance(entry.get("after_sha256"), str) or len(entry["after_sha256"]) != 64:
+            if (
+                not isinstance(entry.get("after_sha256"), str)
+                or len(entry["after_sha256"]) != 64
+            ):
                 raise PolicyError("Invalid policy journal checksum")
         if not seen:
             raise PolicyError("Empty browser policy journal")
@@ -231,9 +264,15 @@ class PolicyManager:
     def check_chromium_conflicts(self, browser: str) -> None:
         target = self.location(BROWSERS[browser])
         if self.read_file(target) is not None:
-            raise PolicyError(f"Ace policy file already exists without owned journal: {target}")
+            raise PolicyError(
+                f"Ace policy file already exists without owned journal: {target}"
+            )
         for kind in ("managed", "recommended"):
-            folder = target.parent if kind == "managed" else target.parent.parent / "recommended"
+            folder = (
+                target.parent
+                if kind == "managed"
+                else target.parent.parent / "recommended"
+            )
             self.check_ancestors(folder / ".check")
             if not folder.exists():
                 continue
@@ -260,7 +299,9 @@ class PolicyManager:
         for other_name in FIREFOX_ALTERNATES:
             other = self.location(other_name)
             if other != target and self.read_file(other) is not None:
-                raise PolicyError(f"Firefox has another distribution-managed policy file: {other}")
+                raise PolicyError(
+                    f"Firefox has another distribution-managed policy file: {other}"
+                )
         original = self.read_file(target)
         if original is None:
             base: dict = {"policies": {}}
@@ -271,7 +312,9 @@ class PolicyManager:
         policies = base["policies"]
         for name in FIREFOX_POLICY:
             if name in policies:
-                raise PolicyError(f"Existing Firefox {name} policy in {target}; refusing takeover")
+                raise PolicyError(
+                    f"Existing Firefox {name} policy in {target}; refusing takeover"
+                )
         updated = dict(base)
         updated["policies"] = {**policies, **FIREFOX_POLICY}
         return original, json_bytes(updated)
@@ -290,16 +333,24 @@ class PolicyManager:
                 before, after = None, json_bytes(CHROMIUM_POLICY)
             target_path = self.location(BROWSERS[browser])
             original_stat = target_path.stat() if before is not None else None
-            entries.append({
-                "browser": browser,
-                "path": BROWSERS[browser],
-                "before": base64.b64encode(before).decode("ascii") if before is not None else None,
-                "before_sha256": digest(before) if before is not None else None,
-                "before_mode": stat.S_IMODE(original_stat.st_mode) if original_stat is not None else None,
-                "before_gid": original_stat.st_gid if original_stat is not None else None,
-                "after_sha256": digest(after),
-                "after": after,
-            })
+            entries.append(
+                {
+                    "browser": browser,
+                    "path": BROWSERS[browser],
+                    "before": base64.b64encode(before).decode("ascii")
+                    if before is not None
+                    else None,
+                    "before_sha256": digest(before) if before is not None else None,
+                    "before_mode": stat.S_IMODE(original_stat.st_mode)
+                    if original_stat is not None
+                    else None,
+                    "before_gid": original_stat.st_gid
+                    if original_stat is not None
+                    else None,
+                    "after_sha256": digest(after),
+                    "after": after,
+                }
+            )
         return entries
 
     def verify_owned(self, entries: list[dict]) -> list[tuple[dict, bytes | None]]:
@@ -308,9 +359,12 @@ class PolicyManager:
             path = self.location(entry["path"])
             data = self.read_file(path)
             if data is not None and digest(data) not in (
-                entry["after_sha256"], entry["before_sha256"]
+                entry["after_sha256"],
+                entry["before_sha256"],
             ):
-                raise PolicyError(f"Policy changed externally: {path}. No files removed.")
+                raise PolicyError(
+                    f"Policy changed externally: {path}. No files removed."
+                )
             # If the policy was already restored to its original bytes, it is
             # safe to keep it during a retry after interrupted disable.
             current.append((entry, data))
@@ -319,31 +373,40 @@ class PolicyManager:
     def enable(self, browsers: list[str], dry_run: bool = False) -> None:
         if dry_run:
             if self.current_state() is not None:
-                raise PolicyError("Ace policy state exists; disable before changing browser set")
+                raise PolicyError(
+                    "Ace policy state exists; disable before changing browser set"
+                )
             entries = self.plan(browsers)
             for entry in entries:
                 print(f"Would manage {entry['browser']}: {entry['path']}")
             return
         with self.locked():
             if self.current_state() is not None:
-                raise PolicyError("Ace policy state already exists; use --disable first")
+                raise PolicyError(
+                    "Ace policy state already exists; use --disable first"
+                )
             entries = self.plan(browsers)
             # Journal before the first policy write. Interrupted enable is
             # recoverable through --disable; nothing unowned is removed.
             journal = {
                 "schema": 1,
                 "created_utc": datetime.now(timezone.utc).isoformat(),
-                "entries": [{key: value for key, value in entry.items() if key != "after"}
-                            for entry in entries],
+                "entries": [
+                    {key: value for key, value in entry.items() if key != "after"}
+                    for entry in entries
+                ],
             }
             self.atomic_write(self.location(STATE_FILE), json_bytes(journal), 0o600)
             for entry in entries:
                 self.atomic_write(
-                    self.location(entry["path"]), entry["after"],
+                    self.location(entry["path"]),
+                    entry["after"],
                     entry["before_mode"] if entry["before_mode"] is not None else 0o644,
                     entry["before_gid"],
                 )
-            print("Browser proxy guard installed. Restart the selected browsers and inspect their policy pages.")
+            print(
+                "Browser proxy guard installed. Restart the selected browsers and inspect their policy pages."
+            )
 
     def disable(self, dry_run: bool = False) -> None:
         if dry_run:
@@ -361,8 +424,11 @@ class PolicyManager:
             current = self.verify_owned(state["entries"])
             for entry, existing in current:
                 path = self.location(entry["path"])
-                original = (base64.b64decode(entry["before"], validate=True)
-                            if entry["before"] is not None else None)
+                original = (
+                    base64.b64decode(entry["before"], validate=True)
+                    if entry["before"] is not None
+                    else None
+                )
                 if existing == original:
                     continue
                 if original is None:
@@ -371,10 +437,14 @@ class PolicyManager:
                         path.unlink()
                         self.fsync_directory(path.parent)
                 else:
-                    self.atomic_write(path, original, entry["before_mode"], entry["before_gid"])
+                    self.atomic_write(
+                        path, original, entry["before_mode"], entry["before_gid"]
+                    )
             self.location(STATE_FILE).unlink()
             self.fsync_directory(self.location(STATE_FILE).parent)
-            print("Ace-owned proxy policies restored. Restart browsers to refresh settings.")
+            print(
+                "Ace-owned proxy policies restored. Restart browsers to refresh settings."
+            )
 
     def status(self) -> None:
         state = self.current_state()
@@ -393,18 +463,30 @@ class PolicyManager:
             else:
                 status = "CHANGED EXTERNALLY"
             print(f"  {entry['browser']}: {status} [{entry['path']}]")
-        print("Verify chrome://policy, brave://policy, chromium://policy and about:policies.")
+        print(
+            "Verify chrome://policy, brave://policy, chromium://policy and about:policies."
+        )
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     action = parser.add_mutually_exclusive_group()
-    action.add_argument("--status", action="store_true", help="Show stored policy state (default)")
-    action.add_argument("--enable", action="store_true", help="Enable ACE browser proxy policy (root)")
-    action.add_argument("--disable", action="store_true", help="Restore ACE-owned policy state (root)")
-    parser.add_argument("--dry-run", action="store_true", help="Verify without changing policy files")
+    action.add_argument(
+        "--status", action="store_true", help="Show stored policy state (default)"
+    )
+    action.add_argument(
+        "--enable", action="store_true", help="Enable ACE browser proxy policy (root)"
+    )
+    action.add_argument(
+        "--disable", action="store_true", help="Restore ACE-owned policy state (root)"
+    )
     parser.add_argument(
-        "--browser", action="append", choices=sorted(BROWSERS),
+        "--dry-run", action="store_true", help="Verify without changing policy files"
+    )
+    parser.add_argument(
+        "--browser",
+        action="append",
+        choices=sorted(BROWSERS),
         help="Browser to protect (repeatable); --enable defaults to all supported browsers",
     )
     args = parser.parse_args(argv)

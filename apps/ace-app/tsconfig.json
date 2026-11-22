@@ -1,32 +1,17 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "lib": [
-            "ES2022",
-            "DOM",
-            "DOM.Iterable"
-        ],
+        "lib": ["ES2022", "DOM", "DOM.Iterable"],
         "module": "ESNext",
         "moduleResolution": "bundler",
         "jsx": "preserve",
         "jsxImportSource": "@solidjs/web",
-        "types": [
-            "vite/client",
-            "bun"
-        ],
+        "types": ["vite/client", "bun"],
         "paths": {
-            "$lib": [
-                "./src/lib/index.ts"
-            ],
-            "$lib/*": [
-                "./src/lib/*"
-            ],
-            "$engine-client": [
-                "./src/lib/engine-client/index.ts"
-            ],
-            "$engine-client/*": [
-                "./src/lib/engine-client/*"
-            ]
+            "$lib": ["./src/lib/index.ts"],
+            "$lib/*": ["./src/lib/*"],
+            "$engine-client": ["./src/lib/engine-client/index.ts"],
+            "$engine-client/*": ["./src/lib/engine-client/*"]
         },
         "allowJs": true,
         "checkJs": false,
@@ -44,9 +29,5 @@
         "vite.config.ts",
         "vitest.config.ts"
     ],
-    "exclude": [
-        "node_modules",
-        "build",
-        "src-tauri/target"
-    ]
+    "exclude": ["node_modules", "build", "src-tauri/target"]
 }

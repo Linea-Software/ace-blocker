@@ -19,9 +19,13 @@ describe("ACE native UI (read-only)", () => {
     });
 
     it("reads a harmless native Tauri command through WDIO", async () => {
-        const version = await browser.tauri.execute(({ core }) => core.invoke("app_version"));
+        const version = await browser.tauri.execute(({ core }) =>
+            core.invoke("app_version"),
+        );
         if (typeof version !== "string" || !/^\d+\.\d+\.\d+/.test(version)) {
-            throw new Error(`Unexpected native ACE version: ${String(version)}`);
+            throw new Error(
+                `Unexpected native ACE version: ${String(version)}`,
+            );
         }
     });
 
@@ -47,6 +51,8 @@ describe("ACE native UI (read-only)", () => {
         await browser.execute(() => window.location.reload());
         await heading.waitForDisplayed();
         await expect(guide).toHaveAttribute("aria-current", "page");
-        await browser.saveScreenshot(join(tmpdir(), "ace-native-guide-reloaded.png"));
+        await browser.saveScreenshot(
+            join(tmpdir(), "ace-native-guide-reloaded.png"),
+        );
     });
 });

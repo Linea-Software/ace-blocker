@@ -8,4 +8,8 @@ CREATE TABLE accounts (
     entitlement_public_key TEXT
 );
 
-INSERT INTO accounts (table_lock, api_key) VALUES ('0', NULL);
+
+INSERT INTO
+    accounts (table_lock, api_key)
+VALUES
+    ('0', NULL);

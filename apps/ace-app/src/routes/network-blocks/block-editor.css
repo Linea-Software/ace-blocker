@@ -1,108 +1,488 @@
+.block-editor-page {
+    width: min(940px, calc(100% - 44px));
+    min-height: 100%;
+    margin: 0 auto;
+    padding-top: 18px;
+    display: flex;
+    flex-direction: column;
+    container: block-editor / inline-size;
+}
+.editor-page-header {
+    flex: none;
+}
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    font-weight: 600;
+}
+.back-link:hover {
+    color: var(--foreground);
+}
+.editor-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 6px;
+}
+.editor-title-row h1 {
+    font:
+        600 clamp(26px, 4cqi, 32px)/1.15 "IBM Plex Sans Condensed",
+        sans-serif;
+}
+.editor-title-row p {
+    margin-top: 6px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.locked-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--ace-signal-deep);
+    padding: 7px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--foreground);
+    white-space: nowrap;
+}
+.editor-steps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 22px;
+}
+.editor-steps button {
+    text-align: left;
+    padding: 0 0 13px;
+    color: var(--muted-foreground);
+    min-width: 0;
+    cursor: pointer;
+}
+.editor-steps button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+.step-progress {
+    display: block;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 140ms;
+}
+.editor-steps button.current .step-progress {
+    background: var(--ace-signal);
+}
+.editor-steps button.complete .step-progress {
+    background: var(--foreground);
+}
+.step-label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding-top: 10px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.editor-steps button.current .step-label {
+    color: var(--foreground);
+}
+.step-number {
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    width: 23px;
+    height: 23px;
+    border-radius: 4px;
+    flex: none;
+    font:
+        600 12px "IBM Plex Mono",
+        monospace;
+}
+.editor-steps button.current .step-number {
+    background: var(--ace-signal);
+    color: #10100e;
+    border-color: var(--ace-signal);
+}
+.editor-page-body {
+    flex: 1;
+    min-width: 0;
+    padding: 20px 0 28px;
+}
+.content-intro {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 18px;
+}
+.manage-shortcut {
+    flex: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 9px 12px;
+    min-height: 38px;
+    color: var(--foreground);
+    background: var(--card);
+    font-size: 13px;
+    font-weight: 600;
+}
+.manage-shortcut:hover {
+    background: var(--muted);
+}
+.step-intro h2 {
+    font:
+        600 25px/1.25 "IBM Plex Sans Condensed",
+        sans-serif;
+    outline: none;
+}
+.step-intro p {
+    color: var(--muted-foreground);
+    margin-top: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 660px;
+}
+.step-content-stack {
+    margin-top: 22px;
+    display: grid;
+    gap: 23px;
+}
+.secondary-section {
+    border-top: 1px solid var(--border);
+    padding-top: 22px;
+}
+.website-manager {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+}
+.website-manager summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    cursor: pointer;
+    padding: 17px 18px;
+    list-style: none;
+}
+.website-manager summary::-webkit-details-marker {
+    display: none;
+}
+.website-manager summary:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+}
+.website-manager summary strong,
+.website-manager summary small {
+    display: block;
+}
+.website-manager summary strong {
+    font-size: 15px;
+}
+.website-manager summary small {
+    font-size: 13px;
+    color: var(--muted-foreground);
+    margin-top: 5px;
+}
+.website-manager .manager-detail {
+    padding: 18px;
+    border-top: 1px solid var(--border);
+}
+.inline-hint {
+    display: flex;
+    align-items: start;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted-foreground);
+    margin-top: 24px;
+}
+.mode-selector {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 22px;
+}
+.mode-selector button {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    text-align: left;
+    min-width: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 17px;
+    cursor: pointer;
+}
+.mode-selector button:hover {
+    border-color: var(--foreground);
+}
+.mode-selector button.selected {
+    border-color: var(--ace-signal-deep);
+    box-shadow: inset 0 3px var(--ace-signal);
+}
+.mode-selector button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.mode-radio {
+    margin-top: 2px;
+    width: 17px;
+    height: 17px;
+    border: 1.5px solid var(--muted-foreground);
+    border-radius: 100%;
+    flex: none;
+}
+.mode-selector button.selected .mode-radio {
+    border: 5px solid var(--foreground);
+}
+.mode-selector strong,
+.mode-selector small {
+    display: block;
+}
+.mode-selector strong {
+    font-size: 15px;
+}
+.mode-selector small {
+    margin-top: 6px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.schedule-detail {
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+    margin-top: 24px;
+}
+.enforcement-preview {
+    display: grid;
+    grid-template-columns: 4px 1fr;
+    gap: 15px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--muted);
+    margin-top: 24px;
+    overflow: hidden;
+}
+.enforcement-preview .preview-rail {
+    background: var(--ace-signal);
+}
+.enforcement-preview > div {
+    padding: 15px 16px 15px 0;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.enforcement-preview p {
+    color: var(--muted-foreground);
+    margin-top: 4px;
+}
+.enforcement-preview p.preview-warning {
+    color: var(--destructive);
+}
+.review-stack {
+    margin-top: 22px;
+    display: grid;
+    gap: 20px;
+}
+.review-identity {
+    padding: 17px 19px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    border-radius: 6px;
+}
+.review-list {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.review-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
+    padding: 15px 19px;
+}
+.review-row + .review-row {
+    border-top: 1px solid var(--border);
+}
+.review-row-main {
+    min-width: 0;
+}
+.review-row-main strong {
+    font-size: 14px;
+}
+.review-row-main p {
+    color: var(--muted-foreground);
+    font-size: 13px;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+.review-row-main .review-selected {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 600px;
+}
+.review-edit {
+    color: var(--foreground);
+    border-bottom: 1px solid currentColor;
+    font-size: 13px;
+    font-weight: 600;
+}
+.review-edit:hover {
+    color: var(--ace-signal-deep);
+}
+.protection-panel {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 19px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--card);
+}
+.protection-panel strong {
+    font-size: 14px;
+}
+.protection-panel p,
+.protection-panel span {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+}
+.protection-panel button {
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.protection-panel button:hover {
+    background: var(--muted);
+}
+.protection-panel button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.review-validation,
+.review-ready {
+    display: flex;
+    align-items: start;
+    gap: 9px;
+    border: 1px solid var(--border);
+    padding: 13px 15px;
+    border-radius: 5px;
+    font-size: 13px;
+    background: var(--muted);
+    line-height: 1.5;
+}
+.review-validation svg {
+    color: var(--destructive);
+    flex: none;
+}
+.review-ready svg {
+    color: var(--ace-signal-deep);
+    flex: none;
+}
+.editor-page-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    background: var(--background);
+    padding: 13px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+.footer-status {
+    color: var(--muted-foreground);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 12px;
+}
+.scroll-cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.footer-warning {
+    color: var(--destructive);
+}
+.footer-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+}
+.footer-actions button {
+    min-height: 39px;
+    white-space: nowrap;
+    display: inline-flex;
+    gap: 8px;
+}
+.footer-actions .save-action {
+    min-width: 164px;
+}
+@container block-editor (max-width: 640px) {
+    .protection-panel {
+        grid-template-columns: auto 1fr;
+    }
+    .protection-panel button,
+    .protection-panel > span {
+        grid-column: 2;
+        justify-self: start;
+    }
+    .editor-page-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 9px;
+    }
+    .footer-actions {
+        width: 100%;
+    }
+    .footer-actions button {
+        min-width: 0;
+        justify-content: center;
+        white-space: normal;
+        text-align: center;
+    }
+    .footer-actions .save-action {
+        min-width: 0;
+        flex: 1;
+    }
+    .editor-steps {
+        gap: 4px;
+    }
+    .step-label {
+        gap: 5px;
+        font-size: 12px;
+    }
+    .mode-selector {
+        grid-template-columns: 1fr;
+    }
+    .content-intro {
+        flex-wrap: wrap;
+    }
+}
+@container ace-workspace (max-width: 720px) {
     .block-editor-page {
-        width: min(940px, calc(100% - 44px)); min-height: 100%; margin: 0 auto;
-        padding-top: 18px; display: flex; flex-direction: column; container: block-editor / inline-size;
+        width: calc(100% - 28px);
     }
-    .editor-page-header { flex: none; }
-    .back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 30px;
-        color: var(--muted-foreground); font-size: 13px; font-weight: 600; }
-    .back-link:hover { color: var(--foreground); }
-    .editor-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 6px; }
-    .editor-title-row h1 { font: 600 clamp(26px, 4cqi, 32px)/1.15 "IBM Plex Sans Condensed", sans-serif; }
-    .editor-title-row p { margin-top: 6px; color: var(--muted-foreground); font-size: 13px; line-height: 1.5; }
-    .locked-state { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--ace-signal-deep);
-        padding: 7px 10px; border-radius: 4px; font-size: 12px; color: var(--foreground); white-space: nowrap; }
-    .editor-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 22px; }
-    .editor-steps button { text-align: left; padding: 0 0 13px; color: var(--muted-foreground); min-width: 0; cursor: pointer; }
-    .editor-steps button:disabled { cursor: not-allowed; opacity: .55; }
-    .step-progress { display: block; height: 3px; border-radius: 2px; background: var(--border); transition: background 140ms; }
-    .editor-steps button.current .step-progress { background: var(--ace-signal); }
-    .editor-steps button.complete .step-progress { background: var(--foreground); }
-    .step-label { display: flex; align-items: center; gap: 9px; padding-top: 10px; font-size: 13px; font-weight: 600; }
-    .editor-steps button.current .step-label { color: var(--foreground); }
-    .step-number { display: grid; place-items: center; border: 1px solid var(--border);
-        width: 23px; height: 23px; border-radius: 4px; flex: none; font: 600 12px "IBM Plex Mono",monospace; }
-    .editor-steps button.current .step-number { background: var(--ace-signal); color: #10100e; border-color: var(--ace-signal); }
-    .editor-page-body { flex: 1; min-width: 0; padding: 20px 0 28px; }
-    .content-intro { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
-    .manage-shortcut { flex: none; border: 1px solid var(--border); border-radius: 4px;
-        padding: 9px 12px; min-height: 38px; color: var(--foreground); background: var(--card);
-        font-size: 13px; font-weight: 600; }
-    .manage-shortcut:hover { background: var(--muted); }
-    .step-intro h2 { font: 600 25px/1.25 "IBM Plex Sans Condensed",sans-serif; outline: none; }
-    .step-intro p { color: var(--muted-foreground); margin-top: 6px; font-size: 14px; line-height: 1.5; max-width: 660px; }
-    .step-content-stack { margin-top: 22px; display: grid; gap: 23px; }
-    .secondary-section { border-top: 1px solid var(--border); padding-top: 22px; }
-    .website-manager { border: 1px solid var(--border); border-radius: 6px; background: var(--card); }
-    .website-manager summary { display: flex; align-items: center; justify-content: space-between; gap: 16px;
-        cursor: pointer; padding: 17px 18px; list-style: none; }
-    .website-manager summary::-webkit-details-marker { display: none; }
-    .website-manager summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-    .website-manager summary strong,.website-manager summary small { display: block; }
-    .website-manager summary strong { font-size: 15px; }
-    .website-manager summary small { font-size: 13px; color: var(--muted-foreground); margin-top: 5px; }
-    .website-manager .manager-detail { padding: 18px; border-top: 1px solid var(--border); }
-    .inline-hint { display: flex; align-items: start; gap: 8px; font-size: 13px; color: var(--muted-foreground); margin-top: 24px; }
-    .mode-selector { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-top: 22px; }
-    .mode-selector button { display: flex; gap: 12px; align-items: flex-start; text-align: left; min-width: 0;
-        background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 17px; cursor: pointer; }
-    .mode-selector button:hover { border-color: var(--foreground); }
-    .mode-selector button.selected { border-color: var(--ace-signal-deep); box-shadow: inset 0 3px var(--ace-signal); }
-    .mode-selector button:disabled { opacity: .5; cursor: not-allowed; }
-    .mode-radio { margin-top: 2px; width: 17px; height: 17px; border: 1.5px solid var(--muted-foreground); border-radius: 100%; flex: none; }
-    .mode-selector button.selected .mode-radio { border: 5px solid var(--foreground); }
-    .mode-selector strong,.mode-selector small { display: block; }
-    .mode-selector strong { font-size: 15px; }
-    .mode-selector small { margin-top: 6px; color: var(--muted-foreground); font-size: 13px; line-height: 1.5; }
-    .schedule-detail { border-top: 1px solid var(--border); padding-top: 24px; margin-top: 24px; }
-    .enforcement-preview { display: grid; grid-template-columns: 4px 1fr; gap: 15px;
-        border: 1px solid var(--border); border-radius: 6px; background: var(--muted);
-        margin-top: 24px; overflow: hidden; }
-    .enforcement-preview .preview-rail { background: var(--ace-signal); }
-    .enforcement-preview > div { padding: 15px 16px 15px 0; font-size: 13px; line-height: 1.6; }
-    .enforcement-preview p { color: var(--muted-foreground); margin-top: 4px; }
-    .enforcement-preview p.preview-warning { color: var(--destructive); }
-    .review-stack { margin-top: 22px; display: grid; gap: 20px; }
-    .review-identity { padding: 17px 19px; border: 1px solid var(--border); background: var(--card); border-radius: 6px; }
-    .review-list { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
-    .review-row { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 15px 19px; }
-    .review-row + .review-row { border-top: 1px solid var(--border); }
-    .review-row-main { min-width: 0; }
-    .review-row-main strong { font-size: 14px; }
-    .review-row-main p { color: var(--muted-foreground); font-size: 13px; margin-top: 4px; line-height: 1.4; }
-    .review-row-main .review-selected { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 600px; }
-    .review-edit { color: var(--foreground); border-bottom: 1px solid currentColor; font-size: 13px; font-weight: 600; }
-    .review-edit:hover { color: var(--ace-signal-deep); }
-    .protection-panel { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 14px;
-        padding: 16px 19px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); }
-    .protection-panel strong { font-size: 14px; }
-    .protection-panel p,.protection-panel span { font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
-    .protection-panel button { min-height: 36px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 4px;
-        font-size: 13px; font-weight: 600; }
-    .protection-panel button:hover { background: var(--muted); }
-    .protection-panel button:disabled { opacity: .5; cursor: not-allowed; }
-    .review-validation,.review-ready { display: flex; align-items: start; gap: 9px; border: 1px solid var(--border);
-        padding: 13px 15px; border-radius: 5px; font-size: 13px; background: var(--muted); line-height: 1.5; }
-    .review-validation svg { color: var(--destructive); flex: none; }
-    .review-ready svg { color: var(--ace-signal-deep); flex: none; }
-    .editor-page-footer { position: sticky; bottom: 0; z-index: 5; margin-top: auto; border-top: 1px solid var(--border);
-        background: var(--background); padding: 13px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-    .footer-status { color: var(--muted-foreground); display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; }
-    .scroll-cue { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; white-space: nowrap; }
-    .footer-warning { color: var(--destructive); }
-    .footer-actions { display: flex; justify-content: flex-end; gap: 9px; }
-    .footer-actions button { min-height: 39px; white-space: nowrap; display: inline-flex; gap: 8px; }
-    .footer-actions .save-action { min-width: 164px; }
-    @container block-editor (max-width: 640px) {
-        .protection-panel { grid-template-columns: auto 1fr; }
-        .protection-panel button,.protection-panel > span { grid-column: 2; justify-self: start; }
-        .editor-page-footer { flex-direction: column; align-items: stretch; gap: 9px; }
-        .footer-actions { width: 100%; }
-        .footer-actions button { min-width: 0; justify-content: center; white-space: normal; text-align: center; }
-        .footer-actions .save-action { min-width: 0; flex: 1; }
-        .editor-steps { gap: 4px; }
-        .step-label { gap: 5px; font-size: 12px; }
-        .mode-selector { grid-template-columns: 1fr; }
-        .content-intro { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .step-progress {
+        transition: none;
     }
-    @container ace-workspace (max-width: 720px) { .block-editor-page { width: calc(100% - 28px); } }
-    @media (prefers-reduced-motion: reduce) { .step-progress { transition: none; } }
+}

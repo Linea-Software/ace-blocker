@@ -27,20 +27,26 @@ const DEFAULT_STATE: PersistedOnboarding = {
 
 class OnboardingStore {
     /** Whether the setup wizard has been completed or explicitly skipped. */
-    wizardCompleted = (true);
+    wizardCompleted = true;
     /** Whether the guided tour has been finished or explicitly skipped. */
-    tourCompleted = (true);
+    tourCompleted = true;
     /** Whether this is a repeat setup, even after restart/reload. */
-    wizardPreviouslyCompleted = (false);
+    wizardPreviouslyCompleted = false;
     /** True once the persisted state has been read. Guards against showing the
      *  wizard for a frame before we know whether it was already completed. */
-    loaded = (false);
+    loaded = false;
 
     /** Set while the tour is running so the wizard stays out of the way. */
-    tourRunning = (false);
+    tourRunning = false;
 
     constructor() {
-        reactiveFields(this, ["wizardCompleted", "tourCompleted", "wizardPreviouslyCompleted", "loaded", "tourRunning"]);
+        reactiveFields(this, [
+            "wizardCompleted",
+            "tourCompleted",
+            "wizardPreviouslyCompleted",
+            "loaded",
+            "tourRunning",
+        ]);
         this.load();
     }
 
@@ -55,7 +61,8 @@ class OnboardingStore {
 
             this.wizardCompleted = parsed.wizardCompleted === true;
             this.wizardPreviouslyCompleted =
-                parsed.wizardPreviouslyCompleted === true || parsed.wizardCompleted === true;
+                parsed.wizardPreviouslyCompleted === true ||
+                parsed.wizardCompleted === true;
             this.tourCompleted = parsed.tourCompleted === true;
         } catch (error) {
             console.error("Failed to read onboarding state:", error);

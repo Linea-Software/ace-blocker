@@ -4,16 +4,21 @@ export type TimeFormat = "system" | "12h" | "24h";
 export type DateFormat = "system" | "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD";
 
 class LocalizationStore {
-    language: LanguagePreference = ("system");
+    language: LanguagePreference = "system";
 
-    timeFormat: TimeFormat = ("system");
-    dateFormat: DateFormat = ("system");
+    timeFormat: TimeFormat = "system";
+    dateFormat: DateFormat = "system";
 
     /** Whether the OS uses 12-hour (AM/PM) time. Detected client-side. */
-    systemUses12h = (false);
+    systemUses12h = false;
 
     constructor() {
-        reactiveFields(this, ["language", "timeFormat", "dateFormat", "systemUses12h"]);
+        reactiveFields(this, [
+            "language",
+            "timeFormat",
+            "dateFormat",
+            "systemUses12h",
+        ]);
     }
 
     setPreferences(prefs: { timeFormat: TimeFormat; dateFormat: DateFormat }) {
@@ -24,8 +29,9 @@ class LocalizationStore {
     /** Detects the OS time format (client-side only, after mount). */
     detectSystemTimeFormat() {
         this.systemUses12h =
-            new Intl.DateTimeFormat(undefined, { hour: "numeric" })
-                .resolvedOptions().hour12 ?? false;
+            new Intl.DateTimeFormat(undefined, {
+                hour: "numeric",
+            }).resolvedOptions().hour12 ?? false;
     }
 
     /** Whether times should be displayed in 12-hour (AM/PM) format. */

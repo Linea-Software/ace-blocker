@@ -1,4 +1,5 @@
 # [Wintun Network Adapter](https://www.wintun.net/)
+
 ### TUN Device Driver for Windows
 
 This is a layer 3 TUN driver for Windows 7, 8, 8.1, and 10. Originally created for [WireGuard](https://www.wireguard.com/), it is intended to be useful to a wide variety of projects that require layer 3 tunneling devices with implementations primarily in userspace.
@@ -110,8 +111,8 @@ Called by WintunEnumAdapters for each adapter in the pool.
 
 **Parameters**
 
-- *Adapter*: Adapter handle, which will be freed when this function returns.
-- *Param*: An application-defined value passed to the WintunEnumAdapters.
+- _Adapter_: Adapter handle, which will be freed when this function returns.
+- _Param_: An application-defined value passed to the WintunEnumAdapters.
 
 **Returns**
 
@@ -125,9 +126,9 @@ Called by internal logger to report diagnostic messages
 
 **Parameters**
 
-- *Level*: Message level.
-- *Timestamp*: Message timestamp in in 100ns intervals since 1601-01-01 UTC.
-- *Message*: Message text.
+- _Level_: Message level.
+- _Timestamp_: Message timestamp in in 100ns intervals since 1601-01-01 UTC.
+- _Message_: Message text.
 
 #### WINTUN\_SESSION\_HANDLE
 
@@ -143,9 +144,9 @@ A handle representing Wintun session
 
 Determines the level of logging, passed to WINTUN\_LOGGER\_CALLBACK.
 
-- *WINTUN\_LOG\_INFO*: Informational
-- *WINTUN\_LOG\_WARN*: Warning
-- *WINTUN\_LOG\_ERR*: Error
+- _WINTUN\_LOG\_INFO_: Informational
+- _WINTUN\_LOG\_WARN_: Warning
+- _WINTUN\_LOG\_ERR_: Error
 
 Enumerator
 
@@ -159,9 +160,9 @@ Creates a new Wintun adapter.
 
 **Parameters**
 
-- *Name*: The requested name of the adapter. Zero-terminated string of up to MAX\_ADAPTER\_NAME-1 characters.
-- *Name*: Name of the adapter tunnel type. Zero-terminated string of up to MAX\_ADAPTER\_NAME-1 characters.
-- *RequestedGUID*: The GUID of the created network adapter, which then influences NLA generation deterministically. If it is set to NULL, the GUID is chosen by the system at random, and hence a new NLA entry is created for each new adapter. It is called "requested" GUID because the API it uses is completely undocumented, and so there could be minor interesting complications with its usage.
+- _Name_: The requested name of the adapter. Zero-terminated string of up to MAX\_ADAPTER\_NAME-1 characters.
+- _Name_: Name of the adapter tunnel type. Zero-terminated string of up to MAX\_ADAPTER\_NAME-1 characters.
+- _RequestedGUID_: The GUID of the created network adapter, which then influences NLA generation deterministically. If it is set to NULL, the GUID is chosen by the system at random, and hence a new NLA entry is created for each new adapter. It is called "requested" GUID because the API it uses is completely undocumented, and so there could be minor interesting complications with its usage.
 
 **Returns**
 
@@ -175,7 +176,7 @@ Opens an existing Wintun adapter.
 
 **Parameters**
 
-- *Name*: The requested name of the adapter. Zero-terminated string of up to MAX\_ADAPTER\_NAME-1 characters.
+- _Name_: The requested name of the adapter. Zero-terminated string of up to MAX\_ADAPTER\_NAME-1 characters.
 
 **Returns**
 
@@ -189,7 +190,7 @@ Releases Wintun adapter resources and, if adapter was created with WintunCreateA
 
 **Parameters**
 
-- *Adapter*: Adapter handle obtained with WintunCreateAdapter or WintunOpenAdapter.
+- _Adapter_: Adapter handle obtained with WintunCreateAdapter or WintunOpenAdapter.
 
 #### WintunDeleteDriver()
 
@@ -209,8 +210,8 @@ Returns the LUID of the adapter.
 
 **Parameters**
 
-- *Adapter*: Adapter handle obtained with WintunOpenAdapter or WintunCreateAdapter
-- *Luid*: Pointer to LUID to receive adapter LUID.
+- _Adapter_: Adapter handle obtained with WintunOpenAdapter or WintunCreateAdapter
+- _Luid_: Pointer to LUID to receive adapter LUID.
 
 #### WintunGetRunningDriverVersion()
 
@@ -230,7 +231,7 @@ Sets logger callback function.
 
 **Parameters**
 
-- *NewLogger*: Pointer to callback function to use as a new global logger. NewLogger may be called from various threads concurrently. Should the logging require serialization, you must handle serialization in NewLogger. Set to NULL to disable.
+- _NewLogger_: Pointer to callback function to use as a new global logger. NewLogger may be called from various threads concurrently. Should the logging require serialization, you must handle serialization in NewLogger. Set to NULL to disable.
 
 #### WintunStartSession()
 
@@ -240,8 +241,8 @@ Starts Wintun session.
 
 **Parameters**
 
-- *Adapter*: Adapter handle obtained with WintunOpenAdapter or WintunCreateAdapter
-- *Capacity*: Rings capacity. Must be between WINTUN\_MIN\_RING\_CAPACITY and WINTUN\_MAX\_RING\_CAPACITY (incl.) Must be a power of two.
+- _Adapter_: Adapter handle obtained with WintunOpenAdapter or WintunCreateAdapter
+- _Capacity_: Rings capacity. Must be between WINTUN\_MIN\_RING\_CAPACITY and WINTUN\_MAX\_RING\_CAPACITY (incl.) Must be a power of two.
 
 **Returns**
 
@@ -255,7 +256,7 @@ Ends Wintun session.
 
 **Parameters**
 
-- *Session*: Wintun session handle obtained with WintunStartSession
+- _Session_: Wintun session handle obtained with WintunStartSession
 
 #### WintunGetReadWaitEvent()
 
@@ -265,7 +266,7 @@ Gets Wintun session's read-wait event handle.
 
 **Parameters**
 
-- *Session*: Wintun session handle obtained with WintunStartSession
+- _Session_: Wintun session handle obtained with WintunStartSession
 
 **Returns**
 
@@ -279,8 +280,8 @@ Retrieves one or packet. After the packet content is consumed, call WintunReleas
 
 **Parameters**
 
-- *Session*: Wintun session handle obtained with WintunStartSession
-- *PacketSize*: Pointer to receive packet size.
+- _Session_: Wintun session handle obtained with WintunStartSession
+- _PacketSize_: Pointer to receive packet size.
 
 **Returns**
 
@@ -294,8 +295,8 @@ Releases internal buffer after the received packet has been processed by the cli
 
 **Parameters**
 
-- *Session*: Wintun session handle obtained with WintunStartSession
-- *Packet*: Packet obtained with WintunReceivePacket
+- _Session_: Wintun session handle obtained with WintunStartSession
+- _Packet_: Packet obtained with WintunReceivePacket
 
 #### WintunAllocateSendPacket()
 
@@ -305,8 +306,8 @@ Allocates memory for a packet to send. After the memory is filled with packet da
 
 **Parameters**
 
-- *Session*: Wintun session handle obtained with WintunStartSession
-- *PacketSize*: Exact packet size. Must be less or equal to WINTUN\_MAX\_IP\_PACKET\_SIZE.
+- _Session_: Wintun session handle obtained with WintunStartSession
+- _PacketSize_: Exact packet size. Must be less or equal to WINTUN\_MAX\_IP\_PACKET\_SIZE.
 
 **Returns**
 
@@ -320,8 +321,8 @@ Sends the packet and releases internal buffer. WintunSendPacket is thread-safe, 
 
 **Parameters**
 
-- *Session*: Wintun session handle obtained with WintunStartSession
-- *Packet*: Packet obtained with WintunAllocateSendPacket
+- _Session_: Wintun session handle obtained with WintunStartSession
+- _Packet_: Packet obtained with WintunAllocateSendPacket
 
 ## Building
 

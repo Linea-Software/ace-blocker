@@ -30,7 +30,10 @@ describe("Ace-managed category catalog", () => {
             expect(pack, id).toBeDefined();
             expect(pack?.sources).toEqual([
                 {
-                    source: "https://github.com/Linea-Software/ace-hosts/releases/latest/download/" + category + ".txt",
+                    source:
+                        "https://github.com/Linea-Software/ace-hosts/releases/latest/download/" +
+                        category +
+                        ".txt",
                     source_type: "url",
                     format: "standard",
                 },
@@ -50,7 +53,13 @@ describe("Ace-managed category catalog", () => {
         const anime = sitePacks.find(
             (pack) => pack.id === "pack-anime-manga-pro",
         );
-        for (const content of ["anime", "manga", "manhwa", "manhua", "webtoons"]) {
+        for (const content of [
+            "anime",
+            "manga",
+            "manhwa",
+            "manhua",
+            "webtoons",
+        ]) {
             expect(anime?.description.toLowerCase()).toContain(content);
         }
         expect(anime?.requires_pro).toBe(true);

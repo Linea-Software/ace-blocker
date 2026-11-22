@@ -1,7 +1,10 @@
 import { createEffect } from "solid-js";
 import { reactiveFields } from "$lib/stores/reactive-fields";
 import * as m from "$lib/paraglide/messages.js";
-import { downloadResistanceScripts, getResistanceModeSettings } from "$lib/engine-client";
+import {
+    downloadResistanceScripts,
+    getResistanceModeSettings,
+} from "$lib/engine-client";
 import { engineStore } from "$lib/stores/engine";
 import { userStore } from "$lib/stores/user-store";
 import { ListFilter, RefreshCw } from "@lucide/solid";
@@ -35,22 +38,30 @@ export default function ResistanceScriptsUpdateSection() {
                 return;
             }
             state.installedVersion = data.scriptsVersion ?? null;
-            state.versionState = data.enforcementStatus === "scripts_missing" ? "missing" : "ready";
+            state.versionState =
+                data.enforcementStatus === "scripts_missing"
+                    ? "missing"
+                    : "ready";
         } catch {
             if (seq === requestSeq) state.versionState = "unavailable";
         }
     }
 
-    createEffect(() => engineOnline(), () => {
-        if (engineOnline()) {
-            void loadInstalledVersion();
-        } else {
-            ++requestSeq;
-            state.installedVersion = null;
-            state.versionState = "unavailable";
-        }
-        return () => { ++requestSeq; };
-    });
+    createEffect(
+        () => engineOnline(),
+        () => {
+            if (engineOnline()) {
+                void loadInstalledVersion();
+            } else {
+                ++requestSeq;
+                state.installedVersion = null;
+                state.versionState = "unavailable";
+            }
+            return () => {
+                ++requestSeq;
+            };
+        },
+    );
 
     async function handleUpdate() {
         if (!canUpdate()) return;
@@ -71,48 +82,81 @@ export default function ResistanceScriptsUpdateSection() {
     }
 
     return (
-        <section id="resistance-scripts-update" class="settings-section ace-settings-resistance-scripts-update scroll-mt-6" aria-labelledby="resistance-scripts-update-title">
-    <header>
-        <span class="section-mark" aria-hidden="true"><ListFilter size={16}/></span>
-        <div>
-            <h2 id="resistance-scripts-update-title">{m.settings_resistance_scripts_title()}</h2>
-            <p>{m.settings_resistance_scripts_description()}</p>
-        </div>
-    </header>
-
-    <div class="update-row">
-        <div class="update-details">
-            <div class="version-label">{m.settings_resistance_scripts_installed()}</div>
-            <strong class="version-number" data-testid="settings-resistance-scripts-version">
-                {state.installedVersion ? (<>
-                    {state.installedVersion}
-                </>) : state.versionState === "missing" ? (<>
-                    {m.settings_resistance_scripts_missing()}
-                </>) : (<>
-                    {m.settings_resistance_scripts_unavailable()}
-                </>)}
-            </strong>
-            {!engineOnline() ? (<>
-                <p>{m.settings_resistance_scripts_engine_offline()}</p>
-            </>) : !isPro() ? (<>
-                <p>{m.settings_resistance_scripts_pro_required()}</p>
-            </>) : state.versionState === "missing" ? (<>
-                <p>{m.scripts_empty_description()}</p>
-            </>) : state.versionState === "unavailable" ? (<>
-                <p>{m.settings_resistance_scripts_status_unavailable()}</p>
-            </>) : null}
-        </div>
-        <button
-            type="button"
-            class="refresh-button"
-            data-testid="settings-resistance-scripts-update"
-            disabled={!canUpdate()}
-            onClick={handleUpdate}
+        <section
+            id="resistance-scripts-update"
+            class="settings-section ace-settings-resistance-scripts-update scroll-mt-6"
+            aria-labelledby="resistance-scripts-update-title"
         >
-            <RefreshCw size={15} aria-hidden="true" class={state.updating ? "spinning" : undefined}/>
-            {state.updating ? m.settings_resistance_scripts_updating() : m.settings_resistance_scripts_action()}
-        </button>
-    </div>
-</section>
+            <header>
+                <span class="section-mark" aria-hidden="true">
+                    <ListFilter size={16} />
+                </span>
+                <div>
+                    <h2 id="resistance-scripts-update-title">
+                        {m.settings_resistance_scripts_title()}
+                    </h2>
+                    <p>{m.settings_resistance_scripts_description()}</p>
+                </div>
+            </header>
+
+            <div class="update-row">
+                <div class="update-details">
+                    <div class="version-label">
+                        {m.settings_resistance_scripts_installed()}
+                    </div>
+                    <strong
+                        class="version-number"
+                        data-testid="settings-resistance-scripts-version"
+                    >
+                        {state.installedVersion ? (
+                            <>{state.installedVersion}</>
+                        ) : state.versionState === "missing" ? (
+                            <>{m.settings_resistance_scripts_missing()}</>
+                        ) : (
+                            <>{m.settings_resistance_scripts_unavailable()}</>
+                        )}
+                    </strong>
+                    {!engineOnline() ? (
+                        <>
+                            <p>
+                                {m.settings_resistance_scripts_engine_offline()}
+                            </p>
+                        </>
+                    ) : !isPro() ? (
+                        <>
+                            <p>
+                                {m.settings_resistance_scripts_pro_required()}
+                            </p>
+                        </>
+                    ) : state.versionState === "missing" ? (
+                        <>
+                            <p>{m.scripts_empty_description()}</p>
+                        </>
+                    ) : state.versionState === "unavailable" ? (
+                        <>
+                            <p>
+                                {m.settings_resistance_scripts_status_unavailable()}
+                            </p>
+                        </>
+                    ) : null}
+                </div>
+                <button
+                    type="button"
+                    class="refresh-button"
+                    data-testid="settings-resistance-scripts-update"
+                    disabled={!canUpdate()}
+                    onClick={handleUpdate}
+                >
+                    <RefreshCw
+                        size={15}
+                        aria-hidden="true"
+                        class={state.updating ? "spinning" : undefined}
+                    />
+                    {state.updating
+                        ? m.settings_resistance_scripts_updating()
+                        : m.settings_resistance_scripts_action()}
+                </button>
+            </div>
+        </section>
     );
 }

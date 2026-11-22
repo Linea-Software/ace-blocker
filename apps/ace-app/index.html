@@ -9,11 +9,17 @@
             // Match mode-watcher's persisted theme before the first paint.
             try {
                 const saved = localStorage.getItem("mode-watcher-mode");
-                const dark = saved === "dark" ||
-                    (saved !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+                const dark =
+                    saved === "dark" ||
+                    (saved !== "light" &&
+                        matchMedia("(prefers-color-scheme: dark)").matches);
                 document.documentElement.classList.toggle("dark", dark);
-                document.documentElement.style.colorScheme = dark ? "dark" : "light";
-            } catch (_) { /* storage unavailable */ }
+                document.documentElement.style.colorScheme = dark
+                    ? "dark"
+                    : "light";
+            } catch (_) {
+                /* storage unavailable */
+            }
         </script>
     </head>
     <body>

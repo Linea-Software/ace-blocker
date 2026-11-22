@@ -12,17 +12,11 @@ use serde::{Deserialize, Serialize};
 /// paths use their byte carriers directly and do not invoke it.
 mod binary_bytes_serde {
     use serde::{Deserialize, Deserializer, Serializer};
-    pub fn serialize<S: Serializer>(
-        bytes: &bytes::Bytes,
-        ser: S,
-    ) -> Result<S::Ok, S::Error> {
-        let value = std::str::from_utf8(bytes.as_ref())
-            .map_err(serde::ser::Error::custom)?;
+    pub fn serialize<S: Serializer>(bytes: &bytes::Bytes, ser: S) -> Result<S::Ok, S::Error> {
+        let value = std::str::from_utf8(bytes.as_ref()).map_err(serde::ser::Error::custom)?;
         ser.serialize_str(value)
     }
-    pub fn deserialize<'de, D: Deserializer<'de>>(
-        de: D,
-    ) -> Result<bytes::Bytes, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(de: D) -> Result<bytes::Bytes, D::Error> {
         String::deserialize(de).map(bytes::Bytes::from)
     }
     pub mod option {
@@ -92,9 +86,7 @@ pub struct GetProDetailsResponse {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum GetProDetailsResponseExpiration {
-    GetProDetailsResponseExpirationInlineVariant(
-        GetProDetailsResponseExpirationInlineVariant,
-    ),
+    GetProDetailsResponseExpirationInlineVariant(GetProDetailsResponseExpirationInlineVariant),
     DateTime(chrono::DateTime<chrono::Utc>),
     Date(chrono::NaiveDate),
     Number(f64),
@@ -129,7 +121,8 @@ pub enum GetLatestReleasesVersionDataResponseSitePacksItemUpdatedAt {
     Date(chrono::NaiveDate),
     Number(f64),
 }
-pub type GetLatestReleasesVersionDataResponseSitePacksItemUpdatedAtInlineVariant = serde_json::Value;
+pub type GetLatestReleasesVersionDataResponseSitePacksItemUpdatedAtInlineVariant =
+    serde_json::Value;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct GetLatestReleasesVersionDataResponseResistance {
     #[serde(rename = "createdAt")]

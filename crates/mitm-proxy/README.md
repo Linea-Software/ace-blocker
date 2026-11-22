@@ -92,31 +92,31 @@ Options:
 
 ### Key design decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| **Bodies buffered to `Bytes`** | Keeps the inspect hook simple and makes modification trivial, at the cost of not streaming very large payloads. Acceptable for an inspection-focused MITM. |
-| **No connection pooling upstream** | Each request gets its own upstream connection. Keeps the code self-contained; pooling is a documented non-goal. |
-| **`.send_grease(false)` on h3** | `h3` 0.0.8 writes GREASE frames during `finish()` on the first request per connection, which confuses strict h3 clients (notably aioquic). Disabled to maximise interop. |
-| **Dynamic per-host leaf certs via rcgen** | The `DynamicCertResolver` mints and caches a leaf certificate per SNI host, signed by the proxy's root CA. The root CA is generated once and persisted to `./mitm-ca/`. |
-| **`auto::Builder` for decrypted tunnels** | The decrypted CONNECT tunnel is served with hyper-util's `auto` builder, which negotiates HTTP/1.x or HTTP/2 based on ALPN without separate listener logic. |
+| Decision                                  | Rationale                                                                                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Bodies buffered to `Bytes`**            | Keeps the inspect hook simple and makes modification trivial, at the cost of not streaming very large payloads. Acceptable for an inspection-focused MITM.               |
+| **No connection pooling upstream**        | Each request gets its own upstream connection. Keeps the code self-contained; pooling is a documented non-goal.                                                          |
+| **`.send_grease(false)` on h3**           | `h3` 0.0.8 writes GREASE frames during `finish()` on the first request per connection, which confuses strict h3 clients (notably aioquic). Disabled to maximise interop. |
+| **Dynamic per-host leaf certs via rcgen** | The `DynamicCertResolver` mints and caches a leaf certificate per SNI host, signed by the proxy's root CA. The root CA is generated once and persisted to `./mitm-ca/`.  |
+| **`auto::Builder` for decrypted tunnels** | The decrypted CONNECT tunnel is served with hyper-util's `auto` builder, which negotiates HTTP/1.x or HTTP/2 based on ALPN without separate listener logic.              |
 
 ## Source layout
 
-| Module | Visibility | Purpose |
-|--------|-----------|---------|
-| `lib.rs` | — | `MitmProxy` builder (`new`, `with_request_inspector`, `run`), wires everything together |
-| `main.rs` | — | CLI entry point (clap) |
-| `config.rs` | `pub` | `ProxyConfig` builder |
-| `error.rs` | `pub` | `ProxyError` enum, `Result<T>` alias |
-| `inspect.rs` | `pub` | `Protocol`, `ConnMeta`, `RequestInspector`/`ResponseInspector` traits, `Inspectors` bundle, `NoopInspector`, `LoggingInspector` |
-| `ca.rs` | `pub` | `CertAuthority` (load/generate, issue leaf certs, install to trust store) |
-| `cert_resolver.rs` | `mod` | `DynamicCertResolver` — per-SNI leaf minting and caching for rustls |
-| `tls.rs` | `mod` | `server_config`/`client_config` factory functions |
-| `upstream.rs` | `mod` | `Upstream::send` — forward a buffered request to the origin |
-| `http.rs` | `mod` | HTTP/1.x + HTTP/2 proxy listener, CONNECT handler, `relay` pipeline |
-| `http3.rs` | `mod` | HTTP/3 (QUIC) listener, connection/request handlers |
-| `state.rs` | `mod` | `ProxyState` / `SharedState` |
-| `util.rs` | `mod` | `authority_display`, `absolute_uri`, `snapshot_request_head`, `ensure_host_header`, `strip_hop_by_hop` |
+| Module             | Visibility | Purpose                                                                                                                         |
+| ------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `lib.rs`           | —          | `MitmProxy` builder (`new`, `with_request_inspector`, `run`), wires everything together                                         |
+| `main.rs`          | —          | CLI entry point (clap)                                                                                                          |
+| `config.rs`        | `pub`      | `ProxyConfig` builder                                                                                                           |
+| `error.rs`         | `pub`      | `ProxyError` enum, `Result<T>` alias                                                                                            |
+| `inspect.rs`       | `pub`      | `Protocol`, `ConnMeta`, `RequestInspector`/`ResponseInspector` traits, `Inspectors` bundle, `NoopInspector`, `LoggingInspector` |
+| `ca.rs`            | `pub`      | `CertAuthority` (load/generate, issue leaf certs, install to trust store)                                                       |
+| `cert_resolver.rs` | `mod`      | `DynamicCertResolver` — per-SNI leaf minting and caching for rustls                                                             |
+| `tls.rs`           | `mod`      | `server_config`/`client_config` factory functions                                                                               |
+| `upstream.rs`      | `mod`      | `Upstream::send` — forward a buffered request to the origin                                                                     |
+| `http.rs`          | `mod`      | HTTP/1.x + HTTP/2 proxy listener, CONNECT handler, `relay` pipeline                                                             |
+| `http3.rs`         | `mod`      | HTTP/3 (QUIC) listener, connection/request handlers                                                                             |
+| `state.rs`         | `mod`      | `ProxyState` / `SharedState`                                                                                                    |
+| `util.rs`          | `mod`      | `authority_display`, `absolute_uri`, `snapshot_request_head`, `ensure_host_header`, `strip_hop_by_hop`                          |
 
 ## Testing
 

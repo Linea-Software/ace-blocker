@@ -7,10 +7,19 @@ describe("ported Solid 2 state adapters", () => {
     it("tracks scalar and object assignments without losing field-based APIs", () => {
         // Component/root initializers are owned scopes. As in the real app,
         // writes come from events, not from inside a tracked computation.
-        const { record, status, dispose } = createRoot(dispose => {
-            const record = { enabled: false, message: null as string | null, items: [] as string[] };
+        const { record, status, dispose } = createRoot((dispose) => {
+            const record = {
+                enabled: false,
+                message: null as string | null,
+                items: [] as string[],
+            };
             reactiveFields(record, ["enabled", "message", "items"]);
-            const status = createMemo(() => (record.enabled ? "enabled" : "disabled") + ":" + record.items.length);
+            const status = createMemo(
+                () =>
+                    (record.enabled ? "enabled" : "disabled") +
+                    ":" +
+                    record.items.length,
+            );
             return { record, status, dispose };
         });
         expect(status()).toBe("disabled:0");
@@ -25,7 +34,7 @@ describe("ported Solid 2 state adapters", () => {
     });
 
     it("makes per-pack map membership and progress reactive", () => {
-        const { values, current, dispose } = createRoot(dispose => {
+        const { values, current, dispose } = createRoot((dispose) => {
             const values = new ReactiveMap<string, number>();
             const current = createMemo(() => values.get("pack") ?? -1);
             return { values, current, dispose };

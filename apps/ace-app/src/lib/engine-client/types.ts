@@ -42,14 +42,14 @@ export type ApiConstants = {
     /**
      * The configured datetime format string
      */
-    datetime_format: '%Y-%m-%dT%H:%M:%S';
+    datetime_format: "%Y-%m-%dT%H:%M:%S";
     /**
      * The configured time format string
      */
-    time_format: '%H:%M:%S';
+    time_format: "%H:%M:%S";
 };
 
-export type ScheduleMode = 'always' | 'scheduled';
+export type ScheduleMode = "always" | "scheduled";
 
 export type BackupNetworkBlock = {
     connectedSitePacks: Array<string>;
@@ -124,7 +124,15 @@ export type BinaryUpdateInfo = {
     available: boolean;
     currentVersion: string;
     latestVersion?: string | null;
-    status: "checking" | "disabled" | "upToDate" | "available" | "downloading" | "verifying" | "downloaded" | "error";
+    status:
+        | "checking"
+        | "disabled"
+        | "upToDate"
+        | "available"
+        | "downloading"
+        | "verifying"
+        | "downloaded"
+        | "error";
 };
 
 export type ContentUpdateInfo = {
@@ -177,7 +185,7 @@ export type DashboardSnapshotResponse = {
     resistanceModeSettings?: null | ResistanceModeSettings;
 };
 
-export type DebugProPolicy = 'Pro' | 'Free' | 'Default';
+export type DebugProPolicy = "Pro" | "Free" | "Default";
 
 /**
  * Machine-readable enforcement status for Resistance Mode.
@@ -186,7 +194,13 @@ export type DebugProPolicy = 'Pro' | 'Free' | 'Default';
  * is enabled: scripts must be loaded, eligible for injection, and a
  * at least one intervention must be enabled.
  */
-export type EnforcementStatus = 'operational' | 'disabled' | 'not_pro' | 'scripts_missing' | 'scripts_invalid' | 'no_scripts_enabled';
+export type EnforcementStatus =
+    | "operational"
+    | "disabled"
+    | "not_pro"
+    | "scripts_missing"
+    | "scripts_invalid"
+    | "no_scripts_enabled";
 
 export type EngineBackup = {
     customSitePacks: Array<BackupSitePack>;
@@ -278,7 +292,6 @@ export type RenameNetworkBlockRequest = {
 };
 
 export type ResistanceModeSettings = {
-
     enabled: boolean;
     /**
      * Whether enforcement is operational right now, plus a stable reason.
@@ -308,7 +321,6 @@ export type ResistanceModeSettings = {
      * Installed scripts version (from the last successful download).
      */
     scriptsVersion?: string | null;
-
 };
 
 export type ScheduleEntrySchema = {
@@ -354,37 +366,48 @@ export type SetNetworkLockResponse = {
     lock: NetworkListLockSchema;
 };
 
-export type SitePackCreationStatus = {
-    STARTED: {
-        phase: SitePackImportPhase;
-        progress: Percentage;
-        site_pack_id: string;
-    };
-} | {
-    IN_PROGRESS: {
-        phase: SitePackImportPhase;
-        progress: Percentage;
-        site_pack_id: string;
-    };
-} | {
-    COMPLETED: {
-        phase: SitePackImportPhase;
-        progress: Percentage;
-        site_pack_id: string;
-    };
-} | {
-    FAILED: {
-        error: string;
-        phase?: null | SitePackImportPhase;
-    };
-};
+export type SitePackCreationStatus =
+    | {
+          STARTED: {
+              phase: SitePackImportPhase;
+              progress: Percentage;
+              site_pack_id: string;
+          };
+      }
+    | {
+          IN_PROGRESS: {
+              phase: SitePackImportPhase;
+              progress: Percentage;
+              site_pack_id: string;
+          };
+      }
+    | {
+          COMPLETED: {
+              phase: SitePackImportPhase;
+              progress: Percentage;
+              site_pack_id: string;
+          };
+      }
+    | {
+          FAILED: {
+              error: string;
+              phase?: null | SitePackImportPhase;
+          };
+      };
 
-export type SitePackFormat = 'standard' | 'wildcarddomains' | 'auto';
+export type SitePackFormat = "standard" | "wildcarddomains" | "auto";
 
 /**
  * Represents the current phase of a site pack import/resync operation
  */
-export type SitePackImportPhase = 'INITIALIZING' | 'DOWNLOADING' | 'EXTRACTING' | 'IMPORTING' | 'RESTORING' | 'FINALIZING' | 'COMPLETED';
+export type SitePackImportPhase =
+    | "INITIALIZING"
+    | "DOWNLOADING"
+    | "EXTRACTING"
+    | "IMPORTING"
+    | "RESTORING"
+    | "FINALIZING"
+    | "COMPLETED";
 
 export type SitePackSchema = {
     description: string;
@@ -426,7 +449,7 @@ export type SitePackSourceSchema = {
     sourceType: SitePackSourceType;
 };
 
-export type SitePackSourceType = 'url' | 'file';
+export type SitePackSourceType = "url" | "file";
 
 export type SitePackUpdateEntry = {
     currentVersion: string;
@@ -480,7 +503,7 @@ export type UserDefinedRuleSchema = {
     ruleType: UserDefinedRuleType;
 };
 
-export type UserDefinedRuleType = 'domain' | 'regex';
+export type UserDefinedRuleType = "domain" | "regex";
 
 export type VersionInfo = {
     /**
@@ -532,7 +555,8 @@ export type GetAccountInfoResponses = {
     200: AccountInfoResponse;
 };
 
-export type GetAccountInfoResponse = GetAccountInfoResponses[keyof GetAccountInfoResponses];
+export type GetAccountInfoResponse =
+    GetAccountInfoResponses[keyof GetAccountInfoResponses];
 
 export type LogoutData = {
     body?: never;
@@ -560,7 +584,8 @@ export type RefreshAccountResponses = {
     200: AccountInfoResponse;
 };
 
-export type RefreshAccountResponse = RefreshAccountResponses[keyof RefreshAccountResponses];
+export type RefreshAccountResponse =
+    RefreshAccountResponses[keyof RefreshAccountResponses];
 
 export type ExportBackupToCloudData = {
     body: { password: string };
@@ -601,7 +626,8 @@ export type ExportBackupResponses = {
     200: EngineBackup;
 };
 
-export type ExportBackupResponse = ExportBackupResponses[keyof ExportBackupResponses];
+export type ExportBackupResponse =
+    ExportBackupResponses[keyof ExportBackupResponses];
 
 export type ImportBackupData = {
     body: EngineBackup;
@@ -629,7 +655,8 @@ export type GetDebugProPolicyResponses = {
     200: DebugProPolicy;
 };
 
-export type GetDebugProPolicyResponse = GetDebugProPolicyResponses[keyof GetDebugProPolicyResponses];
+export type GetDebugProPolicyResponse =
+    GetDebugProPolicyResponses[keyof GetDebugProPolicyResponses];
 
 export type SetDebugProPolicyData = {
     body?: never;
@@ -701,7 +728,8 @@ export type GetUpdateCheckIntervalResponses = {
     200: UpdateCheckIntervalResponse;
 };
 
-export type GetUpdateCheckIntervalResponse = GetUpdateCheckIntervalResponses[keyof GetUpdateCheckIntervalResponses];
+export type GetUpdateCheckIntervalResponse =
+    GetUpdateCheckIntervalResponses[keyof GetUpdateCheckIntervalResponses];
 
 export type SetUpdateCheckIntervalData = {
     body?: never;
@@ -734,7 +762,8 @@ export type GetAllNetworkBlocksResponses = {
     200: GetAllNetworkBlocksResponse;
 };
 
-export type GetAllNetworkBlocksResponse2 = GetAllNetworkBlocksResponses[keyof GetAllNetworkBlocksResponses];
+export type GetAllNetworkBlocksResponse2 =
+    GetAllNetworkBlocksResponses[keyof GetAllNetworkBlocksResponses];
 
 export type CreateNetworkBlockData = {
     body: CreateNetworkBlockRequest;
@@ -756,7 +785,8 @@ export type CreateNetworkBlockResponses = {
     200: CreateNetworkBlockResponse;
 };
 
-export type CreateNetworkBlockResponse2 = CreateNetworkBlockResponses[keyof CreateNetworkBlockResponses];
+export type CreateNetworkBlockResponse2 =
+    CreateNetworkBlockResponses[keyof CreateNetworkBlockResponses];
 
 export type SaveNetworkBlockData = {
     body: SaveNetworkBlockRequest;
@@ -781,7 +811,8 @@ export type GetDashboardSnapshotResponses = {
     200: DashboardSnapshotResponse;
 };
 
-export type GetDashboardSnapshotResponse = GetDashboardSnapshotResponses[keyof GetDashboardSnapshotResponses];
+export type GetDashboardSnapshotResponse =
+    GetDashboardSnapshotResponses[keyof GetDashboardSnapshotResponses];
 
 export type DeleteNetworkBlockData = {
     body?: never;
@@ -978,7 +1009,8 @@ export type GetScheduleEntriesResponses = {
     200: GetScheduleEntriesResponse;
 };
 
-export type GetScheduleEntriesResponse2 = GetScheduleEntriesResponses[keyof GetScheduleEntriesResponses];
+export type GetScheduleEntriesResponse2 =
+    GetScheduleEntriesResponses[keyof GetScheduleEntriesResponses];
 
 export type AddScheduleEntriesData = {
     body: AddScheduleEntriesRequest;
@@ -1016,7 +1048,8 @@ export type GetNetBlockToSitePackConnectionsResponses = {
     200: GetNetListToSitePacksResponse;
 };
 
-export type GetNetBlockToSitePackConnectionsResponse = GetNetBlockToSitePackConnectionsResponses[keyof GetNetBlockToSitePackConnectionsResponses];
+export type GetNetBlockToSitePackConnectionsResponse =
+    GetNetBlockToSitePackConnectionsResponses[keyof GetNetBlockToSitePackConnectionsResponses];
 
 export type AddNetBlockToSitePackConnectionData = {
     body: AddNetListToSitePackRequest;
@@ -1036,7 +1069,8 @@ export type AddNetBlockToSitePackConnectionResponses = {
     200: AddNetListToSitePackResponse;
 };
 
-export type AddNetBlockToSitePackConnectionResponse = AddNetBlockToSitePackConnectionResponses[keyof AddNetBlockToSitePackConnectionResponses];
+export type AddNetBlockToSitePackConnectionResponse =
+    AddNetBlockToSitePackConnectionResponses[keyof AddNetBlockToSitePackConnectionResponses];
 
 export type RemoveNetBlockToSitePackConnectionData = {
     body?: never;
@@ -1095,7 +1129,8 @@ export type ConfirmUnlockResponses = {
     200: UnlockChallengeConfirmResponse;
 };
 
-export type ConfirmUnlockResponse = ConfirmUnlockResponses[keyof ConfirmUnlockResponses];
+export type ConfirmUnlockResponse =
+    ConfirmUnlockResponses[keyof ConfirmUnlockResponses];
 
 export type InitiateUnlockData = {
     body?: never;
@@ -1126,7 +1161,8 @@ export type InitiateUnlockResponses = {
     200: UnlockChallengeInitiateResponse;
 };
 
-export type InitiateUnlockResponse = InitiateUnlockResponses[keyof InitiateUnlockResponses];
+export type InitiateUnlockResponse =
+    InitiateUnlockResponses[keyof InitiateUnlockResponses];
 
 export type GetUserRulesData = {
     body?: never;
@@ -1146,7 +1182,8 @@ export type GetUserRulesResponses = {
     200: GetUserDefinedRulesResponse;
 };
 
-export type GetUserRulesResponse = GetUserRulesResponses[keyof GetUserRulesResponses];
+export type GetUserRulesResponse =
+    GetUserRulesResponses[keyof GetUserRulesResponses];
 
 export type AddUserRulesData = {
     body: AddUserDefinedRulesRequest;
@@ -1166,7 +1203,8 @@ export type AddUserRulesResponses = {
     200: AddUserDefinedRulesResponse;
 };
 
-export type AddUserRulesResponse = AddUserRulesResponses[keyof AddUserRulesResponses];
+export type AddUserRulesResponse =
+    AddUserRulesResponses[keyof AddUserRulesResponses];
 
 export type OpenProPageData = {
     body?: never;
@@ -1229,7 +1267,8 @@ export type GetAllScriptsResponses = {
     200: GetAllScriptsResponse;
 };
 
-export type GetAllScriptsResponse2 = GetAllScriptsResponses[keyof GetAllScriptsResponses];
+export type GetAllScriptsResponse2 =
+    GetAllScriptsResponses[keyof GetAllScriptsResponses];
 
 export type GetScriptData = {
     body?: never;
@@ -1340,7 +1379,8 @@ export type GetResistanceModeSettingsResponses = {
     200: ResistanceModeSettings;
 };
 
-export type GetResistanceModeSettingsResponse = GetResistanceModeSettingsResponses[keyof GetResistanceModeSettingsResponses];
+export type GetResistanceModeSettingsResponse =
+    GetResistanceModeSettingsResponses[keyof GetResistanceModeSettingsResponses];
 
 export type DeleteScheduleEntryData = {
     body?: never;
@@ -1391,7 +1431,8 @@ export type GetAllSitePacksResponses = {
     200: GetAllSitePacksResponse;
 };
 
-export type GetAllSitePacksResponse2 = GetAllSitePacksResponses[keyof GetAllSitePacksResponses];
+export type GetAllSitePacksResponse2 =
+    GetAllSitePacksResponses[keyof GetAllSitePacksResponses];
 
 export type CreateSitePackData = {
     body: CreateSitePackRequest;
@@ -1406,7 +1447,8 @@ export type CreateSitePackResponses = {
     200: SitePackCreationStatus;
 };
 
-export type CreateSitePackResponse = CreateSitePackResponses[keyof CreateSitePackResponses];
+export type CreateSitePackResponse =
+    CreateSitePackResponses[keyof CreateSitePackResponses];
 
 export type ReEnableRemoteSitePacksData = {
     body?: never;
@@ -1482,7 +1524,8 @@ export type ResyncSitePackResponses = {
     200: SitePackCreationStatus;
 };
 
-export type ResyncSitePackResponse = ResyncSitePackResponses[keyof ResyncSitePackResponses];
+export type ResyncSitePackResponse =
+    ResyncSitePackResponses[keyof ResyncSitePackResponses];
 
 export type GetSitePackSourcesData = {
     body?: never;
@@ -1502,7 +1545,8 @@ export type GetSitePackSourcesResponses = {
     200: GetSitePackSourcesResponse;
 };
 
-export type GetSitePackSourcesResponse2 = GetSitePackSourcesResponses[keyof GetSitePackSourcesResponses];
+export type GetSitePackSourcesResponse2 =
+    GetSitePackSourcesResponses[keyof GetSitePackSourcesResponses];
 
 export type AddSitePackSourceData = {
     body: AddSitePackSourceRequest;
@@ -1522,7 +1566,8 @@ export type AddSitePackSourceResponses = {
     200: AddSitePackSourceResponse;
 };
 
-export type AddSitePackSourceResponse2 = AddSitePackSourceResponses[keyof AddSitePackSourceResponses];
+export type AddSitePackSourceResponse2 =
+    AddSitePackSourceResponses[keyof AddSitePackSourceResponses];
 
 export type ShutdownData = {
     body?: never;
@@ -1557,7 +1602,8 @@ export type CheckUpdatesResponses = {
     200: UpdateCheckResponse;
 };
 
-export type CheckUpdatesResponse = CheckUpdatesResponses[keyof CheckUpdatesResponses];
+export type CheckUpdatesResponse =
+    CheckUpdatesResponses[keyof CheckUpdatesResponses];
 
 export type TriggerContentUpdateData = {
     body?: never;

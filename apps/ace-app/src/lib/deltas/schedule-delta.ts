@@ -16,7 +16,10 @@ import {
     type ScheduleEntrySchema,
 } from "$engine-client";
 import { Result } from "typescript-result";
-import { isStrictlyMoreRestrictiveThan, isSupportedSchedulePeriod } from "./schedule-coverage";
+import {
+    isStrictlyMoreRestrictiveThan,
+    isSupportedSchedulePeriod,
+} from "./schedule-coverage";
 import { type TempId, newTempId, withRollback, type AppliedOp } from "./common";
 import { reactiveFields } from "../stores/reactive-fields";
 
@@ -121,29 +124,41 @@ export class ScheduleChanges {
         startTime: PlainTime,
         endTime: PlainTime,
     ): Result<void, ScheduleChangeError> {
-        if (!isSupportedSchedulePeriod(timeToString(startTime), timeToString(endTime))) {
+        if (
+            !isSupportedSchedulePeriod(
+                timeToString(startTime),
+                timeToString(endTime),
+            )
+        ) {
             return Result.error({
                 type: "invalid_time_format",
-                message: "Unsupported schedule interval: end before start (except midnight)",
+                message:
+                    "Unsupported schedule interval: end before start (except midnight)",
             });
         }
         const tempId = newTempId();
 
         // update the changes
-        this.changes = [...this.changes, {
-            type: "ADD",
-            scheduleId: tempId,
-            weekday: schedule,
-            timeInterval: { startTime, endTime },
-        }];
+        this.changes = [
+            ...this.changes,
+            {
+                type: "ADD",
+                scheduleId: tempId,
+                weekday: schedule,
+                timeInterval: { startTime, endTime },
+            },
+        ];
         // update the current states
-        this.currentState = [...this.currentState, {
-            networkBlockId: "",
-            id: tempId,
-            ...schedule,
-            startTime: timeToString(startTime),
-            endTime: timeToString(endTime),
-        }];
+        this.currentState = [
+            ...this.currentState,
+            {
+                networkBlockId: "",
+                id: tempId,
+                ...schedule,
+                startTime: timeToString(startTime),
+                endTime: timeToString(endTime),
+            },
+        ];
         return Result.ok();
     }
 
@@ -198,21 +213,27 @@ export class ScheduleChanges {
         schedule: Weekday,
         timeInterval: TimeInterval,
     ): Result<void, ScheduleChangeError> {
-        if (!isSupportedSchedulePeriod(
-            timeToString(timeInterval.startTime),
-            timeToString(timeInterval.endTime),
-        )) {
+        if (
+            !isSupportedSchedulePeriod(
+                timeToString(timeInterval.startTime),
+                timeToString(timeInterval.endTime),
+            )
+        ) {
             return Result.error({
                 type: "invalid_time_format",
-                message: "Unsupported schedule interval: end before start (except midnight)",
+                message:
+                    "Unsupported schedule interval: end before start (except midnight)",
             });
         }
-        this.changes = [...this.changes, {
-            type: "UPDATE",
-            scheduleId,
-            weekday: schedule,
-            timeInterval,
-        }];
+        this.changes = [
+            ...this.changes,
+            {
+                type: "UPDATE",
+                scheduleId,
+                weekday: schedule,
+                timeInterval,
+            },
+        ];
         // update the current states
         this.currentState = this.currentState.map((entry) => {
             if (entry.id === scheduleId) {
@@ -269,10 +290,7 @@ export class ScheduleChanges {
                     },
                 });
                 if (error) {
-                    console.error(
-                        "Failed to delete schedule entry:",
-                        error,
-                    );
+                    console.error("Failed to delete schedule entry:", error);
                     throw new Error("Failed to delete schedule entry");
                 }
 
@@ -281,13 +299,13 @@ export class ScheduleChanges {
                     ops.push({
                         label: `delete-schedule-${removal.scheduleId}`,
                         rollback: async () => {
-                            const { error: rbErr } =
-                                await addScheduleEntries({
-                                    path: {
-                                        network_block_id: networkListId,
-                                    },
-                                    body: {
-                                        scheduleEntries: [{
+                            const { error: rbErr } = await addScheduleEntries({
+                                path: {
+                                    network_block_id: networkListId,
+                                },
+                                body: {
+                                    scheduleEntries: [
+                                        {
                                             monday: original.monday,
                                             tuesday: original.tuesday,
                                             wednesday: original.wednesday,
@@ -297,9 +315,10 @@ export class ScheduleChanges {
                                             sunday: original.sunday,
                                             startTime: original.startTime,
                                             endTime: original.endTime,
-                                        }],
-                                    },
-                                });
+                                        },
+                                    ],
+                                },
+                            });
                             return !rbErr;
                         },
                     });
@@ -316,19 +335,12 @@ export class ScheduleChanges {
                     },
                     body: {
                         ...update.weekday,
-                        startTime: timeToString(
-                            update.timeInterval.startTime,
-                        ),
-                        endTime: timeToString(
-                            update.timeInterval.endTime,
-                        ),
+                        startTime: timeToString(update.timeInterval.startTime),
+                        endTime: timeToString(update.timeInterval.endTime),
                     },
                 });
                 if (error) {
-                    console.error(
-                        "Failed to edit schedule entry:",
-                        error,
-                    );
+                    console.error("Failed to edit schedule entry:", error);
                     throw new Error("Failed to edit schedule entry");
                 }
 
@@ -337,25 +349,22 @@ export class ScheduleChanges {
                     ops.push({
                         label: `edit-schedule-${update.scheduleId}`,
                         rollback: async () => {
-                            const { error: rbErr } = await editScheduleEntry(
-                                {
-                                    path: {
-                                        schedule_entry_id:
-                                            update.scheduleId,
-                                    },
-                                    body: {
-                                        monday: original.monday,
-                                        tuesday: original.tuesday,
-                                        wednesday: original.wednesday,
-                                        thursday: original.thursday,
-                                        friday: original.friday,
-                                        saturday: original.saturday,
-                                        sunday: original.sunday,
-                                        startTime: original.startTime,
-                                        endTime: original.endTime,
-                                    },
+                            const { error: rbErr } = await editScheduleEntry({
+                                path: {
+                                    schedule_entry_id: update.scheduleId,
                                 },
-                            );
+                                body: {
+                                    monday: original.monday,
+                                    tuesday: original.tuesday,
+                                    wednesday: original.wednesday,
+                                    thursday: original.thursday,
+                                    friday: original.friday,
+                                    saturday: original.saturday,
+                                    sunday: original.sunday,
+                                    startTime: original.startTime,
+                                    endTime: original.endTime,
+                                },
+                            });
                             return !rbErr;
                         },
                     });
@@ -371,20 +380,13 @@ export class ScheduleChanges {
                     body: {
                         scheduleEntries: adds.map((add) => ({
                             ...add.weekday,
-                            startTime: timeToString(
-                                add.timeInterval.startTime,
-                            ),
-                            endTime: timeToString(
-                                add.timeInterval.endTime,
-                            ),
+                            startTime: timeToString(add.timeInterval.startTime),
+                            endTime: timeToString(add.timeInterval.endTime),
                         })),
                     },
                 });
                 if (error) {
-                    console.error(
-                        "Failed to add schedule entries:",
-                        error,
-                    );
+                    console.error("Failed to add schedule entries:", error);
                     throw new Error("Failed to add schedule entries");
                 }
                 // Note: we don't have server-side IDs for newly added

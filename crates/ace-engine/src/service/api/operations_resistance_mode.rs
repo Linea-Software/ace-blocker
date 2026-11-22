@@ -5,7 +5,6 @@ pub(super) async fn get_resistance_mode_settings(state: AppState) -> ResistanceM
     let manager = state.network_manager.read().await;
     let engine = manager.get_resistance_mode();
 
-
     let entries = engine.script_tree.get_all_script_entries();
     let scripts_total = entries.len() as u32;
     let scripts_enabled = entries.iter().filter(|entry| entry.enabled).count() as u32;

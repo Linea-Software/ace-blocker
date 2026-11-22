@@ -233,6 +233,6 @@
 /* Brand SVGs originate as trusted bundled asset markup. Give their original
  * brand colors priority over a muted foreground inherited from the button. */
 [data-site-brand-icon] svg {
-  color: var(--ace-brand-color) !important;
-  fill: var(--ace-brand-color) !important;
+    color: var(--ace-brand-color) !important;
+    fill: var(--ace-brand-color) !important;
 }

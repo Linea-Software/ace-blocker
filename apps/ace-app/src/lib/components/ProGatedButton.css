@@ -1,105 +1,108 @@
-    .pro-action {
-        display: inline-flex;
-        flex: 0 1 auto;
-        min-height: 38px;
-        min-width: 0;
-        max-width: 100%;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 7px 12px;
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        background: var(--card);
-        color: var(--foreground);
-        font-family: "IBM Plex Sans Condensed", sans-serif;
-        font-size: 14px;
-        font-weight: 600;
-        line-height: 1.2;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
-    }
+.pro-action {
+    display: inline-flex;
+    flex: 0 1 auto;
+    min-height: 38px;
+    min-width: 0;
+    max-width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--card);
+    color: var(--foreground);
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        background-color 150ms ease,
+        border-color 150ms ease,
+        color 150ms ease;
+}
 
-    .pro-action:hover:not(:disabled) {
-        border-color: var(--foreground);
-        background: var(--muted);
-    }
+.pro-action:hover:not(:disabled) {
+    border-color: var(--foreground);
+    background: var(--muted);
+}
 
-    .pro-action--gated {
-        padding-left: 10px;
-        border-left: 3px solid var(--ace-signal);
-        background: color-mix(in srgb, var(--ace-signal) 5%, var(--card));
-    }
+.pro-action--gated {
+    padding-left: 10px;
+    border-left: 3px solid var(--ace-signal);
+    background: color-mix(in srgb, var(--ace-signal) 5%, var(--card));
+}
 
-    .pro-action--gated:hover:not(:disabled) {
-        border-color: var(--foreground);
-        border-left-color: var(--ace-signal);
-        background: var(--foreground);
-        color: var(--background);
-    }
+.pro-action--gated:hover:not(:disabled) {
+    border-color: var(--foreground);
+    border-left-color: var(--ace-signal);
+    background: var(--foreground);
+    color: var(--background);
+}
 
-    .pro-action:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: 3px;
-    }
+.pro-action:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+}
 
-    .pro-action:disabled {
-        opacity: 0.7;
-        cursor: wait;
-    }
+.pro-action:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
 
-    .action-icon {
-        flex-shrink: 0;
-    }
+.action-icon {
+    flex-shrink: 0;
+}
 
-    .action-label {
-        display: grid;
-        min-width: 0;
-        align-items: center;
-    }
+.action-label {
+    display: grid;
+    min-width: 0;
+    align-items: center;
+}
 
+.current-label,
+.upgrade-label {
+    grid-area: 1 / 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 120ms ease;
+}
+
+.upgrade-label {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.pro-action--gated:hover .current-label,
+.pro-action--gated:focus-visible .current-label {
+    opacity: 0;
+}
+
+.pro-action--gated:hover .upgrade-label,
+.pro-action--gated:focus-visible .upgrade-label {
+    opacity: 1;
+}
+
+.pro-flag {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 4px;
+    padding-left: 8px;
+    border-left: 1px solid currentColor;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.72;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pro-action,
     .current-label,
     .upgrade-label {
-        grid-area: 1 / 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        transition: opacity 120ms ease;
+        transition: none;
     }
-
-    .upgrade-label {
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    .pro-action--gated:hover .current-label,
-    .pro-action--gated:focus-visible .current-label {
-        opacity: 0;
-    }
-
-    .pro-action--gated:hover .upgrade-label,
-    .pro-action--gated:focus-visible .upgrade-label {
-        opacity: 1;
-    }
-
-    .pro-flag {
-        display: inline-flex;
-        flex-shrink: 0;
-        align-items: center;
-        gap: 4px;
-        padding-left: 8px;
-        border-left: 1px solid currentColor;
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 10px;
-        font-weight: 600;
-        opacity: 0.72;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .pro-action,
-        .current-label,
-        .upgrade-label {
-            transition: none;
-        }
-    }
+}

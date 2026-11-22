@@ -48,17 +48,17 @@ Run these tests with Windows elevation and the signed WinTun package.
 Start an enabled, locked `Always` Network Block for a known HTTPS hostname.
 Verify the server and ACE counters. Do not rely only on page appearance.
 
-| Test | Expected observation |
-|---|---|
-| Chrome direct TCP 443, blocked hostname | Denied by ACE; no origin response |
-| Chrome HTTP/3 and IPv6 for same host | Denied or retried on inspected TCP |
-| Proton VPN Chrome extension: connect/disconnect; several endpoints | Block must not silently appear bypassed; any bypass is a release blocker |
-| Extension under DNS-over-HTTPS and IP-only relay | Log that relay domain identity is unknown; do not claim domain-based deny |
-| Extension uses TCP 8443 / 1080 or localhost helper | Exercise the direct-port and local-helper gaps above |
-| Chrome restart, existing sessions, WFP route refresh, competing VPN routes | No stale uninspected session that defeats the block |
-| Native Proton VPN + Chrome with extension disabled | ACE browser enforcement still works, unrelated VPN egress remains usable |
-| Proton Mail/Drive/Pass and nonbrowser apps | No collateral block from the relay denylist |
-| Engine/TUN unavailable or WFP refresh failure | Clearly report unavailable/degraded enforcement; no false "protected" UI claim |
+| Test                                                                       | Expected observation                                                           |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Chrome direct TCP 443, blocked hostname                                    | Denied by ACE; no origin response                                              |
+| Chrome HTTP/3 and IPv6 for same host                                       | Denied or retried on inspected TCP                                             |
+| Proton VPN Chrome extension: connect/disconnect; several endpoints         | Block must not silently appear bypassed; any bypass is a release blocker       |
+| Extension under DNS-over-HTTPS and IP-only relay                           | Log that relay domain identity is unknown; do not claim domain-based deny      |
+| Extension uses TCP 8443 / 1080 or localhost helper                         | Exercise the direct-port and local-helper gaps above                           |
+| Chrome restart, existing sessions, WFP route refresh, competing VPN routes | No stale uninspected session that defeats the block                            |
+| Native Proton VPN + Chrome with extension disabled                         | ACE browser enforcement still works, unrelated VPN egress remains usable       |
+| Proton Mail/Drive/Pass and nonbrowser apps                                 | No collateral block from the relay denylist                                    |
+| Engine/TUN unavailable or WFP refresh failure                              | Clearly report unavailable/degraded enforcement; no false "protected" UI claim |
 
 For each test, record the exact remote endpoint, DNS attribution, `ace-tun`
 flow decision, HTTP CONNECT authority, and WFP route. Browser screenshots do not prove network enforcement.

@@ -16,15 +16,15 @@
 $ErrorActionPreference = "Stop"
 
 $AppDataDir = Join-Path $env:ProgramData "LineaSoftware\AceBlocker"
-$LogPath    = Join-Path $env:TEMP "AceBlocker-uninstall-shutdown.log"
+$LogPath = Join-Path $env:TEMP "AceBlocker-uninstall-shutdown.log"
 $StopTimeoutSeconds = 30
 
-function Write-Log([string]$message) {
+function Write-Log ([string] $message) {
     $line = "{0}  {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $message
     Add-Content -LiteralPath $LogPath -Value $line -ErrorAction SilentlyContinue
 }
 
-function Fail-Shutdown([int]$exitCode, [string]$message) {
+function Fail-Shutdown ( [int] $exitCode, [string] $message ) {
     Write-Log $message
     Write-Log "=== aborting uninstall/upgrade preparation (exit $exitCode) ==="
     exit $exitCode
@@ -66,7 +66,9 @@ try {
         if (-not $service) {
             Fail-Shutdown 25 "AceEngine service registration disappeared before graceful stop could be verified."
         }
-        if ($service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
+        if (
+            $service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped
+        ) {
             Write-Log "AceEngine reached SERVICE_STOPPED; installer may stop the watchdog."
             Write-Log "=== maintenance preparation complete (exit 0) ==="
             exit 0

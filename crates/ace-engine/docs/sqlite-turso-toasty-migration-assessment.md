@@ -175,23 +175,23 @@ Before adoption, CI and release builders must use Rust 1.95 or later.
 
 The generated Diesel schema currently contains 15 tables.
 
-| Table | Primary key | Purpose / notable shape |
-|---|---|---|
-| `accounts` | `table_lock` | Singleton account row; API key, Pro-check timestamp, ToS acceptance timestamp |
-| `blocked_attempts` | `date` | Daily aggregate counter |
-| `network_block_exceptions` | `id` | Per-network-block exception rules |
-| `network_block_locks` | `network_block_id` | One lock row per network block |
-| `network_block_schedule_entries` | `id` | Schedule windows and weekday bitmask |
-| `network_block_to_site_pack` | (`network_block_id`, `site_pack_id`) | Many-to-many join table |
-| `network_blocks` | `id` | Network block metadata, safe-search flag, icon |
-| `proxy_exclusions` | `host` | Hosts bypassed by proxy handling |
-| `resistance_mode_settings` | `table_lock` | Singleton Resistance Mode settings + lock state |
-| `safe_search_enforcements` | `domain` | Domain redirect/query-parameter enforcement records |
-| `script_states` | `script_id` | Per-script enabled flag |
-| `settings` | `table_lock` | Singleton engine state (`is_pro`, seeded state, update timestamp) |
-| `site_pack_sources` | `id` | Local/URL source metadata for a site pack |
-| `site_packs` | `id` | Pack metadata; optional remote ID/version/update time |
-| `user_defined_rules` | `id` | Per-network-block blocking rules |
+| Table                            | Primary key                          | Purpose / notable shape                                                       |
+| -------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------- |
+| `accounts`                       | `table_lock`                         | Singleton account row; API key, Pro-check timestamp, ToS acceptance timestamp |
+| `blocked_attempts`               | `date`                               | Daily aggregate counter                                                       |
+| `network_block_exceptions`       | `id`                                 | Per-network-block exception rules                                             |
+| `network_block_locks`            | `network_block_id`                   | One lock row per network block                                                |
+| `network_block_schedule_entries` | `id`                                 | Schedule windows and weekday bitmask                                          |
+| `network_block_to_site_pack`     | (`network_block_id`, `site_pack_id`) | Many-to-many join table                                                       |
+| `network_blocks`                 | `id`                                 | Network block metadata, safe-search flag, icon                                |
+| `proxy_exclusions`               | `host`                               | Hosts bypassed by proxy handling                                              |
+| `resistance_mode_settings`       | `table_lock`                         | Singleton Resistance Mode settings + lock state                               |
+| `safe_search_enforcements`       | `domain`                             | Domain redirect/query-parameter enforcement records                           |
+| `script_states`                  | `script_id`                          | Per-script enabled flag                                                       |
+| `settings`                       | `table_lock`                         | Singleton engine state (`is_pro`, seeded state, update timestamp)             |
+| `site_pack_sources`              | `id`                                 | Local/URL source metadata for a site pack                                     |
+| `site_packs`                     | `id`                                 | Pack metadata; optional remote ID/version/update time                         |
+| `user_defined_rules`             | `id`                                 | Per-network-block blocking rules                                              |
 
 See `src/schema_main_db.rs`.
 
@@ -494,27 +494,27 @@ These features support almost all existing **query behavior**.
 
 ## 9. Diesel operation → Toasty compatibility matrix
 
-| Current requirement | Toasty/Turso status | Migration note |
-|---|---|---|
-| Basic select/filter | Good | Direct fit |
-| Insert and return model | Good | Toasty create returns model |
-| Arbitrary update | Good | Direct fit, but query update returns `()` rather than Diesel `.get_result()` style |
-| Delete | Good | Direct fit, but high-level delete returns `()` |
-| Composite primary key | Good | Supported; fits `network_block_to_site_pack` |
-| Relations/joins | Good | Can model with `belongs_to`/`has_many`; direct filters also work |
-| Explicit transactions | Good | Async transactions + nested savepoints |
-| Daily counter upsert | Good | Targeted upsert + atomic increment supported on SQLite/Turso |
-| Script/settings upsert | Good | Targeted upsert supported |
-| `INSERT OR IGNORE` | Good for single-row upsert | `or_ignore()` exists; the high-level upsert API is single-row, so site-pack bulk ingestion needs a different path |
-| Mutation `RETURNING` | Driver supports it | High-level create/upsert returns models; update/delete API shape differs from Diesel and may need load-before-mutate or raw SQL |
-| Raw SQL/PRAGMA | Good | Raw SQL escape hatch exists; connection-specific PRAGMAs still need deliberate setup |
-| Custom CHECK constraints | Partial | Preserve in reviewed migration SQL; do not assume model derive captures every current invariant |
-| Custom triggers | Raw SQL required | Main lock trigger and site-pack count triggers must be retained |
-| Embedded migrations | Good, new in 0.10 | Separate migration set per DB is supported |
-| Existing Diesel migration history | Requires bridge | Toasty tracks `__toasty_migrations`, not `__diesel_schema_migrations` |
-| Read-only second process on live DB | **Needs Turso validation** | Main-DB release gate |
-| 50k-row bulk insert | **Needs benchmark / lower-level path** | High-level Toasty upsert is one row at a time |
-| Atomic local DB/directory swap | Likely compatible with local files | Must verify handles/WAL sidecars are closed/checkpointed before rename |
+| Current requirement                 | Toasty/Turso status                    | Migration note                                                                                                                  |
+| ----------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Basic select/filter                 | Good                                   | Direct fit                                                                                                                      |
+| Insert and return model             | Good                                   | Toasty create returns model                                                                                                     |
+| Arbitrary update                    | Good                                   | Direct fit, but query update returns `()` rather than Diesel `.get_result()` style                                              |
+| Delete                              | Good                                   | Direct fit, but high-level delete returns `()`                                                                                  |
+| Composite primary key               | Good                                   | Supported; fits `network_block_to_site_pack`                                                                                    |
+| Relations/joins                     | Good                                   | Can model with `belongs_to`/`has_many`; direct filters also work                                                                |
+| Explicit transactions               | Good                                   | Async transactions + nested savepoints                                                                                          |
+| Daily counter upsert                | Good                                   | Targeted upsert + atomic increment supported on SQLite/Turso                                                                    |
+| Script/settings upsert              | Good                                   | Targeted upsert supported                                                                                                       |
+| `INSERT OR IGNORE`                  | Good for single-row upsert             | `or_ignore()` exists; the high-level upsert API is single-row, so site-pack bulk ingestion needs a different path               |
+| Mutation `RETURNING`                | Driver supports it                     | High-level create/upsert returns models; update/delete API shape differs from Diesel and may need load-before-mutate or raw SQL |
+| Raw SQL/PRAGMA                      | Good                                   | Raw SQL escape hatch exists; connection-specific PRAGMAs still need deliberate setup                                            |
+| Custom CHECK constraints            | Partial                                | Preserve in reviewed migration SQL; do not assume model derive captures every current invariant                                 |
+| Custom triggers                     | Raw SQL required                       | Main lock trigger and site-pack count triggers must be retained                                                                 |
+| Embedded migrations                 | Good, new in 0.10                      | Separate migration set per DB is supported                                                                                      |
+| Existing Diesel migration history   | Requires bridge                        | Toasty tracks `__toasty_migrations`, not `__diesel_schema_migrations`                                                           |
+| Read-only second process on live DB | **Needs Turso validation**             | Main-DB release gate                                                                                                            |
+| 50k-row bulk insert                 | **Needs benchmark / lower-level path** | High-level Toasty upsert is one row at a time                                                                                   |
+| Atomic local DB/directory swap      | Likely compatible with local files     | Must verify handles/WAL sidecars are closed/checkpointed before rename                                                          |
 
 ---
 

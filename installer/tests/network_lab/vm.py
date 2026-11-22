@@ -69,15 +69,21 @@ class McpClient:
                     try:
                         value = json.loads("\n".join(data))
                     except (ValueError, TypeError):
-                        raise LabError("NovaGPT MCP SSE contains invalid JSON") from None
+                        raise LabError(
+                            "NovaGPT MCP SSE contains invalid JSON"
+                        ) from None
                     data.clear()
                     if isinstance(value, dict) and value.get("id") == expected_id:
                         return value
 
-    def _exchange(self, payload: dict, *, notification: bool = False, timeout: float | None = None) -> dict:
+    def _exchange(
+        self, payload: dict, *, notification: bool = False, timeout: float | None = None
+    ) -> dict:
         token = os.environ.get(self.token_env)
         if not token:
-            raise LabError(f"MCP authentication is missing: set {self.token_env} in this process")
+            raise LabError(
+                f"MCP authentication is missing: set {self.token_env} in this process"
+            )
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
@@ -87,7 +93,9 @@ class McpClient:
         if self.session:
             headers["Mcp-Session-Id"] = self.session
         data = json.dumps(payload, separators=(",", ":")).encode("utf-8")
-        req = urllib.request.Request(self.url, data=data, headers=headers, method="POST")
+        req = urllib.request.Request(
+            self.url, data=data, headers=headers, method="POST"
+        )
         try:
             with self.opener.open(req, timeout=timeout or self.timeout) as reply:
                 if session := reply.headers.get("Mcp-Session-Id"):
@@ -97,9 +105,13 @@ class McpClient:
                     return self._read_sse(reply, payload.get("id"))
                 body = reply.read(MAX_MCP_RESPONSE + 1)
         except urllib.error.HTTPError as exc:
-            raise LabError(f"NovaGPT MCP HTTP status {exc.code}; check token, URL and dev.py server") from None
+            raise LabError(
+                f"NovaGPT MCP HTTP status {exc.code}; check token, URL and dev.py server"
+            ) from None
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
-            raise LabError(f"NovaGPT MCP unavailable over loopback: {type(exc).__name__}") from None
+            raise LabError(
+                f"NovaGPT MCP unavailable over loopback: {type(exc).__name__}"
+            ) from None
         if len(body) > MAX_MCP_RESPONSE:
             raise LabError("NovaGPT MCP response exceeds safe size limit")
         if notification and not body:
@@ -107,9 +119,13 @@ class McpClient:
         try:
             return json.loads(body)
         except (UnicodeDecodeError, ValueError, TypeError, AttributeError) as exc:
-            raise LabError(f"Unexpected NovaGPT MCP response format: {type(exc).__name__}") from None
+            raise LabError(
+                f"Unexpected NovaGPT MCP response format: {type(exc).__name__}"
+            ) from None
 
-    def _request(self, method: str, params: dict | None = None, *, timeout: float | None = None) -> Any:
+    def _request(
+        self, method: str, params: dict | None = None, *, timeout: float | None = None
+    ) -> Any:
         self.request_id += 1
         rpc_id = self.request_id
         payload = {"jsonrpc": "2.0", "id": rpc_id, "method": method}
@@ -120,7 +136,9 @@ class McpClient:
             raise LabError("NovaGPT MCP JSON-RPC id mismatch")
         if "error" in response:
             error = response["error"]
-            code = error.get("code", "unknown") if isinstance(error, dict) else "unknown"
+            code = (
+                error.get("code", "unknown") if isinstance(error, dict) else "unknown"
+            )
             raise LabError(f"NovaGPT MCP {method} failed (RPC code {code})")
         if "result" not in response:
             raise LabError("NovaGPT MCP response lacks result")
@@ -129,13 +147,19 @@ class McpClient:
     def connect(self) -> None:
         if self.ready:
             return
-        info = self._request("initialize", {
-            "protocolVersion": "2025-11-25", "capabilities": {},
-            "clientInfo": {"name": "ace-blocker-network-lab", "version": "1"},
-        })
+        info = self._request(
+            "initialize",
+            {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "ace-blocker-network-lab", "version": "1"},
+            },
+        )
         if not isinstance(info, dict) or not info.get("protocolVersion"):
             raise LabError("NovaGPT MCP initialize did not negotiate a protocol")
-        self._exchange({"jsonrpc": "2.0", "method": "notifications/initialized"}, notification=True)
+        self._exchange(
+            {"jsonrpc": "2.0", "method": "notifications/initialized"}, notification=True
+        )
         self.ready = True
 
     def tool(self, name: str, arguments: dict) -> dict:
@@ -149,7 +173,9 @@ class McpClient:
             timeout = max(timeout, 940)
         elif name == "vm" and arguments.get("action") == "create":
             timeout = max(timeout, 360)
-        result = self._request("tools/call", {"name": name, "arguments": arguments}, timeout=timeout)
+        result = self._request(
+            "tools/call", {"name": name, "arguments": arguments}, timeout=timeout
+        )
         if not isinstance(result, dict):
             raise LabError(f"NovaGPT {name}: invalid tool envelope")
         if result.get("isError") or result.get("is_error"):
@@ -159,7 +185,9 @@ class McpClient:
         if not isinstance(content, dict):
             text_blocks = result.get("content", [])
             try:
-                content = json.loads(next(x["text"] for x in text_blocks if x.get("type") == "text"))
+                content = json.loads(
+                    next(x["text"] for x in text_blocks if x.get("type") == "text")
+                )
             except (StopIteration, KeyError, ValueError, TypeError):
                 raise LabError(f"NovaGPT {name}: missing structured result") from None
         if "error" in content:
@@ -189,9 +217,12 @@ class VM:
 
     def create(self, profile: VMProfile, *, installer_iso: str | None = None) -> str:
         args = {
-            "action": "create", "image": profile.image,
-            "cpus": profile.cpus, "memory_mb": profile.memory_mb,
-            "networks": list(profile.networks), "display": profile.display,
+            "action": "create",
+            "image": profile.image,
+            "cpus": profile.cpus,
+            "memory_mb": profile.memory_mb,
+            "networks": list(profile.networks),
+            "display": profile.display,
             "guest_agent": profile.guest_agent,
         }
         if installer_iso:
@@ -212,7 +243,9 @@ class VM:
 
     def require_profile(self, profile: VMProfile) -> dict:
         if not profile.id:
-            raise LabError(f"VM profile {profile.name} has no registered NovaGPT fork id")
+            raise LabError(
+                f"VM profile {profile.name} has no registered NovaGPT fork id"
+            )
         instance = self.status(profile.id)
         if instance.get("image") != profile.image:
             raise LabError(f"NovaGPT VM image mismatch for profile {profile.name}")
@@ -272,7 +305,11 @@ class VM:
         snapshots = response.get("snapshots", [])
         if not isinstance(snapshots, list):
             raise LabError("NovaGPT snapshot list malformed")
-        return {item["name"] for item in snapshots if isinstance(item, dict) and "name" in item}
+        return {
+            item["name"]
+            for item in snapshots
+            if isinstance(item, dict) and "name" in item
+        }
 
     def snapshot_create(self, vm: str, name: str) -> None:
         if self.state(vm) != "stopped":
@@ -293,13 +330,17 @@ class VM:
             raise LabError("Snapshot promotion requires a stopped VM")
         if name not in self.snapshot_list(vm):
             raise LabError("Snapshot to promote does not exist")
-        return self.client.tool("vm_snapshot", {
-            "action": "promote", "id": vm, "name": name, "image": image
-        })
+        return self.client.tool(
+            "vm_snapshot", {"action": "promote", "id": vm, "name": name, "image": image}
+        )
 
-    def exec(self, vm: str, env: Environment, code: str, *, seconds: float = 120) -> ExecResult:
+    def exec(
+        self, vm: str, env: Environment, code: str, *, seconds: float = 120
+    ) -> ExecResult:
         if not 0.1 <= seconds <= 300:
-            raise LabError("NovaGPT guest execution timeout must be between 0.1 and 300 seconds")
+            raise LabError(
+                "NovaGPT guest execution timeout must be between 0.1 and 300 seconds"
+            )
         credential = self._credential(vm, env)
         # Hyper-V Windows uses credential-scoped PowerShell Direct, not QGA.
         # vm_guest_status intentionally cannot authenticate those guests.
@@ -307,13 +348,19 @@ class VM:
             self.wait_guest(vm, seconds=45)
         if env.distribution == "windows":
             program = r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
-            args = ["-NoProfile", "-NonInteractive", "-EncodedCommand",
-                    base64.b64encode(code.encode("utf-16le")).decode("ascii")]
+            args = [
+                "-NoProfile",
+                "-NonInteractive",
+                "-EncodedCommand",
+                base64.b64encode(code.encode("utf-16le")).decode("ascii"),
+            ]
         else:
             program = "/bin/bash"
             args = ["-c", code]
         request = {
-            "id": vm_id(vm), "program": program, "args": args,
+            "id": vm_id(vm),
+            "program": program,
+            "args": args,
             "timeout_ms": max(100, min(300_000, round(seconds * 1000))),
         }
         request.update(credential)
@@ -339,7 +386,9 @@ class VM:
         return raw
 
     def keys(self, vm: str, keys: list[str]) -> None:
-        self.client.tool("vm_desktop_input", {"id": vm_id(vm), "action": "keys", "keys": keys})
+        self.client.tool(
+            "vm_desktop_input", {"id": vm_id(vm), "action": "keys", "keys": keys}
+        )
 
     def pointer(self, vm: str, x: int, y: int, button: str | None = None) -> None:
         if not (0 <= x <= 32767 and 0 <= y <= 32767):
@@ -352,29 +401,45 @@ class VM:
     def _credential(self, vm: str, env: Environment | None) -> dict:
         # NovaGPT Hyper-V Windows guest control requires operation-scoped
         # credentials. A Linux QEMU guest never receives these fields.
-        if env is None or env.distribution != "windows" or self.status(vm).get("backend") != "hyperv":
+        if (
+            env is None
+            or env.distribution != "windows"
+            or self.status(vm).get("backend") != "hyperv"
+        ):
             return {}
         username = os.environ.get("NOVAGPT_GUEST_USERNAME")
         password = os.environ.get("NOVAGPT_GUEST_PASSWORD")
         if not username or not password:
-            raise LabError("Hyper-V Windows guest requires NOVAGPT_GUEST_USERNAME and NOVAGPT_GUEST_PASSWORD")
+            raise LabError(
+                "Hyper-V Windows guest requires NOVAGPT_GUEST_USERNAME and NOVAGPT_GUEST_PASSWORD"
+            )
         return {"credential": {"username": username, "password": password}}
 
     @staticmethod
     def _valid_guest_path(path: str) -> bool:
         import re
-        if not isinstance(path, str) or not path or len(path) > 4096 or any(ord(ch) < 32 for ch in path):
+
+        if (
+            not isinstance(path, str)
+            or not path
+            or len(path) > 4096
+            or any(ord(ch) < 32 for ch in path)
+        ):
             return False
         if ".." in path.replace("\\", "/").split("/"):
             return False
         return path.startswith("/") or bool(re.match(r"^[A-Za-z]:[\\\\/]", path))
 
-    def upload(self, vm: str, guest_path: str, data: bytes,
-               env: Environment | None = None) -> dict:
+    def upload(
+        self, vm: str, guest_path: str, data: bytes, env: Environment | None = None
+    ) -> dict:
         if not self._valid_guest_path(guest_path) or len(data) > 1024 * 1024:
-            raise LabError("Guest upload needs a safe absolute path and a file <= 1 MiB")
+            raise LabError(
+                "Guest upload needs a safe absolute path and a file <= 1 MiB"
+            )
         request = {
-            "id": vm_id(vm), "guest_path": guest_path,
+            "id": vm_id(vm),
+            "guest_path": guest_path,
             "data_base64": base64.b64encode(data).decode("ascii"),
         }
         request.update(self._credential(vm, env))
@@ -383,8 +448,9 @@ class VM:
             raise LabError("NovaGPT guest upload reported a byte-count mismatch")
         return reply
 
-    def download(self, vm: str, guest_path: str,
-                 env: Environment | None = None) -> bytes:
+    def download(
+        self, vm: str, guest_path: str, env: Environment | None = None
+    ) -> bytes:
         if not self._valid_guest_path(guest_path):
             raise LabError("Guest download path must be safe and absolute")
         request = {"id": vm_id(vm), "guest_path": guest_path}

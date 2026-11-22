@@ -9,7 +9,9 @@ export class ReactiveMap<K, V> extends Map<K, V> {
         super(entries);
         const [read, write] = createRoot(() => createSignal(0));
         this.track = read;
-        this.invalidate = () => { write(value => value + 1); };
+        this.invalidate = () => {
+            write((value) => value + 1);
+        };
     }
 
     override get(key: K): V | undefined {

@@ -13,7 +13,9 @@ afterEach(() => vi.resetAllMocks());
 
 describe("typed desktop engine RPC adapter", () => {
     it("forwards a body as named RPC payload, without an HTTP URL", async () => {
-        vi.mocked(invoke).mockResolvedValue({ networkBlock: { id: "block-id" } });
+        vi.mocked(invoke).mockResolvedValue({
+            networkBlock: { id: "block-id" },
+        });
 
         const response = await rpcRequest("createNetworkBlock", {
             body: { blockName: "Work", icon: null },
@@ -23,7 +25,9 @@ describe("typed desktop engine RPC adapter", () => {
             op: "createNetworkBlock",
             args: { payload: { blockName: "Work", icon: null } },
         });
-        expect(response).toEqual({ data: { networkBlock: { id: "block-id" } } });
+        expect(response).toEqual({
+            data: { networkBlock: { id: "block-id" } },
+        });
     });
 
     it("sends account credentials in a single typed IPC payload, not query metadata", async () => {
@@ -66,7 +70,9 @@ describe("typed desktop engine RPC adapter", () => {
         let finish!: () => void;
 
         vi.mocked(invoke).mockImplementation((_command, args) => {
-            emit = (args as { onEvent: { onmessage: (event: unknown) => void } }).onEvent.onmessage;
+            emit = (
+                args as { onEvent: { onmessage: (event: unknown) => void } }
+            ).onEvent.onmessage;
             return new Promise<void>((resolve) => {
                 finish = resolve;
             }) as never;
@@ -86,14 +92,18 @@ describe("typed desktop engine RPC adapter", () => {
         finish();
 
         for await (const event of stream) observed.push(event);
-        expect(observed).toEqual(Array.from({ length: 256 }, (_, index) => index));
+        expect(observed).toEqual(
+            Array.from({ length: 256 }, (_, index) => index),
+        );
     });
 
     it("wakes an awaiting consumer when an event arrives after subscription", async () => {
         let emit!: (event: unknown) => void;
         let finish!: () => void;
         vi.mocked(invoke).mockImplementation((_command, args) => {
-            emit = (args as { onEvent: { onmessage: (event: unknown) => void } }).onEvent.onmessage;
+            emit = (
+                args as { onEvent: { onmessage: (event: unknown) => void } }
+            ).onEvent.onmessage;
             return new Promise<void>((resolve) => {
                 finish = resolve;
             }) as never;
@@ -103,7 +113,10 @@ describe("typed desktop engine RPC adapter", () => {
         const iterator = stream[Symbol.asyncIterator]();
         const pending = iterator.next();
         emit({ phase: "late" });
-        expect(await pending).toEqual({ done: false, value: { phase: "late" } });
+        expect(await pending).toEqual({
+            done: false,
+            value: { phase: "late" },
+        });
         finish();
         expect(await iterator.next()).toEqual({ done: true, value: undefined });
     });
@@ -112,7 +125,9 @@ describe("typed desktop engine RPC adapter", () => {
         const failure = new Error("IPC disconnected");
         const onStreamError = vi.fn();
         vi.mocked(invoke).mockImplementation(async (_command, args) => {
-            const channel = (args as { onEvent: { onmessage?: (event: unknown) => void } }).onEvent;
+            const channel = (
+                args as { onEvent: { onmessage?: (event: unknown) => void } }
+            ).onEvent;
             channel.onmessage?.({ phase: "first" });
             channel.onmessage?.({ phase: "second" });
             throw failure;
@@ -120,14 +135,19 @@ describe("typed desktop engine RPC adapter", () => {
 
         const { stream } = await rpcStream("resyncSitePack", { onStreamError });
         const iterator = stream[Symbol.asyncIterator]();
-        expect(await iterator.next()).toEqual({ done: false, value: { phase: "first" } });
+        expect(await iterator.next()).toEqual({
+            done: false,
+            value: { phase: "first" },
+        });
         await expect(iterator.next()).rejects.toBe(failure);
         expect(onStreamError).toHaveBeenCalledExactlyOnceWith(failure);
     });
 
     it("passes typed remoc events through the Tauri channel without SSE decoding", async () => {
         vi.mocked(invoke).mockImplementation(async (_command, args) => {
-            const channel = (args as { onEvent: { onmessage?: (event: unknown) => void } }).onEvent;
+            const channel = (
+                args as { onEvent: { onmessage?: (event: unknown) => void } }
+            ).onEvent;
             channel.onmessage?.({ IN_PROGRESS: { phase: "DOWNLOADING" } });
             channel.onmessage?.({ COMPLETED: { phase: "COMPLETED" } });
             return undefined as never;
@@ -140,7 +160,10 @@ describe("typed desktop engine RPC adapter", () => {
         for await (const event of result.stream) {
             events.push(event);
         }
-        expect(events).toEqual([{ IN_PROGRESS: { phase: "DOWNLOADING" } }, { COMPLETED: { phase: "COMPLETED" } }]);
+        expect(events).toEqual([
+            { IN_PROGRESS: { phase: "DOWNLOADING" } },
+            { COMPLETED: { phase: "COMPLETED" } },
+        ]);
         expect(invoke).toHaveBeenCalledWith(
             "engine_stream",
             expect.objectContaining({
@@ -155,26 +178,42 @@ describe("typed desktop engine RPC adapter", () => {
             status: 403,
             error: "not authorized",
         });
-        await expect(rpcRequest("setNetworkBlockIcon", {
-            path: { network_block_id: "block-id" },
-            body: { icon: "shield" },
-        })).resolves.toEqual({
-            error: { code: "capability_required", status: 403, error: "not authorized" },
+        await expect(
+            rpcRequest("setNetworkBlockIcon", {
+                path: { network_block_id: "block-id" },
+                body: { icon: "shield" },
+            }),
+        ).resolves.toEqual({
+            error: {
+                code: "capability_required",
+                status: 403,
+                error: "not authorized",
+            },
         });
     });
 
     it("returns a typed transport error instead of a rejected primitive", async () => {
         vi.mocked(invoke).mockRejectedValue("named pipe unavailable");
         expect(await rpcRequest("ping")).toEqual({
-            error: { code: "transport_unavailable", status: 503, error: "named pipe unavailable" },
+            error: {
+                code: "transport_unavailable",
+                status: 503,
+                error: "named pipe unavailable",
+            },
         });
     });
 
     it("throws the same normalized error when throwOnError is requested", async () => {
-        vi.mocked(invoke).mockRejectedValue({ code: "invalid_request_body", status: 400, error: "bad request" });
-        await expect(rpcRequest("ping", { throwOnError: true })).rejects.toMatchObject({
-            code: "invalid_request_body", status: 400,
+        vi.mocked(invoke).mockRejectedValue({
+            code: "invalid_request_body",
+            status: 400,
+            error: "bad request",
+        });
+        await expect(
+            rpcRequest("ping", { throwOnError: true }),
+        ).rejects.toMatchObject({
+            code: "invalid_request_body",
+            status: 400,
         });
     });
-
 });

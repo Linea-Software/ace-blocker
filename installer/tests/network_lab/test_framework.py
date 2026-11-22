@@ -16,9 +16,16 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from installer.tests.network_lab.config import Environment, LabError, load, networks
-from installer.tests.network_lab.providers import connect_script, probe_script, provision_script
+from installer.tests.network_lab.providers import (
+    connect_script,
+    probe_script,
+    provision_script,
+)
 from installer.tests.network_lab.run import (
-    authorize, report_cases, save_report, save_binary,
+    authorize,
+    report_cases,
+    save_report,
+    save_binary,
 )
 from installer.tests.network_lab.vm import ExecResult, McpClient, VM
 from installer.tests.network_lab.wireguard_lab import nic_mac, setup as setup_wireguard
@@ -39,13 +46,16 @@ def temporary_toml(changed: str):
 
         def __exit__(self, *args):
             self.temp.cleanup()
+
     return CaseFile()
 
 
 class ConfigTests(unittest.TestCase):
     def test_matrix(self):
         cfg = load(TOML)
-        self.assertEqual((len(cfg.vms), len(cfg.environments), len(cfg.cases)), (8, 32, 28))
+        self.assertEqual(
+            (len(cfg.vms), len(cfg.environments), len(cfg.cases)), (8, 32, 28)
+        )
         self.assertEqual(cfg.vms["ubuntu-wg"].networks, ("nat", "connect:ace-ubuntu"))
         self.assertIn("listen:ace-cachyos", cfg.vms["gateway"].networks)
         self.assertEqual(cfg.wireguard.peers["cachyos"].port, 51823)
@@ -54,22 +64,35 @@ class ConfigTests(unittest.TestCase):
         self.assertIn("TOR-03", cfg.cases)
 
     def test_reject_bad_provider(self):
-        with temporary_toml(TOML.read_text().replace('provider = "tor"', 'provider = "unknown"', 1)) as file:
+        with temporary_toml(
+            TOML.read_text().replace('provider = "tor"', 'provider = "unknown"', 1)
+        ) as file:
             with self.assertRaises(LabError):
                 load(file)
 
     def test_reject_bad_case_target(self):
-        with temporary_toml(TOML.read_text().replace('"ubuntu-direct"', '"nonexistent"', 1)) as file:
+        with temporary_toml(
+            TOML.read_text().replace('"ubuntu-direct"', '"nonexistent"', 1)
+        ) as file:
             with self.assertRaises(LabError):
                 load(file)
 
     def test_reject_remote_and_credential_urls(self):
         original = TOML.read_text()
-        for bad in ["http://example.com/mcp", "http://127.0.0.1:8787/mcp?novagpt_token=secret",
-                    "https://127.0.0.1:8787/mcp", "http://someone:secret@127.0.0.1/mcp"]:
-            with self.subTest(url=bad), temporary_toml(original.replace(
-                'mcp_url = "http://127.0.0.1:8787/mcp"', f'mcp_url = "{bad}"'
-            )) as file:
+        for bad in [
+            "http://example.com/mcp",
+            "http://127.0.0.1:8787/mcp?novagpt_token=secret",
+            "https://127.0.0.1:8787/mcp",
+            "http://someone:secret@127.0.0.1/mcp",
+        ]:
+            with (
+                self.subTest(url=bad),
+                temporary_toml(
+                    original.replace(
+                        'mcp_url = "http://127.0.0.1:8787/mcp"', f'mcp_url = "{bad}"'
+                    )
+                ) as file,
+            ):
                 with self.assertRaises(LabError):
                     load(file)
 
@@ -90,10 +113,16 @@ class ConfigTests(unittest.TestCase):
         original = TOML.read_text()
         for changed in [
             original.replace("port = 51822", "port = 51821"),
-            original.replace('gateway_link = "172.29.10.1/30"', 'gateway_link = "172.29.10.1/29"'),
-            original.replace('client_link = "172.29.10.2/30"', 'client_link = "10.66.10.2/30"'),
-            original.replace('networks = ["nat", "listen:ace-ubuntu", "listen:ace-arch", "listen:ace-cachyos"]',
-                             'networks = ["nat"]'),
+            original.replace(
+                'gateway_link = "172.29.10.1/30"', 'gateway_link = "172.29.10.1/29"'
+            ),
+            original.replace(
+                'client_link = "172.29.10.2/30"', 'client_link = "10.66.10.2/30"'
+            ),
+            original.replace(
+                'networks = ["nat", "listen:ace-ubuntu", "listen:ace-arch", "listen:ace-cachyos"]',
+                'networks = ["nat"]',
+            ),
         ]:
             with temporary_toml(changed) as file:
                 with self.assertRaises(LabError):
@@ -106,21 +135,30 @@ class ConfigTests(unittest.TestCase):
                 load(file)
 
     def test_artifact_path_traversal(self):
-        with temporary_toml(TOML.read_text().replace(
-            'artifacts = ".artifacts"', 'artifacts = "../out"')) as file:
+        with temporary_toml(
+            TOML.read_text().replace('artifacts = ".artifacts"', 'artifacts = "../out"')
+        ) as file:
             with self.assertRaises(LabError):
                 load(file)
 
 
 class ProviderTests(unittest.TestCase):
     def env(self, distro, provider):
-        return Environment(f"{distro}-{provider}", distro, distro, provider, "test-ready")
+        return Environment(
+            f"{distro}-{provider}", distro, distro, provider, "test-ready"
+        )
 
     def test_package_install(self):
-        self.assertIn("apt-get install", provision_script(self.env("ubuntu", "wireguard")))
-        self.assertIn("pacman -S --needed", provision_script(self.env("arch", "openvpn")))
+        self.assertIn(
+            "apt-get install", provision_script(self.env("ubuntu", "wireguard"))
+        )
+        self.assertIn(
+            "pacman -S --needed", provision_script(self.env("arch", "openvpn"))
+        )
         self.assertIn("openssh ", provision_script(self.env("cachyos", "socks")))
-        self.assertNotIn("openssh-client", provision_script(self.env("cachyos", "socks")))
+        self.assertNotIn(
+            "openssh-client", provision_script(self.env("cachyos", "socks"))
+        )
 
     def test_manually_authenticated_provider_is_never_installed(self):
         for name in ["proton", "windscribe", "tor-browser", "i2p"]:
@@ -129,17 +167,26 @@ class ProviderTests(unittest.TestCase):
                     provision_script(self.env("ubuntu", name))
 
     def test_connection_prerequisites(self):
-        self.assertIn("wg-quick up ace-lab", connect_script(self.env("ubuntu", "wireguard")))
-        self.assertIn("test -f /etc/openvpn/client/ace-lab.conf", connect_script(self.env("ubuntu", "openvpn")))
+        self.assertIn(
+            "wg-quick up ace-lab", connect_script(self.env("ubuntu", "wireguard"))
+        )
+        self.assertIn(
+            "test -f /etc/openvpn/client/ace-lab.conf",
+            connect_script(self.env("ubuntu", "openvpn")),
+        )
         self.assertIn("9050", connect_script(self.env("ubuntu", "tor")))
 
     def test_probe_is_not_a_security_pass(self):
         self.assertIsNone(probe_script(self.env("ubuntu", "tor"), "browser"))
         self.assertIsNone(probe_script(self.env("ubuntu", "tor"), "manual"))
-        self.assertIn("wg show ace-lab latest-handshakes",
-                      probe_script(self.env("ubuntu", "wireguard"), "routing"))
-        self.assertIn("systemctl is-active --quiet ace-engine",
-                      probe_script(self.env("ubuntu", "direct"), "baseline"))
+        self.assertIn(
+            "wg show ace-lab latest-handshakes",
+            probe_script(self.env("ubuntu", "wireguard"), "routing"),
+        )
+        self.assertIn(
+            "systemctl is-active --quiet ace-engine",
+            probe_script(self.env("ubuntu", "direct"), "baseline"),
+        )
 
 
 class McpProtocolTests(unittest.TestCase):
@@ -147,7 +194,10 @@ class McpProtocolTests(unittest.TestCase):
         sent = []
 
         class Response:
-            headers = {"Content-Type": "application/json", "Mcp-Session-Id": "private-session"}
+            headers = {
+                "Content-Type": "application/json",
+                "Mcp-Session-Id": "private-session",
+            }
 
             def __init__(self, payload):
                 self.payload = json.dumps(payload).encode("utf-8")
@@ -163,41 +213,59 @@ class McpProtocolTests(unittest.TestCase):
 
         def urlopen(req, timeout):
             payload = json.loads(req.data)
-            sent.append((payload, req.get_header("Authorization"), req.get_header("Mcp-session-id")))
+            sent.append(
+                (
+                    payload,
+                    req.get_header("Authorization"),
+                    req.get_header("Mcp-session-id"),
+                )
+            )
             if payload.get("method") == "initialize":
-                content = {"protocolVersion": "2025-11-25", "serverInfo": {"name": "novagpt"}}
+                content = {
+                    "protocolVersion": "2025-11-25",
+                    "serverInfo": {"name": "novagpt"},
+                }
             elif payload.get("method") == "tools/call":
                 content = {"structuredContent": {"images": [{"name": "approved"}]}}
             else:
                 content = {}
-            return Response({"jsonrpc": "2.0", "id": payload.get("id"), "result": content})
+            return Response(
+                {"jsonrpc": "2.0", "id": payload.get("id"), "result": content}
+            )
 
         client = McpClient("http://127.0.0.1:8787/mcp", "NOVAGPT_HTTP_TOKEN")
-        with patch.dict(os.environ, {"NOVAGPT_HTTP_TOKEN": "X" * 32}), patch.object(
-            client.opener, "open", side_effect=urlopen
+        with (
+            patch.dict(os.environ, {"NOVAGPT_HTTP_TOKEN": "X" * 32}),
+            patch.object(client.opener, "open", side_effect=urlopen),
         ):
             payload = client.tool("vm_image", {})
         self.assertEqual(payload["images"][0]["name"], "approved")
-        self.assertEqual([x[0]["method"] for x in sent],
-                         ["initialize", "notifications/initialized", "tools/call"])
+        self.assertEqual(
+            [x[0]["method"] for x in sent],
+            ["initialize", "notifications/initialized", "tools/call"],
+        )
         self.assertTrue(all(x[1] == "Bearer " + "X" * 32 for x in sent))
         self.assertEqual(sent[-1][2], "private-session")
 
     def test_no_token_never_opens_network(self):
         client = McpClient("http://127.0.0.1:8787/mcp", "NOVAGPT_HTTP_TOKEN")
-        with patch.dict(os.environ, {"NOVAGPT_HTTP_TOKEN": ""}), patch(
-            "urllib.request.urlopen"
-        ) as urlopen:
+        with (
+            patch.dict(os.environ, {"NOVAGPT_HTTP_TOKEN": ""}),
+            patch("urllib.request.urlopen") as urlopen,
+        ):
             with self.assertRaises(LabError):
                 client.connect()
             urlopen.assert_not_called()
 
     def test_sse_jsonrpc_envelope(self):
         client = McpClient("http://127.0.0.1:8787/mcp", "NOVAGPT_HTTP_TOKEN")
+
         class Resp:
             headers = {"Content-Type": "text/event-stream"}
+
             def __init__(self):
                 import io
+
                 # A following live event would keep the SSE stream open; the
                 # client must stop after receiving the requested response.
                 self.lines = io.BytesIO(
@@ -205,20 +273,35 @@ class McpProtocolTests(unittest.TestCase):
                     b'event: message\ndata: {"jsonrpc":"2.0","id":5,"result":{"ok":true}}\n\n'
                     b'event: ping\ndata: {"id":6}\n\n'
                 )
-            def __enter__(self): return self
-            def __exit__(self, *_): return False
-            def readline(self): return self.lines.readline()
-            def read(self, *_): raise AssertionError("Must parse SSE incrementally")
-        with patch.dict(os.environ, {"NOVAGPT_HTTP_TOKEN": "Y" * 32}), patch.object(
-            client.opener, "open", return_value=Resp()
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def readline(self):
+                return self.lines.readline()
+
+            def read(self, *_):
+                raise AssertionError("Must parse SSE incrementally")
+
+        with (
+            patch.dict(os.environ, {"NOVAGPT_HTTP_TOKEN": "Y" * 32}),
+            patch.object(client.opener, "open", return_value=Resp()),
         ):
-            reply = client._exchange({"jsonrpc": "2.0", "id": 5, "method": "tools/list"})
+            reply = client._exchange(
+                {"jsonrpc": "2.0", "id": 5, "method": "tools/list"}
+            )
         self.assertEqual(reply["result"]["ok"], True)
 
     def test_redirect_and_proxy_are_disabled(self):
         from installer.tests.network_lab.vm import NoRedirect
         import urllib.request
-        with patch("urllib.request.build_opener", wraps=urllib.request.build_opener) as builder:
+
+        with patch(
+            "urllib.request.build_opener", wraps=urllib.request.build_opener
+        ) as builder:
             client = McpClient("http://127.0.0.1:8787/mcp", "NOVAGPT_HTTP_TOKEN")
         installed = builder.call_args.args
         proxies = [h for h in installed if isinstance(h, urllib.request.ProxyHandler)]
@@ -227,8 +310,9 @@ class McpProtocolTests(unittest.TestCase):
         redirects = [h for h in installed if isinstance(h, NoRedirect)]
         self.assertEqual(len(redirects), 1)
         with self.assertRaises(LabError):
-            redirects[0].redirect_request(None, None, 302, "redirect", {},
-                                          "https://external.example/")
+            redirects[0].redirect_request(
+                None, None, 302, "redirect", {}, "https://external.example/"
+            )
 
     def test_long_running_guest_operations_extend_http_timeout(self):
         client = McpClient("http://127.0.0.1:8787/mcp", "NOVAGPT_HTTP_TOKEN")
@@ -242,14 +326,21 @@ class McpProtocolTests(unittest.TestCase):
     def test_is_error_never_returns_tool_success(self):
         client = McpClient("http://127.0.0.1:8787/mcp", "NOVAGPT_HTTP_TOKEN")
         client.ready = True
-        client._request = Mock(return_value={"isError": True, "content": [{"type": "text", "text": "private!"}]})
+        client._request = Mock(
+            return_value={
+                "isError": True,
+                "content": [{"type": "text", "text": "private!"}],
+            }
+        )
         with self.assertRaises(LabError) as caught:
             client.tool("vm_exec", {"id": ID})
         self.assertNotIn("private!", str(caught.exception))
 
     def test_mismatched_rpc_id_fails(self):
         client = McpClient("http://127.0.0.1:8787/mcp", "NOVAGPT_HTTP_TOKEN")
-        client._exchange = Mock(return_value={"jsonrpc": "2.0", "id": 999, "result": {}})
+        client._exchange = Mock(
+            return_value={"jsonrpc": "2.0", "id": 999, "result": {}}
+        )
         with self.assertRaises(LabError):
             client._request("tools/list")
 
@@ -261,7 +352,9 @@ class VmBackendTests(unittest.TestCase):
         self.vm = VM(self.client)
 
     def test_create_structured_nics(self):
-        self.client.tool.return_value = {"instance": {"id": ID, "image": "ubuntu-ace-ready"}}
+        self.client.tool.return_value = {
+            "instance": {"id": ID, "image": "ubuntu-ace-ready"}
+        }
         created = self.vm.create(self.cfg.vms["ubuntu-wg"])
         self.assertEqual(created, ID)
         name, payload = self.client.tool.call_args.args
@@ -277,7 +370,11 @@ class VmBackendTests(unittest.TestCase):
 
     def test_wrong_approved_image_denied_even_for_valid_id(self):
         self.client.tool.return_value = {
-            "instance": {"id": ID, "state": "running", "image": "unrelated-approved-image"}
+            "instance": {
+                "id": ID,
+                "state": "running",
+                "image": "unrelated-approved-image",
+            }
         }
         with self.assertRaises(LabError):
             self.vm.require_profile(replace(self.cfg.vms["ubuntu"], id=ID))
@@ -319,7 +416,9 @@ class VmBackendTests(unittest.TestCase):
         self.vm.state = Mock(side_effect=lambda _: next(states))
         with patch("installer.tests.network_lab.vm.time.sleep", return_value=None):
             self.vm.stop(ID)
-        self.client.tool.assert_called_once_with("vm", {"action": "stop", "id": ID, "force": False})
+        self.client.tool.assert_called_once_with(
+            "vm", {"action": "stop", "id": ID, "force": False}
+        )
 
     def test_guest_agent_waits_through_boot(self):
         self.client.tool.side_effect = [{"available": False}, {"available": True}]
@@ -346,17 +445,24 @@ class VmBackendTests(unittest.TestCase):
 
     def test_screenshot_png(self):
         self.client.tool.return_value = {
-            "mime_type": "image/png", "width": 100, "height": 100,
-            "data_base64": base64.b64encode(b"\x89PNG\r\n\x1a\n123").decode()
+            "mime_type": "image/png",
+            "width": 100,
+            "height": 100,
+            "data_base64": base64.b64encode(b"\x89PNG\r\n\x1a\n123").decode(),
         }
         self.assertEqual(self.vm.screenshot(ID)[:8], b"\x89PNG\r\n\x1a\n")
 
     def test_windows_hyperv_credentials_are_operation_scoped(self):
         env = self.cfg.environments["windows-direct"]
         self.vm.wait_guest = Mock(return_value=None)
-        self.vm.status = Mock(return_value={"id": ID, "backend": "hyperv", "image": "windows-ace-ready"})
+        self.vm.status = Mock(
+            return_value={"id": ID, "backend": "hyperv", "image": "windows-ace-ready"}
+        )
         self.client.tool.return_value = {"exit_code": 0, "stdout": "OK", "stderr": ""}
-        with patch.dict(os.environ, {"NOVAGPT_GUEST_USERNAME": "Tester", "NOVAGPT_GUEST_PASSWORD": "secret"}):
+        with patch.dict(
+            os.environ,
+            {"NOVAGPT_GUEST_USERNAME": "Tester", "NOVAGPT_GUEST_PASSWORD": "secret"},
+        ):
             answer = self.vm.exec(ID, env, "Write-Output OK")
         self.assertEqual(answer.code, 0)
         args = self.client.tool.call_args.args[1]
@@ -364,7 +470,9 @@ class VmBackendTests(unittest.TestCase):
         self.assertEqual(args["credential"]["password"], "secret")
         self.assertIn("-EncodedCommand", args["args"])
         self.vm.wait_guest.assert_not_called()
-        with patch.dict(os.environ, {"NOVAGPT_GUEST_USERNAME": "", "NOVAGPT_GUEST_PASSWORD": ""}):
+        with patch.dict(
+            os.environ, {"NOVAGPT_GUEST_USERNAME": "", "NOVAGPT_GUEST_PASSWORD": ""}
+        ):
             with self.assertRaises(LabError):
                 self.vm.exec(ID, env, "Write-Output OK")
 
@@ -414,15 +522,20 @@ class WireGuardTests(unittest.TestCase):
         commands = []
 
         class FakeVm:
-            def state(self, *_): return "running"
-            def wait_guest(self, *_, **__): return None
+            def state(self, *_):
+                return "running"
+
+            def wait_guest(self, *_, **__):
+                return None
 
             def exec(self, ident, environment, script, seconds=120):
                 commands.append((ident, script))
                 if script == "id -u":
                     return ExecResult(0, "0\n", "")
                 if "wg pubkey <" in script:
-                    return ExecResult(0, ("A" if ident == GW_ID else "B") * 43 + "=\n", "")
+                    return ExecResult(
+                        0, ("A" if ident == GW_ID else "B") * 43 + "=\n", ""
+                    )
                 if "ip -4 route show default" in script:
                     return ExecResult(0, "eth0\n", "")
                 if "for iface in /sys/class/net/" in script:
@@ -437,8 +550,9 @@ class WireGuardTests(unittest.TestCase):
         self.assertTrue(any("wg-quick@acegw0" in x[1] for x in commands))
         self.assertTrue(any("$(cat /etc/wireguard/" in x[1] for x in commands))
         for _, script in commands:
-            syntax = subprocess.run(["bash", "-n"], input=script, text=True,
-                                    capture_output=True, timeout=4)
+            syntax = subprocess.run(
+                ["bash", "-n"], input=script, text=True, capture_output=True, timeout=4
+            )
             self.assertEqual(syntax.returncode, 0, syntax.stderr)
 
     def test_same_fork_id_fails(self):
@@ -456,9 +570,12 @@ class SafetyAndCliTests(unittest.TestCase):
         self.profile = replace(self.cfg.vms["ubuntu"], id=ID)
 
     def cli(self, *args):
-        return subprocess.run([sys.executable, str(ROOT / "run.py"),
-                               "--config", str(TOML), *args],
-                              capture_output=True, text=True, timeout=12)
+        return subprocess.run(
+            [sys.executable, str(ROOT / "run.py"), "--config", str(TOML), *args],
+            capture_output=True,
+            text=True,
+            timeout=12,
+        )
 
     def test_default_plan(self):
         self.assertEqual(self.cli("list").returncode, 0)
@@ -469,8 +586,9 @@ class SafetyAndCliTests(unittest.TestCase):
         self.assertEqual(self.cli("fork-create", "--vm", "ubuntu").returncode, 0)
 
     def test_authorize_exact_vm_id_and_data_loss(self):
-        args = argparse.Namespace(execute=True, confirm_vm_id=GW_ID,
-                                  accept_data_loss=False)
+        args = argparse.Namespace(
+            execute=True, confirm_vm_id=GW_ID, accept_data_loss=False
+        )
         with self.assertRaises(LabError):
             authorize(args, self.profile)
         args.confirm_vm_id = ID

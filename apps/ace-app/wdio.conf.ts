@@ -3,17 +3,18 @@ import type { Options } from "@wdio/types";
 
 // Target only the debug Tauri binary; its WebDriver plugins are not
 // registered in release builds. This runner never targets production.
-const appBinary = fileURLToPath(
-    new URL("../../target/debug/ace-app", import.meta.url),
-) + (process.platform === "win32" ? ".exe" : "");
+const appBinary =
+    fileURLToPath(new URL("../../target/debug/ace-app", import.meta.url)) +
+    (process.platform === "win32" ? ".exe" : "");
 
 export const config: Options.Testrunner = {
     runner: "local",
     // Default native gate is read-only. Spanish screenshot QA changes the
     // persisted locale and writes files; run it only when explicitly opted in.
-    specs: process.env.ACE_NATIVE_VISUAL_QA === "1"
-        ? ["./e2e/native/**/*.spec.ts"]
-        : ["./e2e/native/read-only.smoke.spec.ts"],
+    specs:
+        process.env.ACE_NATIVE_VISUAL_QA === "1"
+            ? ["./e2e/native/**/*.spec.ts"]
+            : ["./e2e/native/read-only.smoke.spec.ts"],
     maxInstances: 1,
     services: [
         [

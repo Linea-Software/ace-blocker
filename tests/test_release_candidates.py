@@ -52,41 +52,74 @@ class ReleaseCandidateTests(unittest.TestCase):
         manifests = []
         for platform, path in (("windows", windows), ("linux", linux)):
             manifest = directory / f"release-candidate-{platform}.json"
-            manifest.write_text(json.dumps({
-                "version": version, "os": platform, "architecture": "x64",
-                **({"setupFile": setup.name,
-                    "setupSha256": hashlib.sha256(setup.read_bytes()).hexdigest()} if platform == "windows" else {}),
-                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
-                "sourceCommit": "a" * 40, "sourceRepository": "Linea-Software/ace-blocker",
-                "engineCommit": "a" * 40, "appCommit": "a" * 40,
-            }))
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "version": version,
+                        "os": platform,
+                        "architecture": "x64",
+                        **(
+                            {
+                                "setupFile": setup.name,
+                                "setupSha256": hashlib.sha256(
+                                    setup.read_bytes()
+                                ).hexdigest(),
+                            }
+                            if platform == "windows"
+                            else {}
+                        ),
+                        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                        "sourceCommit": "a" * 40,
+                        "sourceRepository": "Linea-Software/ace-blocker",
+                        "engineCommit": "a" * 40,
+                        "appCommit": "a" * 40,
+                    }
+                )
+            )
             manifests.append(manifest)
         return windows, linux, manifests
 
     def test_accepts_both_candidates_with_matching_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             windows, linux, manifests = self.make_candidates(Path(tmp))
-            for path, manifest, platform in zip((windows, linux), manifests, ("windows", "linux")):
+            for path, manifest, platform in zip(
+                (windows, linux), manifests, ("windows", "linux")
+            ):
                 verifier.verify_candidate(
-                    path, manifest, "1.2.3", platform,
-                    "a" * 40, "Linea-Software/ace-blocker"
+                    path,
+                    manifest,
+                    "1.2.3",
+                    platform,
+                    "a" * 40,
+                    "Linea-Software/ace-blocker",
                 )
-            verifier.verify_setup(windows.parent / "AceBlocker-Setup-1.2.3.exe", manifests[0], "1.2.3")
+            verifier.verify_setup(
+                windows.parent / "AceBlocker-Setup-1.2.3.exe", manifests[0], "1.2.3"
+            )
 
     def test_cli_accepts_matching_release_candidates(self):
         with tempfile.TemporaryDirectory() as tmp:
             windows, linux, manifests = self.make_candidates(Path(tmp))
             result = subprocess.run(
                 [
-                    sys.executable, str(ROOT / "installer/verify_release_candidates.py"),
-                    "--version", "1.2.3",
-                    "--commit", "a" * 40,
-                    "--repository", "Linea-Software/ace-blocker",
-                    "--windows", str(windows),
-                    "--windows-setup", str(windows.parent / "AceBlocker-Setup-1.2.3.exe"),
-                    "--linux", str(linux),
-                    "--windows-manifest", str(manifests[0]),
-                    "--linux-manifest", str(manifests[1]),
+                    sys.executable,
+                    str(ROOT / "installer/verify_release_candidates.py"),
+                    "--version",
+                    "1.2.3",
+                    "--commit",
+                    "a" * 40,
+                    "--repository",
+                    "Linea-Software/ace-blocker",
+                    "--windows",
+                    str(windows),
+                    "--windows-setup",
+                    str(windows.parent / "AceBlocker-Setup-1.2.3.exe"),
+                    "--linux",
+                    str(linux),
+                    "--windows-manifest",
+                    str(manifests[0]),
+                    "--linux-manifest",
+                    str(manifests[1]),
                 ],
                 capture_output=True,
                 text=True,
@@ -112,8 +145,12 @@ class ReleaseCandidateTests(unittest.TestCase):
             manifests[0].write_text(json.dumps(payload))
             with self.assertRaisesRegex(ValueError, "MSI"):
                 verifier.verify_candidate(
-                    windows, manifests[0], "1.2.3", "windows",
-                    "a" * 40, "Linea-Software/ace-blocker"
+                    windows,
+                    manifests[0],
+                    "1.2.3",
+                    "windows",
+                    "a" * 40,
+                    "Linea-Software/ace-blocker",
                 )
 
     def test_rejects_setup_hash_mismatch(self):
@@ -137,8 +174,12 @@ class ReleaseCandidateTests(unittest.TestCase):
             windows, _, manifests = self.make_candidates(Path(tmp))
             with self.assertRaisesRegex(ValueError, "sourceCommit"):
                 verifier.verify_candidate(
-                    windows, manifests[0], "1.2.3", "windows",
-                    "b" * 40, "Linea-Software/ace-blocker"
+                    windows,
+                    manifests[0],
+                    "1.2.3",
+                    "windows",
+                    "b" * 40,
+                    "Linea-Software/ace-blocker",
                 )
 
     def test_rejects_linux_traversal(self):

@@ -5,7 +5,9 @@ const DEFAULT_MOBILE_BREAKPOINT = 768;
 /** Live media-query state with the same .current interface as Svelte MediaQuery. */
 export class IsMobile {
     private readonly signal = createSignal(false);
-    get current(): boolean { return this.signal[0](); }
+    get current(): boolean {
+        return this.signal[0]();
+    }
 
     constructor(breakpoint: number = DEFAULT_MOBILE_BREAKPOINT) {
         if (typeof window === "undefined" || !window.matchMedia) return;

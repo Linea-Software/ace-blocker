@@ -22,8 +22,7 @@ import { reactiveFields } from "../stores/reactive-fields";
  * Can be an addition of a new pack or removal of an existing/temp pack.
  */
 export type SitePacksConnectionChange =
-    | { type: "ADD"; listId: string }
-    | { type: "REMOVE"; listId: string };
+    { type: "ADD"; listId: string } | { type: "REMOVE"; listId: string };
 
 /**
  * Manages the state of pending changes for Site Packs.
@@ -146,16 +145,16 @@ export class SitePacksConnectionDelta {
             for (const change of changes) {
                 if (change.type === "REMOVE") {
                     // Determine if this pack was originally connected
-                    const wasOriginallyConnected =
-                        this.initialListIds.includes(change.listId);
+                    const wasOriginallyConnected = this.initialListIds.includes(
+                        change.listId,
+                    );
 
-                    const { error } =
-                        await removeNetBlockToSitePackConnection({
-                            path: {
-                                network_block_id: networkListId,
-                                site_pack_id: change.listId,
-                            },
-                        });
+                    const { error } = await removeNetBlockToSitePackConnection({
+                        path: {
+                            network_block_id: networkListId,
+                            site_pack_id: change.listId,
+                        },
+                    });
                     if (error) {
                         console.error(
                             "Failed to remove site pack connection:",
@@ -185,23 +184,20 @@ export class SitePacksConnectionDelta {
                 }
 
                 if (change.type === "ADD") {
-                    const { error } =
-                        await addNetBlockToSitePackConnection({
-                            path: {
-                                network_block_id: networkListId,
-                            },
-                            body: {
-                                sitesListId: change.listId,
-                            },
-                        });
+                    const { error } = await addNetBlockToSitePackConnection({
+                        path: {
+                            network_block_id: networkListId,
+                        },
+                        body: {
+                            sitesListId: change.listId,
+                        },
+                    });
                     if (error) {
                         console.error(
                             "Failed to add site pack connection:",
                             error,
                         );
-                        throw new Error(
-                            "Failed to add site pack connection",
-                        );
+                        throw new Error("Failed to add site pack connection");
                     }
 
                     // Register rollback: remove the newly added connection
@@ -209,15 +205,12 @@ export class SitePacksConnectionDelta {
                         label: `add-pack-${change.listId}`,
                         rollback: async () => {
                             const { error: rbErr } =
-                                await removeNetBlockToSitePackConnection(
-                                    {
-                                        path: {
-                                            network_block_id:
-                                                networkListId,
-                                            site_pack_id: change.listId,
-                                        },
+                                await removeNetBlockToSitePackConnection({
+                                    path: {
+                                        network_block_id: networkListId,
+                                        site_pack_id: change.listId,
                                     },
-                                );
+                                });
                             return !rbErr;
                         },
                     });

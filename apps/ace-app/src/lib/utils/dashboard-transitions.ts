@@ -19,14 +19,25 @@ export function findUpcomingBlockTransitions(
 ): BlockTransition[] {
     const candidates: BlockTransition[] = [];
     for (const block of blocks) {
-        if (!block.block.enabled || block.block.scheduleMode === "always" || block.scheduleEntries.length === 0) continue;
+        if (
+            !block.block.enabled ||
+            block.block.scheduleMode === "always" ||
+            block.scheduleEntries.length === 0
+        )
+            continue;
         let cursor = new Date(from);
         for (let i = 0; i < Math.min(limit, 4); i += 1) {
-            const transition = findNextScheduleTransition(block.scheduleEntries, cursor, 7);
+            const transition = findNextScheduleTransition(
+                block.scheduleEntries,
+                cursor,
+                7,
+            );
             if (!transition) break;
             candidates.push({ block, ...transition });
             cursor = new Date(transition.at.getTime() + 60_000);
         }
     }
-    return candidates.sort((a, b) => a.at.getTime() - b.at.getTime()).slice(0, limit);
+    return candidates
+        .sort((a, b) => a.at.getTime() - b.at.getTime())
+        .slice(0, limit);
 }

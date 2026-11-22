@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-time migration after authorized shutdown of both protected services.
 set -euo pipefail
-if (( EUID != 0 )) || (( $# != 2 )) || [[ "$1" != "--from" ]]; then
+if ((EUID != 0)) || (($# != 2)) || [[ "$1" != "--from" ]]; then
   echo "Usage: sudo migrate-legacy-data.sh --from /path/to/AceBlocker" >&2
   exit 2
 fi
@@ -11,14 +11,14 @@ if [[ "${source##*/}" != AceBlocker || "$source" == "$dest" ]]; then
   echo "Invalid legacy data directory" >&2; exit 2
 fi
 require_stopped() {
-  if systemctl is-active --quiet ace-engine.service ||
-     systemctl is-active --quiet ace-watchdog.service; then
+  if systemctl is-active --quiet ace-engine.service \
+    || systemctl is-active --quiet ace-watchdog.service; then
     echo "Protected services active; refuse migration" >&2; exit 1
   fi
 }
 require_stopped
-if [[ ! -f "$source/engine_db.sql" || ! -f "$source/capability.token" ]] ||
-   [[ -n "$(find "$source" -type l -print -quit)" ]]; then
+if [[ ! -f "$source/engine_db.sql" || ! -f "$source/capability.token" ]] \
+  || [[ -n "$(find "$source" -type l -print -quit)" ]]; then
   echo "Missing legacy data or unsafe symlink" >&2; exit 1
 fi
 # Use the original Engine *before upgrading binaries* to check both databases.
@@ -27,12 +27,12 @@ check_locks() {
 }
 check_locks "$source"
 if [[ -f "$dest/engine_db.sql" ]]; then check_locks "$dest"; fi
-getent group ace-blocker >/dev/null || groupadd --system ace-blocker
+getent group ace-blocker > /dev/null || groupadd --system ace-blocker
 staging="$(mktemp -d -p /usr/local/share .AceBlocker-stage.XXXXXXXX)"
 backup=""
 cleanup() {
   status=$?
-  if (( status != 0 )) && [[ -n "$backup" && ! -e "$dest" ]]; then
+  if ((status != 0)) && [[ -n "$backup" && ! -e "$dest" ]]; then
     mv -T -- "$backup" "$dest" || true
   fi
   [[ ! -d "$staging" ]] || rm -rf -- "$staging"

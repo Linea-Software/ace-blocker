@@ -17,13 +17,13 @@ Target: `https://www.unibo.it/it/studiare/vivere-luniversita-e-la-citta/wi-fi/fa
 The live origin resolved to `137.204.24.208`. When the client offered
 `h2` and `http/1.1`, the origin selected `http/1.1`.
 
-| Experiment | Result |
-| --- | --- |
-| Direct curl request | 200 OK |
-| Direct HTTP/1.1 request with `Host` omitted | 400 Bad Request, nginx |
-| HTTP/1.1 client through the repository proxy | 200 OK, 474573 body bytes |
-| HTTP/2 client through the same proxy | 400 Bad Request, 150 body bytes |
-| Same HTTP/2 request with a test-only inspector supplying `Host` from the URI authority | 200 OK, 474573 body bytes |
+| Experiment                                                                             | Result                          |
+| -------------------------------------------------------------------------------------- | ------------------------------- |
+| Direct curl request                                                                    | 200 OK                          |
+| Direct HTTP/1.1 request with `Host` omitted                                            | 400 Bad Request, nginx          |
+| HTTP/1.1 client through the repository proxy                                           | 200 OK, 474573 body bytes       |
+| HTTP/2 client through the same proxy                                                   | 400 Bad Request, 150 body bytes |
+| Same HTTP/2 request with a test-only inspector supplying `Host` from the URI authority | 200 OK, 474573 body bytes       |
 
 The proxy tests send all reported headers, including the Brave search referrer.
 They do not send cookies or credentials. The test inspector changes only
