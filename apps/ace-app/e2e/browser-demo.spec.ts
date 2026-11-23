@@ -30,3 +30,20 @@ test("theme selection survives browser reload and stays selected", async ({ page
     await expect(page.getByRole("button", { name: "Dark", exact: true }))
         .toHaveAttribute("aria-pressed", "true");
 });
+
+test("Resistance master status spans the full content width", async ({ page }) => {
+    await page.goto("/resistance-mode");
+    const stack = page.locator(".resistance-stack");
+    const statusCard = page.getByTestId("rm-status-card");
+    await expect(statusCard).toBeVisible();
+
+    for (const width of [1512, 700]) {
+        await page.setViewportSize({ width, height: 850 });
+        const parentBounds = await stack.boundingBox();
+        const cardBounds = await statusCard.boundingBox();
+        expect(parentBounds).not.toBeNull();
+        expect(cardBounds).not.toBeNull();
+        expect(Math.abs(cardBounds!.x - parentBounds!.x)).toBeLessThanOrEqual(2);
+        expect(Math.abs(cardBounds!.width - parentBounds!.width)).toBeLessThanOrEqual(2);
+    }
+});

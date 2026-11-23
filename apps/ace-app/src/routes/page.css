@@ -415,7 +415,7 @@ h2 {
     flex: none;
 }
 
-.resistance-state {
+.resistance-strip > .resistance-state {
     margin-left: auto;
     color: var(--muted-foreground);
     font-size: 12px;
