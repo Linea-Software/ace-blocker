@@ -1,17 +1,47 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { rpcRequest, rpcStream } from "./tauri-rpc";
 
 vi.mock("@tauri-apps/api/core", () => ({
     invoke: vi.fn(),
+    isTauri: vi.fn(() => true),
     Channel: class {
         onmessage?: (bytes: number[]) => void;
     },
 }));
 
-afterEach(() => vi.resetAllMocks());
+afterEach(() => {
+    vi.resetAllMocks();
+    vi.unstubAllGlobals();
+    vi.mocked(isTauri).mockReturnValue(true);
+});
 
 describe("typed desktop engine RPC adapter", () => {
+    it("uses only isolated browser fixtures, never native IPC or writes", async () => {
+        vi.stubGlobal("window", {});
+        vi.mocked(isTauri).mockReturnValue(false);
+
+        const data = await rpcRequest("getDashboardSnapshot");
+        expect(data.error).toBeUndefined();
+        expect(data.data).toMatchObject({ blockedAttempts: 248 });
+        const packs = await rpcRequest("getAllSitePacks");
+        expect(packs.data).toMatchObject({
+            sitePacks: expect.arrayContaining([
+                expect.objectContaining({ id: "pack-adult-free" }),
+            ]),
+        });
+
+        const rejected = await rpcRequest("setNetworkBlockEnabled", {
+            path: { network_block_id: "demo-social" },
+            body: { enabled: false },
+        });
+        expect(rejected.error).toMatchObject({
+            code: "browser_preview_read_only",
+            status: 403,
+        });
+        expect(invoke).not.toHaveBeenCalled();
+    });
+
     it("forwards a body as named RPC payload, without an HTTP URL", async () => {
         vi.mocked(invoke).mockResolvedValue({
             networkBlock: { id: "block-id" },

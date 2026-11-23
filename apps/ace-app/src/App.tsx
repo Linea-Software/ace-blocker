@@ -31,6 +31,8 @@ function AppShell(props: ParentProps) {
         engineStore.isAlive &&
         userStore.accountInfoLoaded &&
         userStore.tosAccepted &&
+        // Skip automatic first-run setup in browser previews; replay is available.
+        (engineStore.isTauri || onboardingStore.wizardPreviouslyCompleted) &&
         onboardingStore.loaded &&
         !onboardingStore.wizardCompleted &&
         !onboardingStore.tourRunning;

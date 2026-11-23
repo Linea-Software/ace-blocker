@@ -1,4 +1,5 @@
-import { Channel, invoke } from "@tauri-apps/api/core";
+import { Channel, invoke, isTauri } from "@tauri-apps/api/core";
+import { browserDemoResponse } from "./browser-demo";
 import { rpcParameters, type RpcOperation } from "./rpc-parameters";
 import type { RequestResult, RpcStreamResult } from "./rpc-types";
 import { normalizeRpcFailure } from "./rpc-error";
@@ -45,6 +46,14 @@ async function rpcRequestInternal(
     options?: RequestOptions,
 ): Promise<unknown> {
     try {
+        if (typeof window !== "undefined" && !isTauri()) {
+            const preview = browserDemoResponse(operation, argumentsFor(operation, options));
+            if (preview === undefined) {
+                throw { code: "browser_preview_read_only", status: 403,
+                    error: "Browser preview: this operation is not available." };
+            }
+            return options?.responseStyle === "data" ? preview : { data: preview };
+        }
         const value = await invoke<unknown>("engine_call", {
             op: operation,
             args: argumentsFor(operation, options),
@@ -102,6 +111,10 @@ export async function rpcStream<TResponse>(
     operation: RpcOperation,
     options?: RequestOptions,
 ): Promise<RpcStreamResult<TResponse>> {
+    if (typeof window !== "undefined" && !isTauri()) {
+        throw normalizeRpcFailure({ code: "browser_preview_read_only", status: 403,
+            error: "Browser preview: streaming and mutations are unavailable." });
+    }
     const parsed: unknown[] = [];
     let firstUnreadIndex = 0;
     let done = false;

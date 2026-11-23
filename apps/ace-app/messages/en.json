@@ -212,6 +212,8 @@
     "status_on_degraded": "On",
     "status_on_degraded_description": "Resistance is enabled but cannot operate right now.",
     "status_off": "Off",
+    "status_browser_demo": "Browser preview",
+    "status_browser_demo_description": "Sample data only. Changes are not saved or enforced.",
     "status_engine_offline": "Engine offline",
     "status_engine_offline_description": "The engine is not reachable. It may be starting up — retrying automatically.",
     "status_checking": "Checking Resistance Mode status",

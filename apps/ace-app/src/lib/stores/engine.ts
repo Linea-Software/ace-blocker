@@ -24,8 +24,9 @@ class EngineStore {
 
     async refresh(): Promise<boolean> {
         if (!this.isTauri) {
-            this.isAlive = false;
-            return false;
+            // Browser preview is backed by read-only fixture RPCs, not a real engine.
+            this.isAlive = true;
+            return true;
         }
         try {
             const response = await ping();

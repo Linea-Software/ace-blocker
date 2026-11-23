@@ -8,7 +8,7 @@ import { existsSync } from "node:fs";
 export default defineConfig({
     testDir: "e2e",
     testMatch:
-        /(getting-started|help|ui-friction|block-editor-redesign|network-policy-icons|resistance-five-categories|solid-port-regressions)\.spec\.ts/,
+        /(browser-demo|getting-started|help|ui-friction|block-editor-redesign|network-policy-icons|resistance-five-categories|solid-port-regressions)\.spec\.ts/,
     use: {
         baseURL: process.env.PW_E2E_BASE_URL ?? "http://localhost:1420",
         launchOptions: {

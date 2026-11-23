@@ -41,3 +41,12 @@
         padding-left: 26px;
     }
 }
+
+.status-strip--demo {
+    border-left-color: var(--ace-signal);
+    background: color-mix(in srgb, var(--ace-signal) 7%, var(--background));
+}
+
+.status-strip--demo svg {
+    color: var(--ace-signal);
+}

@@ -1,4 +1,5 @@
 import { reactiveFields } from "./reactive-fields";
+import { isTauri } from "@tauri-apps/api/core";
 import {
     getAccountInfo,
     refreshAccount,
@@ -210,7 +211,8 @@ class UserStore {
         this.accountInfoLoaded = true;
         this.accountLoadStatus = "ready";
 
-        if (data.isPro) {
+        if (data.isPro && (typeof window === "undefined" || isTauri())) {
+            // Browser preview has synthetic Pro status and no engine content to sync.
             // Run once for a confirmed Pro entitlement, including after an
             // upgrade while ACE stays open. The engine handles downloads,
             // SHA validation, persistence and registration of available packs.

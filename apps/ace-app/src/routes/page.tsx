@@ -24,9 +24,8 @@ export default function DashboardPage() {
     createEffect(
         () => engineStore.isAlive,
         (alive) => {
-            // Browser-only fixture previews have no privileged remoc channel.
-            // Refresh only when the native Tauri runtime actually owns that channel.
-            if (alive && engineStore.isTauri) void dashboardStore.refresh();
+            // In Tauri this calls the native engine; in browser preview it reads fixtures.
+            if (alive) void dashboardStore.refresh();
         },
     );
     onSettled(() => {
