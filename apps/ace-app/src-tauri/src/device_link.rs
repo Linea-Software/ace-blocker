@@ -64,6 +64,24 @@ fn http_client() -> Result<Client, String> {
         .map_err(|_| "Could not prepare secure device linking".to_owned())
 }
 
+fn build_verification_uri(user_code: &str) -> Result<String, String> {
+    // The human-readable code may go into the URL; deviceCode and API keys may not.
+    // Validate the fixed alphabet before including server-provided text in a URL.
+    let bytes = user_code.as_bytes();
+    if bytes.len() != 14
+        || !bytes.iter().enumerate().all(|(index, byte)| {
+            if index == 4 || index == 9 {
+                *byte == b'-'
+            } else {
+                matches!(*byte, b'A'..=b'H' | b'J'..=b'N' | b'P'..=b'Z' | b'2'..=b'9')
+            }
+        })
+    {
+        return Err("Invalid account linking confirmation code".into());
+    }
+    Ok(format!("{SITE_ORIGIN}/connect?code={user_code}"))
+}
+
 #[tauri::command]
 pub async fn device_link_start(
     state: State<'_, DeviceLinkState>,
@@ -84,6 +102,7 @@ pub async fn device_link_start(
     if response.device_code.len() != 43 || response.expires_in == 0 || response.expires_in > 900 {
         return Err("Invalid account linking challenge".into());
     }
+    let verification_uri = build_verification_uri(&response.user_code)?;
     // Session-only; a restart discards the secret. Never serialize this.
     let mut current = state
         .0
@@ -95,7 +114,7 @@ pub async fn device_link_start(
     });
     Ok(DeviceLinkStart {
         user_code: response.user_code,
-        verification_uri: format!("{SITE_ORIGIN}/connect"),
+        verification_uri,
         expires_in: response.expires_in,
         interval: response.interval.max(5),
     })
@@ -195,4 +214,30 @@ pub fn device_link_cancel(state: State<'_, DeviceLinkState>) -> Result<(), Strin
         .lock()
         .map_err(|_| "Device link unavailable".to_owned())? = None;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_verification_uri;
+
+    #[test]
+    fn opens_confirmation_page_with_human_readable_code_only() {
+        let url = build_verification_uri("ABCD-EFGH-JKLM").unwrap();
+        assert!(url.ends_with("/connect?code=ABCD-EFGH-JKLM"));
+        assert!(!url.contains("deviceCode"));
+    }
+
+    #[test]
+    fn rejects_malformed_confirmation_codes() {
+        for code in [
+            "",
+            "ABCD-EFGH-JKLO",
+            "abcd-efgh-jklm",
+            "ABCD-EFGH-JKLM&deviceCode=secret",
+            "ABCD-EFGH-JKLM#fragment",
+            "ABCDEFGHIJKL",
+        ] {
+            assert!(build_verification_uri(code).is_err(), "{code}");
+        }
+    }
 }
