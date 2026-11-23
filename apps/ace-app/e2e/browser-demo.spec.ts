@@ -47,3 +47,41 @@ test("Resistance master status spans the full content width", async ({ page }) =
         expect(Math.abs(cardBounds!.width - parentBounds!.width)).toBeLessThanOrEqual(2);
     }
 });
+
+test("Resistance shows a Pro upgrade action instead of the switch for Free users", async ({ page }) => {
+    await page.goto("/resistance-mode");
+    const card = page.getByTestId("rm-status-card");
+
+    // The browser fixture starts with Pro: retain the existing master switch.
+    await expect(card.getByTestId("rm-master-switch")).toBeVisible();
+    await expect(card.locator(".pro-action")).toHaveCount(0);
+
+    // Toggle the live reactive account store without mocking native IPC.
+    await page.evaluate(async () => {
+        const path = "/src/lib/stores/user-store.ts";
+        const existing = performance.getEntriesByType("resource")
+            .map((entry) => new URL(entry.name))
+            .filter((url) => url.pathname === path)
+            .at(-1);
+        const { userStore } = await import(
+            /* @vite-ignore */ existing ? existing.pathname + existing.search : path
+        );
+        userStore.isPro = false;
+    });
+
+    await expect(page.getByTestId("rm-pro-gate")).toHaveCount(0);
+    await expect(card.getByTestId("rm-master-switch")).toHaveCount(0);
+    const proButton = card.locator("button.pro-action");
+    await expect(proButton).toBeVisible();
+    await expect(proButton).toBeEnabled();
+    await expect(proButton).toHaveAttribute("aria-label", /Resistance.*Pro/);
+    await expect(page.locator('[data-testid="rm-category-list"]')).toBeVisible();
+
+    // The CTA remains within the card even on a narrow viewport.
+    await page.setViewportSize({ width: 360, height: 800 });
+    const [cardBox, buttonBox] = await Promise.all([card.boundingBox(), proButton.boundingBox()]);
+    expect(cardBox).not.toBeNull();
+    expect(buttonBox).not.toBeNull();
+    expect(buttonBox!.x).toBeGreaterThanOrEqual(cardBox!.x);
+    expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
+});

@@ -85,45 +85,6 @@
     gap: 16px;
 }
 
-.pro-gate {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 1px 2px 16px;
-    border-bottom: 1px solid var(--border);
-}
-
-.pro-gate-copy {
-    min-width: 0;
-}
-
-.pro-gate h2 {
-    margin: 0;
-    font-family: "IBM Plex Sans Condensed", sans-serif;
-    font-size: 19px;
-    font-weight: 600;
-    line-height: 1.2;
-}
-
-.pro-gate h2 {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-}
-
-.pro-gate h2 :global(svg) {
-    flex: 0 0 auto;
-    color: var(--muted-foreground);
-}
-
-.pro-gate p {
-    margin: 5px 0 0;
-    color: var(--muted-foreground);
-    font-size: 13px;
-    line-height: 1.5;
-}
-
 .coverage-ledger {
     padding-top: 7px;
     border-top: 1px solid var(--border);
@@ -132,11 +93,5 @@
 @container page (max-width: 560px) {
     .lock-action {
         align-self: flex-start;
-    }
-
-    .pro-gate {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 12px;
     }
 }

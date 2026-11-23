@@ -1,6 +1,7 @@
 import { reactiveFields } from "$lib/stores/reactive-fields";
 import * as m from "$lib/paraglide/messages.js";
 import { Switch } from "$lib/components/ui/switch/solid";
+import UpgradeToProButton from "$lib/components/UpgradeToProButton";
 import * as AlertDialog from "$lib/components/ui/alert-dialog/solid";
 import { Skeleton } from "$lib/components/ui/skeleton/solid";
 import type { ResistanceModeSettings } from "$engine-client";
@@ -71,7 +72,7 @@ export default function StatusCard(props: Props) {
                 <div class="state-rail" aria-hidden="true"></div>
 
                 <div class="state-body">
-                    <div class="master-row">
+                    <div class={props.isPro === false ? "master-row master-row--free" : "master-row"}>
                         <div class="state-copy">
                             <h2>{m.resistance_enforcement_title()}</h2>
 
@@ -189,17 +190,21 @@ export default function StatusCard(props: Props) {
                             )}
                         </div>
 
-                        <Switch
-                            data-testid="rm-master-switch"
-                            checked={props.enabled}
-                            disabled={
-                                props.controlsDisabled ||
-                                props.inFlight ||
-                                (props.locked && props.enabled)
-                            }
-                            onCheckedChange={handleToggle}
-                            aria-label={m.resistance_mode()}
-                        />
+                        {props.isPro === false ? (
+                            <UpgradeToProButton text={m.resistance_mode()} />
+                        ) : (
+                            <Switch
+                                data-testid="rm-master-switch"
+                                checked={props.enabled}
+                                disabled={
+                                    props.controlsDisabled ||
+                                    props.inFlight ||
+                                    (props.locked && props.enabled)
+                                }
+                                onCheckedChange={handleToggle}
+                                aria-label={m.resistance_mode()}
+                            />
+                        )}
                     </div>
                 </div>
             </section>

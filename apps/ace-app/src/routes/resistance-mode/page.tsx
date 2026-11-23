@@ -13,7 +13,6 @@ import {
 } from "$engine-client";
 import { engineStore } from "$lib/stores/engine";
 import { userStore } from "$lib/stores/user-store";
-import UpgradeToProButton from "$lib/components/UpgradeToProButton";
 import { LockKeyhole } from "@lucide/solid";
 import { toast } from "solid-sonner";
 import StatusCard from "./_components/StatusCard";
@@ -386,28 +385,6 @@ export default function ResistanceModePage() {
                                 </p>
                             </>
                         ) : null}
-                        {!isPro() ? (
-                            <>
-                                <div class="pro-gate" data-testid="rm-pro-gate">
-                                    <div class="pro-gate-copy">
-                                        <h2>
-                                            <LockKeyhole
-                                                size={17}
-                                                aria-hidden="true"
-                                            />
-                                            {m.resistance_pro_preview_title()}
-                                        </h2>
-                                        <p>
-                                            {m.resistance_pro_preview_description()}
-                                        </p>
-                                    </div>
-                                    <UpgradeToProButton
-                                        text={m.resistance_mode()}
-                                    />
-                                </div>
-                            </>
-                        ) : null}
-
                         <section class="rounded-md border border-border bg-card px-5 py-4">
                             <h2 class="font-semibold text-lg">
                                 {m.resistance_examples_title()}
