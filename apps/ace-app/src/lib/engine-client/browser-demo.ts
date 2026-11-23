@@ -73,11 +73,11 @@ sitePacks.push({
 });
 
 const scripts: ScriptInfo[] = [
-    { id: "demo-hide_feed", domain: "reddit.com", name: "Hide infinite feed", description: "Remove the endless homepage feed", isEnabled: true },
-    { id: "demo-hide_shorts", domain: "youtube.com", name: "Hide short videos", description: "Hide short-form video recommendations", isEnabled: true },
-    { id: "demo-grayscale", domain: "instagram.com", name: "Reduce visual stimulation", description: "Desaturate vivid media", isEnabled: false },
-    { id: "demo-delay_navigation", domain: "reddit.com", name: "Delay navigation", description: "Add a pause before opening new posts", isEnabled: true },
-    { id: "demo-captcha", domain: "youtube.com", name: "Reflection challenge", description: "Require a challenge before continuing", isEnabled: false },
+    { id: "reddit_block_recomandations", domain: "reddit.com", name: "Hide infinite feed", description: "Remove the endless homepage feed", isEnabled: true, requiresPro: false },
+    { id: "youtube_shorts_remove", domain: "youtube.com", name: "Hide short videos", description: "Hide short-form video recommendations", isEnabled: true, requiresPro: false },
+    { id: "demo-grayscale", domain: "instagram.com", name: "Reduce visual stimulation", description: "Desaturate vivid media", isEnabled: false, requiresPro: true },
+    { id: "demo-delay_navigation", domain: "reddit.com", name: "Delay navigation", description: "Add a pause before opening new posts", isEnabled: true, requiresPro: true },
+    { id: "demo-captcha", domain: "youtube.com", name: "Reflection challenge", description: "Require a challenge before continuing", isEnabled: false, requiresPro: true },
 ];
 
 const resistance: ResistanceModeSettings = {

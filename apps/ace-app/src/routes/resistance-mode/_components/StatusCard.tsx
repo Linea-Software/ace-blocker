@@ -1,7 +1,6 @@
 import { reactiveFields } from "$lib/stores/reactive-fields";
 import * as m from "$lib/paraglide/messages.js";
 import { Switch } from "$lib/components/ui/switch/solid";
-import UpgradeToProButton from "$lib/components/UpgradeToProButton";
 import * as AlertDialog from "$lib/components/ui/alert-dialog/solid";
 import { Skeleton } from "$lib/components/ui/skeleton/solid";
 import type { ResistanceModeSettings } from "$engine-client";
@@ -11,7 +10,6 @@ import "./StatusCard.css";
 type Props = {
     settings: ResistanceModeSettings | null;
     engineOnline: boolean;
-    isPro?: boolean;
     enabled?: boolean;
     locked?: boolean;
     controlsDisabled?: boolean;
@@ -28,7 +26,6 @@ export default function StatusCard(props: Props) {
     const degradedReason = () => {
         const settings = props.settings;
         if (!settings) return "";
-        if (settings.enforcementStatus === "not_pro") return m.reason_not_pro();
         if (settings.enforcementStatus === "scripts_missing")
             return m.reason_scripts_missing();
         if (settings.enforcementStatus === "scripts_invalid")
@@ -39,7 +36,6 @@ export default function StatusCard(props: Props) {
     };
     const statusKind = () => {
         if (!props.engineOnline) return "offline";
-        if (!(props.isPro ?? true)) return "pro-required";
         if (!props.settings) return "checking";
         if (props.locked) return "locked";
         if (!props.settings.enabled) return "off";
@@ -72,7 +68,7 @@ export default function StatusCard(props: Props) {
                 <div class="state-rail" aria-hidden="true"></div>
 
                 <div class="state-body">
-                    <div class={props.isPro === false ? "master-row master-row--free" : "master-row"}>
+                    <div class="master-row">
                         <div class="state-copy">
                             <h2>{m.resistance_enforcement_title()}</h2>
 
@@ -114,22 +110,7 @@ export default function StatusCard(props: Props) {
                                                     {m.status_engine_offline_description()}
                                                 </span>
                                             </>
-                                        ) : statusKind() === "pro-required" ? (
-                                            <>
-                                                <strong>
-                                                    {m.status_pro_required()}
-                                                </strong>
-                                                <span
-                                                    class="separator"
-                                                    aria-hidden="true"
-                                                >
-                                                    ·
-                                                </span>
-                                                <span>
-                                                    {m.status_pro_required_description()}
-                                                </span>
-                                            </>
-                                        ) : statusKind() === "locked" ? (
+) : statusKind() === "locked" ? (
                                             <>
                                                 <span data-testid="rm-locked-note">
                                                     {lockedEndText() ? (
@@ -190,10 +171,7 @@ export default function StatusCard(props: Props) {
                             )}
                         </div>
 
-                        {props.isPro === false ? (
-                            <UpgradeToProButton text={m.resistance_mode()} />
-                        ) : (
-                            <Switch
+                        <Switch
                                 data-testid="rm-master-switch"
                                 checked={props.enabled}
                                 disabled={
@@ -204,7 +182,6 @@ export default function StatusCard(props: Props) {
                                 onCheckedChange={handleToggle}
                                 aria-label={m.resistance_mode()}
                             />
-                        )}
                     </div>
                 </div>
             </section>

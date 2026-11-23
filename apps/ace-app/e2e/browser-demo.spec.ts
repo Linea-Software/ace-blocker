@@ -48,15 +48,11 @@ test("Resistance master status spans the full content width", async ({ page }) =
     }
 });
 
-test("Resistance shows a Pro upgrade action instead of the switch for Free users", async ({ page }) => {
+test("Resistance Free enables free scripts while showing Pro upgrades", async ({ page }) => {
     await page.goto("/resistance-mode");
     const card = page.getByTestId("rm-status-card");
-
-    // The browser fixture starts with Pro: retain the existing master switch.
     await expect(card.getByTestId("rm-master-switch")).toBeVisible();
-    await expect(card.locator(".pro-action")).toHaveCount(0);
 
-    // Toggle the live reactive account store without mocking native IPC.
     await page.evaluate(async () => {
         const path = "/src/lib/stores/user-store.ts";
         const existing = performance.getEntriesByType("resource")
@@ -70,18 +66,25 @@ test("Resistance shows a Pro upgrade action instead of the switch for Free users
     });
 
     await expect(page.getByTestId("rm-pro-gate")).toHaveCount(0);
-    await expect(card.getByTestId("rm-master-switch")).toHaveCount(0);
-    const proButton = card.locator("button.pro-action");
-    await expect(proButton).toBeVisible();
-    await expect(proButton).toBeEnabled();
-    await expect(proButton).toHaveAttribute("aria-label", /Resistance.*Pro/);
-    await expect(page.locator('[data-testid="rm-category-list"]')).toBeVisible();
+    await expect(card.getByTestId("rm-master-switch")).toBeEnabled();
+    await expect(card.locator("button.pro-action")).toHaveCount(0);
 
-    // The CTA remains within the card even on a narrow viewport.
+    const video = page.getByTestId("rm-category-video");
+    await video.getByTestId("rm-category-disclosure-video").click();
+    await video.getByTestId("rm-site-row").first().getByRole("button").click();
+    await expect(video.getByTestId("rm-script-switch")).toBeEnabled();
+
+    const visual = page.getByTestId("rm-category-visual");
+    await visual.getByTestId("rm-category-disclosure-visual").click();
+    await visual.getByTestId("rm-site-row").first().getByRole("button").click();
+    await expect(visual.locator(".rm-script-upgrade")).toBeVisible();
+    await expect(visual.getByTestId("rm-script-switch")).toHaveCount(0);
+
     await page.setViewportSize({ width: 360, height: 800 });
-    const [cardBox, buttonBox] = await Promise.all([card.boundingBox(), proButton.boundingBox()]);
+    const [cardBox, switchBox] = await Promise.all([
+        card.boundingBox(), card.getByTestId("rm-master-switch").boundingBox(),
+    ]);
     expect(cardBox).not.toBeNull();
-    expect(buttonBox).not.toBeNull();
-    expect(buttonBox!.x).toBeGreaterThanOrEqual(cardBox!.x);
-    expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
+    expect(switchBox).not.toBeNull();
+    expect(switchBox!.x + switchBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
 });

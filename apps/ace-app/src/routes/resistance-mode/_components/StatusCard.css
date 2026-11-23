@@ -15,8 +15,7 @@
     background: var(--ace-success);
 }
 
-.state-degraded .state-rail,
-.state-pro-required .state-rail {
+.state-degraded .state-rail {
     background: var(--ace-information);
 }
 
@@ -76,8 +75,7 @@ h2 {
     color: var(--ace-success);
 }
 
-.state-degraded .status-line strong,
-.state-pro-required .status-line strong {
+.state-degraded .status-line strong {
     color: var(--ace-information);
 }
 
@@ -92,16 +90,4 @@ h2 {
 .loading-state {
     max-width: 280px;
     margin-top: 8px;
-}
-
-/* Keep the upgrade action readable beside the status on narrow screens. */
-@container page (max-width: 480px) {
-    .master-row--free {
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
-    .master-row--free > .pro-action {
-        margin-left: auto;
-    }
 }

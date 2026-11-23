@@ -47,7 +47,7 @@ export default function ResistanceModePage() {
     const isPro = () => userStore.isPro;
     const engineOnline = () => engineStore.isAlive;
     const isLocked = () => state.settings?.isLocked ?? false;
-    const controlsDisabled = () => !engineOnline() || !isPro();
+    const controlsDisabled = () => !engineOnline();
     onSettled(() => {
         document.title = `${m.resistance_mode()} · ${m.app_name()}`;
     });
@@ -190,7 +190,7 @@ export default function ResistanceModePage() {
     }
 
     async function handleToggleScript(script: ScriptInfo) {
-        if (state.isMutating || !engineOnline() || !isPro()) return;
+        if (state.isMutating || !engineOnline() || (!isPro() && script.requiresPro)) return;
         if (isLocked() && script.isEnabled) {
             toast.error(m.locked_one_way_notice());
             return;
@@ -221,12 +221,12 @@ export default function ResistanceModePage() {
     }
 
     async function handleToggleGroup(group: ScriptInfo[], enabled: boolean) {
-        if (state.isMutating || !engineOnline() || !isPro()) return;
+        if (state.isMutating || !engineOnline()) return;
         if (isLocked() && !enabled) {
             toast.error(m.locked_one_way_notice());
             return;
         }
-        const targets = group.filter((s) => s.isEnabled !== enabled);
+        const targets = group.filter((s) => s.isEnabled !== enabled && (isPro() || !s.requiresPro));
         if (!targets.length) return;
         state.isMutating = true;
         const ids = new Set(targets.map((s) => s.id));
@@ -328,7 +328,6 @@ export default function ResistanceModePage() {
                         <StatusCard
                             settings={state.settings}
                             engineOnline={engineOnline()}
-                            isPro={isPro()}
                             enabled={state.settings?.enabled ?? false}
                             locked={isLocked()}
                             controlsDisabled={true}
@@ -397,11 +396,8 @@ export default function ResistanceModePage() {
                         <StatusCard
                             settings={state.settings}
                             engineOnline={engineOnline()}
-                            isPro={isPro()}
-                            enabled={
-                                isPro() && (state.settings?.enabled ?? false)
-                            }
-                            locked={isPro() && isLocked()}
+                            enabled={state.settings?.enabled ?? false}
+                            locked={isLocked()}
                             controlsDisabled={controlsDisabled()}
                             inFlight={state.isMutating}
                             onToggle={handleToggleEnabled}

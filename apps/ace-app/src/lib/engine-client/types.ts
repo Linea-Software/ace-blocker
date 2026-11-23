@@ -197,7 +197,6 @@ export type DebugProPolicy = "Pro" | "Free" | "Default";
 export type EnforcementStatus =
     | "operational"
     | "disabled"
-    | "not_pro"
     | "scripts_missing"
     | "scripts_invalid"
     | "no_scripts_enabled";
@@ -338,6 +337,7 @@ export type ScheduleEntrySchema = {
 };
 
 export type ScriptInfo = {
+    requiresPro: boolean;
     description: string;
     domain: string;
     id: string;

@@ -8,6 +8,7 @@ const sample = (domain: string, name: string): ScriptInfo => ({
     name,
     description: "",
     isEnabled: true,
+    requiresPro: false,
 });
 
 describe("Resistance script site icons", () => {

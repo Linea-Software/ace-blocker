@@ -6,7 +6,6 @@ import {
     getResistanceModeSettings,
 } from "$lib/engine-client";
 import { engineStore } from "$lib/stores/engine";
-import { userStore } from "$lib/stores/user-store";
 import { ListFilter, RefreshCw } from "@lucide/solid";
 import { toast } from "solid-sonner";
 import "./_ResistanceScriptsUpdateSection.css";
@@ -21,8 +20,7 @@ export default function ResistanceScriptsUpdateSection() {
     reactiveFields(state, ["installedVersion", "versionState", "updating"]);
     let requestSeq = 0;
     const engineOnline = () => engineStore.isAlive;
-    const isPro = () => userStore.isPro;
-    const canUpdate = () => engineOnline() && isPro() && !state.updating;
+    const canUpdate = () => engineOnline() && !state.updating;
     async function loadInstalledVersion() {
         if (!engineStore.isAlive) {
             state.versionState = "unavailable";
@@ -120,12 +118,6 @@ export default function ResistanceScriptsUpdateSection() {
                         <>
                             <p>
                                 {m.settings_resistance_scripts_engine_offline()}
-                            </p>
-                        </>
-                    ) : !isPro() ? (
-                        <>
-                            <p>
-                                {m.settings_resistance_scripts_pro_required()}
                             </p>
                         </>
                     ) : state.versionState === "missing" ? (

@@ -3,6 +3,7 @@ import { reactiveFields } from "$lib/stores/reactive-fields";
 import * as m from "$lib/paraglide/messages.js";
 import { Switch } from "$lib/components/ui/switch/solid";
 import { Checkbox } from "$lib/components/ui/checkbox/solid";
+import UpgradeToProButton from "$lib/components/UpgradeToProButton";
 import {
     ChevronDown,
     ChevronUp,
@@ -19,6 +20,7 @@ import {
 import type { ScriptInfo, ResistanceModeSettings } from "$engine-client";
 import {
     groupInterventions,
+    type InterventionSection,
     type InterventionKind,
 } from "./intervention-groups";
 
@@ -39,13 +41,19 @@ export default function ScriptSections(props: Props) {
     };
     reactiveFields(state, ["expandedKind", "expandedSite"]);
     const sections = createMemo(() => groupInterventions(props.scripts));
-    const selected = () => props.scripts.filter((s) => s.isEnabled).length;
+    const eligible = (script: ScriptInfo) => props.isPro || !script.requiresPro;
+    const selected = () => props.scripts.filter((s) => s.isEnabled && eligible(s)).length;
+    const selectableIn = (section: InterventionSection) =>
+        section.sites.flatMap((site) => site.scripts).filter(eligible);
+    const totalIn = (section: InterventionSection) => selectableIn(section).length;
+    const selectedIn = (section: InterventionSection) =>
+        selectableIn(section).filter((script) => script.isEnabled).length;
     const missing = () =>
         props.settings?.enforcementStatus === "scripts_missing";
     const invalid = () =>
         props.settings?.enforcementStatus === "scripts_invalid";
     const editable = () =>
-        props.engineOnline && props.isPro && !(props.busy ?? false);
+        props.engineOnline && !(props.busy ?? false);
     function title(kind: InterventionKind): string {
         switch (kind) {
             case "feeds":
@@ -104,7 +112,7 @@ export default function ScriptSections(props: Props) {
                 ) : null}
             </div>
 
-            {props.settings && !props.settings.enabled && props.isPro ? (
+            {props.settings && !props.settings.enabled ? (
                 <>
                     <p
                         class="rounded border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground"
@@ -164,7 +172,7 @@ export default function ScriptSections(props: Props) {
                             </p>
                         </div>
                         <a
-                            href="/props.settings#resistance-props.scripts-update"
+                            href="/settings#resistance-scripts-update"
                             class="text-sm underline underline-offset-4 hover:text-foreground"
                         >
                             {m.interventions_manage_scripts_in_settings()}
@@ -272,7 +280,7 @@ export default function ScriptSections(props: Props) {
                                                     </span>
                                                 </span>
                                                 <span class="shrink-0 font-mono text-xs text-muted-foreground">
-                                                    {section.selectedCount}/
+                                                    {selectedIn(section)}/
                                                     {section.totalCount}
                                                 </span>
                                                 {state.expandedKind ===
@@ -321,30 +329,30 @@ export default function ScriptSections(props: Props) {
                                                                 }
                                                                 class="size-5"
                                                                 checked={
-                                                                    section.totalCount >
+                                                                    totalIn(section) >
                                                                         0 &&
-                                                                    section.selectedCount ===
-                                                                        section.totalCount
+                                                                    selectedIn(section) ===
+                                                                        totalIn(section)
                                                                 }
                                                                 indeterminate={
-                                                                    section.selectedCount >
+                                                                    selectedIn(section) >
                                                                         0 &&
                                                                     !(
-                                                                        section.totalCount >
+                                                                        totalIn(section) >
                                                                             0 &&
-                                                                        section.selectedCount ===
-                                                                            section.totalCount
+                                                                        selectedIn(section) ===
+                                                                            totalIn(section)
                                                                     )
                                                                 }
                                                                 disabled={
                                                                     !editable() ||
-                                                                    section.totalCount ===
+                                                                    totalIn(section) ===
                                                                         0 ||
                                                                     (props.locked &&
-                                                                        section.totalCount >
+                                                                        totalIn(section) >
                                                                             0 &&
-                                                                        section.selectedCount ===
-                                                                            section.totalCount)
+                                                                        selectedIn(section) ===
+                                                                            totalIn(section))
                                                                 }
                                                                 aria-label={m.interventions_select_all_category(
                                                                     {
@@ -360,13 +368,13 @@ export default function ScriptSections(props: Props) {
                                                                     // Mixed means select remaining. Time Lock forbids
                                                                     // disabling enabled interventions from the header.
                                                                     const enable =
-                                                                        (section.selectedCount >
+                                                                        (selectedIn(section) >
                                                                             0 &&
                                                                             !(
-                                                                                section.totalCount >
+                                                                                totalIn(section) >
                                                                                     0 &&
-                                                                                section.selectedCount ===
-                                                                                    section.totalCount
+                                                                                selectedIn(section) ===
+                                                                                    totalIn(section)
                                                                             )) ||
                                                                         checked;
                                                                     if (
@@ -573,25 +581,32 @@ export default function ScriptSections(props: Props) {
                                                                                                                 </>
                                                                                                             ) : null}
                                                                                                         </div>
-                                                                                                        <Switch
-                                                                                                            data-testid="rm-script-switch"
-                                                                                                            checked={
-                                                                                                                script.isEnabled
-                                                                                                            }
-                                                                                                            disabled={
-                                                                                                                !editable() ||
-                                                                                                                (props.locked &&
-                                                                                                                    script.isEnabled)
-                                                                                                            }
-                                                                                                            onCheckedChange={() =>
-                                                                                                                props.onToggleScript(
-                                                                                                                    script,
-                                                                                                                )
-                                                                                                            }
-                                                                                                            aria-label={
-                                                                                                                script.name
-                                                                                                            }
-                                                                                                        />
+                                                                                                        {!eligible(script) ? (
+                                                                                                            <UpgradeToProButton
+                                                                                                                class="rm-script-upgrade"
+                                                                                                                text={m.resistance_mode()}
+                                                                                                            />
+                                                                                                        ) : (
+                                                                                                            <Switch
+                                                                                                                data-testid="rm-script-switch"
+                                                                                                                checked={
+                                                                                                                    script.isEnabled
+                                                                                                                }
+                                                                                                                disabled={
+                                                                                                                    !editable() ||
+                                                                                                                    (props.locked &&
+                                                                                                                        script.isEnabled)
+                                                                                                                }
+                                                                                                                onCheckedChange={() =>
+                                                                                                                    props.onToggleScript(
+                                                                                                                        script,
+                                                                                                                    )
+                                                                                                                }
+                                                                                                                aria-label={
+                                                                                                                    script.name
+                                                                                                                }
+                                                                                                            />
+                                                                                                        )}
                                                                                                     </div>
                                                                                                 </>
                                                                                             )}

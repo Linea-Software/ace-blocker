@@ -6,7 +6,7 @@ import {
 } from "./intervention-groups";
 
 function item(id: string, domain: string, isEnabled = false): ScriptInfo {
-    return { id, domain, isEnabled, name: id, description: "" };
+    return { id, domain, isEnabled, requiresPro: false, name: id, description: "" };
 }
 
 describe("independent Resistance interventions", () => {
