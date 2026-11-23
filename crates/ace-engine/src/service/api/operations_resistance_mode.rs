@@ -7,7 +7,11 @@ pub(super) async fn get_resistance_mode_settings(state: AppState) -> ResistanceM
 
     let entries = engine.script_tree.get_all_script_entries();
     let scripts_total = entries.len() as u32;
-    let scripts_enabled = entries.iter().filter(|entry| entry.enabled).count() as u32;
+    let is_pro = manager.is_pro_user_cached();
+    let scripts_enabled = entries
+        .iter()
+        .filter(|entry| entry.enabled && (is_pro || !entry.requires_pro))
+        .count() as u32;
 
     ResistanceModeSettings {
         enabled: engine.enabled,
@@ -21,7 +25,7 @@ pub(super) async fn get_resistance_mode_settings(state: AppState) -> ResistanceM
         scripts_loaded: !entries.is_empty(),
         scripts_total,
         scripts_enabled,
-        pro_eligible: manager.is_pro_user_cached(),
+        pro_eligible: is_pro,
         enforcement_status: manager.resistance_enforcement_status(),
     }
 }
@@ -73,6 +77,7 @@ pub(super) async fn get_script(state: AppState, script_id: String) -> Result<Scr
             name: entry.name,
             description: entry.description,
             is_enabled: entry.enabled,
+            requires_pro: entry.requires_pro,
         })
     } else {
         Err(ApiError::NotFound(format!(
@@ -105,26 +110,10 @@ pub(super) async fn download_resistance_scripts(state: AppState) -> Result<(), A
     // Download, verify, and extract OUTSIDE the manager write lock (SVC-02);
     // only the commit — local disk swap + reload + version persist — happens
     // under it.
-    // Download requests must honor the local Free simulation even if a real
-    // Pro account is registered on this machine.
-    let api_key = if state
-        .network_manager
-        .read()
-        .await
-        .sends_registered_credentials()
-    {
-        state
-            .account_manager
-            .get_api_key()
-            .await
-            .map_err(ApiError::Internal)?
-    } else {
-        None
-    };
     let (content_service, gate) = state.content_update_service.lock().await.detached();
     let _single_flight = gate.lock().await;
     let staged = content_service
-        .stage_resistance_scripts(api_key.as_ref())
+        .stage_resistance_scripts()
         .await
         .map_err(ApiError::from)?;
     drop(content_service);

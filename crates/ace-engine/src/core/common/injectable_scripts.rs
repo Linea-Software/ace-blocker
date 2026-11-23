@@ -12,6 +12,8 @@ pub struct InjectableScriptTree {
 
 #[derive(Debug, Deserialize)]
 struct ScriptManifest {
+    #[serde(rename = "schemaVersion")]
+    schema_version: u32,
     sites: HashMap<String, SiteNode>,
 }
 
@@ -48,6 +50,8 @@ pub struct ScriptEntry {
     pub name: String,
     pub description: String,
     pub version: String,
+    #[serde(rename = "requiresPro")]
+    pub requires_pro: bool,
     #[serde(default)]
     pub domain: String,
     #[serde(default)]
@@ -62,6 +66,12 @@ pub struct ScriptEntry {
 
 fn default_enabled() -> bool {
     true
+}
+
+impl ScriptEntry {
+    fn allowed_for(&self, is_pro: bool) -> bool {
+        self.enabled && (is_pro || !self.requires_pro)
+    }
 }
 
 impl InjectableScriptTree {
@@ -131,6 +141,13 @@ impl InjectableScriptTree {
         let manifest: ScriptManifest = serde_json::from_str(&content)
             .map_err(|error| std::io::Error::new(std::io::ErrorKind::InvalidData, error))?;
 
+        if manifest.schema_version != 2 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Resistance catalog requires schemaVersion 2",
+            ));
+        }
+
         let mut tree = Self::default();
         let base_dir = json_path.parent().unwrap_or(Path::new("."));
 
@@ -182,6 +199,7 @@ impl InjectableScriptTree {
             id: ScriptId::try_new(uuid::Uuid::now_v7().to_string())
                 .expect("generated UUID is a nonempty script identifier"),
             enabled: true,
+            requires_pro: false,
         };
 
         if host.is_empty() {
@@ -198,8 +216,8 @@ impl InjectableScriptTree {
         current_node.scripts.push(entry);
     }
 
-    pub fn has_scripts_of(&self, host: &str) -> bool {
-        if self.scripts.iter().any(|error| error.enabled) {
+    pub fn has_scripts_of(&self, host: &str, is_pro: bool) -> bool {
+        if self.scripts.iter().any(|entry| entry.allowed_for(is_pro)) {
             return true;
         }
 
@@ -219,7 +237,7 @@ impl InjectableScriptTree {
 
         for part in parts {
             if let Some(node) = current_node.children.get(part) {
-                if node.scripts.iter().any(|error| error.enabled) {
+                if node.scripts.iter().any(|entry| entry.allowed_for(is_pro)) {
                     return true;
                 }
                 current_node = node;
@@ -233,13 +251,13 @@ impl InjectableScriptTree {
     /// Get all scripts to apply to a certain host name.
     /// Scripts are collected from the root down to the specific host node (parents included).
     /// Children of the matched node are NOT included.
-    pub fn get_scripts(&self, host: &str) -> Vec<String> {
+    pub fn get_scripts(&self, host: &str, is_pro: bool) -> Vec<String> {
         let mut scripts = Vec::new();
         // Include root-level scripts (effectively global)
         scripts.extend(
             self.scripts
                 .iter()
-                .filter(|script| script.enabled)
+                .filter(|script| script.allowed_for(is_pro))
                 .map(|script| script.content.clone()),
         );
 
@@ -263,7 +281,7 @@ impl InjectableScriptTree {
                 scripts.extend(
                     node.scripts
                         .iter()
-                        .filter(|script| script.enabled)
+                        .filter(|script| script.allowed_for(is_pro))
                         .map(|script| script.content.clone()),
                 );
                 current_node = node;
@@ -284,19 +302,63 @@ mod tests {
         let entry: ScriptEntry = serde_json::from_value(serde_json::json!({
             "id": "youtube_random_captcha", "path": "com/youtube/captcha.js",
             "name": "Captcha", "description": "An opt-in interruption",
-            "version": "1.0.0", "defaultEnabled": false
+            "version": "1.0.0", "defaultEnabled": false, "requiresPro": true
         }))
         .unwrap();
         assert!(!entry.enabled, "opt-in actions must not silently activate");
-        let legacy: ScriptEntry = serde_json::from_value(serde_json::json!({
+        let regular: ScriptEntry = serde_json::from_value(serde_json::json!({
             "id": "youtube_remove_shorts", "path": "com/youtube/shorts.js",
-            "name": "Shorts", "description": "Remove shorts", "version": "1.0.0"
+            "name": "Shorts", "description": "Remove shorts", "version": "1.0.0", "requiresPro": false
         }))
         .unwrap();
-        assert!(
-            legacy.enabled,
-            "older catalogs retain their historical default"
+        assert!(regular.enabled, "non-disruptive scripts keep their default");
+    }
+
+    #[test]
+    fn schema_two_and_explicit_tiers_are_required() {
+        let directory = tempfile::tempdir().unwrap();
+        let catalog = directory.path().join("scripts-data.json");
+        fs::write(&catalog, r#"{"schemaVersion":1,"sites":{}}"#).unwrap();
+        assert_eq!(
+            InjectableScriptTree::load_from_json(&catalog)
+                .unwrap_err()
+                .kind(),
+            std::io::ErrorKind::InvalidData
         );
+
+        let script = serde_json::json!({
+            "id": "example", "path": "example.js", "name": "Example",
+            "description": "Example script", "version": "1.0",
+            "defaultEnabled": true
+        });
+        assert!(
+            serde_json::from_value::<ScriptEntry>(script).is_err(),
+            "every Resistance entry must explicitly declare requiresPro"
+        );
+    }
+
+    #[test]
+    fn free_eligible_scripts_are_filtered_before_injection() {
+        let mut tree = InjectableScriptTree::new();
+        let mut free: ScriptEntry = serde_json::from_value(serde_json::json!({
+            "id": "free", "path": "free.js", "name": "Free",
+            "description": "Free", "version": "1.0", "requiresPro": false
+        }))
+        .unwrap();
+        free.content = "free-script".to_string();
+        let mut paid: ScriptEntry = serde_json::from_value(serde_json::json!({
+            "id": "pro", "path": "pro.js", "name": "Pro",
+            "description": "Pro", "version": "1.0", "requiresPro": true
+        }))
+        .unwrap();
+        paid.content = "pro-script".to_string();
+        tree.scripts = vec![free, paid];
+        assert_eq!(tree.get_scripts("", false), vec!["free-script".to_string()]);
+        assert_eq!(tree.get_scripts("", true).len(), 2);
+        assert!(tree.has_scripts_of("", false));
+        tree.scripts[0].enabled = false;
+        assert!(!tree.has_scripts_of("", false));
+        assert!(tree.has_scripts_of("", true));
     }
 
     #[test]
@@ -309,14 +371,14 @@ mod tests {
         tree.insert("yahoo.com", "script_yahoo".to_string());
 
         // Test leaf node: should have all parents
-        let scripts = tree.get_scripts("mail.google.com");
+        let scripts = tree.get_scripts("mail.google.com", false);
         assert!(scripts.contains(&"script_com".to_string()));
         assert!(scripts.contains(&"script_google".to_string()));
         assert!(scripts.contains(&"script_mail".to_string()));
         assert!(!scripts.contains(&"script_yahoo".to_string()));
 
         // Test intermediate node: should have parents but not children
-        let scripts = tree.get_scripts("google.com");
+        let scripts = tree.get_scripts("google.com", false);
         assert!(scripts.contains(&"script_com".to_string()));
         assert!(scripts.contains(&"script_google".to_string()));
         assert!(!scripts.contains(&"script_mail".to_string()));
@@ -331,7 +393,7 @@ mod tests {
         tree.insert("google.com", "google_script".to_string());
         tree.insert("apple.com", "apple_script".to_string());
 
-        let scripts = tree.get_scripts("google.com");
+        let scripts = tree.get_scripts("google.com", false);
         assert!(scripts.contains(&"com_script".to_string()));
         assert!(scripts.contains(&"google_script".to_string()));
         assert!(!scripts.contains(&"apple_script".to_string()));
@@ -343,7 +405,7 @@ mod tests {
         tree.insert("google.com", "google_script".to_string());
 
         // sub.google.com should inherit google.com
-        let scripts = tree.get_scripts("sub.google.com");
+        let scripts = tree.get_scripts("sub.google.com", false);
         assert!(scripts.contains(&"google_script".to_string()));
     }
 }

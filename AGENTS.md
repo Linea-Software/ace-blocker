@@ -33,6 +33,8 @@ This root layout replaces old paths that refer to sibling repositories or an eng
   Do not replace this process with ordinary Tauri bundling.
 - Keep product update discovery and staging separate from content updates and TrustedClock.
   Read `docs/PRODUCT_UPDATES.md`.
+- Resistance Free/Pro content contract: `docs/RESISTANCE_TIERS.md`. Script tier
+  metadata belongs to Boredom Engine; authorization belongs to the engine.
   Signed metadata or a downloaded MSI does not permit stopping locked services.
   The privileged install path is currently disabled.
 - The proxy may decrypt only browser traffic.

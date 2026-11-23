@@ -196,7 +196,6 @@ impl ContentUpdateService {
     pub async fn stage_pending_updates(
         &mut self,
         api_key: Option<&ApiKey>,
-        is_pro: bool,
     ) -> Result<StagedContentUpdate, SitePackUpdateError> {
         let mut staged = StagedContentUpdate {
             site_packs: Vec::new(),
@@ -228,14 +227,9 @@ impl ContentUpdateService {
             }
         }
 
-        // ── Resistance scripts (Pro only) ─────────────────────────────
-        let scripts_need_update = if is_pro {
-            self.resistance_scripts_require_update().await?
-        } else {
-            false
-        };
-        if scripts_need_update {
-            match self.stage_resistance_scripts(api_key).await {
+        // One verified bundle serves Free and Pro; individual scripts are gated by the engine.
+        if self.resistance_scripts_require_update().await? {
+            match self.stage_resistance_scripts().await {
                 Ok(bundle) => staged.resistance_scripts = Some(bundle),
                 Err(error) => {
                     warn!("Failed to stage resistance scripts: {}", error);
@@ -326,13 +320,8 @@ impl ContentUpdateService {
     /// catalog so the commit's reload cannot fail on a truncated bundle.
     pub async fn stage_resistance_scripts(
         &self,
-        api_key: Option<&ApiKey>,
     ) -> Result<StagedScriptBundle, NetworkManagerOpErr> {
-        let api_key = api_key.ok_or_else(|| NetworkManagerOpErr::ProStatusCheckFailed {
-            message: "No API key found".to_string(),
-        })?;
-
-        let client = AceServerClient::new_http_client(Some(api_key));
+        let client = AceServerClient::new_http_client(None);
 
         let scripts_response = client
             .get_resistance_mode_scripts()
@@ -342,23 +331,8 @@ impl ContentUpdateService {
                     "Failed to download resistance scripts: {}",
                     error.to_string()
                 );
-                // 401/403 from the server mean the API key is invalid or the
-                // account is not Pro — an entitlement failure, not a
-                // transport or CDN problem. Keep those two classes
-                // distinguishable.
-                let is_entitlement_failure = matches!(
-                    &error,
-                    crate::ace_server_api::ApiOpError::Api(api_err)
-                        if api_err.status == 401 || api_err.status == 403
-                );
-                if is_entitlement_failure {
-                    NetworkManagerOpErr::ProStatusCheckFailed {
-                        message: error.to_string(),
-                    }
-                } else {
-                    NetworkManagerOpErr::ScriptDownloadFailed {
-                        message: error.to_string(),
-                    }
+                NetworkManagerOpErr::ScriptDownloadFailed {
+                    message: error.to_string(),
                 }
             })?;
 
@@ -739,10 +713,7 @@ pub(crate) async fn run_update_pass(
     } else {
         None
     };
-    let is_pro = send_credentials && account_manager.is_pro().await;
-    let staged = service
-        .stage_pending_updates(api_key.as_ref(), is_pro)
-        .await?;
+    let staged = service.stage_pending_updates(api_key.as_ref()).await?;
 
     // 3. Commit under the manager write lock.
     let mut manager = network_manager.write().await;

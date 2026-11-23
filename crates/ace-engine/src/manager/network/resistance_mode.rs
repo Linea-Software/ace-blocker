@@ -6,8 +6,8 @@ use super::NetworkManager;
 
 /// Machine-readable enforcement status for Resistance Mode.
 ///
-/// Operational status requires a loaded, enabled script and Pro eligibility.
-/// Priority: disabled > not_pro > scripts_missing > scripts_invalid > no_scripts_enabled.
+/// Operational status requires at least one enabled script allowed by the account.
+/// Priority: disabled > scripts_missing > scripts_invalid > no_scripts_enabled.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize, schemars::JsonSchema,
 )]
@@ -17,8 +17,6 @@ pub enum EnforcementStatus {
     Operational,
     /// The master switch is off.
     Disabled,
-    /// The account is not Pro; injection and downloads are gated on Pro.
-    NotPro,
     /// No script catalog/tree is installed (never downloaded or deleted).
     ScriptsMissing,
     /// The installed catalog failed to load (corrupt/unreadable).
@@ -39,7 +37,11 @@ impl NetworkManager {
     }
 
     pub fn has_scripts_of(&self, host: &str) -> bool {
-        self.resistance_mode.script_tree.has_scripts_of(host)
+        self.resistance_mode.enabled
+            && self
+                .resistance_mode
+                .script_tree
+                .has_scripts_of(host, self.is_pro_user_cached())
     }
 
     /// Computes the truthful enforcement status of Resistance Mode.
@@ -54,10 +56,6 @@ impl NetworkManager {
             return EnforcementStatus::Disabled;
         }
 
-        if !self.is_pro_user_cached() {
-            return EnforcementStatus::NotPro;
-        }
-
         let entries = engine.script_tree.get_all_script_entries();
         if entries.is_empty() {
             // The discriminator is the catalog file: no file at all means the
@@ -70,7 +68,11 @@ impl NetworkManager {
             return EnforcementStatus::ScriptsMissing;
         }
 
-        if entries.iter().all(|entry| !entry.enabled) {
+        let is_pro = self.is_pro_user_cached();
+        if entries
+            .iter()
+            .all(|entry| !entry.enabled || (entry.requires_pro && !is_pro))
+        {
             return EnforcementStatus::NoScriptsEnabled;
         }
 
@@ -78,7 +80,12 @@ impl NetworkManager {
     }
 
     pub fn get_resistance_scripts_of(&self, host: &str) -> Vec<String> {
-        self.resistance_mode.script_tree.get_scripts(host)
+        if !self.resistance_mode.enabled {
+            return Vec::new();
+        }
+        self.resistance_mode
+            .script_tree
+            .get_scripts(host, self.is_pro_user_cached())
     }
 
     pub fn set_script_enabled(
@@ -89,13 +96,11 @@ impl NetworkManager {
         if self.resistance_mode.is_locked() && !enabled {
             return Err(NetworkManagerOpErr::ResistanceModeIsLocked);
         }
-        if self
-            .resistance_mode
-            .script_tree
-            .get_script_by_id(id)
-            .is_none()
-        {
+        let Some(script) = self.resistance_mode.script_tree.get_script_by_id(id) else {
             return Ok(false);
+        };
+        if enabled && script.requires_pro && !self.is_pro_user_cached() {
+            return Err(NetworkManagerOpErr::ProPlanRequired);
         }
         self.db.set_script_state((*id).as_ref(), enabled)?;
         Ok(self
@@ -157,6 +162,9 @@ impl NetworkManager {
         &mut self,
         lock: crate::core::Lock,
     ) -> Result<(), NetworkManagerOpErr> {
+        if !self.is_pro_user_cached() {
+            return Err(NetworkManagerOpErr::ProPlanRequired);
+        }
         // v1 beta: Resistance Mode supports exactly two lock states — `inactive`
         // and `active_until_lock_end` (a one-way timed lock). `soft_unlockable`
         // and `active_during_schedule` are not part of the public contract and
@@ -432,13 +440,13 @@ mod tests {
             .iter()
             .map(|(id, name, path)| {
                 format!(
-                    r#"{{"id": "{}", "path": "{}", "name": "{}", "description": "test", "version": "1.0"}}"#,
-                    id, path, name
+                    r#"{{"id": "{}", "path": "{}", "name": "{}", "description": "test", "version": "1.0", "requiresPro": {}}}"#,
+                    id, path, name, id == &"premium_only"
                 )
             })
             .collect();
         format!(
-            r#"{{"sites": {{"com": {{"scripts": [], "children": {{"example": {{"scripts": [{}], "children": {{}}}}}}}}}}}}"#,
+            r#"{{"schemaVersion": 2, "sites": {{"com": {{"scripts": [], "children": {{"example": {{"scripts": [{}], "children": {{}}}}}}}}}}}}"#,
             entries.join(",")
         )
     }
@@ -868,6 +876,58 @@ mod tests {
     }
 
     #[test]
+    fn free_scripts_work_and_pro_scripts_are_denied_before_persistence() {
+        let _guard = TEST_DIR_LOCK.lock().unwrap();
+        let (_temp, _db, mut manager) = setup(&[
+            ("shorts", "Shorts", "shorts.js"),
+            ("premium_only", "Premium", "premium.js"),
+        ]);
+        manager.reload_scripts().unwrap();
+        manager.set_resistance_mode_enabled(true).unwrap();
+        let premium = ScriptId::try_new("premium_only").unwrap();
+        assert_eq!(
+            manager.resistance_enforcement_status(),
+            EnforcementStatus::Operational
+        );
+        let free_scripts = manager.get_resistance_scripts_of("example.com");
+        assert!(free_scripts.iter().any(|script| script.contains("shorts")));
+        assert!(free_scripts.iter().all(|script| !script.contains("other")));
+        assert!(matches!(
+            manager.set_script_enabled(&premium, true),
+            Err(NetworkManagerOpErr::ProPlanRequired)
+        ));
+        // The selection remains intact, and upgrading immediately unlocks it.
+        assert!(
+            manager
+                .get_resistance_mode()
+                .script_tree
+                .get_script_by_id(&premium)
+                .unwrap()
+                .enabled
+        );
+        manager.set_debug_pro_policy(super::super::DebugProPolicy::Pro);
+        assert_eq!(manager.get_resistance_scripts_of("example.com").len(), 2);
+        manager.set_script_enabled(&premium, false).unwrap();
+        manager.set_debug_pro_policy(super::super::DebugProPolicy::Free);
+        assert_eq!(manager.get_resistance_scripts_of("example.com").len(), 1);
+        assert!(manager.set_script_enabled(&premium, true).is_err());
+    }
+
+    #[test]
+    fn free_with_only_pro_scripts_is_not_operational() {
+        let _guard = TEST_DIR_LOCK.lock().unwrap();
+        let (_temp, _db, mut manager) = setup(&[("premium_only", "Premium", "premium.js")]);
+        manager.reload_scripts().unwrap();
+        manager.set_resistance_mode_enabled(true).unwrap();
+        assert_eq!(
+            manager.resistance_enforcement_status(),
+            EnforcementStatus::NoScriptsEnabled
+        );
+        assert!(!manager.has_scripts_of("example.com"));
+        assert!(manager.get_resistance_scripts_of("example.com").is_empty());
+    }
+
+    #[test]
     fn test_enforcement_status_matrix() {
         let _guard = TEST_DIR_LOCK.lock().unwrap();
         let (temp, _db, mut manager) = setup(&[("grayscale", "Grayscale", "grayscale.js")]);
@@ -880,11 +940,11 @@ mod tests {
             EnforcementStatus::Disabled
         );
 
-        // Enabled but not Pro → not_pro.
+        // Free can enforce eligible scripts.
         manager.set_resistance_mode_enabled(true).unwrap();
         assert_eq!(
             manager.resistance_enforcement_status(),
-            EnforcementStatus::NotPro
+            EnforcementStatus::Operational
         );
 
         // Pro + enabled + an enabled script is operational.
@@ -955,6 +1015,7 @@ mod tests {
     fn test_unsupported_lock_states_rejected_before_mutation() {
         let _guard = TEST_DIR_LOCK.lock().unwrap();
         let (_temp, _db, mut manager) = setup(&[("grayscale", "Grayscale", "grayscale.js")]);
+        manager.set_debug_pro_policy(super::super::DebugProPolicy::Pro);
         manager.set_resistance_mode_enabled(true).unwrap();
 
         for state in ["soft_unlockable", "active_during_schedule"] {

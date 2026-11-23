@@ -432,7 +432,11 @@ mod tests {
         static DIR: std::sync::OnceLock<tempfile::TempDir> = std::sync::OnceLock::new();
         DIR.get_or_init(|| {
             let dir = tempfile::tempdir().expect("failed to create shared resistance dir");
-            std::fs::write(dir.path().join("scripts-data.json"), r#"{"sites":{}}"#).unwrap();
+            std::fs::write(
+                dir.path().join("scripts-data.json"),
+                r#"{"schemaVersion":2,"sites":{}}"#,
+            )
+            .unwrap();
             dir
         })
         .path()

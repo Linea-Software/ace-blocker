@@ -363,6 +363,7 @@ pub struct ScriptInfo {
     pub name: String,
     pub description: String,
     pub is_enabled: bool,
+    pub requires_pro: bool,
 }
 
 #[derive(Serialize, Deserialize, JsonSchema, Clone, Debug, PartialEq)]
@@ -551,6 +552,7 @@ impl From<crate::core::common::injectable_scripts::ScriptEntry> for ScriptInfo {
             name: entry.name,
             description: entry.description,
             is_enabled: entry.enabled,
+            requires_pro: entry.requires_pro,
         }
     }
 }

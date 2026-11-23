@@ -48,7 +48,6 @@ fn modify_meta_csp_with_nonce(doc: &Document, nonce: &str) {
 /// # Arguments
 /// * `host` - The hostname to get scripts for
 /// * `html_content` - The original HTML content
-/// * `is_pro` - Whether the user has pro status
 /// * `scripts` - List of script contents to inject (from NetworkManager)
 /// * `nonce` - CSP nonce to add to script tags
 ///
@@ -57,14 +56,9 @@ fn modify_meta_csp_with_nonce(doc: &Document, nonce: &str) {
 pub fn inject_scripts_with_nonce(
     host: &str,
     html_content: String,
-    is_pro: bool,
     scripts: &[String],
     nonce: &str,
 ) -> String {
-    if !is_pro {
-        return html_content;
-    }
-
     if scripts.is_empty() {
         return html_content;
     }
@@ -96,8 +90,7 @@ mod tests {
         let scripts = vec!["console.log('test');".to_string()];
         let nonce = "abc123";
 
-        let result =
-            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, nonce);
+        let result = inject_scripts_with_nonce("example.com", html.to_string(), &scripts, nonce);
 
         assert!(result.contains(r#"nonce="abc123""#));
         assert!(result.contains("console.log('test');"));
@@ -117,8 +110,7 @@ mod tests {
         </head><body></body></html>"#;
         let scripts = vec!["console.log('test');".to_string()];
 
-        let result =
-            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, "abc123");
+        let result = inject_scripts_with_nonce("example.com", html.to_string(), &scripts, "abc123");
 
         let result_doc = Document::from(result);
         let meta = result_doc.select("meta[http-equiv]").first();
@@ -134,8 +126,7 @@ mod tests {
         </head><body></body></html>"#;
         let scripts = vec!["console.log('test');".to_string()];
 
-        let result =
-            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, "abc123");
+        let result = inject_scripts_with_nonce("example.com", html.to_string(), &scripts, "abc123");
 
         let result_doc = Document::from(result);
         let content = result_doc
@@ -147,15 +138,14 @@ mod tests {
     }
 
     #[test]
-    fn test_inject_scripts_not_pro() {
+    fn test_inject_scripts_with_available_intervention() {
         let html = r#"<!DOCTYPE html><html><head><title>Test</title></head><body></body></html>"#;
         let scripts = vec!["console.log('test');".to_string()];
         let nonce = "abc123";
 
-        let result =
-            inject_scripts_with_nonce("example.com", html.to_string(), false, &scripts, nonce);
+        let result = inject_scripts_with_nonce("example.com", html.to_string(), &scripts, nonce);
 
-        assert_eq!(result, html);
+        assert!(result.contains("console.log(\'test\');"));
     }
 
     #[test]
@@ -164,8 +154,7 @@ mod tests {
         let scripts: Vec<String> = vec![];
         let nonce = "abc123";
 
-        let result =
-            inject_scripts_with_nonce("example.com", html.to_string(), true, &scripts, nonce);
+        let result = inject_scripts_with_nonce("example.com", html.to_string(), &scripts, nonce);
 
         assert_eq!(result, html);
     }

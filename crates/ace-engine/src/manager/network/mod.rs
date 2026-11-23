@@ -263,11 +263,7 @@ impl NetworkManager {
 
         let needs_safe_search =
             safe_search_active && self.safe_search_enforcements.contains_key(&host);
-        let needs_scripts = !inspect_request
-            && !needs_safe_search
-            && self.resistance_mode.enabled
-            && self.has_scripts_of(&host)
-            && self.is_pro_user_cached();
+        let needs_scripts = !inspect_request && !needs_safe_search && self.has_scripts_of(&host);
 
         (
             if blocked {

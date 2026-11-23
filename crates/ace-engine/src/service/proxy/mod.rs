@@ -372,9 +372,9 @@ impl ResponseInspector for ProxyAdapter {
             if let Some(host) = host {
                 let eligible = {
                     let manager = self.network_manager.read().await;
-                    manager.is_resistance_mode_enabled() && manager.has_scripts_of(host)
+                    manager.has_scripts_of(host)
                 };
-                if eligible && self.account_manager.get_cached_pro_status() {
+                if eligible {
                     res.extensions_mut().insert(NeedsScriptInjection);
                 }
             }
@@ -427,23 +427,9 @@ impl ResponseInspector for ProxyAdapter {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("");
 
-        let is_pro = self.account_manager.get_cached_pro_status();
-
         if content_type.contains("text/html")
-            && is_pro
             && let Some(ref host) = host
         {
-            // ── Resistance master switch ──────────────────────────
-            // When resistance mode is disabled, no scripts and no
-            // site interventions may be injected.
-            let resistance_enabled = {
-                let manager = self.network_manager.read().await;
-                manager.is_resistance_mode_enabled()
-            };
-            if !resistance_enabled {
-                return ResponseAction::Continue;
-            }
-
             let scripts = self
                 .network_manager
                 .read()
@@ -493,7 +479,7 @@ impl ResponseInspector for ProxyAdapter {
             modify_csp_headers_with_nonce(res.headers_mut(), &nonce);
 
             // Inject scripts
-            let new_html = inject_scripts_with_nonce(host, html_string, is_pro, &scripts, &nonce);
+            let new_html = inject_scripts_with_nonce(host, html_string, &scripts, &nonce);
 
             // The body is now context-specific (Resistance Mode state + CSP
             // nonce). Never let a browser cache this modified top-level response
@@ -1896,6 +1882,31 @@ mod tests {
         assert!(
             body.contains("<title>t</title>"),
             "body should be untouched"
+        );
+    }
+
+    #[tokio::test]
+    async fn free_script_injection_does_not_require_a_pro_lease() {
+        let (_manager, adapter) = adapter_with_resistance(true).await;
+        adapter.account_manager.update_is_pro_status(false).unwrap();
+
+        let meta = conn_meta("example.com");
+        let document = document_request("example.com");
+        let mut response = html_response(HTML);
+        adapter
+            .inspect_response_head(&meta, &document, &mut response)
+            .await;
+        assert_eq!(
+            adapter.response_body_mode(&meta, &document, &response),
+            ResponseBodyMode::Buffer,
+            "the Free intervention should still trigger HTML buffering"
+        );
+        adapter
+            .inspect_response(&meta, &document, &mut response)
+            .await;
+        assert!(
+            String::from_utf8_lossy(response.body()).contains("console.log('boom')"),
+            "a Free script must inject without a Pro lease"
         );
     }
 
