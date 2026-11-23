@@ -3,8 +3,8 @@
     gap: 28px;
 }
 
-h2,
-h3 {
+.guide-workspace h2,
+.guide-workspace h3 {
     font-family: "IBM Plex Sans Condensed", sans-serif;
 }
 
@@ -70,13 +70,13 @@ h3 {
     gap: 13px;
 }
 
-.section-heading h2 {
+.guide-workspace .section-heading h2 {
     margin: 0;
     font-size: 20px;
     font-weight: 600;
 }
 
-.section-heading p {
+.guide-workspace .section-heading p {
     margin: 4px 0 0;
     color: var(--muted-foreground);
     font-size: 12px;
@@ -186,7 +186,7 @@ h3 {
     line-height: 1.5;
 }
 
-:global(.faq-ledger) {
+.guide-workspace .faq-ledger {
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 5px;
@@ -222,6 +222,16 @@ h3 {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+}
+
+.setup-heading > div {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.setup-heading .start-action {
+    width: auto;
+    max-width: 100%;
 }
 
 .start-action {
@@ -278,12 +288,12 @@ h3 {
     line-height: 1.4;
 }
 
-.concept-disclosure summary :global(svg) {
+.concept-disclosure summary svg {
     flex: 0 0 auto;
     transition: transform 150ms ease;
 }
 
-.concept-disclosure[open] summary :global(svg) {
+.concept-disclosure[open] summary svg {
     transform: rotate(180deg);
 }
 
@@ -301,7 +311,7 @@ h3 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .concept-disclosure summary :global(svg) {
+    .concept-disclosure summary svg {
         transition: none;
     }
 }

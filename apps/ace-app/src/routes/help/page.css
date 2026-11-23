@@ -33,7 +33,7 @@ h2 {
 }
 
 .lock-notice p,
-.section-heading p {
+.help-workspace .section-heading p {
     margin: 4px 0 0;
     color: var(--muted-foreground);
     font-size: 12px;
@@ -45,14 +45,14 @@ h2 {
     gap: 12px;
 }
 
-.section-heading {
+.help-workspace .section-heading {
     display: grid;
     grid-template-columns: 24px minmax(0, 1fr);
     gap: 8px;
     color: var(--muted-foreground);
 }
 
-.section-heading h2 {
+.help-workspace .section-heading h2 {
     color: var(--foreground);
     font-size: 18px;
 }

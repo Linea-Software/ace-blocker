@@ -92,6 +92,27 @@ test.describe("Getting Started", () => {
         ).toBeVisible();
     });
 
+    test("guide headings and actions retain a usable layout", async ({ page }) => {
+        await gotoPage(page);
+        const setup = page.locator(".setup-heading");
+        const description = setup.locator("p");
+        const button = setup.locator("a.start-action");
+        const section = page.locator(".guide-workspace");
+
+        const [textBox, actionBox, sectionBox] = await Promise.all([
+            description.boundingBox(),
+            button.boundingBox(),
+            section.boundingBox(),
+        ]);
+        expect(textBox && actionBox && sectionBox).toBeTruthy();
+        expect(textBox!.width).toBeGreaterThan(200);
+        expect(actionBox!.x).toBeGreaterThanOrEqual(textBox!.x + textBox!.width - 1);
+        expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(
+            sectionBox!.x + sectionBox!.width + 1,
+        );
+        await expect(page.locator(".faq-ledger")).toHaveCSS("overflow", "hidden");
+    });
+
     test("FAQ answers expand", async ({ page }) => {
         await gotoPage(page);
 
