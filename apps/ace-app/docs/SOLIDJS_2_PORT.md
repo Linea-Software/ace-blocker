@@ -55,7 +55,7 @@ Package-pinned official skills always take precedence over third-party guidance.
 - `src/lib/engine-client/`: unchanged typed Tauri remoc RPC API boundary.
 - `src/lib/paraglide/`: generated localization code; do not edit manually.
 - `src/app.css`, `src/app-shell.css`: global design system and layout.
-- `src/lib/utils/theme.ts`: existing `mode-watcher-mode` preference compatibility.
+- `src/lib/utils/theme.ts`: the single Solid theme signal and persistence owner. Browser previews restore `mode-watcher-mode` from localStorage; Tauri also loads/saves `settings.json` on application startup and every selection, then synchronizes the local cache to avoid a theme flash on later launches. A late native read never overrides a newer user selection.
 - `src-tauri/`: unchanged Rust Tauri backend and native commands.
 - `vite.config.ts`: SPA compilation and Paraglide/Tailwind plugins;
   `build/` remains Tauri's `frontendDist`.
