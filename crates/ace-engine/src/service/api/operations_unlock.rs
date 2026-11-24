@@ -106,7 +106,7 @@ pub(super) async fn confirm_unlock(
     // escalated while the challenge was pending) leaves the challenge intact.
     drop(challenges);
 
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     let now = Local::now();
 
     manager

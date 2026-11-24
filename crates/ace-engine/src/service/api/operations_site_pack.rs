@@ -69,7 +69,7 @@ pub(super) async fn create_site_pack(
     }
 
     let stream = {
-        let mut manager = state.network_manager.write().await;
+        let mut manager = state.policy_write().await?;
         manager.import_site_pack_for_verified_pro(
             &payload.name,
             payload.description,
@@ -87,7 +87,7 @@ pub(super) async fn delete_site_pack(
 ) -> Result<(), ApiError> {
     let site_pack_id = SitePackId::try_new(site_pack_id)
         .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
 
     // The backend enforces the lock rule — a stale frontend that believes a
     // pack is deletable must still be refused when the pack is locked (423
@@ -143,7 +143,7 @@ pub(super) async fn resync_site_pack(
         ));
     }
     let stream = {
-        let mut manager = state.network_manager.write().await;
+        let mut manager = state.policy_write().await?;
         manager.resync_site_pack(&site_pack_id).await?
     };
     Ok(stream)
@@ -176,7 +176,7 @@ pub(super) async fn add_site_pack_source(
     if !state.is_pro_account_entitled().await {
         return Err(ApiError::Forbidden("Pro subscription required".to_string()));
     }
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
 
     let source = manager.add_site_pack_source(
         &site_pack_id,
@@ -194,14 +194,14 @@ pub(super) async fn delete_site_pack_source(
     state: AppState,
     source_id: uuid::Uuid,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.delete_site_pack_source(source_id)?;
     Ok(())
 }
 
 pub(super) async fn re_enable_remote_site_packs(state: AppState) -> Result<(), ApiError> {
     let allow_pro = state.is_pro_account_entitled().await;
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.re_enable_all_remote_site_packs(allow_pro).await?;
     Ok(())
 }

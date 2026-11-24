@@ -27,7 +27,7 @@ pub(super) async fn set_lock(
     network_block_id: uuid::Uuid,
     payload: SetNetworkLockRequest,
 ) -> Result<SetNetworkLockResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
 
     let lock = Lock::from_user_raw(payload.lock_state.to_string(), payload.lock_end.clone())
         .map_err(|error| ApiError::BadRequest(error.to_string()))?;

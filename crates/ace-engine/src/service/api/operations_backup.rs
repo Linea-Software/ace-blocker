@@ -28,7 +28,7 @@ fn schedule_restored_site_pack_recovery(state: &AppState) {
 pub(super) async fn export_backup(
     state: AppState,
 ) -> Result<crate::manager::network::backup::EngineBackup, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     let backup = manager.export_backup()?;
     Ok(backup)
 }
@@ -125,7 +125,7 @@ pub(super) async fn export_backup_to_cloud(
         .ok_or_else(|| ApiError::Unauthorized("Not logged in".into()))?;
     let password = zeroize::Zeroizing::new(payload.password);
     let backup = {
-        let mut manager = state.network_manager.write().await;
+        let mut manager = state.policy_write().await?;
         manager.export_backup()?
     };
     // If there is a previous encrypted backup, its password must decrypt it
@@ -159,7 +159,7 @@ pub(super) async fn import_backup_from_cloud(
         .ok_or_else(|| ApiError::NotFound("No cloud backup found".into()))?;
     let backup = super::backup_encryption::decrypt_backup(&encrypted, &password)?;
 
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.import_backup(backup).await?;
     drop(manager);
 
@@ -200,7 +200,7 @@ pub(super) async fn import_backup(
             "Pro required to restore or connect custom or premium site lists".into(),
         ));
     }
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.import_backup(payload).await?;
     drop(manager);
 

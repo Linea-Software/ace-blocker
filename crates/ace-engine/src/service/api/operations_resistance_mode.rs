@@ -34,7 +34,7 @@ pub(super) async fn set_resistance_mode_enabled(
     state: AppState,
     payload: SetEnabledRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.set_resistance_mode_enabled(payload.enabled)?;
     Ok(())
 }
@@ -43,7 +43,7 @@ pub(super) async fn set_resistance_mode_lock(
     state: AppState,
     payload: SetNetworkLockRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     let lock = crate::core::Lock::from_user_raw(payload.lock_state, payload.lock_end)
         .map_err(|error| ApiError::BadRequest(error.to_string()))?;
     manager.set_resistance_mode_lock(lock)?;
@@ -92,7 +92,7 @@ pub(super) async fn set_script_enabled(
     script_id: String,
     payload: SetEnabledRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     let script_id = ScriptId::try_new(script_id)
         .map_err(|error| ApiError::BadRequest(format!("Invalid script ID: {error}")))?;
 
@@ -118,7 +118,7 @@ pub(super) async fn download_resistance_scripts(state: AppState) -> Result<(), A
         .map_err(ApiError::from)?;
     drop(content_service);
 
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager
         .commit_resistance_scripts(staged)
         .map_err(ApiError::from)?;

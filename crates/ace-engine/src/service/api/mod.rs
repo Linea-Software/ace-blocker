@@ -52,6 +52,21 @@ pub struct AppState {
 }
 
 impl AppState {
+    /// Serialize policy mutations with the authenticated shutdown decision.
+    /// Check after acquiring the lock: a queued mutation must not commit
+    /// a newly active lock once shutdown has been authorized.
+    async fn policy_write(
+        &self,
+    ) -> Result<tokio::sync::RwLockWriteGuard<'_, NetworkManager>, error::ApiError> {
+        let guard = self.network_manager.write().await;
+        if *self.shutdown_tx.borrow() {
+            return Err(error::ApiError::Conflict(
+                "Engine maintenance is in progress".into(),
+            ));
+        }
+        Ok(guard)
+    }
+
     /// Initial account reads must never wait for the Ace server: legal
     /// acceptance and the desktop shell are local state. Background/explicit
     /// refresh remains responsible for remote entitlement validation.

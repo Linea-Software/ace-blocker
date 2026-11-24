@@ -140,7 +140,10 @@ pub(super) async fn trigger_content_update(state: AppState) -> Result<(), ApiErr
 }
 
 pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {
-    let manager = state.network_manager.read().await;
+    // Keep the same exclusive policy guard through the lock checks, watchdog
+    // acknowledgement and shutdown commitment. A queued lock mutation then
+    // sees the committed shutdown flag before writing.
+    let manager = state.policy_write().await?;
 
     let has_locked_blocks = manager.any_network_block_locked();
     let resistance_locked = manager.is_resistance_mode_locked();
@@ -158,8 +161,6 @@ pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {
             reasons.join(" and ")
         )));
     }
-
-    drop(manager);
 
     // The engine remains authoritative for whether shutdown is allowed. Only
     // after both lock checks pass do we ask the production watchdog for a short
@@ -181,7 +182,8 @@ pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {
     }
 
     // Signal the main run() loop to begin graceful shutdown.
-    let _ = state.shutdown_tx.send(true);
+    state.shutdown_tx.send_replace(true);
+    drop(manager);
 
     Ok(())
 }

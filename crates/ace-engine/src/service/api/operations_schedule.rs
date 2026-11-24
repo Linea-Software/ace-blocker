@@ -23,7 +23,7 @@ pub(super) async fn add_schedule_entries(
     network_block_id: uuid::Uuid,
     payload: AddScheduleEntriesRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
 
     let mut core_entries = Vec::new();
     for entry in payload.schedule_entries {
@@ -72,7 +72,7 @@ pub(super) async fn edit_schedule_entry(
     schedule_entry_id: uuid::Uuid,
     entry: BaseScheduleEntrySchema,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
 
     let mut days = 0;
     if entry.monday {
@@ -114,7 +114,7 @@ pub(super) async fn delete_schedule_entry(
     state: AppState,
     schedule_entry_id: uuid::Uuid,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.delete_schedule_entry(ScheduleEntryId::from(schedule_entry_id))?;
     Ok(())
 }

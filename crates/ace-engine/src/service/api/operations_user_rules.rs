@@ -6,7 +6,7 @@ pub(super) async fn get_user_rules(
     state: AppState,
     network_block_id: uuid::Uuid,
 ) -> Result<GetUserDefinedRulesResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
 
     let list_id = NetworkBlockId::from(network_block_id);
     let rules = manager.get_user_defined_entries_of(&list_id)?;
@@ -27,7 +27,7 @@ pub(super) async fn add_user_rules(
     network_block_id: uuid::Uuid,
     payload: AddUserDefinedRulesRequest,
 ) -> Result<AddUserDefinedRulesResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     let list_id = NetworkBlockId::from(network_block_id);
     let models = manager.add_user_defined_entries(&list_id, payload.rules)?;
 
@@ -46,7 +46,7 @@ pub(super) async fn delete_user_rule(
     state: AppState,
     user_rule_id: uuid::Uuid,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.delete_user_defined_entry(user_rule_id)?;
     Ok(())
 }

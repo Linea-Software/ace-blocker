@@ -1416,6 +1416,22 @@ mod remoc_tests {
         (temp, state)
     }
 
+    #[tokio::test]
+    async fn policy_writes_are_rejected_after_shutdown_commit() {
+        let (_temp, state) = state();
+        let guard = state.policy_write().await.unwrap();
+        let pending = state.clone();
+        let queued = tokio::spawn(async move { pending.policy_write().await.map(|_| ()) });
+        tokio::task::yield_now().await;
+        state.shutdown_tx.send_replace(true);
+        drop(guard);
+        let result = queued.await.unwrap();
+        assert!(matches!(
+            result,
+            Err(super::super::error::ApiError::Conflict(_))
+        ));
+    }
+
     // Exercise the actual production RTC trait and Remoc's byte-stream
     // connection lifecycle without starting a privileged Windows service.
     async fn client(state: AppState) -> (EngineControlClient, tokio::task::JoinHandle<()>) {

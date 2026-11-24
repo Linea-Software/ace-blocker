@@ -8,7 +8,7 @@ pub(super) async fn rename_network_block(
     network_block_id: uuid::Uuid,
     payload: RenameNetworkBlockRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.rename_network_block(
         &NetworkBlockId::from(network_block_id),
         payload.new_name.clone(),
@@ -34,7 +34,7 @@ pub(super) async fn create_network_block(
     state: AppState,
     payload: CreateNetworkBlockRequest,
 ) -> Result<CreateNetworkBlockResponse, ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
 
     let block_id = manager.create_network_block(payload.block_name.clone())?;
 
@@ -62,7 +62,7 @@ pub(super) async fn delete_network_block(
     state: AppState,
     network_block_id: uuid::Uuid,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.delete_network_block(&NetworkBlockId::from(network_block_id))?;
     Ok(())
 }
@@ -72,7 +72,7 @@ pub(super) async fn set_network_block_safe_search(
     network_block_id: uuid::Uuid,
     payload: SetEnabledRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager
         .set_network_block_safe_search(&NetworkBlockId::from(network_block_id), payload.enabled)?;
     Ok(())
@@ -83,7 +83,7 @@ pub(super) async fn set_network_block_enabled(
     network_block_id: uuid::Uuid,
     payload: SetEnabledRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.set_network_block_enabled(&NetworkBlockId::from(network_block_id), payload.enabled)?;
     Ok(())
 }
@@ -93,7 +93,7 @@ pub(super) async fn set_network_block_icon(
     network_block_id: uuid::Uuid,
     payload: SetIconRequest,
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.set_network_block_icon(&NetworkBlockId::from(network_block_id), payload.icon)?;
     Ok(())
 }
@@ -161,7 +161,7 @@ pub(super) async fn save_network_block(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     let id = manager.save_network_block(
         NetworkBlockDraft {
             id: payload.id.map(NetworkBlockId::from),

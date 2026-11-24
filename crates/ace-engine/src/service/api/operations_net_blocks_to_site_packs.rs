@@ -40,7 +40,7 @@ pub(super) async fn add_net_block_to_site_pack_connection(
             "Pro required to attach this site list".into(),
         ));
     }
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     manager.add_network_block_to_site_pack(&list_id, &site_pack_id)?;
 
     Ok(AddNetListToSitePackResponse {
@@ -55,7 +55,7 @@ pub(super) async fn remove_net_block_to_site_pack_connection(
     state: AppState,
     (network_block_id, site_pack_id): (uuid::Uuid, String),
 ) -> Result<(), ApiError> {
-    let mut manager = state.network_manager.write().await;
+    let mut manager = state.policy_write().await?;
     let list_id = NetworkBlockId::from(network_block_id);
     let site_pack_id = SitePackId::try_new(site_pack_id)
         .map_err(|error| ApiError::BadRequest(format!("Invalid site pack ID: {error}")))?;
