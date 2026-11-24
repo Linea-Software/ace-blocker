@@ -126,6 +126,113 @@ async fn spawn_upgrade_https_origin() -> (std::net::SocketAddr, SelfSignedCert) 
     (addr, cert)
 }
 
+struct TransparentHttp;
+
+impl InterceptDecider for TransparentHttp {
+    fn should_intercept(&self, _: &http::uri::Authority, _: Option<&str>) -> bool {
+        false
+    }
+
+    fn inspect_plaintext_connect(&self) -> bool {
+        true
+    }
+}
+
+struct TransparentHttpPolicy;
+
+#[async_trait::async_trait]
+impl RequestInspector for TransparentHttpPolicy {
+    async fn inspect_connect(
+        &self,
+        _: &mitm_proxy::ConnMeta,
+        authority: &http::uri::Authority,
+    ) -> mitm_proxy::inspect::ConnectAction {
+        if authority.host() == "blocked.example" {
+            mitm_proxy::inspect::ConnectAction::Respond(
+                Response::builder().status(404).body(Bytes::new()).unwrap(),
+            )
+        } else {
+            mitm_proxy::inspect::ConnectAction::Continue
+        }
+    }
+
+    async fn inspect_request(
+        &self,
+        _: &mitm_proxy::ConnMeta,
+        request: &mut mitm_proxy::BufferedRequest,
+    ) -> RequestAction {
+        let status = if request.uri().host() == Some("blocked.example") {
+            StatusCode::NOT_FOUND
+        } else {
+            StatusCode::OK
+        };
+        RequestAction::Respond(
+            Response::builder()
+                .status(status)
+                .body(Bytes::new())
+                .unwrap(),
+        )
+    }
+}
+
+#[tokio::test]
+async fn transparent_http_connect_checks_inner_host_and_returns_inner_response() {
+    init_tracing();
+    let ca = TempDir::new().unwrap();
+    let proxy = pick_tcp_addr().await;
+    let (_, handle) = start_proxy_on_with_decider(
+        proxy,
+        None,
+        ca.path(),
+        Inspectors {
+            request: Arc::new(TransparentHttpPolicy),
+            ..Inspectors::default()
+        },
+        Arc::new(TransparentHttp),
+    )
+    .await;
+    for (target, host, expected) in [
+        ("blocked.example", "blocked.example", 404),
+        ("192.0.2.1", "blocked.example", 404),
+        ("192.0.2.1", "allowed.example", 200),
+        ("allowed.example", "blocked.example", 421),
+        ("192.0.2.1", "allowed.example:81", 400),
+    ] {
+        tokio::time::timeout(std::time::Duration::from_secs(5), async {
+            let mut stream = tokio::net::TcpStream::connect(proxy).await.unwrap();
+            stream
+                .write_all(
+                    format!("CONNECT {target}:80 HTTP/1.1\r\nHost: {target}:80\r\n\r\n").as_bytes(),
+                )
+                .await
+                .unwrap();
+            let mut head = Vec::new();
+            while !head.ends_with(b"\r\n\r\n") {
+                head.push(stream.read_u8().await.unwrap());
+                assert!(head.len() < 4096);
+            }
+            assert!(String::from_utf8_lossy(&head).starts_with("HTTP/1.1 200"));
+            stream
+                .write_all(
+                    format!("GET /fixture HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n")
+                        .as_bytes(),
+                )
+                .await
+                .unwrap();
+            let mut response = Vec::new();
+            stream.read_to_end(&mut response).await.unwrap();
+            assert!(
+                String::from_utf8_lossy(&response).starts_with(&format!("HTTP/1.1 {expected}")),
+                "{target} {host}: {}",
+                String::from_utf8_lossy(&response)
+            );
+        })
+        .await
+        .unwrap();
+    }
+    handle.abort();
+}
+
 #[tokio::test]
 async fn http1_plaintext_forward() {
     init_tracing();

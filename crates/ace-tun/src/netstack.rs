@@ -492,7 +492,9 @@ async fn handle_tcp(mut stream: ipstack::IpStackTcpStream, shared: &Shared) -> s
             // Prefer the snooped hostname: the MITM proxy needs a name to issue
             // a certificate for and to send as SNI upstream. Falling back to the
             // IP literal still works for plaintext HTTP.
-            let target = match (cfg.send_domain_to_proxy, domain) {
+            let send_domain =
+                cfg.send_domain_to_proxy && !(cfg.preserve_http_destination && dest.port() == 80);
+            let target = match (send_domain, domain) {
                 (true, Some(d)) => Target::Domain(d, dest.port()),
                 _ => Target::Ip(dest.ip(), dest.port()),
             };

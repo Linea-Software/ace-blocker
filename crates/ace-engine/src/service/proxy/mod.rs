@@ -218,11 +218,24 @@ impl RequestInspector for ProxyAdapter {
     }
 
     async fn should_terminate_upgraded(&self, meta: &ConnMeta, uri: &http::Uri) -> bool {
-        if meta.is_tls
-            && let Ok(authority) = meta.authority.parse()
-            && self.should_terminate_tunnel(&authority, true).await
-        {
-            return true;
+        if let Ok(authority) = meta.authority.parse::<http::uri::Authority>() {
+            if meta.is_tls && self.should_terminate_tunnel(&authority, true).await {
+                return true;
+            }
+            // Transparent HTTP carries the actual original TCP destination
+            // in ConnMeta; its HTTP URI can identify a separate virtual host.
+            // A later IP policy change must terminate the stream too.
+            if !meta.is_tls
+                && self
+                    .network_manager
+                    .read()
+                    .await
+                    .connect_host_policy(authority.host())
+                    .0
+                    .is_blocked()
+            {
+                return true;
+            }
         }
         !matches!(
             self.network_manager.read().await.is_uri_blocked(uri),
@@ -532,6 +545,10 @@ impl InterceptDecider for ProxyInterceptDecider {
         true
     }
 
+    fn inspect_plaintext_connect(&self) -> bool {
+        true
+    }
+
     fn should_intercept(&self, authority: &http::uri::Authority, sni: Option<&str>) -> bool {
         let host = authority.host();
         let policy_requires_interception = self
@@ -670,7 +687,10 @@ impl AceProxy {
             //    user VPN); on Windows WFP ensures protected applications cannot
             //    escape ACE by selecting another network interface.
             .add_rule(Rule::new("*").action(RuleAction::Direct))
-            .proxy_config(ace_tun::ProxyConfig::http("127.0.0.1", listen_port))
+            .proxy_config(
+                ace_tun::ProxyConfig::http("127.0.0.1", listen_port)
+                    .preserve_http_destination(true),
+            )
             .on_log(|msg| tracing::info!("[ace-tun] {}", msg))
             .on_connection(|info: &ConnectionInfo| {
                 tracing::debug!(

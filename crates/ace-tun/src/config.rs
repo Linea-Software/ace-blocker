@@ -31,6 +31,8 @@ pub struct ProxyConfig {
     /// to the proxy so it resolves DNS (`socks5h` / `CONNECT domain:port`).
     /// When `false`, the resolved IP literal is sent instead.
     pub(crate) send_domain_to_proxy: bool,
+    /// Preserve the actual TCP/80 socket destination for transparent HTTP.
+    pub(crate) preserve_http_destination: bool,
 }
 
 impl ProxyConfig {
@@ -44,6 +46,7 @@ impl ProxyConfig {
             username: None,
             password: None,
             send_domain_to_proxy: true,
+            preserve_http_destination: false,
         }
     }
 
@@ -57,6 +60,7 @@ impl ProxyConfig {
             username: None,
             password: None,
             send_domain_to_proxy: true,
+            preserve_http_destination: false,
         }
     }
 
@@ -74,6 +78,13 @@ impl ProxyConfig {
     /// locally-resolved IP is sent instead (`false`).
     pub fn resolve_on_proxy(mut self, enable: bool) -> Self {
         self.send_domain_to_proxy = enable;
+        self
+    }
+
+    /// Send the original IP for TCP/80 rather than a potentially stale DNS
+    /// cache hint. The transparent HTTP proxy inspects the inner Host.
+    pub fn preserve_http_destination(mut self, enable: bool) -> Self {
+        self.preserve_http_destination = enable;
         self
     }
 

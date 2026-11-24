@@ -27,6 +27,12 @@ pub trait InterceptDecider: Send + Sync {
     fn recover_hostname_for_ip_connect(&self) -> bool {
         false
     }
+
+    /// Opt in to inspecting origin-form HTTP inside transparent port-80
+    /// CONNECT tunnels. Ordinary explicit CONNECT retains its opaque contract.
+    fn inspect_plaintext_connect(&self) -> bool {
+        false
+    }
 }
 
 /// Default [`InterceptDecider`]: intercept nothing.

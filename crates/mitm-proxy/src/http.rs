@@ -154,6 +154,26 @@ async fn outer_handler(
         };
         debug!(client = %peer, authority = %authority, "received CONNECT request");
 
+        // ACE's TUN transports browser TCP/80 in an internal CONNECT. The
+        // hostname may be a DNS-cache guess or an IP, so inspect the actual
+        // inner HTTP request instead of TLS-terminating or blindly relaying it.
+        if authority.port_u16() == Some(80) && state.intercept_decider.inspect_plaintext_connect() {
+            tokio::spawn(async move {
+                match hyper::upgrade::on(req).await {
+                    Ok(upgraded) => {
+                        if let Err(error) =
+                            serve_plaintext_tunnel(TokioIo::new(upgraded), peer, state, authority)
+                                .await
+                        {
+                            debug!("plaintext CONNECT tunnel ended: {error:#}");
+                        }
+                    }
+                    Err(error) => debug!("plaintext CONNECT upgrade failed: {error}"),
+                }
+            });
+            return Response::new(full_body(Bytes::new()));
+        }
+
         let connect_meta = ConnMeta {
             client_addr: peer,
             protocol: Protocol::Http1,
@@ -214,7 +234,139 @@ async fn forward_plaintext(
         authority: authority_display(&host, port, false),
     };
 
-    relay(req, meta, false, host, port, state).await
+    relay(req, meta, false, host, port, state, None).await
+}
+
+/// Serve origin-form HTTP carried by the opted-in transparent TCP transport.
+async fn serve_plaintext_tunnel<I>(
+    io: I,
+    peer: SocketAddr,
+    state: SharedState,
+    connect_authority: Authority,
+) -> Result<()>
+where
+    I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin + Send + 'static,
+{
+    let port = connect_authority.port_u16().unwrap_or(80);
+    let destination = connect_authority
+        .host()
+        .trim_matches(['[', ']'])
+        .parse::<std::net::IpAddr>()
+        .ok()
+        .map(|ip| SocketAddr::new(ip, port));
+    let meta = ConnMeta {
+        client_addr: peer,
+        protocol: Protocol::Http1,
+        is_tls: false,
+        authority: connect_authority.to_string(),
+    };
+    let active_uri = Arc::new(std::sync::Mutex::new(None::<http::Uri>));
+    let active_for_request = active_uri.clone();
+    let inspector = state.inspectors.request.clone();
+    let watch_meta = meta.clone();
+    let service = service_fn(move |req: Request<Incoming>| {
+        let state = state.clone();
+        let connect_authority = connect_authority.clone();
+        let active_uri = active_for_request.clone();
+        let meta = meta.clone();
+        async move {
+            let response = async {
+                // An inner CONNECT or an absolute URI would introduce a second
+                // destination unrelated to the original transparent connection.
+                if req.method() == Method::CONNECT
+                    || req.uri().scheme().is_some()
+                    || req.uri().authority().is_some()
+                    || !req.uri().path().starts_with('/')
+                {
+                    return simple(StatusCode::BAD_REQUEST, "expected origin-form HTTP");
+                }
+
+                let mut hosts = req.headers().get_all(http::header::HOST).iter();
+                let Some(host_header) = hosts.next().and_then(|value| value.to_str().ok()) else {
+                    return simple(StatusCode::BAD_REQUEST, "missing Host");
+                };
+                let Ok(authority) = host_header.parse::<Authority>() else {
+                    return simple(StatusCode::BAD_REQUEST, "invalid Host");
+                };
+                if hosts.next().is_some()
+                    || host_header.contains('@')
+                    || authority.port().is_some() && authority.port_u16().is_none()
+                    || authority.port_u16().unwrap_or(80) != port
+                    || authority.host().is_empty()
+                {
+                    return simple(StatusCode::BAD_REQUEST, "invalid Host authority");
+                }
+                let host = authority.host();
+                let connect_host = connect_authority.host();
+                let same_host = host
+                    .trim_end_matches('.')
+                    .eq_ignore_ascii_case(connect_host.trim_end_matches('.'));
+                // Recover a hostname only for an IP CONNECT. A named CONNECT
+                // may not silently become a tunnel to a different destination.
+                if !same_host
+                    && (!is_ip_literal(connect_host)
+                        || is_ip_literal(host)
+                        || ServerName::try_from(host.to_owned()).is_err()
+                        || host.trim_end_matches('.').eq_ignore_ascii_case("localhost"))
+                {
+                    return simple(
+                        StatusCode::MISDIRECTED_REQUEST,
+                        "Host does not match CONNECT",
+                    );
+                }
+
+                // Apply the original CONNECT policy as well as the actual HTTP
+                // URI policy, including IP rules. A synthetic response is
+                // delivered to the browser as HTTP, not to ACE's CONNECT client.
+                let connect_meta = ConnMeta {
+                    client_addr: peer,
+                    protocol: Protocol::Http1,
+                    is_tls: false,
+                    authority: connect_authority.to_string(),
+                };
+                match state
+                    .inspectors
+                    .request
+                    .inspect_connect(&connect_meta, &connect_authority)
+                    .await
+                {
+                    ConnectAction::Respond(response) | ConnectAction::Intercept(response) => {
+                        return into_full(response);
+                    }
+                    ConnectAction::Continue => {}
+                }
+                let uri = match absolute_uri(req.uri(), host, port, false) {
+                    Ok(uri) => uri,
+                    Err(_) => return simple(StatusCode::BAD_REQUEST, "invalid request URI"),
+                };
+                *active_uri.lock().unwrap_or_else(|e| e.into_inner()) = Some(uri);
+                relay(req, meta, false, host.to_owned(), port, state, destination).await
+            }
+            .await;
+            Ok::<_, Infallible>(response)
+        }
+    });
+    let connection = hyper::server::conn::http1::Builder::new()
+        .serve_connection(TokioIo::new(io), service)
+        .with_upgrades();
+    let watch_policy = async {
+        let mut interval = tokio::time::interval(TUNNEL_POLICY_POLL_INTERVAL);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        interval.tick().await;
+        loop {
+            interval.tick().await;
+            let uri = active_uri.lock().unwrap_or_else(|e| e.into_inner()).clone();
+            if let Some(uri) = uri
+                && inspector.should_terminate_upgraded(&watch_meta, &uri).await
+            {
+                return;
+            }
+        }
+    };
+    tokio::select! {
+        result = connection => result.map_err(|error| eyre::eyre!("serving transparent HTTP: {error}")),
+        _ = watch_policy => Ok(()),
+    }
 }
 
 /// Terminate TLS on an accepted CONNECT tunnel and serve the decrypted stream.
@@ -400,7 +552,7 @@ where
                 is_tls: true,
                 authority: authority_display(&host, port, true),
             };
-            Ok::<_, Infallible>(relay(req, meta, true, host.to_string(), port, state).await)
+            Ok::<_, Infallible>(relay(req, meta, true, host.to_string(), port, state, None).await)
         }
     });
 
@@ -504,6 +656,7 @@ async fn relay(
     host: String,
     port: u16,
     state: SharedState,
+    destination: Option<SocketAddr>,
 ) -> Response<ProxyBody> {
     // An IP-literal CONNECT target must not be used as the upstream SNI — CDNs
     // reject SNI literals with a handshake failure. Prefer the hostname the
@@ -582,11 +735,21 @@ async fn relay(
             }
             ensure_host_header(&mut ureq, &upstream_host, port, secure);
 
-            let upstream_resp = match state
-                .upstream
-                .send(secure, &upstream_host, port, ureq)
-                .await
-            {
+            let sent = match destination {
+                Some(address) => {
+                    state
+                        .upstream
+                        .send_plaintext_to(&upstream_host, address, ureq)
+                        .await
+                }
+                None => {
+                    state
+                        .upstream
+                        .send(secure, &upstream_host, port, ureq)
+                        .await
+                }
+            };
+            let upstream_resp = match sent {
                 Ok(resp) => resp,
                 Err(error) => {
                     warn!("upstream {upstream_host}:{port} failed: {error:#}");
@@ -635,11 +798,21 @@ async fn relay(
             }
             ensure_host_header(&mut ureq, &upstream_host, port, secure);
 
-            let upstream_resp = match state
-                .upstream
-                .send(secure, &upstream_host, port, ureq)
-                .await
-            {
+            let sent = match destination {
+                Some(address) => {
+                    state
+                        .upstream
+                        .send_plaintext_to(&upstream_host, address, ureq)
+                        .await
+                }
+                None => {
+                    state
+                        .upstream
+                        .send(secure, &upstream_host, port, ureq)
+                        .await
+                }
+            };
+            let upstream_resp = match sent {
                 Ok(resp) => resp,
                 Err(error) => {
                     warn!("upstream {upstream_host}:{port} failed: {error:#}");
@@ -1017,6 +1190,72 @@ mod tests {
             0,
             "blocked SNI must not mint a certificate"
         );
+    }
+
+    #[tokio::test]
+    async fn transparent_http_preserves_original_socket_and_virtual_host() {
+        crate::install_crypto_provider();
+        let origin = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let destination = origin.local_addr().unwrap();
+        let authority: Authority = destination.to_string().parse().unwrap();
+        let virtual_host = format!("not-resolvable.invalid:{}", destination.port());
+        let expected_host = virtual_host.clone();
+        let origin_task = tokio::spawn(async move {
+            let (mut conn, _) = origin.accept().await.unwrap();
+            let mut head = Vec::new();
+            while !head.ends_with(b"\r\n\r\n") {
+                head.push(conn.read_u8().await.unwrap());
+                assert!(head.len() < 8192);
+            }
+            let head = String::from_utf8(head).unwrap().to_ascii_lowercase();
+            assert!(head.starts_with("get /fixture?q=1 http/1.1\r\n"), "{head}");
+            assert!(
+                head.contains(&format!("host: {expected_host}\r\n")),
+                "{head}"
+            );
+            conn.write_all(
+                b"HTTP/1.1 200 OK\r\nContent-Length: 6\r\nConnection: close\r\n\r\npinned",
+            )
+            .await
+            .unwrap();
+        });
+        let (cert_pem, key_pem) = CertAuthority::generate_root().unwrap();
+        let ca = Arc::new(CertAuthority::from_pem(cert_pem, &key_pem).unwrap());
+        let resolver = Arc::new(DynamicCertResolver::new(ca));
+        let server_tls = crate::tls::server_config(resolver.clone(), crate::tls::TCP_ALPN);
+        let client_tls = crate::tls::client_config(false, crate::tls::TCP_ALPN).unwrap();
+        let temp = tempfile::TempDir::new().unwrap();
+        let state = Arc::new(ProxyState {
+            server_tls,
+            cert_resolver: resolver.clone(),
+            #[cfg(feature = "http3")]
+            h3_tls: crate::tls::server_config(resolver.clone(), crate::tls::H3_ALPN),
+            upstream: Upstream::new(client_tls),
+            inspectors: Inspectors::default(),
+            intercept_decider: Arc::new(NoInterceptDecider),
+            config: Arc::new(ProxyConfig::new(
+                "127.0.0.1:0".parse().unwrap(),
+                temp.path(),
+            )),
+        });
+        let (mut browser, incoming) = tokio::io::duplex(16384);
+        let proxy = tokio::spawn(serve_plaintext_tunnel(
+            incoming,
+            "127.0.0.1:1234".parse().unwrap(),
+            state,
+            authority,
+        ));
+        tokio::time::timeout(Duration::from_secs(5), async {
+            browser.write_all(format!("GET /fixture?q=1 HTTP/1.1\r\nHost: {virtual_host}\r\nConnection: close\r\n\r\n").as_bytes()).await.unwrap();
+            let mut body = Vec::new();
+            browser.read_to_end(&mut body).await.unwrap();
+            let response = String::from_utf8(body).unwrap();
+            assert!(response.starts_with("HTTP/1.1 200"), "{response}");
+            assert!(response.ends_with("pinned"), "{response}");
+            proxy.await.unwrap().unwrap();
+            origin_task.await.unwrap();
+        }).await.unwrap();
+        assert_eq!(resolver.cache_len(), 0);
     }
 
     /// Invariant: a tunnel the decider rejects must never mint a leaf

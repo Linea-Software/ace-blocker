@@ -166,7 +166,27 @@ impl Upstream {
             body.map_err(|error| -> BoxError { error.into() })
                 .boxed_unsync()
         });
-        self.send_boxed(secure, host, port, req).await
+        self.send_boxed(secure, host, port, req, None).await
+    }
+
+    /// Transparent HTTP must connect to the socket destination selected by
+    /// the browser; Host is policy/HTTP authority, not a second DNS lookup.
+    pub(crate) async fn send_plaintext_to<B>(
+        &self,
+        host: &str,
+        destination: std::net::SocketAddr,
+        req: Request<B>,
+    ) -> Result<Response<Incoming>>
+    where
+        B: Body<Data = Bytes> + Send + Unpin + 'static,
+        B::Error: Into<BoxError>,
+    {
+        let req = req.map(|body| {
+            body.map_err(|error| -> BoxError { error.into() })
+                .boxed_unsync()
+        });
+        self.send_boxed(false, host, destination.port(), req, Some(destination))
+            .await
     }
 
     async fn send_boxed(
@@ -175,6 +195,7 @@ impl Upstream {
         host: &str,
         port: u16,
         req: Request<UpstreamBody>,
+        destination: Option<std::net::SocketAddr>,
     ) -> Result<Response<Incoming>> {
         let authority = format!("{host}:{port}");
         let requires_h2 = req.extensions().get::<hyper::ext::Protocol>().is_some();
@@ -236,7 +257,20 @@ impl Upstream {
             .into());
         }
 
-        let tcp = self.connect_tcp(host, port, &authority).await?;
+        let tcp = match destination {
+            Some(address) => {
+                let tcp =
+                    TcpStream::connect(address)
+                        .await
+                        .map_err(|error| ProxyError::Upstream {
+                            authority: authority.clone(),
+                            source: eyre!("tcp connect to original destination: {error}"),
+                        })?;
+                tcp.set_nodelay(true).ok();
+                tcp
+            }
+            None => self.connect_tcp(host, port, &authority).await?,
+        };
         self.send_h1(TokioIo::new(tcp), &authority, req).await
     }
 
@@ -493,6 +527,19 @@ fn prepare_http1_request<B>(request: &mut Request<B>) -> Result<()> {
         let host = HeaderValue::from_str(authority.as_str())
             .wrap_err("invalid authority for upstream Host header")?;
         request.headers_mut().insert(HOST, host);
+        // We are connected directly to the origin, not to a forward proxy.
+        // Emit origin-form rather than an absolute request target. Preserve
+        // authority-form CONNECT and asterisk-form OPTIONS.
+        if request.method() != http::Method::CONNECT && request.uri().scheme().is_some() {
+            let target = request
+                .uri()
+                .path_and_query()
+                .map(|pq| pq.as_str())
+                .unwrap_or("/");
+            *request.uri_mut() = target
+                .parse()
+                .wrap_err("invalid HTTP/1 origin-form target")?;
+        }
     } else if !request.headers().contains_key(HOST) {
         return Err(eyre!(
             "HTTP/1 upstream request has neither authority nor Host"
