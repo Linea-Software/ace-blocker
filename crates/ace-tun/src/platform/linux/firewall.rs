@@ -3,7 +3,9 @@
 //! Routing sends ordinary local traffic into ACE's TUN. This guard is the
 //! independent security boundary underneath that routing policy: while ACE is
 //! healthy, non-root local traffic may leave only through loopback, the ACE TUN,
-//! explicitly local-scope destinations, or an ACE-marked relay socket.
+//! explicitly local-scope destinations, an ACE-marked relay socket, or DNS
+//! queries from the dedicated systemd-resolved service account. The latter is
+//! needed for interface-bound resolver sockets outside the TUN.
 //!
 //! The final drop verdict is stored in a timed verdict map. A heartbeat refresh
 //! renews it periodically. If the process is killed before cleanup can run, the
@@ -39,7 +41,7 @@ impl FirewallGuard {
         // operation separate from the transactional install.
         let _ = run_nft(&format!("delete table inet {TABLE_NAME}\n"));
 
-        run_nft(&install_script())?;
+        run_nft(&install_script(systemd_resolved_uid()))?;
 
         let (stop_tx, stop_rx) = mpsc::channel();
         let heartbeat = thread::Builder::new()
@@ -84,7 +86,30 @@ fn heartbeat_loop(stop_rx: mpsc::Receiver<()>) {
     }
 }
 
-fn install_script() -> String {
+/// Resolve the dedicated account through NSS. Never trust a caller-supplied UID.
+/// Missing resolver accounts (e.g. on Arch with a conventional resolv.conf)
+/// require no exception.
+fn systemd_resolved_uid() -> Option<u32> {
+    let output = Command::new("id")
+        .args(["-u", "systemd-resolve"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let uid = std::str::from_utf8(&output.stdout)
+        .ok()?
+        .trim()
+        .parse::<u32>()
+        .ok()?;
+    // Do not grant a shared nobody account or root a new exemption.
+    (uid != 0 && uid != 65534 && uid != u32::MAX).then_some(uid)
+}
+
+fn install_script(resolved_uid: Option<u32>) -> String {
+    let resolver_rules = resolved_uid.map_or_else(String::new, |uid| {
+        format!("meta skuid {uid} udp dport 53 accept\nmeta skuid {uid} tcp dport 53 accept\n")
+    });
     format!(
         "table inet {TABLE_NAME} {{\n\
            map heartbeat {{ typeof {HEARTBEAT_KEY_EXPR} : verdict; flags timeout; timeout {HEARTBEAT_TIMEOUT_SECS}s; \
@@ -95,6 +120,7 @@ fn install_script() -> String {
              oifname \"ace*\" accept\n\
              meta skuid 0 accept\n\
              meta mark {ACE_EGRESS_MARK:#x} accept\n\
+             {resolver_rules}\
              ip daddr 169.254.0.0/16 accept\n\
              ip daddr 224.0.0.0/4 accept\n\
              ip daddr 255.255.255.255 accept\n\
@@ -151,12 +177,24 @@ mod tests {
 
     #[test]
     fn install_script_has_fail_open_timed_verdict() {
-        let script = install_script();
+        let script = install_script(None);
         assert!(script.contains(&format!("typeof {HEARTBEAT_KEY_EXPR} : verdict")));
         assert!(script.contains("flags timeout"));
         assert!(script.contains(&format!("{HEARTBEAT_KEY_EXPR} vmap @heartbeat")));
         assert!(!script.contains("type integer : verdict"));
         assert!(script.contains(&format!("meta mark {ACE_EGRESS_MARK:#x} accept")));
+    }
+
+    #[test]
+    fn resolver_exception_is_limited_to_dedicated_uid_and_dns() {
+        let without = install_script(None);
+        let with = install_script(Some(988));
+        assert!(!without.contains("dport 53"));
+        assert!(with.contains("meta skuid 988 udp dport 53 accept"));
+        assert!(with.contains("meta skuid 988 tcp dport 53 accept"));
+        assert!(!with.contains("meta skuid 988 accept"));
+        assert_eq!(with.matches("dport 53 accept").count(), 2);
+        assert!(with.find("meta skuid 988 udp").unwrap() < with.find("vmap @heartbeat").unwrap());
     }
 
     #[test]

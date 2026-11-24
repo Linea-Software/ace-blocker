@@ -69,7 +69,10 @@ When ACE is healthy, the chain permits:
 - traffic whose selected output interface is an ACE TUN;
 - packets with ACE's egress mark;
 - root-owned transport traffic, so privileged VPN daemons can establish their tunnels;
+- TCP/UDP DNS (port 53) from the dedicated `systemd-resolve` account, when present;
 - link-local, multicast, and limited-broadcast traffic.
+
+The resolver exception is scoped to its service UID, not all DNS traffic or all traffic from that UID. Interface-bound resolver requests can bypass the capture table; without this exception the system resolver can lose connectivity after engine recovery. Such direct DNS replies are not visible to the TUN DNS cache. Browser traffic remains subject to the capture and proxy rules.
 
 The chain drops other local egress. Thus, an ordinary non-root browser cannot bypass ACE through a new policy rule or tunnel.
 
