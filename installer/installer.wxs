@@ -221,7 +221,7 @@
            modifying engine/watchdog coordination or security-sensitive state. -->
       <Component Id="C_AceProgramDataAcl" Guid="{6E39ED27-28F2-4F9F-BE72-7923A0E74BC8}" Directory="AceProgramDataDir" Permanent="yes">
         <CreateFolder>
-          <PermissionEx Sddl="D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;OICI;GRGX;;;BU)" />
+          <PermissionEx Sddl="D:PAI(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;;GRGX;;;BU)" />
         </CreateFolder>
       </Component>
 

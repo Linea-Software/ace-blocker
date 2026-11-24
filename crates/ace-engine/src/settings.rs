@@ -207,6 +207,10 @@ impl Settings {
                     );
                     std::process::exit(1);
                 }
+                #[cfg(target_os = "windows")]
+                if crate::platform::in_service_mode() {
+                    secure_windows_service_capability(&path);
+                }
                 return trimmed.to_string();
             }
         }
@@ -230,7 +234,19 @@ impl Settings {
             );
             std::process::exit(1);
         }
+        #[cfg(target_os = "windows")]
+        if crate::platform::in_service_mode() {
+            secure_windows_service_capability(&path);
+        }
         token
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn secure_windows_service_capability(path: &std::path::Path) {
+    if let Err(error) = crate::platform::secure_windows_capability_file(path) {
+        error!("Cannot secure installation capability: {error}");
+        std::process::exit(1);
     }
 }
 

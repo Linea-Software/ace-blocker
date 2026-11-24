@@ -30,6 +30,10 @@ use crate::settings::Settings;
 use tracing_appender::non_blocking::WorkerGuard;
 
 pub async fn run() -> Result<()> {
+    #[cfg(target_os = "windows")]
+    if crate::platform::in_service_mode() {
+        crate::platform::secure_service_data()?;
+    }
     let _log_guard = setup_logging();
     tracing::info!("Tracing initialized. Starting proxy setup...");
 

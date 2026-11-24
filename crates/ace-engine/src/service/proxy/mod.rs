@@ -1105,6 +1105,9 @@ pub fn install_certificate() -> Result<()> {
         std::fs::create_dir_all(&cert_dir)?;
     }
 
+    #[cfg(target_os = "windows")]
+    crate::platform::secure_certificate_directory(&cert_dir)?;
+
     let cert_path = cert_dir.join("mitm_ca.pem");
     let key_path = cert_dir.join("mitm_ca.key");
 

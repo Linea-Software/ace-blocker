@@ -564,6 +564,131 @@ mod imp {
     // Bulk file protection (called at startup)
     // -------------------------------------------------------------------
 
+    // Keep the data root traversable for the desktop client, but never give
+    // ordinary users inherited read access to the database or private CA key.
+    const DATA_ROOT_DACL: &str = "D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)(A;;GRGX;;;BU)";
+    const CAPABILITY_DACL: &str = "D:P(A;;FA;;;SY)(A;;FA;;;BA)(A;;FR;;;BU)";
+    const PRIVATE_DIRECTORY_DACL: &str = "D:P(A;OICI;FA;;;SY)(A;OICI;FA;;;BA)";
+
+    fn apply_protected_dacl(path: &Path, sddl: &str) -> Result<()> {
+        use windows::Win32::Foundation::{ERROR_SUCCESS, HLOCAL, LocalFree};
+        use windows::Win32::Security::{
+            ACL,
+            Authorization::{
+                ConvertStringSecurityDescriptorToSecurityDescriptorW, SE_FILE_OBJECT,
+                SetNamedSecurityInfoW,
+            },
+            DACL_SECURITY_INFORMATION, GetSecurityDescriptorDacl,
+            PROTECTED_DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR,
+        };
+        use windows::core::BOOL;
+
+        let path_wide: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+        let sddl_wide: Vec<u16> = sddl.encode_utf16().chain(Some(0)).collect();
+        let mut descriptor = PSECURITY_DESCRIPTOR::default();
+        unsafe {
+            ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                PCWSTR(sddl_wide.as_ptr()),
+                1,
+                &mut descriptor,
+                None,
+            )?;
+        }
+        let result = (|| -> Result<()> {
+            let mut present = BOOL(0);
+            let mut defaulted = BOOL(0);
+            let mut acl: *mut ACL = std::ptr::null_mut();
+            unsafe {
+                GetSecurityDescriptorDacl(descriptor, &mut present, &mut acl, &mut defaulted)?;
+            }
+            if !present.as_bool() || acl.is_null() {
+                eyre::bail!("refusing absent or null DACL");
+            }
+            let result = unsafe {
+                SetNamedSecurityInfoW(
+                    PCWSTR(path_wide.as_ptr()),
+                    SE_FILE_OBJECT,
+                    DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
+                    None,
+                    None,
+                    Some(acl.cast_const()),
+                    None,
+                )
+            };
+            if result != ERROR_SUCCESS {
+                return Err(std::io::Error::from_raw_os_error(result.0 as i32).into());
+            }
+            Ok(())
+        })();
+        unsafe {
+            let _ = LocalFree(Some(HLOCAL(descriptor.0)));
+        }
+        result.wrap_err_with(|| format!("securing {}", path.display()))
+    }
+
+    const PRIVATE_FILE_DACL: &str = "D:P(A;;FA;;;SY)(A;;FA;;;BA)";
+
+    fn data_metadata(path: &Path) -> Result<std::fs::Metadata> {
+        use std::os::windows::fs::MetadataExt;
+        use windows::Win32::Storage::FileSystem::FILE_ATTRIBUTE_REPARSE_POINT;
+
+        let metadata = std::fs::symlink_metadata(path)?;
+        // Do not follow junctions or symlinks when repairing privileged ACLs.
+        if metadata.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT.0 != 0 {
+            eyre::bail!(
+                "unexpected reparse point in service data: {}",
+                path.display()
+            );
+        }
+        Ok(metadata)
+    }
+
+    fn secure_private_tree(path: &Path) -> Result<()> {
+        if data_metadata(path)?.is_dir() {
+            apply_protected_dacl(path, PRIVATE_DIRECTORY_DACL)?;
+            for entry in std::fs::read_dir(path)? {
+                secure_private_tree(&entry?.path())?;
+            }
+        } else {
+            apply_protected_dacl(path, PRIVATE_FILE_DACL)?;
+        }
+        Ok(())
+    }
+
+    /// Repair inherited and previously materialized explicit ACLs on data from
+    /// older packages. Replacing the root DACL alone does not remove explicit
+    /// Builtin Users ACEs that Windows retained on existing child objects.
+    /// Only the SCM-owned engine calls this before opening its persistent data.
+    pub fn secure_service_data() -> Result<()> {
+        let root = Settings::get_app_data_dir();
+        data_metadata(&root)?;
+        apply_protected_dacl(&root, DATA_ROOT_DACL)?;
+        let token = Settings::get_capability_token_path();
+        for entry in std::fs::read_dir(&root)? {
+            let path = entry?.path();
+            if path == token {
+                if !data_metadata(&path)?.is_file() {
+                    eyre::bail!("installation capability is not a regular file");
+                }
+                secure_windows_capability_file(&path)?;
+            } else {
+                secure_private_tree(&path)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// The installation capability is the only file that the desktop RPC
+    /// client must read directly. It is not an executable-identity attestation.
+    pub fn secure_windows_capability_file(path: &Path) -> Result<()> {
+        apply_protected_dacl(path, CAPABILITY_DACL)
+    }
+
+    /// Protect the CA directory before any private key is generated or loaded.
+    pub fn secure_certificate_directory(path: &Path) -> Result<()> {
+        apply_protected_dacl(path, PRIVATE_DIRECTORY_DACL)
+    }
+
     /// Hide the app-data directory and installation directory for tamper
     /// protection.
     pub fn hide_important_files() -> Result<()> {
@@ -876,8 +1001,9 @@ WantedBy=multi-user.target\n",
 #[cfg(target_os = "windows")]
 pub use imp::{
     GUARDIAN_ARG, ensure_watchdog_service_running, hide_important_files, in_service_mode,
-    install_service, report_service_stopped, restore_file_hide, run_guardian, set_file_hide,
-    spawn_watchdog, try_run_as_service, uninstall_service,
+    install_service, report_service_stopped, restore_file_hide, run_guardian,
+    secure_certificate_directory, secure_service_data, secure_windows_capability_file,
+    set_file_hide, spawn_watchdog, try_run_as_service, uninstall_service,
 };
 
 #[cfg(target_os = "linux")]

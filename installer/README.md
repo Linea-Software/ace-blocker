@@ -225,14 +225,23 @@ The MSI applies conservative allow-only ACLs (no deny ACEs):
   read/execute but not write/replace rights; SYSTEM/Administrators have full
   control.
 - `{ProgramData}\LineaSoftware\AceBlocker`: preserved across uninstall;
-  SYSTEM/Administrators have full control and ordinary users have inherited
-  read/execute but not modify rights.
+  SYSTEM/Administrators have full control. Ordinary users can traverse the
+  root but do not inherit read access to persistent files. The service grants
+  read-only access to the installation capability explicitly; the database,
+  CA private key and remaining service data stay privileged. The engine
+  reapplies this policy at service startup for existing installations.
 - service objects: ordinary users can query service state but do not receive
   stop/change-config rights.
 
 These controls target the project's weak-moment model. They do **not** make the
 installation resistant to a determined elevated administrator with ownership,
 ACL, service-control, debugging, or offline-disk capabilities.
+
+Run `installer/tests/win11_user_security.ps1` from a non-elevated desktop
+session in a disposable installed Windows VM. It checks the actual file and
+service access rights without reading private data or writing any protected
+file, and exercises the ordinary-user RPC client. The separate SYSTEM smoke
+test does not replace this check.
 
 ## Offline site packs (`bundled-packs/`)
 
