@@ -26,6 +26,13 @@ class LinuxBrowserPolicyPackagingTests(unittest.TestCase):
             shell,
         )
 
+    def test_desktop_callback_is_created_and_verified_as_desktop_user(self):
+        shell = INSTALLER.read_text(encoding="utf-8")
+        self.assertIn('runuser -u "$desktop_user" --', shell)
+        self.assertIn('mkdir -p -- "$XDG_CONFIG_HOME" &&', shell)
+        self.assertIn('xdg-mime query default x-scheme-handler/aceblocker', shell)
+        self.assertNotIn("desktop launcher and account callback registered.", shell)
+
     def test_linux_release_archives_helper_and_validates_tests(self):
         release = RELEASE.read_text(encoding="utf-8")
         self.assertIn(

@@ -131,10 +131,19 @@ if [[ -n "$desktop_user" && "$desktop_user" != root ]] \
   && command -v xdg-mime > /dev/null 2>&1 \
   && command -v runuser > /dev/null 2>&1; then
   desktop_home="$(getent passwd "$desktop_user" | cut -d: -f6)"
-  if ! runuser -u "$desktop_user" -- env HOME="$desktop_home" XDG_CONFIG_HOME="$desktop_home/.config" \
-    xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker; then
+  # A fresh user may not have logged in yet. Create their config directory
+  # with their own privileges and verify the association: xdg-mime can report
+  # success even when writing mimeapps.list failed.
+  if [[ -z "$desktop_home" ]] || ! runuser -u "$desktop_user" -- \
+    env HOME="$desktop_home" XDG_CONFIG_HOME="$desktop_home/.config" sh -c '
+      mkdir -p -- "$XDG_CONFIG_HOME" &&
+      xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker &&
+      [ "$(xdg-mime query default x-scheme-handler/aceblocker)" = ace-blocker-handler.desktop ]
+    '; then
     echo "Warning: Could not set the desktop user's Ace account URL handler." >&2
     echo "As $desktop_user run: xdg-mime default ace-blocker-handler.desktop x-scheme-handler/aceblocker" >&2
+  else
+    echo "Ace account callback registered for $desktop_user."
   fi
 else
   echo "For browser login callbacks, the desktop user must run:" >&2
@@ -143,4 +152,4 @@ fi
 
 echo "Browser proxy protection is available but not enabled by default."
 echo "To opt in after reviewing its effects: sudo $install_dir/browser-proxy-policy.py --enable"
-echo "ACE installed: services enabled and started; desktop launcher and account callback registered."
+echo "ACE installed: services enabled and started; desktop launcher installed."
