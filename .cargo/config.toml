@@ -1,4 +1,6 @@
 [target.x86_64-pc-windows-msvc]
-linker = "lld-link.exe"
+# Use Rust's bundled LLVM linker directly, not the lld-link wrapper.
+# The explicit flavor makes rustc pass the correct -flavor link arguments.
+linker = "rust-lld.exe"
 # Link the CRT statically for every Windows x64 MSVC binary, including release/CI.
-rustflags = ["-C", "target-feature=+crt-static"]
+rustflags = ["-C", "linker-flavor=lld-link", "-C", "target-feature=+crt-static"]

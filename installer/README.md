@@ -70,7 +70,10 @@ Both Rust projects enable Windows x64 MSVC `+crt-static` in checked-in Cargo
 configuration, so standard `cargo build --release` and `bun tauri build` (in
 local and CI workflows) require no manual `RUSTFLAGS`. This target-level setting
 also applies to Windows debug builds; non-Windows targets are unchanged. Native
-libraries must be compatible with static CRT linkage.
+libraries must be compatible with static CRT linkage. Cargo uses the Rust-bundled
+`rust-lld.exe` with the explicit `lld-link` flavor, so a separate `lld-link.exe`
+wrapper on PATH is not required. The MSVC C++ build tools and Windows SDK are
+still required for native libraries.
 
 CI and other reproducible release environments should call `package.ps1`
 directly with explicit inputs:
