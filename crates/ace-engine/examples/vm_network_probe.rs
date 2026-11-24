@@ -18,13 +18,145 @@ async fn call(op: &str, args: Value, token: &str) -> Result<Value, String> {
     .map_err(|error| format!("{op}: HTTP-style status {} ({})", error.status, error.code))
 }
 
+async fn soft_cycle(token: &str) -> Result<(), String> {
+    let name = "Ace VM QA - reflection";
+    let blocks = call("getAllNetworkBlocks", json!({}), token).await?;
+    if blocks["networkBlocks"]
+        .as_array()
+        .ok_or("invalid block response")?
+        .iter()
+        .any(|block| block["name"] == name)
+    {
+        return Err("existing reflection fixture; restore the snapshot".into());
+    }
+    let saved = call(
+        "saveNetworkBlock",
+        json!({"payload": {
+            "id": null, "name": name, "icon": null, "safeSearch": false,
+            "rules": [{"rule": "example.net", "ruleType": "domain"}],
+            "scheduleEntries": [], "scheduleMode": "always", "sitePackIds": []
+        }}),
+        token,
+    )
+    .await?;
+    let id = saved["networkBlock"]["id"].clone();
+    call(
+        "setNetworkBlockEnabled",
+        json!({"network_block_id": id, "payload": {"enabled": true}}),
+        token,
+    )
+    .await?;
+    call("setLock", json!({"network_block_id": id, "payload": {"lockState": "soft_unlockable", "lockEnd": null}}), token).await?;
+    let start = std::time::Instant::now();
+    let challenge = call("initiateUnlock", json!({"network_block_id": id}), token).await?;
+    if challenge["cooldownSeconds"] != 300 || !challenge["challengeId"].is_string() {
+        return Err("unexpected challenge".into());
+    }
+    let confirm =
+        json!({"network_block_id": id, "payload": {"challengeId": challenge["challengeId"]}});
+    let early = call("confirmUnlock", confirm.clone(), token).await?;
+    if early["status"] != 425 || early["body"]["retryAfterSeconds"].as_u64().unwrap_or(0) == 0 {
+        return Err("early unlock not rejected".into());
+    }
+    println!("Reflection cooldown early confirmation rejected: PASS");
+    let wrong = json!({"network_block_id": id, "payload": {"challengeId": "00000000-0000-0000-0000-000000000000"}});
+    match tokio::time::timeout(
+        Duration::from_secs(15),
+        bridge::call("confirmUnlock", wrong, Some(token.to_owned())),
+    )
+    .await
+    {
+        Ok(Err(e)) if e.code == "bad_request" => println!("Wrong challenge rejected: PASS"),
+        _ => return Err("wrong challenge not rejected with expected error".into()),
+    }
+    let repeated = call("initiateUnlock", json!({"network_block_id": id}), token).await?;
+    if repeated["challengeId"] != challenge["challengeId"] {
+        return Err("challenge initiation is not idempotent".into());
+    }
+    tokio::time::sleep(Duration::from_secs(301).saturating_sub(start.elapsed())).await;
+    let confirmed = call("confirmUnlock", confirm.clone(), token).await?;
+    if confirmed["status"] != 200 {
+        return Err(format!(
+            "reflection redemption failed: status={}",
+            confirmed["status"]
+        ));
+    }
+    let lock = call("getLock", json!({"network_block_id": id}), token).await?;
+    if lock["lock"]["isActive"] != false {
+        return Err("lock remained active after redemption".into());
+    }
+    match tokio::time::timeout(
+        Duration::from_secs(15),
+        bridge::call("confirmUnlock", confirm, Some(token.to_owned())),
+    )
+    .await
+    {
+        Ok(Err(e)) if e.code == "not_found" => println!("Consumed challenge replay rejected: PASS"),
+        _ => return Err("replay was not rejected".into()),
+    }
+    call("deleteNetworkBlock", json!({"network_block_id": id}), token).await?;
+    println!(
+        "Reflection unlock after actual monotonic wait: PASS ({} seconds)",
+        start.elapsed().as_secs()
+    );
+    Ok(())
+}
+
+async fn free_policy(token: &str) -> Result<(), String> {
+    let account = call("getAccountInfo", json!({}), token).await?;
+    if account["isPro"] != false {
+        return Err("expected a Free test account".into());
+    }
+    let settings = call("getResistanceModeSettings", json!({}), token).await?;
+    if settings["proEligible"] != false {
+        return Err("unexpected Pro eligibility".into());
+    }
+    println!("Free entitlement: PASS");
+    let end = (chrono::Utc::now() + chrono::Duration::minutes(30)).to_rfc3339();
+    let args = json!({"payload": {"lockState": "active_until_lock_end", "lockEnd": end}});
+    match tokio::time::timeout(
+        Duration::from_secs(15),
+        bridge::call("setResistanceModeLock", args, Some(token.to_owned())),
+    )
+    .await
+    {
+        Ok(Err(e)) if e.code == "pro_plan_required" => {
+            println!("Free Resistance Lock rejected: PASS")
+        }
+        _ => return Err("Free Resistance Lock not rejected as Pro-only".into()),
+    }
+    match tokio::time::timeout(
+        Duration::from_secs(15),
+        bridge::call(
+            "exportBackup",
+            json!({}),
+            Some("invalid-qa-capability".into()),
+        ),
+    )
+    .await
+    {
+        Ok(Err(e)) if e.code == "capability_required" => {
+            println!("Invalid capability rejected: PASS")
+        }
+        _ => return Err("invalid capability unexpectedly accepted or wrong error".into()),
+    }
+    Ok(())
+}
+
 async fn run() -> Result<(), String> {
     let action = std::env::args()
         .nth(1)
-        .ok_or("usage: vm_network_probe <status|enable|remove|packs|lock|verify-lock>")?;
+        .ok_or("usage: vm_network_probe <status|enable|remove|packs|lock|verify-lock|soft-cycle|free-policy>")?;
     if !matches!(
         action.as_str(),
-        "status" | "enable" | "remove" | "packs" | "lock" | "verify-lock"
+        "status"
+            | "enable"
+            | "remove"
+            | "packs"
+            | "lock"
+            | "verify-lock"
+            | "soft-cycle"
+            | "free-policy"
     ) {
         return Err("unknown action".into());
     }
@@ -36,6 +168,12 @@ async fn run() -> Result<(), String> {
     }
     call("ping", json!({}), token).await?;
     println!("RPC ping: PASS");
+    if action == "soft-cycle" {
+        return soft_cycle(token).await;
+    }
+    if action == "free-policy" {
+        return free_policy(token).await;
+    }
     if action == "packs" {
         let response = call("getAllSitePacks", json!({}), token).await?;
         let packs = response["sitePacks"]
