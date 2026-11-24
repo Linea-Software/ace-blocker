@@ -9,6 +9,22 @@ use sysuri::{UriScheme, register};
 async fn main() {
     let _args: Vec<String> = env::args().collect();
 
+    // Read-only build provenance for packaging. Keep the marker in the
+    // executable itself so a prebuilt test input cannot be mistaken for a
+    // normal release. Do not initialize engine state here.
+    if _args.get(1).is_some_and(|arg| arg == "--check-release-build") {
+        #[cfg(all(not(debug_assertions), not(feature = "no-license")))]
+        {
+            eprintln!("ACE_ENGINE_RELEASE_BUILD_V1=LICENSE_ENFORCED");
+            std::process::exit(0);
+        }
+        #[cfg(any(debug_assertions, feature = "no-license"))]
+        {
+            eprintln!("ACE_ENGINE_RELEASE_BUILD_V1=TEST_ONLY");
+            std::process::exit(1);
+        }
+    }
+
     // Lock check for the installer's uninstall gate: read-only query of the
     // engine database, exit codes 0/1/2 (see src/lock_check.rs). Must run
     // before anything else — it never boots the engine, never starts the

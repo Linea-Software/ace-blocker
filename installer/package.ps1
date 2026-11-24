@@ -120,6 +120,17 @@ foreach (
 }
 Copy-RequiredFile -SourceDirectory $AppArtifacts -Name "ace-app.exe"
 
+# Validate the staged executable itself, not a caller-provided build flag.
+# Old, debug and no-license builds have no valid release marker. Do not run
+# arbitrary prebuilt executables as part of packaging.
+$EngineImage = [System.Text.Encoding]::ASCII.GetString(
+    [System.IO.File]::ReadAllBytes((Join-Path $Artifacts "ace-engine.exe"))
+)
+if (-not $EngineImage.Contains("ACE_ENGINE_RELEASE_BUILD_V1=LICENSE_ENFORCED") -or
+    $EngineImage.Contains("ACE_ENGINE_RELEASE_BUILD_V1=TEST_ONLY")) {
+    throw "ace-engine.exe is not a license-enforced release build. Rebuild without no-license or debug features."
+}
+
 # Check all packaged PE files, including third-party native dependencies, before
 # creating an MSI. No Visual C++ runtime redist/DLL is bundled as a workaround.
 & (Join-Path $ScriptDir "verify-crt.ps1") -Paths @(

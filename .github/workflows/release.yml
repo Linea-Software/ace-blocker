@@ -238,6 +238,10 @@ jobs:
           set -euo pipefail
           package="AceBlocker-${VERSION}-linux-x64"
           mkdir -p "release-input/$package" release-dist
+          if ! grep -aFq "ACE_ENGINE_RELEASE_BUILD_V1=LICENSE_ENFORCED" target/release/ace-engine || grep -aFq "ACE_ENGINE_RELEASE_BUILD_V1=TEST_ONLY" target/release/ace-engine; then
+            echo "ace-engine is not a license-enforced release build" >&2
+            exit 1
+          fi
           for binary in ace-engine ace-watchdog ace-redirect install-cert ace-app; do
             install -m 0755 "target/release/$binary" "release-input/$package/$binary"
           done

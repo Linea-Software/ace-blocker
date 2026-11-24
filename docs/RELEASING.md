@@ -31,6 +31,8 @@ versions not already aligned in the engine, watchdog, release verifier,
 Tauri Rust/config and Solid frontend package manifests; the MSI packaging version
 alone is not authoritative.
 
+Both packaging paths reject an engine without the embedded `ACE_ENGINE_RELEASE_BUILD_V1=LICENSE_ENFORCED` marker, including debug, `no-license`, and older unmarked builds. This is an accidental test-build exclusion check, not binary authentication or a replacement for Authenticode and release provenance. On a disposable Windows packaging VM, run `installer/tests/win11_release_build_guard.ps1` with separately built normal and `--features no-license` engine executables to verify the positive and negative paths.
+
 After **both** builds pass, the workflow checks artifact hashes and commit provenance.
 It then creates or updates a GitHub **draft prerelease** named `v<version>`.
 It never publishes the release automatically.
