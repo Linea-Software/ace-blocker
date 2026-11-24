@@ -15,8 +15,8 @@
 //! rebuilt on any miss — a fresh scan cannot miss a socket that exists at
 //! query time, so staleness never hides a live flow.
 //!
-//! `/proc/net/tcp` is *not* a substitute for the sock_diag query: it exposes
-//! the socket's UID, not its PID.
+//! If an exact sock_diag query misses, the proc socket table supplies the
+//! inode as a compatibility fallback; the same fd walk resolves the PID.
 
 use std::collections::HashMap;
 use std::io;
@@ -132,7 +132,8 @@ pub(crate) fn resolve_pid(local: SocketAddr, remote: SocketAddr, is_udp: bool) -
         }
     }
 
-    let inode = query_socket_inode(local, remote, is_udp)?;
+    let inode = query_socket_inode(local, remote, is_udp)
+        .or_else(|| query_proc_socket_inode(local, remote, is_udp))?;
     let pid = inode_to_pid(inode);
 
     if let Some(pid) = pid {
@@ -285,6 +286,103 @@ fn query_socket_inode(local: SocketAddr, remote: SocketAddr, is_udp: bool) -> Op
                 },
             )
         })
+    }
+}
+
+/// Some kernels return ENOENT for exact sock_diag lookups of live sockets.
+/// Fall back to the namespace's proc socket table, which includes the socket
+/// inode (not a PID). Never guess between equally specific distinct sockets.
+fn query_proc_socket_inode(local: SocketAddr, remote: SocketAddr, is_udp: bool) -> Option<u64> {
+    let table = match (local.is_ipv4(), is_udp) {
+        (true, false) => "/proc/net/tcp",
+        (false, false) => "/proc/net/tcp6",
+        (true, true) => "/proc/net/udp",
+        (false, true) => "/proc/net/udp6",
+    };
+    let file = std::fs::File::open(table).ok()?;
+    match_proc_socket(std::io::BufReader::new(file), local, remote, is_udp)
+}
+
+fn parse_proc_endpoint(value: &str) -> Option<SocketAddr> {
+    let (address, port) = value.split_once(':')?;
+    let port = u16::from_str_radix(port, 16).ok()?;
+    let ip = match address.len() {
+        8 => IpAddr::V4(Ipv4Addr::from(
+            u32::from_str_radix(address, 16).ok()?.to_ne_bytes(),
+        )),
+        32 => {
+            let mut bytes = [0; 16];
+            for (i, word) in address.as_bytes().chunks_exact(8).enumerate() {
+                let word = std::str::from_utf8(word).ok()?;
+                bytes[i * 4..i * 4 + 4]
+                    .copy_from_slice(&u32::from_str_radix(word, 16).ok()?.to_ne_bytes());
+            }
+            IpAddr::V6(Ipv6Addr::from(bytes))
+        }
+        _ => return None,
+    };
+    Some(SocketAddr::new(ip, port))
+}
+
+fn match_proc_socket(
+    table: impl std::io::BufRead,
+    local: SocketAddr,
+    remote: SocketAddr,
+    is_udp: bool,
+) -> Option<u64> {
+    let mut best: Option<(u8, u64)> = None;
+    let mut ambiguous = false;
+    for line in table.lines().skip(1) {
+        let line = line.ok()?;
+        let fields: Vec<_> = line.split_whitespace().take(10).collect();
+        if fields.len() != 10 {
+            continue;
+        }
+        let (Some(bound), Some(peer), Ok(inode)) = (
+            parse_proc_endpoint(fields[1]),
+            parse_proc_endpoint(fields[2]),
+            fields[9].parse::<u64>(),
+        ) else {
+            continue;
+        };
+        if inode == 0 || bound.port() != local.port() {
+            continue;
+        }
+        let local_rank = if bound.ip() == local.ip() {
+            2
+        } else if bound.ip().is_unspecified() && bound.is_ipv4() == local.is_ipv4() {
+            1
+        } else {
+            continue;
+        };
+        let unconnected = peer.ip().is_unspecified() && peer.port() == 0;
+        let peer_rank = if !unconnected && peer == remote {
+            4
+        } else if unconnected && (is_udp || fields[3] == "0A") {
+            0
+        } else {
+            continue;
+        };
+        let rank = local_rank + peer_rank;
+        match best {
+            None => {
+                best = Some((rank, inode));
+                ambiguous = false;
+            }
+            Some((previous, _)) if rank > previous => {
+                best = Some((rank, inode));
+                ambiguous = false;
+            }
+            Some((previous, previous_inode)) if rank == previous && inode != previous_inode => {
+                ambiguous = true;
+            }
+            _ => {}
+        }
+    }
+    if ambiguous {
+        None
+    } else {
+        best.map(|(_, inode)| inode)
     }
 }
 
@@ -513,6 +611,44 @@ mod tests {
         assert_eq!(
             wildcard(IpAddr::V6(Ipv6Addr::LOCALHOST)),
             IpAddr::V6(Ipv6Addr::UNSPECIFIED)
+        );
+    }
+
+    #[test]
+    fn proc_fallback_prefers_exact_peer_and_rejects_ambiguous_matches() {
+        let local: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+        let remote: SocketAddr = "127.0.0.2:443".parse().unwrap();
+        let ip = |ip: [u8; 4]| format!("{:08X}", u32::from_ne_bytes(ip));
+        let bound = ip([127, 0, 0, 1]);
+        let peer = ip([127, 0, 0, 2]);
+        let row = |source: &str, target: &str, state: &str, inode| {
+            format!("0: {source}:1F90 {target} {state} 0:0 0:0 0 0 0 {inode}\n")
+        };
+        let mut table = String::from("header\n");
+        table += &row("00000000", "00000000:0000", "0A", 11);
+        table += &row(&bound, "00000000:0000", "0A", 12);
+        table += &row(&bound, &format!("{peer}:01BB"), "01", 13);
+        assert_eq!(
+            match_proc_socket(table.as_bytes(), local, remote, false),
+            Some(13)
+        );
+        table += &row(&bound, &format!("{peer}:01BB"), "01", 14);
+        assert_eq!(
+            match_proc_socket(table.as_bytes(), local, remote, false),
+            None
+        );
+    }
+
+    #[test]
+    fn proc_fallback_parses_ipv6_native_endian_words() {
+        let address = Ipv6Addr::LOCALHOST.octets();
+        let encoded: String = address
+            .chunks_exact(4)
+            .map(|word| format!("{:08X}", u32::from_ne_bytes(word.try_into().unwrap())))
+            .collect();
+        assert_eq!(
+            parse_proc_endpoint(&format!("{encoded}:01BB")),
+            Some("[::1]:443".parse().unwrap()),
         );
     }
 
