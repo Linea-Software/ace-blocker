@@ -143,10 +143,132 @@ async fn free_policy(token: &str) -> Result<(), String> {
     Ok(())
 }
 
+async fn scheduled_cycle(token: &str, proxy_port: u16) -> Result<(), String> {
+    use chrono::{Duration as ChronoDuration, Local, Timelike};
+
+    let name = "Ace VM QA - schedule";
+    let blocks = call("getAllNetworkBlocks", json!({}), token).await?;
+    if blocks["networkBlocks"]
+        .as_array()
+        .ok_or("invalid block response")?
+        .iter()
+        .any(|block| block["name"] == name)
+    {
+        return Err("existing schedule fixture; restore the snapshot".into());
+    }
+    let now = Local::now();
+    let start = now
+        .with_second(0)
+        .and_then(|t| t.with_nanosecond(0))
+        .ok_or("invalid local time")?
+        + ChronoDuration::minutes(2);
+    let end = start + ChronoDuration::minutes(1);
+    if now.date_naive() != end.date_naive() {
+        return Err("schedule test requires three minutes before local midnight".into());
+    }
+    let client = reqwest::Client::builder()
+        .proxy(
+            reqwest::Proxy::http(format!("http://127.0.0.1:{proxy_port}"))
+                .map_err(|_| "invalid proxy")?,
+        )
+        .redirect(reqwest::redirect::Policy::none())
+        .timeout(Duration::from_secs(12))
+        .build()
+        .map_err(|_| "build HTTP client")?;
+    let traffic = async |expect_block: bool| -> Result<(), String> {
+        let status = client
+            .get("http://example.net/")
+            .send()
+            .await
+            .map_err(|e| format!("schedule HTTP request: {e}"))?
+            .status();
+        if (status.as_u16() == 404) != expect_block
+            || (!expect_block && !status.is_success() && !status.is_redirection())
+        {
+            return Err(format!(
+                "schedule traffic expected block={expect_block}, got {status}"
+            ));
+        }
+        println!("Schedule traffic expected block={expect_block}: {status} PASS");
+        Ok(())
+    };
+    traffic(false).await?;
+    let saved = call(
+        "saveNetworkBlock",
+        json!({"payload": {
+            "id": null, "name": name, "icon": null, "safeSearch": false,
+            "rules": [{"rule": "example.net", "ruleType": "domain"}],
+            "scheduleEntries": [{"startTime": start.format("%H:%M:%S").to_string(),
+                "endTime": end.format("%H:%M:%S").to_string(),
+                "monday": true, "tuesday": true, "wednesday": true, "thursday": true,
+                "friday": true, "saturday": true, "sunday": true}],
+            "scheduleMode": "scheduled", "sitePackIds": []
+        }}),
+        token,
+    )
+    .await?;
+    let id = saved["networkBlock"]["id"].clone();
+    call(
+        "setNetworkBlockEnabled",
+        json!({"network_block_id": id, "payload": {"enabled": true}}),
+        token,
+    )
+    .await?;
+    call("setLock", json!({"network_block_id": id, "payload": {"lockState": "active_during_schedule", "lockEnd": null}}), token).await?;
+    let status = async |active: bool| -> Result<(), String> {
+        let state = call("getLock", json!({"network_block_id": id}), token).await?;
+        let blocks = call("getAllNetworkBlocks", json!({}), token).await?;
+        let block = blocks["networkBlocks"]
+            .as_array()
+            .ok_or("invalid block response")?
+            .iter()
+            .find(|block| block["id"] == id)
+            .ok_or("missing schedule fixture")?;
+        if block["isActive"] != active || state["lock"]["isActive"] != active {
+            return Err(format!(
+                "schedule expected active={active}, got policy={} lock={}",
+                block["isActive"], state["lock"]["isActive"]
+            ));
+        }
+        println!("Schedule policy and lock active={active}: PASS");
+        Ok(())
+    };
+    status(false).await?;
+    traffic(false).await?;
+    tokio::time::sleep(
+        (start - Local::now()).to_std().unwrap_or_default() + Duration::from_secs(3),
+    )
+    .await;
+    status(true).await?;
+    traffic(true).await?;
+    match tokio::time::timeout(
+        Duration::from_secs(10),
+        bridge::call(
+            "setNetworkBlockEnabled",
+            json!({"network_block_id": id, "payload": {"enabled": false}}),
+            Some(token.to_owned()),
+        ),
+    )
+    .await
+    {
+        Ok(Err(e)) if e.code == "forbidden" => {
+            println!("Schedule lock prevents disabling inside window: PASS")
+        }
+        _ => return Err("schedule lock did not reject disabling".into()),
+    }
+    tokio::time::sleep((end - Local::now()).to_std().unwrap_or_default() + Duration::from_secs(3))
+        .await;
+    status(false).await?;
+    traffic(false).await?;
+    call("deleteNetworkBlock", json!({"network_block_id": id}), token).await?;
+    println!("Scheduled cycle and window-bound lock: PASS");
+    Ok(())
+}
+
 async fn run() -> Result<(), String> {
     let action = std::env::args()
         .nth(1)
-        .ok_or("usage: vm_network_probe <status|enable|remove|packs|lock|verify-lock|soft-cycle|free-policy>")?;
+        .ok_or("usage: vm_network_probe <status|enable|remove|packs|lock|verify-lock|soft-cycle|free-policy|schedule-cycle>")?;
     if !matches!(
         action.as_str(),
         "status"
@@ -157,6 +279,7 @@ async fn run() -> Result<(), String> {
             | "verify-lock"
             | "soft-cycle"
             | "free-policy"
+            | "schedule-cycle"
     ) {
         return Err("unknown action".into());
     }
@@ -173,6 +296,14 @@ async fn run() -> Result<(), String> {
     }
     if action == "free-policy" {
         return free_policy(token).await;
+    }
+    if action == "schedule-cycle" {
+        let port = std::env::args()
+            .nth(2)
+            .ok_or("missing proxy port")?
+            .parse()
+            .map_err(|_| "invalid proxy port")?;
+        return scheduled_cycle(token, port).await;
     }
     if action == "packs" {
         let response = call("getAllSitePacks", json!({}), token).await?;
