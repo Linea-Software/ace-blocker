@@ -1,7 +1,7 @@
 # Local IPC architecture
 
 Ace Blocker uses **remoc 0.20.4** over native OS byte streams for local control.
-Windows uses **interprocess 2.4.x Windows Named Pipes**. Linux uses a Unix-domain socket.
+Windows uses **interprocess 2.4.x Windows Named Pipes** for the control listener and Tokio's native byte-stream named-pipe client for control RPC. The client avoids a cancellable blocking flush task during runtime shutdown; the listener DACL and remoc authorization are unchanged. Linux uses a Unix-domain socket.
 The engine and watchdog remain independent privileged services.
 The Tauri frontend runs without elevated privileges in the user session.
 

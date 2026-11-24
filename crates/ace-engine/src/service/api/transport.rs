@@ -113,9 +113,35 @@ pub async fn serve(_state: AppState) -> Result<()> {
 }
 
 #[cfg(windows)]
+async fn open_control_pipe(
+    path: &str,
+) -> std::io::Result<tokio::net::windows::named_pipe::NamedPipeClient> {
+    use std::time::Duration;
+    use tokio::net::windows::named_pipe::ClientOptions;
+    use windows::Win32::Foundation::ERROR_PIPE_BUSY;
+
+    // Remoc owns framing and acknowledgement. Use Tokio's byte-stream client
+    // directly, avoiding interprocess's spawn_blocking FlushFileBuffers task
+    // which can panic on runtime shutdown when its JoinHandle is cancelled.
+    // The server keeps its existing DACL and interprocess listener.
+    // ClientOptions defaults to SECURITY_IDENTIFICATION (no impersonation).
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            match ClientOptions::new().open(path) {
+                Err(error) if error.raw_os_error() == Some(ERROR_PIPE_BUSY.0 as i32) => {
+                    tokio::time::sleep(Duration::from_millis(25)).await;
+                }
+                result => return result,
+            }
+        }
+    })
+    .await
+    .map_err(|_| std::io::Error::new(std::io::ErrorKind::TimedOut, "engine named pipe busy"))?
+}
+
+#[cfg(windows)]
 pub async fn connect() -> Result<EngineControlClient> {
-    use interprocess::os::windows::named_pipe::{pipe_mode, tokio::DuplexPipeStream};
-    let stream = DuplexPipeStream::<pipe_mode::Bytes>::connect_by_path(ENGINE_PIPE_PATH)
+    let stream = open_control_pipe(ENGINE_PIPE_PATH)
         .await
         .wrap_err("connecting to engine named pipe")?;
     let (rx, tx) = tokio::io::split(stream);
@@ -142,11 +168,10 @@ pub async fn connect() -> Result<EngineControlClient> {
 
 #[cfg(all(windows, test))]
 mod windows_tests {
-    use super::engine_pipe_security;
-    use interprocess::os::windows::named_pipe::{
-        PipeListenerOptions, pipe_mode, tokio::DuplexPipeStream,
-    };
+    use super::{engine_pipe_security, open_control_pipe};
+    use interprocess::os::windows::named_pipe::{PipeListenerOptions, pipe_mode};
     use std::time::Duration;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
     #[tokio::test]
     async fn pipe_owner_can_accept_and_create_next_instance() -> eyre::Result<()> {
@@ -157,10 +182,28 @@ mod windows_tests {
             .security_descriptor(Some(engine_pipe_security()?))
             .create_tokio_duplex::<pipe_mode::Bytes>()?;
 
-        let client = DuplexPipeStream::<pipe_mode::Bytes>::connect_by_path(path.as_str()).await?;
-        // accept() creates the next instance before returning the connection.
-        let server = tokio::time::timeout(Duration::from_secs(5), listener.accept()).await??;
-        drop((client, server));
+        // Repeat exchanges on the same listener, then close each client
+        // immediately after a confirmed response.
+        for _ in 0..32 {
+            let mut client = open_control_pipe(&path).await?;
+            // accept() creates the next instance before returning the connection.
+            let mut server =
+                tokio::time::timeout(Duration::from_secs(5), listener.accept()).await??;
+            tokio::time::timeout(Duration::from_secs(5), async {
+                client.write_all(b"ping").await?;
+                client.flush().await?;
+                let mut request = [0; 4];
+                server.read_exact(&mut request).await?;
+                assert_eq!(&request, b"ping");
+                server.write_all(b"pong").await?;
+                let mut reply = [0; 4];
+                client.read_exact(&mut reply).await?;
+                assert_eq!(&reply, b"pong");
+                Ok::<_, std::io::Error>(())
+            })
+            .await??;
+            drop((client, server));
+        }
         Ok(())
     }
 }
