@@ -28,6 +28,11 @@ The Tauri frontend runs without elevated privileges in the user session.
   Linux capability path as Tauri and the Engine and accepts only the allowlisted
   account API-key callback. Uninstall/upgrade uses `ace-engine --request-shutdown`,
   which invokes the same policy-enforcing RPC and fails closed when the engine refuses.
+  The engine fences policy writes as soon as authenticated maintenance is committed.
+  The client acknowledges receipt of the successful RPC reply through a remote
+  one-shot channel before the runtime stops. If the caller disconnects or fails
+  to acknowledge within ten seconds, the already-committed shutdown finishes;
+  the installer must independently verify both protected services are stopped.
 
 ### Authorization
 

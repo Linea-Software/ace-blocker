@@ -372,6 +372,8 @@ async fn spawn_api_service(
         content_update_service,
         update_check_interval,
         shutdown_tx,
+        shutdown_committed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        require_watchdog_maintenance: crate::platform::in_service_mode(),
         unlock_challenges: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
         capability_token: Some(Settings::load_or_create_capability_token()),
         enforce_capability: cfg!(not(debug_assertions)),

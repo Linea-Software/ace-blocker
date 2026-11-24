@@ -139,7 +139,10 @@ pub(super) async fn trigger_content_update(state: AppState) -> Result<(), ApiErr
     })
 }
 
-pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {
+pub(super) async fn shutdown(
+    state: AppState,
+    reply_ack: remoc::rch::oneshot::Receiver<()>,
+) -> Result<(), ApiError> {
     // Keep the same exclusive policy guard through the lock checks, watchdog
     // acknowledgement and shutdown commitment. A queued lock mutation then
     // sees the committed shutdown flag before writing.
@@ -168,7 +171,7 @@ pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {
     // stop. In service mode the acknowledgement is required: exiting without
     // it would race watchdog resurrection during update/uninstall.
     #[cfg(any(target_os = "windows", target_os = "linux"))]
-    if crate::platform::in_service_mode()
+    if state.require_watchdog_maintenance
         && let Err(error) = crate::watchdog::request_maintenance(
             crate::watchdog_protocol::MaintenanceReason::UnlockedShutdown,
             crate::watchdog_protocol::DEFAULT_MAINTENANCE_TTL,
@@ -181,9 +184,24 @@ pub(super) async fn shutdown(state: AppState) -> Result<(), ApiError> {
         ));
     }
 
-    // Signal the main run() loop to begin graceful shutdown.
-    state.shutdown_tx.send_replace(true);
+    // Commit under the policy guard. Closing the runtime here would destroy
+    // the RPC transport before Remoc can deliver this method's return value.
+    // The client acknowledges receipt on a separate remote one-shot channel.
+    state
+        .shutdown_committed
+        .store(true, std::sync::atomic::Ordering::Release);
     drop(manager);
-
+    let shutdown_tx = state.shutdown_tx.clone();
+    tokio::spawn(async move {
+        if !matches!(
+            tokio::time::timeout(std::time::Duration::from_secs(10), reply_ack).await,
+            Ok(Ok(()))
+        ) {
+            tracing::warn!(
+                "Shutdown already authorized; caller acknowledgement unavailable, finishing committed shutdown"
+            );
+        }
+        shutdown_tx.send_replace(true);
+    });
     Ok(())
 }

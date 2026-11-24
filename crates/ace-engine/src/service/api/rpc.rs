@@ -310,7 +310,11 @@ pub trait EngineControl {
         &self,
         capability: Option<String>,
     ) -> Result<RpcResult<()>, CallError>;
-    async fn shutdown(&self, capability: Option<String>) -> Result<RpcResult<()>, CallError>;
+    async fn shutdown(
+        &self,
+        capability: Option<String>,
+        reply_ack: remoc::rch::oneshot::Receiver<()>,
+    ) -> Result<RpcResult<()>, CallError>;
     async fn initiate_unlock(
         &self,
         capability: Option<String>,
@@ -1292,14 +1296,20 @@ impl EngineControl for EngineRpc {
         )
     }
 
-    async fn shutdown(&self, capability: Option<String>) -> Result<RpcResult<()>, CallError> {
+    async fn shutdown(
+        &self,
+        capability: Option<String>,
+        reply_ack: remoc::rch::oneshot::Receiver<()>,
+    ) -> Result<RpcResult<()>, CallError> {
         if let Err(error) = self.check_capability(capability.as_deref(), true) {
             return Ok(Err(error));
         }
-        Ok(super::operations_system::shutdown(self.state.clone())
-            .await
-            .map(|_| ())
-            .map_err(Into::into))
+        Ok(
+            super::operations_system::shutdown(self.state.clone(), reply_ack)
+                .await
+                .map(|_| ())
+                .map_err(Into::into),
+        )
     }
 
     async fn initiate_unlock(
@@ -1409,6 +1419,8 @@ mod remoc_tests {
             )),
             update_check_interval: Arc::new(tokio::sync::RwLock::new(Duration::from_secs(3600))),
             shutdown_tx: tokio::sync::watch::channel(false).0,
+            shutdown_committed: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            require_watchdog_maintenance: false,
             unlock_challenges: Arc::new(tokio::sync::Mutex::new(std::collections::HashMap::new())),
             capability_token: Some("test-256-bit-capability".into()),
             enforce_capability: true,
@@ -1423,7 +1435,9 @@ mod remoc_tests {
         let pending = state.clone();
         let queued = tokio::spawn(async move { pending.policy_write().await.map(|_| ()) });
         tokio::task::yield_now().await;
-        state.shutdown_tx.send_replace(true);
+        state
+            .shutdown_committed
+            .store(true, std::sync::atomic::Ordering::Release);
         drop(guard);
         let result = queued.await.unwrap();
         assert!(matches!(
@@ -1454,6 +1468,54 @@ mod remoc_tests {
             .await
             .expect("consume RTC capability");
         (remote, task)
+    }
+
+    #[tokio::test]
+    async fn shutdown_reply_arrives_before_runtime_shutdown() {
+        let (_temp, state) = state();
+        let mut stopped = state.shutdown_tx.subscribe();
+        let (client, server) = client(state.clone()).await;
+        let (ack, reply_ack) = remoc::rch::oneshot::channel();
+        client
+            .shutdown(Some("test-256-bit-capability".into()), reply_ack)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(
+            state
+                .shutdown_committed
+                .load(std::sync::atomic::Ordering::Acquire)
+        );
+        assert!(!*stopped.borrow());
+        assert!(state.policy_write().await.is_err());
+        let _ = ack.send(()).unwrap().await;
+        tokio::time::timeout(Duration::from_secs(2), stopped.wait_for(|value| *value))
+            .await
+            .unwrap()
+            .unwrap();
+        drop(client);
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn committed_shutdown_finishes_if_caller_disconnects() {
+        let (_temp, state) = state();
+        let mut stopped = state.shutdown_tx.subscribe();
+        let (client, server) = client(state.clone()).await;
+        let (ack, reply_ack) = remoc::rch::oneshot::channel();
+        client
+            .shutdown(Some("test-256-bit-capability".into()), reply_ack)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(!*stopped.borrow());
+        drop(ack);
+        drop(client);
+        tokio::time::timeout(Duration::from_secs(2), stopped.wait_for(|value| *value))
+            .await
+            .unwrap()
+            .unwrap();
+        server.abort();
     }
 
     #[tokio::test]
@@ -1596,8 +1658,9 @@ mod remoc_tests {
             .unwrap_err();
         assert_eq!(delete_error.status, 403);
 
+        let (_ack, reply_ack) = remoc::rch::oneshot::channel();
         let shutdown_error = client
-            .shutdown(capability.clone())
+            .shutdown(capability.clone(), reply_ack)
             .await
             .unwrap()
             .unwrap_err();

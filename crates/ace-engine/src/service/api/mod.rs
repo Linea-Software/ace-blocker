@@ -39,6 +39,10 @@ pub struct AppState {
     pub content_update_service: SharedContentUpdateService,
     pub update_check_interval: SharedUpdateInterval,
     pub shutdown_tx: watch::Sender<bool>,
+    /// Fence policy writes immediately, before the caller acknowledges the RPC reply.
+    pub shutdown_committed: Arc<std::sync::atomic::AtomicBool>,
+    /// Captured from the service mode at startup, not caller-controlled.
+    pub require_watchdog_maintenance: bool,
     /// In-memory soft-unlock challenges, keyed by network block ID.
     /// Ephemeral: not persisted to DB. Cleared on engine restart.
     pub unlock_challenges: Arc<tokio::sync::Mutex<HashMap<NetworkBlockId, UnlockChallenge>>>,
@@ -59,7 +63,10 @@ impl AppState {
         &self,
     ) -> Result<tokio::sync::RwLockWriteGuard<'_, NetworkManager>, error::ApiError> {
         let guard = self.network_manager.write().await;
-        if *self.shutdown_tx.borrow() {
+        if self
+            .shutdown_committed
+            .load(std::sync::atomic::Ordering::Acquire)
+        {
             return Err(error::ApiError::Conflict(
                 "Engine maintenance is in progress".into(),
             ));

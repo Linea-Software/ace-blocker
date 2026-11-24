@@ -421,7 +421,20 @@ pub async fn call(op: &str, args: Value, capability: Option<String>) -> Result<V
         "openProPage" => no_arg_call!(client.open_pro_page(capability)),
         "checkUpdates" => no_arg_call!(client.check_updates(capability)),
         "triggerContentUpdate" => no_arg_call!(client.trigger_content_update(capability)),
-        "shutdown" => no_arg_call!(client.shutdown(capability)),
+        "shutdown" => {
+            let (ack, reply_ack) = remoc::rch::oneshot::channel();
+            client
+                .shutdown(capability, reply_ack)
+                .await
+                .map_err(transport_error)??;
+            // Authorization has been received. A disconnect while acknowledging
+            // does not undo the committed shutdown; the installer independently
+            // checks that both services actually stop.
+            if let Ok(sending) = ack.send(()) {
+                let _ = tokio::time::timeout(std::time::Duration::from_secs(5), sending).await;
+            }
+            Ok(Value::Null)
+        }
         "initiateUnlock" => {
             let network_block_id: uuid::Uuid = serde_json::from_value(
                 args.get("network_block_id").cloned().unwrap_or(Value::Null),
