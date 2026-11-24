@@ -159,8 +159,7 @@ $failed = @(
     passed = $required.Count - $failed.Count
     failed = $failed.Count
     checks = $checks.ToArray()
-}
-    | ConvertTo-Json -Depth 6 -Compress
+} | ConvertTo-Json -Depth 6 -Compress
 if ($failed.Count -gt 0) {
     exit 1
 }
