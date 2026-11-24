@@ -1124,6 +1124,66 @@ pub fn install_certificate() -> Result<()> {
 #[cfg(target_os = "linux")]
 const FIREFOX_POLICY_PATH: &str = "/etc/firefox/policies/policies.json";
 
+// Service startup runs with UMask=0077. Only newly created public policy
+// directories are made traversable; existing administrator permissions are
+// never changed, and the engine's private certificate directory stays private.
+#[cfg(target_os = "linux")]
+fn ensure_public_policy_directory(path: &Path) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    if path.is_dir() {
+        return Ok(());
+    }
+    if let Some(parent) = path.parent() {
+        ensure_public_policy_directory(parent)?;
+    }
+    std::fs::create_dir(path)?;
+    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o755))?;
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn write_public_policy_file(path: &Path, contents: &[u8], mode: u32) -> Result<()> {
+    use std::io::Write;
+    use std::os::unix::fs::PermissionsExt;
+
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| eyre::eyre!("invalid policy file name"))?;
+    let temporary_path =
+        path.with_file_name(format!(".{file_name}.ace-{}.tmp", uuid::Uuid::new_v4()));
+    // Exclusive creation prevents following a pre-existing temporary symlink.
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary_path)?;
+    let result = (|| -> Result<()> {
+        file.write_all(contents)?;
+        file.set_permissions(std::fs::Permissions::from_mode(mode))?;
+        std::fs::rename(&temporary_path, path)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&temporary_path);
+    }
+    result
+}
+
+#[cfg(target_os = "linux")]
+fn publish_firefox_certificate(policy_path: &Path, cert_path: &Path) -> Result<bool> {
+    let parent = policy_path
+        .parent()
+        .ok_or_else(|| eyre::eyre!("Firefox policy path has no parent directory"))?;
+    ensure_public_policy_directory(parent)?;
+    // Firefox (including the Ubuntu snap) can read this public policy directory.
+    // Never grant browsers access to the private CA directory or signing key.
+    let public_cert = parent.join("ace-blocker-ca.crt");
+    let certificate = std::fs::read(cert_path)?;
+    write_public_policy_file(&public_cert, &certificate, 0o644)?;
+    ensure_firefox_certificate_policy(policy_path, &public_cert)
+}
+
 #[cfg(target_os = "linux")]
 fn ensure_firefox_certificate_policy(policy_path: &Path, cert_path: &Path) -> Result<bool> {
     if !cert_path.is_absolute() {
@@ -1181,43 +1241,25 @@ fn ensure_firefox_certificate_policy(policy_path: &Path, cert_path: &Path) -> Re
     let parent = policy_path
         .parent()
         .ok_or_else(|| eyre::eyre!("Firefox policy path has no parent directory"))?;
-    std::fs::create_dir_all(parent)
+    ensure_public_policy_directory(parent)
         .wrap_err_with(|| format!("creating Firefox policy directory {}", parent.display()))?;
 
-    let file_name = policy_path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or("policies.json");
-    let temporary_path = policy_path.with_file_name(format!(".{file_name}.ace.tmp"));
+    use std::os::unix::fs::PermissionsExt;
+    let mode = match std::fs::metadata(policy_path) {
+        Ok(metadata) => metadata.permissions().mode() & 0o777,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => 0o644,
+        Err(error) => return Err(error.into()),
+    };
     let encoded = format!("{}\n", serde_json::to_string_pretty(&document)?);
-    std::fs::write(&temporary_path, encoded).wrap_err_with(|| {
-        format!(
-            "writing Firefox policy temporary file {}",
-            temporary_path.display()
-        )
-    })?;
-
-    if let Ok(metadata) = std::fs::metadata(policy_path) {
-        std::fs::set_permissions(&temporary_path, metadata.permissions()).wrap_err_with(|| {
-            format!(
-                "preserving Firefox policy permissions on {}",
-                temporary_path.display()
-            )
-        })?;
-    }
-
-    if let Err(error) = std::fs::rename(&temporary_path, policy_path) {
-        let _ = std::fs::remove_file(&temporary_path);
-        return Err(error)
-            .wrap_err_with(|| format!("replacing Firefox policy {}", policy_path.display()));
-    }
+    write_public_policy_file(policy_path, encoded.as_bytes(), mode)
+        .wrap_err_with(|| format!("writing Firefox policy {}", policy_path.display()))?;
 
     Ok(true)
 }
 
 #[cfg(target_os = "linux")]
 fn install_cert_to_firefox_trust_store(cert_path: &Path) {
-    match ensure_firefox_certificate_policy(Path::new(FIREFOX_POLICY_PATH), cert_path) {
+    match publish_firefox_certificate(Path::new(FIREFOX_POLICY_PATH), cert_path) {
         Ok(true) => info!(
             "Firefox certificate policy updated for {}; restart Firefox to apply it",
             cert_path.display()
@@ -1293,7 +1335,10 @@ fn install_linux_system_trust(cert_path: &Path) {
         warn!("failed to create {CA_DIR}: {error}");
         return;
     }
-    if let Err(error) = std::fs::copy(cert_path, &target) {
+    if let Err(error) = std::fs::read(cert_path)
+        .map_err(eyre::Report::from)
+        .and_then(|bytes| write_public_policy_file(&target, &bytes, 0o644))
+    {
         warn!("failed to copy certificate into {CA_DIR}: {error} (run elevated?)");
         return;
     }
@@ -1452,6 +1497,56 @@ mod tests {
                 .is_err()
         );
         assert_eq!(std::fs::read_to_string(policy_path).unwrap(), original);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn firefox_public_certificate_and_policy_are_readable_without_private_key_access() {
+        use std::os::unix::fs::PermissionsExt;
+        let directory = tempfile::tempdir().unwrap();
+        let private = directory.path().join("private");
+        std::fs::create_dir(&private).unwrap();
+        std::fs::set_permissions(&private, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let cert = private.join("mitm_ca.pem");
+        std::fs::write(&cert, b"public certificate").unwrap();
+        let key = private.join("mitm_ca.key");
+        std::fs::write(&key, b"private key").unwrap();
+        std::fs::set_permissions(&key, std::fs::Permissions::from_mode(0o600)).unwrap();
+        let policy = directory.path().join("firefox/policies/policies.json");
+        assert!(publish_firefox_certificate(&policy, &cert).unwrap());
+        assert!(!publish_firefox_certificate(&policy, &cert).unwrap());
+        let public_cert = policy.parent().unwrap().join("ace-blocker-ca.crt");
+        assert_eq!(std::fs::read(&public_cert).unwrap(), b"public certificate");
+        assert!(!policy.parent().unwrap().join("mitm_ca.key").exists());
+        for path in [&policy, &public_cert] {
+            assert_eq!(
+                std::fs::metadata(path).unwrap().permissions().mode() & 0o777,
+                0o644
+            );
+        }
+        for path in [
+            policy.parent().unwrap(),
+            policy.parent().unwrap().parent().unwrap(),
+        ] {
+            assert_eq!(
+                std::fs::metadata(path).unwrap().permissions().mode() & 0o777,
+                0o755
+            );
+        }
+        assert_eq!(
+            std::fs::metadata(&private).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+        assert_eq!(
+            std::fs::metadata(&key).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+        let document: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&policy).unwrap()).unwrap();
+        assert_eq!(
+            document["policies"]["Certificates"]["Install"],
+            serde_json::json!([public_cert])
+        );
     }
 
     #[test]
