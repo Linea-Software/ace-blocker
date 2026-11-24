@@ -23,6 +23,7 @@ fn write_fixture(dir: &Path) {
     std::fs::write(dir.join("tv/twitch/captcha.js"), "console.log('captcha');").unwrap();
 
     let catalog = r#"{
+        "schemaVersion": 2,
         "sites": {
             "com": {
                 "scripts": [],
@@ -34,7 +35,8 @@ fn write_fixture(dir: &Path) {
                                 "path": "com/youtube/grayscale.js",
                                 "name": "Grayscale",
                                 "description": "desaturate youtube",
-                                "version": "1.0"
+                                "version": "1.0",
+                                "requiresPro": false
                             }
                         ],
                         "children": {}
@@ -51,7 +53,8 @@ fn write_fixture(dir: &Path) {
                                 "path": "tv/twitch/captcha.js",
                                 "name": "Captcha",
                                 "description": "fake captcha on twitch",
-                                "version": "1.0"
+                                "version": "1.0",
+                                "requiresPro": true
                             }
                         ],
                         "children": {}
@@ -74,12 +77,12 @@ fn test_load_custom_rules_from_json() {
     let tree = InjectableScriptTree::load_from_json(&json_path).expect("Failed to load JSON");
 
     // Direct host lookup.
-    let youtube_scripts = tree.get_scripts("youtube.com");
+    let youtube_scripts = tree.get_scripts("youtube.com", false);
     assert_eq!(youtube_scripts.len(), 1, "youtube.com should have 1 script");
     assert!(youtube_scripts[0].contains("grayscale"));
 
     // Inheritance: www.youtube.com resolves through com → youtube.
-    let www_youtube_scripts = tree.get_scripts("www.youtube.com");
+    let www_youtube_scripts = tree.get_scripts("www.youtube.com", false);
     assert_eq!(
         www_youtube_scripts.len(),
         1,
@@ -87,10 +90,12 @@ fn test_load_custom_rules_from_json() {
     );
 
     // twitch.tv under tv → twitch.
-    let twitch_scripts = tree.get_scripts("twitch.tv");
+    assert!(tree.get_scripts("twitch.tv", false).is_empty());
+    let twitch_scripts = tree.get_scripts("twitch.tv", true);
     assert_eq!(twitch_scripts.len(), 1, "twitch.tv should have 1 script");
     assert!(twitch_scripts[0].contains("captcha"));
 
     // Unrelated host gets nothing.
-    assert!(tree.get_scripts("example.org").is_empty());
+    assert!(tree.get_scripts("example.org", false).is_empty());
+    assert!(tree.get_scripts("example.org", true).is_empty());
 }
