@@ -19,7 +19,10 @@
         "beforeBuildCommand": "bun run build",
         "beforeDevCommand": "bun run dev",
         "devUrl": "http://localhost:1420",
-        "frontendDist": "../build"
+        "frontendDist": "../build",
+        "windows": {
+            "staticVCRuntime": false
+        }
     },
     "bundle": {
         "active": true,
