@@ -3,9 +3,23 @@ use rand::prelude::*;
 use std::path::PathBuf;
 use tracing::error;
 
+// Unit tests run on independent libtest threads (including current-thread
+// Tokio runtimes). A process-global override makes one test's TempDir replace
+// another test's active directory, and deletion can break unrelated tests.
+// Integration-test binaries retain the existing process-wide override API.
+#[cfg(test)]
+std::thread_local! {
+    static TEST_SITES_DIR: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+    static TEST_RESISTANCE_SCRIPTS_DIR: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+    static TEST_BUNDLED_PACKS_DIR: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(not(test))]
 static TEST_SITES_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
+#[cfg(not(test))]
 static TEST_RESISTANCE_SCRIPTS_DIR: std::sync::RwLock<Option<PathBuf>> =
     std::sync::RwLock::new(None);
+#[cfg(not(test))]
 static TEST_BUNDLED_PACKS_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
 
 pub const APP_INFO: AppInfo = AppInfo {
@@ -27,18 +41,20 @@ impl Settings {
     }
 
     pub fn set_test_sites_dir(path: PathBuf) {
-        *TEST_SITES_DIR.write().unwrap() = Some(path);
+        #[cfg(test)]
+        TEST_SITES_DIR.with(|value| *value.borrow_mut() = Some(path));
+        #[cfg(not(test))]
+        {
+            *TEST_SITES_DIR.write().unwrap() = Some(path);
+        }
     }
 
     /// One process-wide temp dir shared by ALL unit tests that need a sites
     /// dir (TESTINFRA-01).
     ///
-    /// The override in [`Settings::get_site_packs_dir`] is process-global and
-    /// tests run in parallel, so a per-test dir would race: a fast test
-    /// finishing mid-way through a slow test would delete the dir the slow
-    /// test's pack I/O resolves to. Sharing a single leaked dir is safe
-    /// because pack directories are UUID-named and no test asserts on the
-    /// dir's own contents.
+    /// Unit-test overrides are thread-local. Tests that use UUID-named
+    /// pack directories can share this process-lifetime fixture; tests
+    /// that assert on directory contents must use their own fixture.
     #[cfg(test)]
     pub fn shared_test_sites_dir() -> PathBuf {
         // Own the fixture in OnceLock instead of deliberately forgetting it.
@@ -51,7 +67,12 @@ impl Settings {
     }
 
     pub fn set_test_resistance_scripts_dir(path: PathBuf) {
-        *TEST_RESISTANCE_SCRIPTS_DIR.write().unwrap() = Some(path);
+        #[cfg(test)]
+        TEST_RESISTANCE_SCRIPTS_DIR.with(|value| *value.borrow_mut() = Some(path));
+        #[cfg(not(test))]
+        {
+            *TEST_RESISTANCE_SCRIPTS_DIR.write().unwrap() = Some(path);
+        }
     }
 
     /// Test-only override for the bundled-packs directory. Ungated on purpose
@@ -59,12 +80,20 @@ impl Settings {
     /// at startup in the release binary, so integration tests must be able to
     /// point it at a temp tree.
     pub fn set_test_bundled_packs_dir(path: PathBuf) {
-        *TEST_BUNDLED_PACKS_DIR.write().unwrap() = Some(path);
+        #[cfg(test)]
+        TEST_BUNDLED_PACKS_DIR.with(|value| *value.borrow_mut() = Some(path));
+        #[cfg(not(test))]
+        {
+            *TEST_BUNDLED_PACKS_DIR.write().unwrap() = Some(path);
+        }
     }
 
     /// Returns the test override for the bundled-packs directory, if set.
     pub fn get_bundled_packs_dir_override() -> Option<PathBuf> {
-        TEST_BUNDLED_PACKS_DIR.read().unwrap().clone()
+        #[cfg(test)]
+        return TEST_BUNDLED_PACKS_DIR.with(|value| value.borrow().clone());
+        #[cfg(not(test))]
+        return TEST_BUNDLED_PACKS_DIR.read().unwrap().clone();
     }
 
     pub fn get_app_dir() -> PathBuf {
@@ -103,7 +132,11 @@ impl Settings {
         // override would silently send their site-pack I/O to the real
         // ProgramData directory. The override only takes effect when
         // `set_test_sites_dir` was called — which only tests do (TESTINFRA-01).
-        if let Some(path) = TEST_SITES_DIR.read().unwrap().clone() {
+        #[cfg(test)]
+        let override_path = TEST_SITES_DIR.with(|value| value.borrow().clone());
+        #[cfg(not(test))]
+        let override_path = TEST_SITES_DIR.read().unwrap().clone();
+        if let Some(path) = override_path {
             return path;
         }
 
@@ -120,7 +153,11 @@ impl Settings {
 
     pub fn get_resistance_scripts_dir() -> PathBuf {
         // Not `#[cfg(test)]`-gated: see `get_site_packs_dir` (TESTINFRA-01).
-        if let Some(path) = TEST_RESISTANCE_SCRIPTS_DIR.read().unwrap().clone() {
+        #[cfg(test)]
+        let override_path = TEST_RESISTANCE_SCRIPTS_DIR.with(|value| value.borrow().clone());
+        #[cfg(not(test))]
+        let override_path = TEST_RESISTANCE_SCRIPTS_DIR.read().unwrap().clone();
+        if let Some(path) = override_path {
             return path;
         }
 

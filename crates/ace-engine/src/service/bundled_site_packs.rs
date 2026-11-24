@@ -519,9 +519,9 @@ mod tests {
     use std::sync::{Mutex, MutexGuard, OnceLock};
     use uuid::Uuid;
 
-    // The `Settings` overrides are process-global, so all tests in this module
-    // share one temp tree and run serially under a mutex, resetting the shared
-    // directories at the start of every test (TESTINFRA-01 discipline).
+    // These tests reuse fixed pack IDs in one temp tree, so serialize access
+    // and reset the directories for each test. Each test thread installs its
+    // own Settings overrides.
     struct Shared {
         root: PathBuf,
         sites_dir: PathBuf,
@@ -538,8 +538,6 @@ mod tests {
             let bundle_dir = root.join("bundled-packs");
             std::fs::create_dir_all(&sites_dir).expect("create shared sites dir");
             std::fs::create_dir_all(&bundle_dir).expect("create shared bundle dir");
-            Settings::set_test_sites_dir(sites_dir.clone());
-            Settings::set_test_bundled_packs_dir(bundle_dir.clone());
             Shared {
                 root,
                 sites_dir,
@@ -558,6 +556,8 @@ mod tests {
     fn setup() -> TestEnv {
         let _serial = SERIAL.lock().unwrap_or_else(|error| error.into_inner());
         let shared = shared();
+        Settings::set_test_sites_dir(shared.sites_dir.clone());
+        Settings::set_test_bundled_packs_dir(shared.bundle_dir.clone());
         let _ = std::fs::remove_dir_all(&shared.sites_dir);
         let _ = std::fs::remove_dir_all(&shared.bundle_dir);
         std::fs::create_dir_all(&shared.sites_dir).expect("recreate shared sites dir");
