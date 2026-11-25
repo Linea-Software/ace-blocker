@@ -117,7 +117,6 @@ Avoid:
 ### Semantic
 
 - Success: `#15803D` (light), `#4ADE80` (dark)
-- Interaction: `#2563EB` (light), `#60A5FA` (dark)
 - Danger: `#DF5145`
 - Information: `#668DB3`
 
@@ -125,7 +124,7 @@ Avoid:
 
 Amber identifies **Pro entitlement and upgrade actions**. Use a solid amber CTA only for a direct upgrade. Keep gated feature controls neutral with a compact amber lock/Pro marker. The brand amber is #FFB000 in both themes; in light mode use dark text on or next to the amber marker instead of darkening the brand color.
 
-Network Block activity uses a 5px success-green rail, status dot and state text; inactive states use gray. Locks use neutral surfaces, typography and a lock icon, not amber. The Network Block editor uses blue for the current step, selected categories, selected schedule mode and forward/save actions. Other ordinary actions use monochrome contrast. Errors use danger red; informational notices use the information token. Keep focus indicators visible in both themes.
+Network Block activity uses a 5px success-green rail, status dot and state text; inactive states use gray. Locks use neutral surfaces, typography and a lock icon, not amber. The Network Block editor uses full-surface inverted contrast for the current step and forward/save actions. Inactive steps have distinct bordered surfaces; completed steps display a check mark. Selected categories and schedule modes use monochrome borders and check/radio indicators. Blue is reserved for informational states. Errors use danger red; informational notices use the information token. Keep focus indicators visible in both themes.
 
 ## 6. Typography
 

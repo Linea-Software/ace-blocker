@@ -48,11 +48,15 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
     await expect(steps.nth(0)).toHaveAttribute("aria-current", "step");
     for (const dark of [false, true]) {
         await page.evaluate((value) => document.documentElement.classList.toggle("dark", value), dark);
-        const blue = dark ? "rgb(96, 165, 250)" : "rgb(37, 99, 235)";
-        await expect(steps.nth(0).locator(".step-progress")).toHaveCSS("background-color", blue);
-        await expect(steps.nth(0).locator(".step-label")).toHaveCSS("color", blue);
-        await expect(steps.nth(0).locator(".step-number")).toHaveCSS("background-color", blue);
-        await expect(editor.locator(".editor-primary-action")).toHaveCSS("background-color", blue);
+        const foreground = dark ? "rgb(243, 240, 232)" : "rgb(16, 16, 14)";
+        const background = dark ? "rgb(24, 24, 22)" : "rgb(243, 240, 232)";
+        const card = dark ? "rgb(43, 43, 38)" : "rgb(255, 253, 247)";
+        await expect(steps.nth(0)).toHaveCSS("background-color", foreground);
+        await expect(steps.nth(0).locator(".step-label")).toHaveCSS("color", background);
+        await expect(steps.nth(0).locator(".step-number")).toHaveCSS("color", background);
+        await expect(steps.nth(1)).toHaveCSS("background-color", card);
+        await expect(steps.nth(2)).toHaveCSS("background-color", card);
+        await expect(editor.locator(".editor-primary-action")).toHaveCSS("background-color", foreground);
         await page.screenshot({ path: `test-results/editor-interaction-${dark ? "dark" : "light"}.png` });
     }
 
@@ -78,6 +82,10 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
     });
 
     await steps.nth(1).click();
+    await expect(steps.nth(1)).toHaveAttribute("aria-current", "step");
+    await expect(steps.nth(1)).toHaveCSS("background-color", "rgb(243, 240, 232)");
+    await expect(steps.nth(0)).toHaveCSS("background-color", "rgb(43, 43, 38)");
+    await expect(steps.nth(0).locator(".step-number svg.lucide-check")).toBeVisible();
     await expect(
         editor.getByRole("heading", { name: "When should this block run?" }),
     ).toBeVisible();

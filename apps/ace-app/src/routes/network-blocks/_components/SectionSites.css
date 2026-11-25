@@ -59,15 +59,15 @@
 }
 
 #sites .category-choice-selected {
-    border-color: color-mix(in srgb, var(--ace-interaction) 55%, var(--border));
-    background: color-mix(in srgb, var(--ace-interaction) 6%, var(--card));
+    border-color: color-mix(in srgb, var(--foreground) 70%, var(--border));
+    background: color-mix(in srgb, var(--foreground) 7%, var(--card));
 }
 #sites .category-choice-check {
-    border-color: var(--ace-interaction);
-    background: var(--ace-interaction);
-    color: var(--ace-interaction-foreground);
+    border-color: var(--foreground);
+    background: var(--foreground);
+    color: var(--background);
 }
-#sites .category-choice:focus-visible { outline-color: var(--ace-interaction); }
+#sites .category-choice:focus-visible { outline-color: var(--foreground); }
 
 #sites .category-choice-pro svg {
     box-sizing: content-box;

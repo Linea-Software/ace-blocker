@@ -19,8 +19,6 @@
     --ace-signal-deep: #d58b00;
     --ace-pro: var(--ace-signal);
     --ace-pro-text: var(--foreground);
-    --ace-interaction: #2563eb;
-    --ace-interaction-foreground: #ffffff;
     --ace-pro-border: var(--ace-signal);
     --ace-ink: #10100e;
     --ace-graphite: #1a1a17;
@@ -85,8 +83,6 @@
     --muted-foreground: #c7c3b8;
     --ace-text-tertiary: #a9a69b;
     --ace-pro-text: var(--ace-pro);
-    --ace-interaction: #60a5fa;
-    --ace-interaction-foreground: #10100e;
     --ace-pro-border: var(--ace-signal);
     --accent: #45443c;
     --accent-foreground: #f3f0e8;

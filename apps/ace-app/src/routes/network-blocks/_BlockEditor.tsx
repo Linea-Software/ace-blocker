@@ -434,10 +434,6 @@ export default function BlockEditor(props: BlockEditorProps) {
                                 }
                                 onClick={() => goToStep(index() as 0 | 1 | 2)}
                             >
-                                <span
-                                    class="step-progress"
-                                    aria-hidden="true"
-                                />
                                 <span class="step-label">
                                     <span class="step-number">
                                         <Show
