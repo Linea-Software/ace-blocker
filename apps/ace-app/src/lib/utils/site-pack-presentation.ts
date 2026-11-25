@@ -106,7 +106,11 @@ export function groupSitePackCategories(
                     a.name.localeCompare(b.name),
             ),
         }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+        .sort((a, b) =>
+            Number(a.packs.every((pack) => pack.requiresPro)) -
+                Number(b.packs.every((pack) => pack.requiresPro)) ||
+            a.name.localeCompare(b.name),
+        );
 }
 
 

@@ -102,4 +102,16 @@ describe("official site-pack presentation", () => {
         expect(extendedCategoryPack(single!)).toBeUndefined();
     });
 
+    it("orders available Basic categories first, then Pro-only categories, alphabetically within each", () => {
+        const groups = groupSitePackCategories([
+            pack("pack-ai-tools-pro"), pack("pack-gaming-free"),
+            pack("pack-gambling-pro"), pack("pack-gambling-free"),
+            pack("pack-adult-pro"), pack("pack-adult-free"),
+            pack("pack-anime-manga-pro"),
+        ]);
+        expect(groups.map((group) => group.name)).toEqual([
+            "Adult Content", "Gambling", "Gaming", "AI Tools", "Anime & Manga",
+        ]);
+    });
+
 });

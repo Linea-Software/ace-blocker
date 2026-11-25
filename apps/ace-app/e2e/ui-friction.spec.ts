@@ -775,6 +775,9 @@ for (const isPro of [false, true]) {
         await page.goto("/site-packs");
         const familyRows = page.getByTestId("site-pack-family");
         await expect(familyRows).toHaveCount(3);
+        await expect(familyRows.nth(0)).toHaveAttribute("aria-label", "Adult Content");
+        await expect(familyRows.nth(1)).toHaveAttribute("aria-label", "Gambling");
+        await expect(familyRows.nth(2)).toHaveAttribute("aria-label", "AI Tools");
         const adult = familyRows.filter({ hasText: "Adult Content" });
         const row = adult.getByTestId("site-pack-row");
         await expect(row).toHaveCount(1);
