@@ -20,12 +20,12 @@ mod imp {
     use crate::watchdog_protocol::WATCHDOG_PIPE_NAME;
     use crate::watchdog_protocol::{EngineInstanceId, EngineToWatchdog, WatchdogToEngine};
     use eyre::{Context, eyre};
-    #[cfg(target_os = "windows")]
-    use interprocess::os::windows::named_pipe::{pipe_mode, tokio::DuplexPipeStream};
     use remoc::rch::base::{Receiver, Sender};
     use std::sync::OnceLock;
     #[cfg(target_os = "linux")]
     use tokio::net::UnixStream;
+    #[cfg(target_os = "windows")]
+    use tokio::net::windows::named_pipe::{ClientOptions, NamedPipeClient};
     use tokio::sync::{mpsc, oneshot};
     use tokio::time::{self, Duration};
     use tracing::{info, warn};
@@ -34,7 +34,7 @@ mod imp {
     #[cfg(target_os = "linux")]
     type WatchdogStream = UnixStream;
     #[cfg(target_os = "windows")]
-    type WatchdogStream = DuplexPipeStream<pipe_mode::Bytes>;
+    type WatchdogStream = NamedPipeClient;
 
     static MAINTENANCE_CHANNEL: OnceLock<mpsc::Sender<MaintenanceCommand>> = OnceLock::new();
 
@@ -121,9 +121,20 @@ mod imp {
 
     #[cfg(target_os = "windows")]
     async fn connect_watchdog() -> Result<WatchdogStream> {
-        WatchdogStream::connect_by_path(WATCHDOG_PIPE_NAME)
-            .await
-            .wrap_err("failed to open watchdog named pipe")
+        time::timeout(Duration::from_secs(5), async {
+            loop {
+                match ClientOptions::new().open(WATCHDOG_PIPE_NAME) {
+                    Err(error) if error.raw_os_error() == Some(231) => {
+                        // ERROR_PIPE_BUSY while the watchdog replaces an instance.
+                        time::sleep(Duration::from_millis(25)).await;
+                    }
+                    result => return result,
+                }
+            }
+        })
+        .await
+        .wrap_err("watchdog named pipe remained busy")?
+        .wrap_err("failed to open watchdog named pipe")
     }
 
     #[cfg(target_os = "linux")]
@@ -160,9 +171,13 @@ mod imp {
             _,
             Sender<EngineToWatchdog>,
             Receiver<WatchdogToEngine>,
-        ) = remoc::Connect::io(remoc::Cfg::default(), read_half, write_half)
-            .await
-            .wrap_err("failed to establish watchdog remoc session")?;
+        ) = time::timeout(
+            Duration::from_secs(5),
+            remoc::Connect::io(remoc::Cfg::default(), read_half, write_half),
+        )
+        .await
+        .wrap_err("watchdog remoc handshake timed out")?
+        .wrap_err("failed to establish watchdog remoc session")?;
         let connection_task = tokio::spawn(connection);
 
         tx.send(EngineToWatchdog::Hello {

@@ -43,21 +43,25 @@ mod windows_impl {
         recovery_delay,
     };
     use eyre::{Context, Result, eyre};
-    use interprocess::os::windows::{
-        named_pipe::{PipeListenerOptions, pipe_mode, tokio::DuplexPipeStream},
-        security_descriptor::SecurityDescriptor,
+    use interprocess::os::windows::security_descriptor::{
+        AsSecurityDescriptor, SecurityDescriptor,
     };
     use remoc::rch::base::{Receiver, Sender};
     use std::ffi::OsString;
     use std::io::Write;
+    use std::os::windows::io::AsRawHandle;
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::{Arc, Mutex, MutexGuard};
     use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+    use tokio::net::windows::named_pipe::{NamedPipeServer, ServerOptions};
     use tokio::time;
     use uuid::Uuid;
     use widestring::U16CString;
     use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::Security::SECURITY_ATTRIBUTES;
+    use windows::Win32::System::Pipes::GetNamedPipeClientProcessId;
     use windows::Win32::System::Threading::{OpenProcess, PROCESS_TERMINATE, TerminateProcess};
     use windows_service::{
         define_windows_service,
@@ -196,6 +200,10 @@ mod windows_impl {
         let handler_stop = Arc::clone(&stop_requested);
         let shared_health = Arc::new(Mutex::new(HeartbeatSnapshot::default()));
         let handler_health = Arc::clone(&shared_health);
+        let status_cell = Arc::new(std::sync::OnceLock::<
+            service_control_handler::ServiceStatusHandle,
+        >::new());
+        let handler_status = Arc::clone(&status_cell);
         let status_handle =
             match service_control_handler::register(WATCHDOG_SERVICE_NAME, move |control_event| {
                 match control_event {
@@ -204,10 +212,30 @@ mod windows_impl {
                             .maintenance_until
                             .is_some_and(|until| Instant::now() < until);
                         if maintenance_is_active {
+                            // SCM must see STOP_PENDING before the worker exits.
+                            // Do not perform blocking log I/O in its control callback.
+                            if let Some(handle) = handler_status.get() {
+                                if handle
+                                    .set_service_status(ServiceStatus {
+                                        service_type: ServiceType::OWN_PROCESS,
+                                        current_state: ServiceState::StopPending,
+                                        controls_accepted: ServiceControlAccept::empty(),
+                                        exit_code: ServiceExitCode::NO_ERROR,
+                                        checkpoint: 1,
+                                        wait_hint: Duration::from_secs(15),
+                                        process_id: None,
+                                    })
+                                    .is_err()
+                                {
+                                    return ServiceControlHandlerResult::Other(1061);
+                                }
+                            } else {
+                                return ServiceControlHandlerResult::Other(1061);
+                            }
                             handler_stop.store(true, Ordering::Release);
                             ServiceControlHandlerResult::NoError
                         } else {
-                            ServiceControlHandlerResult::NotImplemented
+                            ServiceControlHandlerResult::Other(5)
                         }
                     }
                     ServiceControl::Interrogate => ServiceControlHandlerResult::NoError,
@@ -223,6 +251,7 @@ mod windows_impl {
                 }
             };
 
+        let _ = status_cell.set(status_handle);
         if let Err(error) = status_handle.set_service_status(ServiceStatus {
             service_type: ServiceType::OWN_PROCESS,
             current_state: ServiceState::Running,
@@ -496,26 +525,57 @@ mod windows_impl {
             .wrap_err("invalid watchdog pipe security descriptor text")?;
         let descriptor = SecurityDescriptor::deserialize(&sddl)
             .wrap_err("failed to build watchdog pipe security descriptor")?;
-        let listener = PipeListenerOptions::new()
-            .path(WATCHDOG_PIPE_NAME)
-            .accept_remote(false)
-            .security_descriptor(Some(descriptor))
-            .create_tokio_duplex::<pipe_mode::Bytes>()
-            .wrap_err("failed to create restricted watchdog named pipe")?;
+        // Keep the SYSTEM-only DACL and remote-client rejection. Tokio's
+        // native byte stream avoids blocking FlushFileBuffers on a dead peer.
+        let create_server = |first: bool| -> std::io::Result<NamedPipeServer> {
+            let mut attributes = SECURITY_ATTRIBUTES {
+                nLength: std::mem::size_of::<SECURITY_ATTRIBUTES>() as u32,
+                lpSecurityDescriptor: descriptor.as_sd().cast_mut(),
+                bInheritHandle: false.into(),
+            };
+            // SAFETY: the descriptor and attributes remain valid for this
+            // synchronous CreateNamedPipeW call; the handle is not inherited.
+            unsafe {
+                ServerOptions::new()
+                    .first_pipe_instance(first)
+                    .reject_remote_clients(true)
+                    .create_with_security_attributes_raw(
+                        WATCHDOG_PIPE_NAME,
+                        (&mut attributes as *mut SECURITY_ATTRIBUTES).cast(),
+                    )
+            }
+        };
+        let mut listener =
+            create_server(true).wrap_err("failed to create restricted watchdog named pipe")?;
 
         loop {
             if stop_requested.load(Ordering::Acquire) {
                 return Ok(());
             }
-            let server = tokio::select! {
-                connected = listener.accept() =>
-                    connected.wrap_err("failed accepting watchdog pipe client")?,
+            let connected = tokio::select! {
+                connected = listener.connect() => connected,
                 _ = wait_for_stop(Arc::clone(&stop_requested)) => return Ok(()),
             };
-            let client_process_id = server
-                .client_process_id()
-                .wrap_err("failed to get watchdog pipe client PID")?;
-            if current_engine_process_id()? != Some(client_process_id) {
+            if let Err(error) = connected {
+                // A client can disappear before ConnectNamedPipe completes.
+                // Retain the restricted pipe name while replacing its instance.
+                log_event(&format!("watchdog pipe connect failed: {error}"));
+                let replacement = create_server(false).wrap_err("recreating watchdog pipe")?;
+                listener = replacement;
+                time::sleep(Duration::from_millis(100)).await;
+                continue;
+            }
+            let server = listener;
+            listener = create_server(false).wrap_err("failed creating next watchdog pipe")?;
+            let mut client_process_id = 0;
+            // SAFETY: server owns a live named-pipe handle and PID output is valid.
+            if let Err(error) = unsafe {
+                GetNamedPipeClientProcessId(HANDLE(server.as_raw_handle()), &mut client_process_id)
+            } {
+                log_event(&format!("rejecting disconnected watchdog client: {error}"));
+                continue;
+            }
+            if current_engine_process_id().ok().flatten() != Some(client_process_id) {
                 log_event(&format!(
                     "rejected watchdog pipe client PID {client_process_id}: not current SCM-owned AceEngine PID"
                 ));
@@ -536,7 +596,7 @@ mod windows_impl {
     }
 
     async fn serve_engine_connection(
-        server: DuplexPipeStream<pipe_mode::Bytes>,
+        server: NamedPipeServer,
         client_process_id: u32,
         shared_health: &Arc<Mutex<HeartbeatSnapshot>>,
         stop_requested: Arc<AtomicBool>,
@@ -546,9 +606,15 @@ mod windows_impl {
             _,
             Sender<WatchdogToEngine>,
             Receiver<EngineToWatchdog>,
-        ) = remoc::Connect::io(remoc::Cfg::default(), read_half, write_half)
-            .await
-            .wrap_err("failed to establish watchdog remoc session")?;
+        ) = tokio::select! {
+            handshake = time::timeout(
+                PIPE_HELLO_TIMEOUT,
+                remoc::Connect::io(remoc::Cfg::default(), read_half, write_half),
+            ) => handshake
+                .wrap_err("watchdog remoc handshake timed out")?
+                .wrap_err("failed to establish watchdog remoc session")?,
+            _ = wait_for_stop(Arc::clone(&stop_requested)) => return Ok(()),
+        };
         let connection_task = tokio::spawn(connection);
 
         let outcome = async {

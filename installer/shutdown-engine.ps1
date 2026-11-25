@@ -7,8 +7,9 @@
 # AceEngineWatchdog maintenance window before it begins graceful teardown.
 #
 # Contract: FAIL SAFE. Exit 0 only after an authenticated RPC acknowledgement and
-# after the AceEngine SCM service reaches Stopped. Any inability to verify that
-# sequence exits non-zero so MSI does not stop the watchdog or remove files.
+# after both SCM services reach Stopped. Any inability to verify that sequence
+# exits non-zero so MSI cannot remove files. The watchdog itself still enforces
+# the authenticated, bounded maintenance lease.
 #
 # Runs as SYSTEM (deferred, impersonate=no) under Windows PowerShell 5.1.
 # Keep this file pure ASCII: PS 5.1 may read a BOM-less script as ANSI.
@@ -69,14 +70,39 @@ try {
         if (
             $service.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped
         ) {
-            Write-Log "AceEngine reached SERVICE_STOPPED; installer may stop the watchdog."
-            Write-Log "=== maintenance preparation complete (exit 0) ==="
-            exit 0
+            Write-Log "AceEngine reached SERVICE_STOPPED; requesting watchdog stop."
+            break
         }
         Start-Sleep -Milliseconds 250
     }
 
-    Fail-Shutdown 25 "Timed out waiting for AceEngine to reach SERVICE_STOPPED."
+    if ((Get-Service -Name "AceEngine").Status -ne [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
+        Fail-Shutdown 25 "Timed out waiting for AceEngine to reach SERVICE_STOPPED."
+    }
+
+    # SCM can transiently return ERROR_SERVICE_CANNOT_ACCEPT_CTRL (1061).
+    # Do not ignore it and let MSI enter destructive StopServices actions.
+    # Recheck status and retry only within the already-authorized maintenance
+    # lease; a missing service or a rejected stop remains a failure.
+    $deadline = (Get-Date).AddSeconds($StopTimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        $watchdog = Get-Service -Name "AceEngineWatchdog"
+        if ($watchdog.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Stopped) {
+            Write-Log "Both services reached SERVICE_STOPPED."
+            Write-Log "=== maintenance preparation complete (exit 0) ==="
+            exit 0
+        }
+        if ($watchdog.Status -eq [System.ServiceProcess.ServiceControllerStatus]::Running) {
+            $stop = Start-Process -FilePath "$env:SystemRoot\System32\sc.exe" -ArgumentList "stop AceEngineWatchdog" -Wait -PassThru -WindowStyle Hidden
+            $code = $stop.ExitCode
+            if ($code -notin @(0, 1061, 1062)) {
+                Fail-Shutdown 27 "Watchdog stop rejected by SCM (exit $code)."
+            }
+            Write-Log "Watchdog SCM stop exit $code; verifying state."
+        }
+        Start-Sleep -Milliseconds 500
+    }
+    Fail-Shutdown 28 "Timed out waiting for AceEngineWatchdog to reach SERVICE_STOPPED."
 } catch {
     Write-Log "Unexpected shutdown-preparation error: $($_.Exception.Message)"
     Write-Log "=== aborting uninstall/upgrade preparation (exit 26) ==="

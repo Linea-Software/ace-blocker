@@ -411,16 +411,6 @@
       Impersonate="no"
       Return="check" />
 
-    <!-- Stop the watchdog only after the engine has acknowledged maintenance
-         and completed graceful teardown. Missing/already-stopped is benign. -->
-    <CustomAction
-      Id="CA_StopWatchdog"
-      Directory="System64Folder"
-      ExeCommand="sc.exe stop AceEngineWatchdog"
-      Execute="deferred"
-      Impersonate="no"
-      Return="ignore" />
-
     <!-- Best-effort removal of the engine certificates from the machine root
          store at uninstall (the API cert "Ace Engine Root CA" and the MITM
          cert "mitm-proxy Root CA"). Ignored failures: the stores may not
@@ -474,12 +464,11 @@
       <Custom Action="CA_CheckLocks" After="InstallInitialize" Condition="REMOVE" />
       <!-- Remove the engine certificates from the machine root store on
            uninstall, after the lock gate has passed. -->
-      <Custom Action="CA_StopWatchdog" After="CA_PrepareEngineMaintenance" Condition="REMOVE" />
       <!-- An MSI major upgrade is not a user-requested uninstall. Preserve
            the existing root CAs and their private keys across upgrades. -->
       <Custom Action="CA_RemoveApiCert" After="CA_RemoveBrowserProxyGuard" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
       <Custom Action="CA_RemoveMitmCert" After="CA_RemoveApiCert" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
-      <Custom Action="CA_RemoveBrowserProxyGuard" After="CA_StopWatchdog" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
+      <Custom Action="CA_RemoveBrowserProxyGuard" After="CA_PrepareEngineMaintenance" Condition="REMOVE AND NOT UPGRADINGPRODUCTCODE" />
     </InstallExecuteSequence>
 
   </Package>
