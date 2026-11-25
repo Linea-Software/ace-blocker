@@ -743,110 +743,53 @@ test("An active scheduled lock cannot be removed from its review modal", async (
     ).toBeVisible();
 });
 
-test("Categories list shows one compact row per family and expands only paired tiers", async ({
-    page,
-}) => {
-    await page.setViewportSize({ width: 1180, height: 840 });
-    await page.addInitScript(() => {
-        const base = {
-            description: "",
-            icon: null,
-            isRemote: true,
-            isSynced: false,
-            entriesCount: 0,
-            isBundled: false,
-            isLocked: false,
-            lastUpdatedAt: null,
-            version: "2026.11",
-        };
-        const sitePacks = [
-            {
-                ...base,
-                id: "pack-adult-free",
-                name: "Adult Websites — Free",
-                requiresPro: false,
-            },
-            {
-                ...base,
-                id: "pack-adult-pro",
-                name: "Adult Websites — Pro",
-                requiresPro: true,
-            },
-            {
-                ...base,
-                id: "pack-gambling-free",
-                name: "Gambling Websites — Free",
-                requiresPro: false,
-            },
-            {
-                ...base,
-                id: "pack-gambling-pro",
-                name: "Gambling Websites — Pro",
-                requiresPro: true,
-            },
-            {
-                ...base,
-                id: "pack-ai-tools-pro",
-                name: "AI Tools Websites — Pro",
-                requiresPro: true,
-            },
-        ];
-        (
-            window as unknown as { __TAURI_INTERNALS__: unknown }
-        ).__TAURI_INTERNALS__ = {
-            invoke: async (cmd: string, args: { op?: string }) => {
-                if (cmd === "engine_call" && args?.op === "getAllSitePacks") {
-                    return { sitePacks };
-                }
-                if (cmd === "engine_call" && args?.op === "getAccountInfo") {
-                    return { isPro: false, tosAccepted: true };
-                }
-                throw new Error("No native engine in the visual fixture");
-            },
-            transformCallback: () => 1,
-            unregisterCallback: () => {},
-        };
+for (const isPro of [false, true]) {
+    test(`Categories list shows one aligned row per family (${isPro ? "Pro" : "Free"})`, async ({ page }) => {
+        await page.setViewportSize({ width: 1180, height: 840 });
+        await page.addInitScript((pro) => {
+            const base = { description: "", icon: null, isRemote: true, isSynced: false, entriesCount: 0, isBundled: false, isLocked: false };
+            const sitePacks = [
+                { ...base, id: "pack-adult-free", name: "Adult Websites — Free", requiresPro: false },
+                { ...base, id: "pack-adult-pro", name: "Adult Websites — Pro", requiresPro: true },
+                { ...base, id: "pack-gambling-free", name: "Gambling Websites — Free", requiresPro: false },
+                { ...base, id: "pack-gambling-pro", name: "Gambling Websites — Pro", requiresPro: true },
+                { ...base, id: "pack-ai-tools-pro", name: "AI Tools Websites — Pro", requiresPro: true },
+            ];
+            localStorage.setItem("ace:onboarding:v1", JSON.stringify({ wizardCompleted: true, tourCompleted: true }));
+            Object.assign(window, {
+                isTauri: true,
+                __TAURI_INTERNALS__: {
+                    invoke: async (cmd: string, args: { op?: string }) => {
+                        if (cmd === "system_locale") return "en-US";
+                        if (cmd === "engine_call") {
+                            if (args?.op === "getAllSitePacks") return { sitePacks };
+                            if (args?.op === "getAccountInfo" || args?.op === "refreshAccount") return { isPro: pro, tosAccepted: true };
+                            if (args?.op === "ping" || args?.op === "triggerContentUpdate") return null;
+                        }
+                        throw new Error("Unsupported fixture operation");
+                    },
+                    transformCallback: () => 1, unregisterCallback: () => {},
+                },
+            });
+        }, isPro);
+        await page.goto("/site-packs");
+        const familyRows = page.getByTestId("site-pack-family");
+        await expect(familyRows).toHaveCount(3);
+        const adult = familyRows.filter({ hasText: "Adult Content" });
+        const row = adult.getByTestId("site-pack-row");
+        await expect(row).toHaveCount(1);
+        await expect(row.getByTestId("site-pack-row-icon")).toHaveCount(1);
+        if (isPro) {
+            await expect(row.getByTestId("site-pack-row-coverage")).toContainText("153,512 sites with Free");
+            await expect(row.getByTestId("site-pack-tier-comparison")).toHaveCount(0);
+        } else {
+            await expect(row.getByTestId("site-pack-tier-comparison")).toHaveText("2,644,357 sites with Pro");
+        }
+        await expect(row.getByTestId("site-pack-row-coverage")).toContainText(isPro ? "2,644,357 sites" : "153,512 sites");
+        await expect(page.getByTestId("category-family-options")).toHaveCount(0);
+        await page.screenshot({ path: `test-results/categories-${isPro ? "pro" : "free"}-desktop.png` });
+        await page.setViewportSize({ width: 390, height: 750 });
+        await page.screenshot({ path: `test-results/categories-${isPro ? "pro" : "free"}-mobile.png` });
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     });
-    await page.goto("/site-packs");
-
-    const familyRows = page.getByTestId("site-pack-family");
-    await expect(familyRows).toHaveCount(3);
-    await expect(
-        page.getByText("Coverage for packs not downloaded is estimated."),
-    ).toBeVisible();
-    await expect(page.getByTestId("category-family-toggle")).toHaveCount(2);
-    await expect(page.getByTestId("site-pack-row")).toHaveCount(1);
-    await expect(page.getByTestId("category-family-options")).toHaveCount(0);
-    await expect(
-        familyRows.first().getByTestId("site-pack-tier-comparison"),
-    ).toContainText("2,644,357");
-
-    await page.screenshot({
-        path: "test-results/categories-simplified-desktop.png",
-        fullPage: true,
-    });
-
-    await familyRows.first().getByTestId("category-family-toggle").click();
-    await expect(
-        familyRows
-            .first()
-            .getByTestId("category-family-options")
-            .getByTestId("site-pack-row"),
-    ).toHaveCount(2);
-    await expect(
-        familyRows.first().getByTestId("site-pack-row-icon"),
-    ).toHaveCount(0);
-    await expect(familyRows.first().getByText("Pro · Extended")).toBeVisible();
-
-    await page.setViewportSize({ width: 390, height: 750 });
-    await page.screenshot({
-        path: "test-results/categories-simplified-mobile.png",
-        fullPage: true,
-    });
-    const overflow = await page.evaluate(
-        () =>
-            document.documentElement.scrollWidth -
-            document.documentElement.clientWidth,
-    );
-    expect(overflow).toBeLessThanOrEqual(1);
-});
+}

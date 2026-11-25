@@ -4,7 +4,7 @@ import { Dynamic } from "@solidjs/web";
 import type { SitePackSchema } from "$engine-client";
 import * as m from "$lib/paraglide/messages.js";
 import { getLocale } from "$lib/paraglide/runtime";
-import { getBlockingListDisplayName } from "$lib/utils/category-presentation";
+import { getBlockingListDisplayName, requiresProForConnection } from "$lib/utils/category-presentation";
 import { getPackIcon } from "../solid-pack-icons";
 import {
     getSitePackCoverage,
@@ -22,7 +22,8 @@ export default function SitePackRow(props: {
     pack: SitePackSchema;
     subtitle?: string;
     selected?: boolean;
-    variantOnly?: boolean;
+    extendedPack?: SitePackSchema;
+    basicPack?: SitePackSchema;
     isPro: boolean;
     status?: "queued" | "downloading" | "completed" | "failed";
     progress?: number;
@@ -32,15 +33,13 @@ export default function SitePackRow(props: {
     const icon = createMemo(() => getPackIcon(getSitePackIconSlug(props.pack)));
     const coverage = createMemo(() => getSitePackCoverage(props.pack));
     const proRequired = createMemo(
-        () => props.pack.requiresPro && !props.isPro,
+        () => requiresProForConnection(props.pack) && !props.isPro,
     );
-    const name = createMemo(() =>
-        props.variantOnly
-            ? props.pack.requiresPro
-                ? m.catalog_pro_extended()
-                : m.catalog_free_essential()
-            : getBlockingListDisplayName(props.pack),
-    );
+    const name = () => getBlockingListDisplayName(props.pack);
+    const paired = () => !!props.extendedPack;
+    const comparison = () => paired() && !props.isPro && !props.pack.requiresPro;
+    const extendedCoverage = () => props.extendedPack ? getSitePackCoverage(props.extendedPack).count : null;
+    const basicCoverage = () => props.basicPack ? getSitePackCoverage(props.basicPack).count : null;
     const syncing = () =>
         props.status === "queued" || props.status === "downloading";
     const stateLabel = createMemo(() => {
@@ -63,7 +62,6 @@ export default function SitePackRow(props: {
                     "pro-required": proRequired(),
                     failed: props.status === "failed",
                     syncing: syncing(),
-                    "variant-only": !!props.variantOnly,
                 },
             ]}
             data-testid="site-pack-row"
@@ -72,31 +70,30 @@ export default function SitePackRow(props: {
             title={props.pack.isLocked ? m.pack_locked_tooltip() : undefined}
             onClick={() => props.onSelect(props.pack)}
         >
-            <span class="state-rail" aria-hidden="true" />
-            <Show when={!props.variantOnly}>
-                <span
-                    class="pack-icon"
-                    data-testid="site-pack-row-icon"
-                    aria-hidden="true"
-                >
-                    <Dynamic component={icon()} size={18} strokeWidth={1.75} />
-                </span>
-            </Show>
+            <span
+                class="pack-icon"
+                data-testid="site-pack-row-icon"
+                aria-hidden="true"
+            >
+                <Dynamic component={icon()} size={18} strokeWidth={1.75} />
+            </span>
             <span class="identity">
                 <span class="identity-heading">
                     <strong>{name()}</strong>
-                    <Show when={!props.variantOnly && !proRequired()}>
+                    <Show when={!paired() && !proRequired()}>
                         <span class="tier-label">
-                            {props.pack.requiresPro
+                            {requiresProForConnection(props.pack)
                                 ? m.pro_badge()
                                 : m.pack_access_free()}
                         </span>
                     </Show>
                 </span>
+                <Show when={paired()}>
+                    <span class="subtitle">{props.pack.requiresPro ? m.catalog_pro_extended() : m.catalog_free_essential()}</span>
+                </Show>
                 <Show
                     when={
                         !!props.subtitle &&
-                        !props.variantOnly &&
                         !props.pack.isRemote
                     }
                 >
@@ -104,12 +101,13 @@ export default function SitePackRow(props: {
                 </Show>
             </span>
             <span class="coverage" data-testid="site-pack-row-coverage">
-                {coverage().count !== null
-                    ? coverage().count!.toLocaleString(getLocale()) +
-                      " " +
-                      m.domains_lowercase()
-                    : "—"}
-            </span>
+                <span>{coverage().count !== null ? coverage().count!.toLocaleString(getLocale()) + " " + m.domains_lowercase() : "—"}</span>
+                <Show when={comparison()}>
+                    <span class="coverage-pro" data-testid="site-pack-tier-comparison"><LockKeyhole size={12} aria-hidden="true" />{m.catalog_count_with_pro({ count: extendedCoverage()?.toLocaleString(getLocale()) ?? "—" })}</span>
+                </Show>
+                <Show when={paired() && props.pack.requiresPro && props.basicPack}>
+                    <span class="coverage-basic">{m.catalog_count_with_free({ count: basicCoverage()?.toLocaleString(getLocale()) ?? "—" })}</span>
+                </Show>
             <Show when={stateLabel()}>
                 <span class="state">
                     <Show when={proRequired() || props.pack.isLocked}>
@@ -139,6 +137,7 @@ export default function SitePackRow(props: {
                     </Show>
                 </span>
             </Show>
+            </span>
             <span class="chevron">
                 <ChevronRight size={16} aria-hidden="true" />
             </span>

@@ -98,75 +98,8 @@
         min-width: 0;
         background: var(--card);
     }
-    .category-family-toggle {
-        display: flex;
-        width: 100%;
-        min-height: 62px;
-        align-items: center;
-        gap: 12px;
-        border: 0;
-        border-bottom: 1px solid var(--border);
-        padding: 10px 14px;
-        background: var(--card);
-        color: var(--foreground);
-        text-align: left;
-        cursor: pointer;
-    }
-    .category-family-toggle:hover,
-    .category-family-toggle[aria-expanded="true"] {
-        background: color-mix(in srgb, var(--muted) 52%, var(--card));
-    }
-    .category-family-toggle:focus-visible {
-        outline: 2px solid var(--ring);
-        outline-offset: -2px;
-    }
-    .category-family-toggle > :last-child {
-        flex: 0 0 auto;
-        color: var(--muted-foreground);
-    }
-    .family-icon {
-        display: grid;
-        flex: 0 0 34px;
-        width: 34px;
-        height: 34px;
-        place-items: center;
-        border: 1px solid var(--border);
-        border-radius: 5px;
-        background: var(--muted);
-    }
-    .family-copy {
-        display: flex;
-        min-width: 0;
-        flex: 1;
-        flex-direction: column;
-        gap: 4px;
-    }
-    .family-copy > strong {
-        font:
-            600 15px "IBM Plex Sans Condensed",
-            sans-serif;
-    }
-    .family-coverage {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        color: var(--muted-foreground);
-        font:
-            500 11px "IBM Plex Mono",
-            monospace;
-    }
-    .category-family-options {
-        border-bottom: 1px solid var(--border);
-        background: var(--muted);
-        padding-left: 30px;
-    }
-    .category-family-options .site-pack-row:last-child {
+    .category-family:last-child .site-pack-row {
         border-bottom: 0;
-    }
-    @media (max-width: 560px) {
-        .category-family-options {
-            padding-left: 8px;
-        }
     }
     .pack-ledger .site-pack-row:last-child {
         border-bottom: 0;

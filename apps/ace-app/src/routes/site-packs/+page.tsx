@@ -1,6 +1,5 @@
 import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 import { onSettled } from "solid-js";
-import { Dynamic } from "@solidjs/web";
 import {
     Download,
     RefreshCw,
@@ -10,8 +9,6 @@ import {
     TriangleAlert,
     X,
     ArrowRight,
-    ChevronDown,
-    ChevronRight,
 } from "@lucide/solid";
 import { toast } from "solid-sonner";
 import * as m from "$lib/paraglide/messages.js";
@@ -32,7 +29,8 @@ import {
 import {
     groupSitePackCategories,
     getSitePackCoverage,
-    getSitePackIconSlug,
+    preferredCategoryPack,
+    extendedCategoryPack,
 } from "$lib/utils/site-pack-presentation";
 import PageLayout from "$lib/components/PageLayout";
 import PageHeader from "$lib/components/PageHeader";
@@ -41,7 +39,6 @@ import Inspector from "$lib/components/ace/structural/Inspector";
 import SitePackRow from "$lib/components/ace/domain/SitePackRow";
 import LockSeal from "$lib/components/ace/domain/LockSeal";
 import ImportPackModal from "./_ImportPackModal";
-import { getPackIcon } from "./_pack-icons";
 import "./site-packs.css";
 
 function getSubtitle(pack: SitePackSchema): string {
@@ -99,22 +96,11 @@ export default function SitePacksPage() {
     const [selectedPack, setSelectedPack] = createSignal<SitePackSchema | null>(
         null,
     );
-    const [expandedCategoryNames, setExpandedCategoryNames] = createSignal<
-        string[]
-    >([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = createSignal(false);
     const [packToDelete, setPackToDelete] = createSignal<SitePackSchema | null>(
         null,
     );
     const [isDeleting, setIsDeleting] = createSignal(false);
-
-    function toggleCategory(name: string) {
-        setExpandedCategoryNames((previous) =>
-            previous.includes(name)
-                ? previous.filter((value) => value !== name)
-                : [...previous, name],
-        );
-    }
 
     async function fetchPacks() {
         setIsLoading(true);
@@ -183,7 +169,6 @@ export default function SitePacksPage() {
     const categories = createMemo(() =>
         packs()
             .filter(isAceCategory)
-            .filter(matchesSearch)
             .sort((a, b) =>
                 getBlockingListDisplayName(a).localeCompare(
                     getBlockingListDisplayName(b),
@@ -191,7 +176,7 @@ export default function SitePacksPage() {
             ),
     );
     const categoryGroups = createMemo(() =>
-        groupSitePackCategories(categories()),
+        groupSitePackCategories(categories()).filter((group) => group.packs.some(matchesSearch)),
     );
     const customLists = createMemo(() =>
         packs()
@@ -361,7 +346,7 @@ export default function SitePacksPage() {
                     >
                         <Show
                             when={
-                                categories().length > 0 ||
+                                categoryGroups().length > 0 ||
                                 customLists().length > 0
                             }
                             fallback={
@@ -400,7 +385,7 @@ export default function SitePacksPage() {
                             }
                         >
                             <div class="catalog">
-                                <Show when={categories().length > 0}>
+                                <Show when={categoryGroups().length > 0}>
                                     <section
                                         class="inventory-group"
                                         aria-label={m.site_packs()}
@@ -417,211 +402,17 @@ export default function SitePacksPage() {
                                                         aria-label={group.name}
                                                         data-testid="site-pack-family"
                                                     >
-                                                        <Show
-                                                            when={
-                                                                group.packs
-                                                                    .length > 1
-                                                            }
-                                                            fallback={
-                                                                <For
-                                                                    each={
-                                                                        group.packs
-                                                                    }
-                                                                >
-                                                                    {(pack) => (
-                                                                        <SitePackRow
-                                                                            pack={
-                                                                                pack
-                                                                            }
-                                                                            isPro={
-                                                                                userStore.isPro
-                                                                            }
-                                                                            selected={
-                                                                                selectedPack()
-                                                                                    ?.id ===
-                                                                                pack.id
-                                                                            }
-                                                                            status={syncStore.statusOf(
-                                                                                pack.id,
-                                                                            )}
-                                                                            progress={
-                                                                                syncStore.progressOf(
-                                                                                    pack.id,
-                                                                                ) ??
-                                                                                0
-                                                                            }
-                                                                            phase={phaseLabel(
-                                                                                syncStore.phaseOf(
-                                                                                    pack.id,
-                                                                                ),
-                                                                            )}
-                                                                            onSelect={
-                                                                                setSelectedPack
-                                                                            }
-                                                                        />
-                                                                    )}
-                                                                </For>
-                                                            }
-                                                        >
-                                                            <button
-                                                                type="button"
-                                                                class="category-family-toggle"
-                                                                aria-expanded={
-                                                                    expandedCategoryNames().includes(
-                                                                        group.name,
-                                                                    )
-                                                                        ? "true"
-                                                                        : "false"
-                                                                }
-                                                                onClick={() =>
-                                                                    toggleCategory(
-                                                                        group.name,
-                                                                    )
-                                                                }
-                                                                data-testid="category-family-toggle"
-                                                            >
-                                                                <span
-                                                                    class="family-icon"
-                                                                    aria-hidden="true"
-                                                                >
-                                                                    <Dynamic
-                                                                        component={getPackIcon(
-                                                                            getSitePackIconSlug(
-                                                                                group
-                                                                                    .packs[0],
-                                                                            ),
-                                                                        )}
-                                                                        size={
-                                                                            19
-                                                                        }
-                                                                        strokeWidth={
-                                                                            1.75
-                                                                        }
-                                                                    />
-                                                                </span>
-                                                                <span class="family-copy">
-                                                                    <strong>
-                                                                        {
-                                                                            group.name
-                                                                        }
-                                                                    </strong>
-                                                                    <span
-                                                                        class="family-coverage"
-                                                                        data-testid="site-pack-tier-comparison"
-                                                                    >
-                                                                        <For
-                                                                            each={
-                                                                                group.packs
-                                                                            }
-                                                                        >
-                                                                            {(
-                                                                                pack,
-                                                                                i,
-                                                                            ) => (
-                                                                                <>
-                                                                                    <Show
-                                                                                        when={
-                                                                                            i() >
-                                                                                            0
-                                                                                        }
-                                                                                    >
-                                                                                        <span aria-hidden="true">
-                                                                                            ·
-                                                                                        </span>
-                                                                                    </Show>
-                                                                                    <span>
-                                                                                        {pack.requiresPro
-                                                                                            ? m.pro_badge()
-                                                                                            : m.pack_access_free()}{" "}
-                                                                                        {getSitePackCoverage(
-                                                                                            pack,
-                                                                                        ).count?.toLocaleString(
-                                                                                            getLocale(),
-                                                                                        ) ??
-                                                                                            "—"}
-                                                                                    </span>
-                                                                                </>
-                                                                            )}
-                                                                        </For>
-                                                                        <span>
-                                                                            {m.domains_lowercase()}
-                                                                        </span>
-                                                                    </span>
-                                                                </span>
-                                                                <Show
-                                                                    when={expandedCategoryNames().includes(
-                                                                        group.name,
-                                                                    )}
-                                                                    fallback={
-                                                                        <ChevronRight
-                                                                            size={
-                                                                                17
-                                                                            }
-                                                                            aria-hidden="true"
-                                                                        />
-                                                                    }
-                                                                >
-                                                                    <ChevronDown
-                                                                        size={
-                                                                            17
-                                                                        }
-                                                                        aria-hidden="true"
-                                                                    />
-                                                                </Show>
-                                                            </button>
-                                                            <Show
-                                                                when={expandedCategoryNames().includes(
-                                                                    group.name,
-                                                                )}
-                                                            >
-                                                                <div
-                                                                    class="category-family-options"
-                                                                    data-testid="category-family-options"
-                                                                >
-                                                                    <For
-                                                                        each={
-                                                                            group.packs
-                                                                        }
-                                                                    >
-                                                                        {(
-                                                                            pack,
-                                                                        ) => (
-                                                                            <SitePackRow
-                                                                                pack={
-                                                                                    pack
-                                                                                }
-                                                                                variantOnly
-                                                                                isPro={
-                                                                                    userStore.isPro
-                                                                                }
-                                                                                selected={
-                                                                                    selectedPack()
-                                                                                        ?.id ===
-                                                                                    pack.id
-                                                                                }
-                                                                                status={syncStore.statusOf(
-                                                                                    pack.id,
-                                                                                )}
-                                                                                progress={
-                                                                                    syncStore.progressOf(
-                                                                                        pack.id,
-                                                                                    ) ??
-                                                                                    0
-                                                                                }
-                                                                                phase={phaseLabel(
-                                                                                    syncStore.phaseOf(
-                                                                                        pack.id,
-                                                                                    ),
-                                                                                )}
-                                                                                onSelect={
-                                                                                    setSelectedPack
-                                                                                }
-                                                                            />
-                                                                        )}
-                                                                    </For>
-                                                                </div>
-                                                            </Show>
-                                                        </Show>
+                                                        <SitePackRow
+                                                            pack={preferredCategoryPack(group, userStore.isPro)}
+                                                            extendedPack={extendedCategoryPack(group)}
+                                                            basicPack={group.packs.find((pack) => !pack.requiresPro)}
+                                                            isPro={userStore.isPro}
+                                                            selected={selectedPack()?.id === preferredCategoryPack(group, userStore.isPro).id}
+                                                            status={syncStore.statusOf(preferredCategoryPack(group, userStore.isPro).id)}
+                                                            progress={syncStore.progressOf(preferredCategoryPack(group, userStore.isPro).id) ?? 0}
+                                                            phase={phaseLabel(syncStore.phaseOf(preferredCategoryPack(group, userStore.isPro).id))}
+                                                            onSelect={setSelectedPack}
+                                                        />
                                                     </div>
                                                 )}
                                             </For>

@@ -6,6 +6,8 @@ import {
     getSitePackCoverage,
     getSitePackIconSlug,
     groupSitePackCategories,
+    preferredCategoryPack,
+    extendedCategoryPack,
 } from "./site-pack-presentation";
 
 function pack(
@@ -89,4 +91,15 @@ describe("official site-pack presentation", () => {
         ]);
         expect(groups.length).toBe(3);
     });
+
+    it("chooses the entitled edition and retains Pro-only previews", () => {
+        const [group] = groupSitePackCategories([pack("pack-gambling-free"), pack("pack-gambling-pro")]);
+        expect(preferredCategoryPack(group!, false).id).toBe("pack-gambling-free");
+        expect(preferredCategoryPack(group!, true).id).toBe("pack-gambling-pro");
+        expect(extendedCategoryPack(group!)?.id).toBe("pack-gambling-pro");
+        const [single] = groupSitePackCategories([pack("pack-anime-manga-pro")]);
+        expect(preferredCategoryPack(single!, false).id).toBe("pack-anime-manga-pro");
+        expect(extendedCategoryPack(single!)).toBeUndefined();
+    });
+
 });

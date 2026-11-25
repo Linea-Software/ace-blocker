@@ -108,3 +108,15 @@ export function groupSitePackCategories(
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
 }
+
+
+/** Choose the entitlement's edition, or the sole locked Pro preview. */
+export function preferredCategoryPack(group: SitePackCategoryGroup, isPro: boolean): SitePackSchema {
+    return (isPro ? group.packs.find((pack) => pack.requiresPro) : group.packs.find((pack) => !pack.requiresPro)) ?? group.packs[0]!;
+}
+
+export function extendedCategoryPack(group: SitePackCategoryGroup): SitePackSchema | undefined {
+    return group.packs.some((pack) => !pack.requiresPro)
+        ? group.packs.find((pack) => pack.requiresPro)
+        : undefined;
+}

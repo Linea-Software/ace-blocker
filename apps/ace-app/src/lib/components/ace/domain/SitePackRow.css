@@ -2,12 +2,12 @@
     position: relative;
     display: flex;
     width: 100%;
-    min-height: 58px;
+    min-height: 62px;
     align-items: center;
     gap: 12px;
     border: 0;
     border-bottom: 1px solid var(--border);
-    padding: 9px 14px 9px 0;
+    padding: 9px 14px;
     background: var(--card);
     color: var(--foreground);
     text-align: left;
@@ -21,22 +21,6 @@
 .site-pack-row:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: -2px;
-}
-.site-pack-row .state-rail {
-    align-self: stretch;
-    flex: 0 0 4px;
-    margin-block: -9px;
-    background: var(--ace-ash);
-}
-.site-pack-row.locked .state-rail,
-.site-pack-row.pro-required .state-rail {
-    background: var(--ace-signal);
-}
-.site-pack-row.failed .state-rail {
-    background: var(--ace-danger);
-}
-.site-pack-row.syncing .state-rail {
-    background: var(--ace-information);
 }
 .site-pack-row .pack-icon {
     display: grid;
@@ -110,17 +94,10 @@
     flex: 0 0 auto;
     color: var(--muted-foreground);
 }
-.site-pack-row.variant-only {
-    min-height: 52px;
-    padding-left: 18px;
-}
-.site-pack-row.variant-only .state-rail {
-    background: transparent;
-}
 .site-pack-row .progress-track {
     position: absolute;
     bottom: 0;
-    left: 4px;
+    left: 0;
     right: 0;
     height: 2px;
     background: var(--muted);
@@ -149,9 +126,6 @@
     .site-pack-row .coverage {
         margin-left: 48px;
     }
-    .site-pack-row.variant-only .coverage {
-        margin-left: 0;
-    }
     .site-pack-row .state {
         margin-left: auto;
     }
@@ -167,3 +141,19 @@
         animation: none;
     }
 }
+
+.site-pack-row .coverage {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    color: var(--foreground);
+}
+.site-pack-row .coverage-pro {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--ace-signal-deep);
+}
+.site-pack-row .coverage-basic { color: var(--muted-foreground); font-size: 11px; }
