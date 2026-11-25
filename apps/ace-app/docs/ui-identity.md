@@ -127,7 +127,7 @@ Signal amber means **attention, intervention, enforcement, or commitment**.
 Do not make every primary button amber.
 Ordinary edit actions can be monochrome.
 Use Signal when Ace changes what the machine permits or when users commit to enforcement.
-Do not use decorative feature colors in the Ace visual language.
+Use subdued violet only for Pro entitlement and upgrade actions; never use it for enforcement or lock states. Active Network Blocks use a narrow success rail, monochrome switches and text. Reserve amber for lock commitment and warnings. Do not use decorative feature colors elsewhere.
 
 ## 6. Typography
 

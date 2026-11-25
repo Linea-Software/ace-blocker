@@ -83,9 +83,11 @@
     font-size: 11px;
     white-space: nowrap;
 }
-.site-pack-row.locked .state,
-.site-pack-row.pro-required .state {
+.site-pack-row.locked .state {
     color: var(--ace-signal-deep);
+}
+.site-pack-row.pro-required .state {
+    color: var(--ace-pro);
 }
 .site-pack-row.failed .state {
     color: var(--ace-danger);
@@ -154,6 +156,6 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: var(--ace-signal-deep);
+    color: var(--ace-pro);
 }
 .site-pack-row .coverage-basic { color: var(--muted-foreground); font-size: 11px; }

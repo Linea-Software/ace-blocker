@@ -17,6 +17,9 @@
     --ace-signal: #ffb000;
     --ace-signal-bright: #ffc533;
     --ace-signal-deep: #d58b00;
+    --ace-pro: #65519b;
+    --ace-pro-surface: #eee8f7;
+    --ace-pro-border: #b7a8d3;
     --ace-ink: #10100e;
     --ace-graphite: #1a1a17;
     --ace-steel: #292925;
@@ -79,6 +82,9 @@
     --muted: #383831;
     --muted-foreground: #c7c3b8;
     --ace-text-tertiary: #a9a69b;
+    --ace-pro: #c8b7ed;
+    --ace-pro-surface: #393344;
+    --ace-pro-border: #726488;
     --accent: #45443c;
     --accent-foreground: #f3f0e8;
     --destructive: #ef786d;

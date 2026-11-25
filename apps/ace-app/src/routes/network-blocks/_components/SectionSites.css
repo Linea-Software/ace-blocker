@@ -51,7 +51,7 @@
     display: flex;
     gap: 4px;
     align-items: center;
-    color: var(--ace-signal-deep);
+    color: var(--ace-pro);
 }
 @media (max-width: 560px) {
     #sites .category-choice { flex-wrap: wrap; gap: 8px; }

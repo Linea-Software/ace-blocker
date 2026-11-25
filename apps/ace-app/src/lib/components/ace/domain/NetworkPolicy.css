@@ -1,7 +1,7 @@
 .network-policy {
     position: relative;
     display: grid;
-    grid-template-columns: 8px minmax(0, 1fr);
+    grid-template-columns: 4px minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 7px;
@@ -28,7 +28,7 @@
 }
 
 .network-policy.active .state-rail span {
-    background: var(--ace-signal);
+    background: var(--ace-success);
 }
 
 .network-policy.unscheduled .state-rail span {
@@ -109,7 +109,7 @@
 }
 
 .network-policy.active .state-word {
-    color: var(--ace-signal-deep);
+    color: var(--foreground);
 }
 
 .network-policy.unscheduled .state-word {
@@ -191,8 +191,8 @@
 }
 
 .network-policy .enable-switch[aria-checked="true"] {
-    border-color: var(--ace-signal-deep);
-    background: var(--ace-signal);
+    border-color: var(--foreground);
+    background: var(--foreground);
 }
 
 .network-policy .enable-thumb {
@@ -208,7 +208,7 @@
 
 .network-policy .enable-switch[aria-checked="true"] .enable-thumb {
     transform: translateX(14px);
-    background: var(--ace-ink);
+    background: var(--background);
     opacity: 1;
 }
 
