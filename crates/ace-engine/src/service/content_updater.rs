@@ -21,7 +21,9 @@ use crate::{
     ace_server_api::GetLatestReleasesVersionDataResponse,
     core::{
         ApiKey, RemoteSitePackId, Sha256Digest, SitePackId, SitePackVersion,
-        network_block::site_pack::{site_pack_db::SitePackDB, stage_backup_archive},
+        network_block::site_pack::{
+            extended_category_remote_id, site_pack_db::SitePackDB, stage_backup_archive,
+        },
         utils::file_download,
     },
     db::EngineDB,
@@ -196,6 +198,7 @@ impl ContentUpdateService {
     pub async fn stage_pending_updates(
         &mut self,
         api_key: Option<&ApiKey>,
+        is_pro: bool,
     ) -> Result<StagedContentUpdate, SitePackUpdateError> {
         let mut staged = StagedContentUpdate {
             site_packs: Vec::new(),
@@ -204,7 +207,7 @@ impl ContentUpdateService {
         };
 
         // ── Site packs ────────────────────────────────────────────────
-        match self.get_site_packs_to_update().await {
+        match self.get_site_packs_to_update(is_pro).await {
             Ok(updates) => {
                 for (remote_id, new_version) in updates {
                     match self
@@ -399,6 +402,7 @@ impl ContentUpdateService {
     /// Returns typed `(remote_id, new_version)` pairs that need updating.
     pub async fn get_site_packs_to_update(
         &mut self,
+        is_pro: bool,
     ) -> Result<Vec<(RemoteSitePackId, SitePackVersion)>, SitePackUpdateError> {
         let latest = self.get_latest_info().await.map_err(|error| {
             SitePackUpdateError::FetchError(format!("Failed to fetch site-pack metadata: {error}"))
@@ -419,8 +423,29 @@ impl ContentUpdateService {
             .flatten()
             .collect();
 
+        // Download Extended companions only for configured categories.
+        let mut required_extensions = HashSet::new();
+        if is_pro {
+            for model in self.db.get_all_site_packs().map_err(|error| {
+                SitePackUpdateError::FetchError(format!("Failed to load site packs: {error}"))
+            })? {
+                if attached_pack_ids.contains(&model.id)
+                    && !model.requires_pro
+                    && let Some(extended) = model
+                        .remote_id
+                        .as_deref()
+                        .and_then(extended_category_remote_id)
+                {
+                    required_extensions.insert(extended);
+                }
+            }
+        }
+
         let mut updates_needed = Vec::new();
         for remote_list in latest.site_packs {
+            if remote_list.requires_pro && !is_pro {
+                continue;
+            }
             let remote_id = RemoteSitePackId::try_new(remote_list.id).map_err(|error| {
                 SitePackUpdateError::UpdateError(format!("invalid remote site-pack ID: {error}"))
             })?;
@@ -447,10 +472,18 @@ impl ContentUpdateService {
                                 "invalid persisted site-pack ID for {remote_id}: {error}"
                             ))
                         })?;
-                    let attached_but_missing = attached_pack_ids.contains(&local_model.id)
-                        && !Settings::get_site_pack_path(&local_id)
-                            .join("pack.db")
-                            .is_file();
+                    if local_model.is_ignored || (local_model.requires_pro && !is_pro) {
+                        continue;
+                    }
+                    let has_data = Settings::get_site_pack_path(&local_id)
+                        .join("pack.db")
+                        .is_file();
+                    let needed = attached_pack_ids.contains(&local_model.id)
+                        || required_extensions.contains(remote_id.as_ref() as &str);
+                    if !has_data && !needed {
+                        continue;
+                    }
+                    let attached_but_missing = !has_data;
                     let current_version = local_model
                         .version
                         .map(SitePackVersion::try_new)
@@ -480,8 +513,7 @@ impl ContentUpdateService {
                     }
                 }
                 None => {
-                    info!("Site list {} not found locally, will be added", remote_id);
-                    updates_needed.push((remote_id, candidate_version));
+                    // Registration precedes staging in the updater pass.
                 }
             }
         }
@@ -704,7 +736,16 @@ pub(crate) async fn run_update_pass(
     // 2. Stage all pending downloads/extractions — no manager lock.
     // Free simulation must also strip the real Pro API key from requests to
     // Ace Server. The persisted account and credential remain unchanged.
-    let send_credentials = network_manager.read().await.sends_registered_credentials();
+    let (send_credentials, is_pro) = {
+        let mut manager = network_manager.write().await;
+        service
+            .fetch_and_register_remote_site_packs(&mut manager)
+            .await?;
+        (
+            manager.sends_registered_credentials(),
+            manager.is_pro_user_cached(),
+        )
+    };
     let api_key = if send_credentials {
         account_manager
             .get_api_key()
@@ -713,26 +754,21 @@ pub(crate) async fn run_update_pass(
     } else {
         None
     };
-    let staged = service.stage_pending_updates(api_key.as_ref()).await?;
+    let staged = service
+        .stage_pending_updates(api_key.as_ref(), is_pro)
+        .await?;
 
     // 3. Commit under the manager write lock.
     let mut manager = network_manager.write().await;
     let commit_result = manager.apply_staged_content_updates(staged).await;
 
-    // Register any new remote site lists that appeared since last check
-    // (metadata + DB only; the releases info is fresh from step 1, so this
-    // performs no network I/O).
-    let register_result = service
-        .fetch_and_register_remote_site_packs(&mut manager)
-        .await;
+    let extension_result = manager.attach_ready_extended_categories();
     drop(manager);
 
     // Metadata is the only shared mutable state: publish it quickly after I/O.
     content_service.lock().await.publish_metadata_from(&service);
     commit_result.map_err(|error| SitePackUpdateError::UpdateError(error.to_string()))?;
-    register_result.map_err(|error| {
-        SitePackUpdateError::UpdateError(format!("Failed to register remote site packs: {error}"))
-    })?;
+    extension_result.map_err(|error| SitePackUpdateError::UpdateError(error.to_string()))?;
     Ok(())
 }
 
@@ -858,13 +894,60 @@ mod tests {
         let path = Settings::get_site_pack_path(&connected_pack_id);
         std::fs::create_dir_all(&path).unwrap();
         // The directory alone must not count as a completed download.
-        let pending = service.get_site_packs_to_update().await.unwrap();
+        let pending = service.get_site_packs_to_update(false).await.unwrap();
         assert_eq!(pending.len(), 1);
         assert_eq!(pending[0].0.as_ref(), connected_id);
 
         // Once the database exists, a same-version pass should not re-download.
         SitePackDB::from(&path.join("pack.db")).unwrap();
-        assert!(service.get_site_packs_to_update().await.unwrap().is_empty());
+        assert!(
+            service
+                .get_site_packs_to_update(false)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[tokio::test]
+    async fn extended_downloads_follow_entitlement_and_configured_categories() {
+        Settings::set_test_sites_dir(Settings::shared_test_sites_dir());
+        let temp = tempfile::tempdir().unwrap();
+        let db = Arc::new(EngineDB::from(&temp.path().join("updates.sqlite")).unwrap());
+        let unused = format!("unused-pro-{}", uuid::Uuid::new_v4());
+        for remote in ["pack-gambling-pro", unused.as_str()] {
+            let local = format!("local-{}", uuid::Uuid::new_v4());
+            db.add_default_site_pack(&local, remote, "Extended", None, true, "1.0.0")
+                .unwrap();
+        }
+        let remote_packs: Vec<_> = ["pack-gambling-pro", unused.as_str()]
+            .iter()
+            .map(|id| {
+                serde_json::json!({
+                    "id": id, "name": "Extended", "description": "",
+                    "requiresPro": true, "size": 1, "updatedAt": null, "version": "1.0.0"
+                })
+            })
+            .collect();
+        db.update_latest_update_check_at(Utc::now().to_rfc3339())
+            .unwrap();
+        let mut service = ContentUpdateService::from(db);
+        service.latest_releases_info = Some(
+            serde_json::from_value(serde_json::json!({
+                "installer": null, "resistance": null, "sitePacks": remote_packs
+            }))
+            .unwrap(),
+        );
+        assert!(
+            service
+                .get_site_packs_to_update(false)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        let pending = service.get_site_packs_to_update(true).await.unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].0.as_ref(), "pack-gambling-pro");
     }
 
     #[tokio::test]

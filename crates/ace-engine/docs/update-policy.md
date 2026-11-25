@@ -85,7 +85,7 @@ Use `ContentUpdateService::version_is_newer` for semver-style dotted comparison.
 **Flow** (staging + atomic commit; see `src/service/content_updater.rs` and
 `docs/review/architecture-implementation-2026-09.md`):
 
-1. `ContentUpdateService::get_site_packs_to_update()` compares local `site_packs` versions with `GetLatestReleasesVersionDataResponse.site_packs`.
+1. Register remote metadata before staging. `ContentUpdateService::get_site_packs_to_update(is_pro)` compares installed versions and selects missing packs referenced by configured blocks, including their canonical Extended companions when Pro is active. Ignore hidden packs and do not download Pro content without entitlement.
 2. **Staging (no manager lock)**: For each newer remote pack, download its backup archive to a unique temporary file.
    Enforce download size and time limits. Extract the SQLite database into a staging directory with traversal protection.
    Verify that the database opens and contains entries.
@@ -93,6 +93,7 @@ Use `ContentUpdateService::version_is_newer` for semver-style dotted comparison.
    Roll back the swap if it fails. Save the new version in the **same** `site_packs` row.
    Keep the pack UUID unchanged to preserve network-block references and join rows.
 4. If any step fails, keep the previous valid pack available for use.
+5. With verified Pro entitlement, attach synchronized Extended companions to configured Basic categories, including locked blocks. Preserve Basic links rather than removing protection; entitlement loss never removes existing links. New Pro operations remain gated.
 
 **Versioning**: Server versions should follow semver.
 Compare dotted numeric segments (`1.9` < `1.10`).

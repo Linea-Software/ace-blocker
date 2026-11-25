@@ -28,7 +28,7 @@ pub struct NetworkBlockDraft {
 impl NetworkManager {
     pub fn save_network_block(
         &mut self,
-        draft: NetworkBlockDraft,
+        mut draft: NetworkBlockDraft,
         is_pro_entitled: bool,
     ) -> Result<NetworkBlockId, NetworkManagerOpErr> {
         if draft.name.trim().is_empty() {
@@ -97,6 +97,14 @@ impl NetworkManager {
                 };
                 if !allowed {
                     return Err(NetworkManagerOpErr::NetworkBlockIsLocked { id });
+                }
+            }
+        }
+
+        if is_pro_entitled {
+            for extended in self.ready_extended_category_ids(&draft.site_pack_ids)? {
+                if !draft.site_pack_ids.contains(&extended) {
+                    draft.site_pack_ids.push(extended);
                 }
             }
         }

@@ -2041,6 +2041,82 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn extends_existing_category_only_after_sync_and_preserves_lock_on_downgrade() {
+        use crate::manager::network::DebugProPolicy;
+        let mut ctx = setup_test_manager();
+        let free_id = SitePackId::try_new("pack-gambling-free".to_string()).unwrap();
+        let block_id = ctx
+            .manager
+            .get_all_network_blocks()
+            .into_iter()
+            .find(|block| block.get_site_packs().contains_key(&free_id))
+            .unwrap()
+            .get_id();
+        let remote = typed_remote_id("pack-gambling-pro");
+        ctx.manager
+            .add_remote_site_pack_from_updater(
+                &remote,
+                "Gambling Extended",
+                None,
+                true,
+                &typed_version("1.0.0"),
+            )
+            .await
+            .unwrap();
+        let pro_id = SitePackId::try_new(
+            ctx.manager
+                .db
+                .get_site_pack_by_remote_id(&remote)
+                .unwrap()
+                .id,
+        )
+        .unwrap();
+        ctx.manager.attach_ready_extended_categories().unwrap();
+        assert!(
+            !ctx.manager
+                .get_network_block_from(&block_id)
+                .unwrap()
+                .get_site_packs()
+                .contains_key(&pro_id)
+        );
+        ctx.manager
+            .commit_site_pack_update(make_staged_site_pack(
+                ctx._temp_dir.path(),
+                "pack-gambling-pro",
+                "1.0.0",
+                &["extended.example.com"],
+            ))
+            .unwrap();
+        ctx.manager.set_debug_pro_policy(DebugProPolicy::Free);
+        ctx.manager.attach_ready_extended_categories().unwrap();
+        assert!(
+            !ctx.manager
+                .get_network_block_from(&block_id)
+                .unwrap()
+                .get_site_packs()
+                .contains_key(&pro_id)
+        );
+        ctx.manager
+            .set_lock(
+                &block_id,
+                Lock::from(LockState::ActiveUntilLockEnd {
+                    end: Local::now() + chrono::Duration::hours(1),
+                }),
+            )
+            .unwrap();
+        ctx.manager.set_debug_pro_policy(DebugProPolicy::Pro);
+        ctx.manager.attach_ready_extended_categories().unwrap();
+        ctx.manager.attach_ready_extended_categories().unwrap();
+        ctx.manager.set_debug_pro_policy(DebugProPolicy::Free);
+        ctx.manager.attach_ready_extended_categories().unwrap();
+        let block = ctx.manager.get_network_block_from(&block_id).unwrap();
+        assert!(block.get_site_packs().contains_key(&free_id));
+        assert!(block.get_site_packs().contains_key(&pro_id));
+        assert_eq!(block.get_site_packs().len(), 2);
+        assert!(block.is_locked(&crate::trusted_time::locking_now()));
+    }
+
+    #[tokio::test]
     async fn commit_site_pack_update_applies_in_place_and_keeps_block_references() {
         let mut ctx = setup_test_manager();
         let temp = ctx._temp_dir.path().to_path_buf();

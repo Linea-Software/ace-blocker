@@ -1,6 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use super::{NetworkManager, error::NetworkManagerOpErr};
+use crate::core::network_block::site_pack::extended_category_remote_id;
 use crate::core::{NetworkBlockId, SitePack, SitePackId};
 
 impl NetworkManager {
@@ -39,6 +40,63 @@ impl NetworkManager {
             }
         }
         Ok(count)
+    }
+
+    /// Find synchronized Extended companions of canonical Basic packs.
+    /// Never infer an entitlement or a family from a user-controlled name.
+    pub(super) fn ready_extended_category_ids(
+        &self,
+        pack_ids: &[SitePackId],
+    ) -> Result<Vec<SitePackId>, NetworkManagerOpErr> {
+        let mut wanted = std::collections::HashSet::new();
+        for id in pack_ids {
+            let pack = self.get_site_pack(id)?;
+            if !pack.requires_pro()
+                && let Some(remote_id) = pack.get_remote_id()
+                && let Some(extended) = extended_category_remote_id(remote_id.as_ref())
+            {
+                wanted.insert(extended);
+            }
+        }
+        let mut ready = Vec::new();
+        for (id, pack) in &self.site_packs {
+            let pack = pack.read().map_err(|_| NetworkManagerOpErr::RwLockPoison)?;
+            if pack.requires_pro()
+                && pack
+                    .get_remote_id()
+                    .is_some_and(|remote| wanted.contains(remote.as_ref() as &str))
+                && pack.is_synced()
+                && pack.get_db_path().join("pack.db").is_file()
+            {
+                ready.push(id.clone());
+            }
+        }
+        Ok(ready)
+    }
+
+    /// Extend configured categories without removing any previously enforced
+    /// rules. Recheck entitlement after the network/download phase.
+    pub(crate) fn attach_ready_extended_categories(&mut self) -> Result<(), NetworkManagerOpErr> {
+        if !self.is_pro_user_cached() {
+            return Ok(());
+        }
+        let mut additions = Vec::new();
+        for block in self.get_all_network_blocks() {
+            let ids: Vec<_> = block.get_site_packs().keys().cloned().collect();
+            for extended in self.ready_extended_category_ids(&ids)? {
+                if !ids.contains(&extended) {
+                    additions.push((block.get_id(), extended));
+                }
+            }
+        }
+        let mut first_error = None;
+        for (block, pack) in additions {
+            if let Err(error) = self.add_network_block_to_site_pack(&block, &pack) {
+                tracing::warn!("Failed to extend category {pack} for block {block}: {error}");
+                first_error.get_or_insert(error);
+            }
+        }
+        first_error.map_or(Ok(()), Err)
     }
 
     pub fn add_network_block_to_site_pack(

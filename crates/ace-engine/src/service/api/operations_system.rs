@@ -82,8 +82,9 @@ pub(super) async fn check_updates(state: AppState) -> Result<UpdateCheckResponse
         status,
     };
 
+    let is_pro = state.network_manager.read().await.is_pro_user_cached();
     let site_packs_to_update = content_service
-        .get_site_packs_to_update()
+        .get_site_packs_to_update(is_pro)
         .await
         .map_err(|error| ApiError::Internal(format!("Site-pack update check failed: {error}")))?
         .into_iter()

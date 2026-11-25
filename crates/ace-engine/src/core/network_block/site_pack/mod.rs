@@ -21,6 +21,16 @@ use zip::ZipArchive;
 /// Name of the SQLite database file inside a site pack's directory.
 const PACK_DB_FILE: &str = "pack.db";
 
+/// Canonical editions whose Extended release includes the Basic category.
+pub(crate) fn extended_category_remote_id(id: &str) -> Option<&'static str> {
+    match id {
+        "pack-adult-free" => Some("pack-adult-pro"),
+        "pack-gambling-free" => Some("pack-gambling-pro"),
+        "pack-streaming-free" => Some("pack-streaming-pro"),
+        _ => None,
+    }
+}
+
 #[derive(Debug)]
 pub struct SitePack {
     id: SitePackId,
