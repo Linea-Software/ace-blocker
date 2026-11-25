@@ -97,11 +97,11 @@ test("Network Block rails distinguish active and scheduled states without Pro am
     await expect(scheduled).toBeVisible();
     for (const dark of [false, true]) {
         await page.evaluate((value) => document.documentElement.classList.toggle("dark", value), dark);
-        await expect(active.locator(".state-rail span")).toHaveCSS("background-color", dark ? "rgb(74, 222, 128)" : "rgb(21, 128, 61)");
-        await expect(scheduled.locator(".state-rail span")).toHaveCSS("background-color", dark ? "rgb(169, 166, 155)" : "rgb(139, 138, 130)");
+        await expect(active.locator(".state-rail span")).toHaveCSS("background-color", dark ? "rgb(74, 222, 128)" : "rgb(22, 101, 52)");
+        await expect(scheduled.locator(".state-rail span")).toHaveCSS("background-color", dark ? "rgb(154, 170, 184)" : "rgb(125, 142, 154)");
         await expect(active.locator(".state-rail")).toHaveCSS("width", "5px");
-        await expect(active.locator(".state-word")).toHaveCSS("color", dark ? "rgb(74, 222, 128)" : "rgb(21, 128, 61)");
-        await expect(active.locator(".enable-switch")).toHaveCSS("background-color", dark ? "rgb(243, 240, 232)" : "rgb(16, 16, 14)");
+        await expect(active.locator(".state-word")).toHaveCSS("color", dark ? "rgb(74, 222, 128)" : "rgb(22, 101, 52)");
+        await expect(active.locator(".enable-switch")).toHaveCSS("background-color", dark ? "rgb(233, 238, 243)" : "rgb(32, 46, 57)");
         await page.screenshot({ path: `test-results/network-block-palette-${dark ? "dark" : "light"}.png` });
     }
 });

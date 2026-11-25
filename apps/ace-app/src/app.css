@@ -14,6 +14,20 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+    --surface-base: #cddce5;
+    --surface-panel: #e2eaf0;
+    --surface-raised: #f0f5f8;
+    --surface-control: #d5e1e9;
+    --surface-modal-chrome: #e2eaf0;
+    --surface-sidebar: #c3d4df;
+    --surface-hover: #c3d4df;
+    --border-subtle: #95aab9;
+    --border-strong: #647c8c;
+    --text-primary: #202e39;
+    --text-secondary: #465a69;
+    --overlay: rgb(18 23 28 / 68%);
+    --modal-shadow: 0 20px 60px rgb(18 23 28 / 30%);
+
     --ace-signal: #ffb000;
     --ace-signal-bright: #ffc533;
     --ace-signal-deep: #d58b00;
@@ -21,96 +35,112 @@
     --ace-pro-text: var(--foreground);
     --ace-pro-border: var(--ace-signal);
     --ace-ink: #10100e;
-    --ace-graphite: #1a1a17;
-    --ace-steel: #292925;
-    --ace-ash: #8b8a82;
-    --ace-paper: #f3f0e8;
-    --ace-paper-strong: #fffdf7;
-    --ace-line: #d7d2c7;
-    --ace-success: #15803d;
-    --ace-danger: #df5145;
-    --ace-information: #668db3;
-    --ace-text-tertiary: #65645e;
+    --ace-graphite: #212932;
+    --ace-steel: #414e5c;
+    --ace-ash: #7d8e9a;
+    --ace-paper: #cddce5;
+    --ace-paper-strong: #f0f5f8;
+    --ace-line: #95aab9;
+    --ace-success: #166534;
+    --ace-danger: #b42318;
+    --ace-information: #426784;
+    --ace-text-tertiary: #465a69;
 
     --radius: 0.375rem;
-    --background: #f3f0e8;
-    --foreground: #10100e;
-    --card: #fffdf7;
-    --card-foreground: #10100e;
-    --popover: #fffdf7;
-    --popover-foreground: #10100e;
-    --primary: #10100e;
-    --primary-foreground: #fffdf7;
-    --secondary: #e9e5db;
-    --secondary-foreground: #10100e;
-    --muted: #e9e5db;
-    --muted-foreground: #65645e;
-    --accent: #e4dfd4;
-    --accent-foreground: #10100e;
-    --destructive: #df5145;
+    --background: var(--surface-base);
+    --foreground: var(--text-primary);
+    --card: var(--surface-panel);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface-raised);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--text-primary);
+    --primary-foreground: var(--surface-base);
+    --secondary: var(--surface-control);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--surface-control);
+    --muted-foreground: var(--text-secondary);
+    --accent: var(--surface-hover);
+    --accent-foreground: var(--text-primary);
+    --destructive: #b42318;
     --destructive-foreground: #fffdf7;
-    --border: #d7d2c7;
-    --input: #c9c4b9;
-    --ring: #65645e;
+    --border: var(--border-subtle);
+    --input: var(--border-strong);
+    --ring: var(--text-secondary);
     --chart-1: #55534b;
     --chart-2: #668db3;
     --chart-3: #77a86a;
     --chart-4: #8b8a82;
     --chart-5: #df5145;
-    --sidebar: #e9e5db;
-    --sidebar-foreground: #10100e;
-    --sidebar-primary: #10100e;
-    --sidebar-primary-foreground: #fffdf7;
-    --sidebar-accent: #ddd8cd;
-    --sidebar-accent-foreground: #10100e;
-    --sidebar-border: #cbc6bb;
-    --sidebar-ring: #65645e;
+    --sidebar: var(--surface-sidebar);
+    --sidebar-foreground: var(--text-primary);
+    --sidebar-primary: var(--text-primary);
+    --sidebar-primary-foreground: var(--surface-base);
+    --sidebar-accent: var(--surface-control);
+    --sidebar-accent-foreground: var(--text-primary);
+    --sidebar-border: var(--border-subtle);
+    --sidebar-ring: var(--text-secondary);
 }
 
 .dark {
-    /* Warm charcoal planes: workspace, policies, and inset controls. */
-    --background: #181816;
-    --foreground: #f3f0e8;
-    --card: #2b2b26;
-    --card-foreground: #f3f0e8;
-    --popover: #383831;
-    --popover-foreground: #f3f0e8;
-    --primary: #f3f0e8;
-    --primary-foreground: #181816;
-    --secondary: #383831;
-    --secondary-foreground: #f3f0e8;
-    --muted: #383831;
-    --muted-foreground: #c7c3b8;
-    --ace-text-tertiary: #a9a69b;
+    --surface-base: #12171c;
+    --surface-panel: #212932;
+    --surface-raised: #2c3641;
+    --surface-control: #414e5c;
+    --surface-modal-chrome: #35414d;
+    --surface-sidebar: #1a222b;
+    --surface-hover: #4b5a69;
+    --border-subtle: #637180;
+    --border-strong: #94a4b3;
+    --text-primary: #e9eef3;
+    --text-secondary: #bfcad5;
+    --overlay: rgb(0 0 0 / 76%);
+    --modal-shadow: 0 20px 64px rgb(0 0 0 / 60%);
+
+    --background: var(--surface-base);
+    --foreground: var(--text-primary);
+    --card: var(--surface-panel);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface-raised);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--text-primary);
+    --primary-foreground: var(--surface-base);
+    --secondary: var(--surface-control);
+    --secondary-foreground: var(--text-primary);
+    --muted: var(--surface-control);
+    --muted-foreground: var(--text-secondary);
+    --ace-text-tertiary: #aabac8;
     --ace-pro-text: var(--ace-pro);
     --ace-pro-border: var(--ace-signal);
-    --accent: #45443c;
-    --accent-foreground: #f3f0e8;
+    --accent: var(--surface-hover);
+    --accent-foreground: var(--text-primary);
     --destructive: #ef786d;
     --destructive-foreground: #181816;
-    --border: #56554c;
-    --input: #807e73;
-    --ring: #c7c3b8;
+    --border: var(--border-subtle);
+    --input: var(--border-strong);
+    --ring: var(--text-secondary);
     --chart-1: #e4dfd4;
     --chart-2: #8eaccb;
     --chart-3: #9bc68f;
     --chart-4: #a9a69b;
     --chart-5: #ef786d;
-    --ace-ash: #a9a69b;
+    --ace-ash: #9aaab8;
     --ace-success: #4ade80;
     --ace-danger: #ef786d;
     --ace-information: #8eaccb;
-    --sidebar: #20201c;
-    --sidebar-foreground: #f3f0e8;
-    --sidebar-primary: #f3f0e8;
-    --sidebar-primary-foreground: #181816;
-    --sidebar-accent: #383831;
-    --sidebar-accent-foreground: #f3f0e8;
-    --sidebar-border: #56554c;
-    --sidebar-ring: #c7c3b8;
+    --sidebar: var(--surface-sidebar);
+    --sidebar-foreground: var(--text-primary);
+    --sidebar-primary: var(--text-primary);
+    --sidebar-primary-foreground: var(--surface-base);
+    --sidebar-accent: var(--surface-control);
+    --sidebar-accent-foreground: var(--text-primary);
+    --sidebar-border: var(--border-subtle);
+    --sidebar-ring: var(--text-secondary);
 }
 
 @theme inline {
+    --color-surface-control: var(--surface-control);
+    --color-surface-raised: var(--surface-raised);
+    --color-border-strong: var(--border-strong);
     --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
     --font-condensed: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
     --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -240,4 +270,50 @@
 [data-site-brand-icon] svg {
     color: var(--ace-brand-color) !important;
     fill: var(--ace-brand-color) !important;
+}
+
+/* Overlay surfaces are independent of the workspace. Controls inside a
+   raised surface must remain distinguishable rather than sink into it. */
+[aria-modal="true"] {
+    --background: var(--surface-raised);
+    --card: var(--surface-modal-chrome);
+    --border: var(--border-strong);
+    background-color: var(--surface-raised);
+    border-color: var(--border-strong);
+    box-shadow: var(--modal-shadow);
+}
+[aria-modal="true"] > :is(header, footer),
+[aria-modal="true"] :is(.lock-dialog-heading, .lock-dialog-footer) {
+    background-color: var(--surface-modal-chrome);
+}
+[data-slot$="-overlay"],
+.ace-modal-overlay {
+    background-color: var(--overlay);
+}
+:where(input:not([type]), input:is([type="text"],[type="email"],[type="password"],[type="search"],[type="number"],[type="date"],[type="time"],[type="url"],[type="tel"]), textarea, select, [data-slot="select-trigger"]) {
+    color-scheme: light;
+    background-color: var(--surface-control);
+}
+.dark :where(input:not([type]), input:is([type="text"],[type="email"],[type="password"],[type="search"],[type="number"],[type="date"],[type="time"],[type="url"],[type="tel"]), textarea, select, [data-slot="select-trigger"]) {
+    color-scheme: dark;
+}
+[aria-modal="true"] .ace-lock-option {
+    background: var(--surface-control);
+    border-color: var(--border-strong);
+}
+[aria-modal="true"] .ace-lock-option:hover:not(:disabled) {
+    background: var(--surface-hover);
+}
+[aria-modal="true"] .ace-lock-option[aria-pressed="true"] {
+    border-color: var(--foreground);
+    box-shadow: inset 0 0 0 1px var(--foreground);
+}
+
+:where(input:not([type]), input:is([type="text"],[type="email"],[type="password"],[type="search"],[type="number"],[type="date"],[type="time"],[type="url"],[type="tel"]), textarea, select, [data-slot="select-trigger"]):not(:focus-visible):not([aria-invalid="true"]) {
+    border-color: var(--border-strong);
+}
+.ace-lock-scroll {
+    scrollbar-gutter: stable;
+    scrollbar-width: auto;
+    scrollbar-color: var(--border-strong) var(--surface-raised);
 }

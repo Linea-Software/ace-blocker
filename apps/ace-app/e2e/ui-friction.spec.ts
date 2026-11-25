@@ -584,6 +584,17 @@ test("Lock setup explains each mode and rejects an unscheduled or undated hard l
         "Focus",
     );
     await dialog.getByRole("button", { name: /Until a date and time/ }).click();
+    await page.mouse.move(1, 1);
+    for (const dark of [false, true]) {
+        await page.evaluate((value) => document.documentElement.classList.toggle("dark", value), dark);
+        await expect(dialog).toHaveCSS("background-color", dark ? "rgb(44, 54, 65)" : "rgb(240, 245, 248)");
+        await expect(dialog.locator("header")).toHaveCSS("background-color", dark ? "rgb(53, 65, 77)" : "rgb(226, 234, 240)");
+        await expect(dialog.getByRole("button", { name: /Until a date and time/ })).toHaveCSS("background-color", dark ? "rgb(65, 78, 92)" : "rgb(213, 225, 233)");
+        await expect(dialog.locator('input[type="date"]')).toHaveCSS("background-color", dark ? "rgb(65, 78, 92)" : "rgb(213, 225, 233)");
+        await expect(dialog.locator("..")).toHaveCSS("background-color", dark ? "rgba(0, 0, 0, 0.76)" : "rgba(18, 23, 28, 0.68)");
+        await page.screenshot({ path: `test-results/lock-mineral-gunmetal-${dark ? "dark" : "light"}.png` });
+    }
+
     await expect(dialog.getByRole("alert")).toContainText(
         "Choose a date and time",
     );
@@ -827,8 +838,8 @@ test("Pro upgrade CTA is amber and feature gates stay neutral in both themes", a
         await expect(upgrade).toHaveCSS("background-color", "rgb(255, 176, 0)");
         await expect(upgrade).toHaveCSS("color", "rgb(16, 16, 14)");
         await expect(upgrade.locator("svg.lucide-crown")).toBeVisible();
-        await expect(gated).toHaveCSS("background-color", dark ? "rgb(43, 43, 38)" : "rgb(255, 253, 247)");
-        await expect(gated.locator(".pro-flag")).toHaveCSS("color", dark ? "rgb(255, 176, 0)" : "rgb(16, 16, 14)");
+        await expect(gated).toHaveCSS("background-color", dark ? "rgb(33, 41, 50)" : "rgb(226, 234, 240)");
+        await expect(gated.locator(".pro-flag")).toHaveCSS("color", dark ? "rgb(255, 176, 0)" : "rgb(32, 46, 57)");
         const marker = gated.locator(".pro-flag svg.lucide-lock-keyhole");
         await expect(marker).toBeVisible();
         await expect(marker).toHaveCSS("background-color", "rgb(255, 176, 0)");

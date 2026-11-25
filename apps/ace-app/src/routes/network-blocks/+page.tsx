@@ -361,7 +361,7 @@ export default function NetworkBlocksPage() {
             </Show>
             <Show when={deleteDialogOpen()}>
                 <div
-                    class="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
+                    class="fixed inset-0 z-50 grid place-items-center ace-modal-overlay p-4"
                     role="presentation"
                     onClick={(e) => {
                         if (e.currentTarget === e.target && !deleting())

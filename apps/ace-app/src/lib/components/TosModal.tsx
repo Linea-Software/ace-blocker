@@ -80,7 +80,7 @@ export default function TosModal(props: {
         "inline-flex items-center justify-center gap-2 rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground";
     return (
         <div
-            class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+            class="fixed inset-0 z-[100] flex items-center justify-center ace-modal-overlay p-4"
             role="presentation"
         >
             <div

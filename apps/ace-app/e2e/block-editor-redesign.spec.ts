@@ -48,9 +48,9 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
     await expect(steps.nth(0)).toHaveAttribute("aria-current", "step");
     for (const dark of [false, true]) {
         await page.evaluate((value) => document.documentElement.classList.toggle("dark", value), dark);
-        const foreground = dark ? "rgb(243, 240, 232)" : "rgb(16, 16, 14)";
-        const background = dark ? "rgb(24, 24, 22)" : "rgb(243, 240, 232)";
-        const card = dark ? "rgb(43, 43, 38)" : "rgb(255, 253, 247)";
+        const foreground = dark ? "rgb(233, 238, 243)" : "rgb(32, 46, 57)";
+        const background = dark ? "rgb(18, 23, 28)" : "rgb(205, 220, 229)";
+        const card = dark ? "rgb(33, 41, 50)" : "rgb(226, 234, 240)";
         await expect(steps.nth(0)).toHaveCSS("background-color", foreground);
         await expect(steps.nth(0).locator(".step-label")).toHaveCSS("color", background);
         await expect(steps.nth(0).locator(".step-number")).toHaveCSS("color", background);
@@ -83,8 +83,8 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
 
     await steps.nth(1).click();
     await expect(steps.nth(1)).toHaveAttribute("aria-current", "step");
-    await expect(steps.nth(1)).toHaveCSS("background-color", "rgb(243, 240, 232)");
-    await expect(steps.nth(0)).toHaveCSS("background-color", "rgb(43, 43, 38)");
+    await expect(steps.nth(1)).toHaveCSS("background-color", "rgb(233, 238, 243)");
+    await expect(steps.nth(0)).toHaveCSS("background-color", "rgb(33, 41, 50)");
     await expect(steps.nth(0).locator(".step-number svg.lucide-check")).toBeVisible();
     await expect(
         editor.getByRole("heading", { name: "When should this block run?" }),

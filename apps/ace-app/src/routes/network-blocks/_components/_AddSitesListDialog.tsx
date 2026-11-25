@@ -75,7 +75,7 @@ export default function AddSitesListDialog(props: AddSitesListDialogProps) {
     return (
         <Show when={props.open}>
             <div
-                class="fixed inset-0 z-[80] grid place-items-center bg-black/70 p-4"
+                class="fixed inset-0 z-[80] grid place-items-center ace-modal-overlay p-4"
                 role="presentation"
                 onClick={(event) => {
                     if (event.currentTarget === event.target) handleCancel();

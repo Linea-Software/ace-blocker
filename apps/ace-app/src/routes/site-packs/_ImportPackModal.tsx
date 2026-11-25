@@ -181,7 +181,7 @@ export default function ImportPackModal(props: ImportPackModalProps) {
     return (
         <Show when={props.open}>
             <div
-                class="fixed inset-0 z-[70] grid place-items-center bg-black/50 p-4"
+                class="fixed inset-0 z-[70] grid place-items-center ace-modal-overlay p-4"
                 role="presentation"
                 onClick={(e) => {
                     if (e.target === e.currentTarget) dismiss();

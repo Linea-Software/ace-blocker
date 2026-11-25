@@ -258,7 +258,7 @@ export default function LockModal(props: LockModalProps) {
     return (
         <Show when={props.open}>
             <div
-                class="fixed inset-0 z-[80] grid place-items-center bg-black/50 p-4"
+                class="fixed inset-0 z-[80] grid place-items-center ace-modal-overlay p-4"
                 role="presentation"
                 onClick={(event) => {
                     if (event.target === event.currentTarget && !isSubmitting())
@@ -275,8 +275,8 @@ export default function LockModal(props: LockModalProps) {
                             props.onOpenChange(false);
                     }}
                 >
-                    <header class="relative flex flex-col gap-2 border-b border-border bg-card px-5 py-5 text-left sm:px-6">
-                        <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <header class="relative flex flex-col gap-2 border-b border-border bg-card px-5 py-4 text-left sm:px-6">
+                        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             <ShieldCheck class="size-4" aria-hidden="true" />
                             {m.lock_protection_label()}
                         </div>
@@ -288,11 +288,11 @@ export default function LockModal(props: LockModalProps) {
                                 ? m.lock_review_title()
                                 : m.lock_protect_title()}
                         </h2>
-                        <p class="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                        <p class="max-w-xl text-sm leading-relaxed text-muted-foreground">
                             {m.lock_explanation()}
                         </p>
                         <Show when={props.block}>
-                            <p class="mt-3 text-xs font-medium text-foreground">
+                            <p class="mt-1 text-xs font-medium text-foreground">
                                 {m.lock_for_block({ name: props.block!.name })}
                             </p>
                         </Show>
@@ -307,7 +307,7 @@ export default function LockModal(props: LockModalProps) {
                             </button>
                         </Show>
                     </header>
-                    <div class="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+                    <div class="ace-lock-scroll min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
                         <Show when={props.block && original()}>
                             <Show
                                 when={configured() && !editing()}
@@ -322,7 +322,7 @@ export default function LockModal(props: LockModalProps) {
                                                     {(kind) => (
                                                         <button
                                                             type="button"
-                                                            class={`flex w-full items-start gap-3 rounded-md border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selectedKind() === kind ? "border-foreground bg-muted/50" : "border-border hover:bg-muted/40"}`}
+                                                            class={`ace-lock-option flex w-full items-start gap-3 rounded-md border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selectedKind() === kind ? "border-foreground bg-muted/50" : "border-border hover:bg-muted/40"}`}
                                                             autofocus={kind === "soft_unlockable"}
                                                             aria-pressed={
                                                                 selectedKind() ===

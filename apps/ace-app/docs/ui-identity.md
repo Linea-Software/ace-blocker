@@ -99,26 +99,30 @@ Avoid:
 
 ## 5. Palette
 
-### Core
+### Mineral / Gunmetal (shared with the website)
 
-| Token         | Hex       |
-| ------------- | --------- |
-| Signal        | `#FFB000` |
-| Signal Bright | `#FFC533` |
-| Signal Deep   | `#D58B00` |
-| Ink           | `#10100E` |
-| Graphite      | `#1A1A17` |
-| Steel         | `#292925` |
-| Ash           | `#8B8A82` |
-| Paper         | `#F3F0E8` |
-| Paper Strong  | `#FFFDF7` |
-| Line          | `#D7D2C7` |
+| Semantic surface | Light | Dark |
+| --- | --- | --- |
+| Workspace | `#CDDCE5` | `#12171C` |
+| Panel | `#E2EAF0` | `#212932` |
+| Raised dialog / menu | `#F0F5F8` | `#2C3641` |
+| Modal header / footer | `#E2EAF0` | `#35414D` |
+| Control | `#D5E1E9` | `#414E5C` |
+| Strong border | `#647C8C` | `#94A4B3` |
+| Primary text | `#202E39` | `#E9EEF3` |
+| Secondary text | `#465A69` | `#BFCAD5` |
+
+Brand amber remains `#FFB000` in both themes. Use semantic surface variables in
+`src/app.css`; do not introduce hard-coded theme colors in individual controls.
+Dark controls are brighter than their parent surfaces. Dialogs use a distinct
+raised surface, opaque controls, a dimmed backdrop, a defined edge and a shadow.
+Keep ordinary panels flat.
 
 ### Semantic
 
-- Success: `#15803D` (light), `#4ADE80` (dark)
-- Danger: `#DF5145`
-- Information: `#668DB3`
+- Success: `#166534` (light), `#4ADE80` (dark)
+- Danger: `#B42318` (light), `#EF786D` (dark)
+- Information: `#426784` (light), `#8EACCB` (dark)
 
 ### Meaning
 
@@ -157,7 +161,7 @@ Ace-owned domain components can use a small notched or cut-corner detail.
 Use this detail on important product objects, not on every container.
 
 Prefer borders, rails, rules, tonal surfaces, and inset regions.
-Avoid floating cards and large shadows.
+Avoid floating cards and large shadows except for modal separation.
 The app must feel **assembled**, not floated.
 
 ## 8. Application shell
