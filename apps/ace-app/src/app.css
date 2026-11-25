@@ -17,8 +17,11 @@
     --ace-signal: #ffb000;
     --ace-signal-bright: #ffc533;
     --ace-signal-deep: #d58b00;
-    --ace-pro: #805000;
-    --ace-pro-border: #bd9252;
+    --ace-pro: var(--ace-signal);
+    --ace-pro-text: var(--foreground);
+    --ace-interaction: #2563eb;
+    --ace-interaction-foreground: #ffffff;
+    --ace-pro-border: var(--ace-signal);
     --ace-ink: #10100e;
     --ace-graphite: #1a1a17;
     --ace-steel: #292925;
@@ -26,7 +29,7 @@
     --ace-paper: #f3f0e8;
     --ace-paper-strong: #fffdf7;
     --ace-line: #d7d2c7;
-    --ace-success: #77a86a;
+    --ace-success: #15803d;
     --ace-danger: #df5145;
     --ace-information: #668db3;
     --ace-text-tertiary: #65645e;
@@ -81,8 +84,10 @@
     --muted: #383831;
     --muted-foreground: #c7c3b8;
     --ace-text-tertiary: #a9a69b;
-    --ace-pro: #ffc533;
-    --ace-pro-border: #8e6b30;
+    --ace-pro-text: var(--ace-pro);
+    --ace-interaction: #60a5fa;
+    --ace-interaction-foreground: #10100e;
+    --ace-pro-border: var(--ace-signal);
     --accent: #45443c;
     --accent-foreground: #f3f0e8;
     --destructive: #ef786d;
@@ -96,7 +101,7 @@
     --chart-4: #a9a69b;
     --chart-5: #ef786d;
     --ace-ash: #a9a69b;
-    --ace-success: #9bc68f;
+    --ace-success: #4ade80;
     --ace-danger: #ef786d;
     --ace-information: #8eaccb;
     --sidebar: #20201c;

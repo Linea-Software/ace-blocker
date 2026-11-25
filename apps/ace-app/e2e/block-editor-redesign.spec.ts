@@ -46,6 +46,16 @@ test("Network Block wizard preserves the draft across steps and is usable at 800
     ).toBeVisible();
     await expect(steps).toHaveCount(3);
     await expect(steps.nth(0)).toHaveAttribute("aria-current", "step");
+    for (const dark of [false, true]) {
+        await page.evaluate((value) => document.documentElement.classList.toggle("dark", value), dark);
+        const blue = dark ? "rgb(96, 165, 250)" : "rgb(37, 99, 235)";
+        await expect(steps.nth(0).locator(".step-progress")).toHaveCSS("background-color", blue);
+        await expect(steps.nth(0).locator(".step-label")).toHaveCSS("color", blue);
+        await expect(steps.nth(0).locator(".step-number")).toHaveCSS("background-color", blue);
+        await expect(editor.locator(".editor-primary-action")).toHaveCSS("background-color", blue);
+        await page.screenshot({ path: `test-results/editor-interaction-${dark ? "dark" : "light"}.png` });
+    }
+
     await expect(
         editor.getByRole("heading", { name: "When should this block run?" }),
     ).toHaveCount(0);

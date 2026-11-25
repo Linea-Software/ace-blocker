@@ -1,7 +1,7 @@
 .network-policy {
     position: relative;
     display: grid;
-    grid-template-columns: 4px minmax(0, 1fr);
+    grid-template-columns: 5px minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--border);
     border-radius: 7px;
@@ -95,8 +95,21 @@
     font-weight: 600;
 }
 
+.network-policy .state-word::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--ace-ash);
+    vertical-align: 1px;
+}
 .network-policy.active .state-word {
-    color: var(--foreground);
+    color: var(--ace-success);
+}
+.network-policy.active .state-word::before {
+    background: var(--ace-success);
 }
 
 .network-policy.unscheduled .state-word {

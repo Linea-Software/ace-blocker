@@ -828,8 +828,11 @@ test("Pro upgrade CTA is amber and feature gates stay neutral in both themes", a
         await expect(upgrade).toHaveCSS("color", "rgb(16, 16, 14)");
         await expect(upgrade.locator("svg.lucide-crown")).toBeVisible();
         await expect(gated).toHaveCSS("background-color", dark ? "rgb(43, 43, 38)" : "rgb(255, 253, 247)");
-        await expect(gated.locator(".pro-flag")).toHaveCSS("color", dark ? "rgb(255, 197, 51)" : "rgb(128, 80, 0)");
-        await expect(gated.locator(".pro-flag svg.lucide-lock-keyhole")).toBeVisible();
+        await expect(gated.locator(".pro-flag")).toHaveCSS("color", dark ? "rgb(255, 176, 0)" : "rgb(16, 16, 14)");
+        const marker = gated.locator(".pro-flag svg.lucide-lock-keyhole");
+        await expect(marker).toBeVisible();
+        await expect(marker).toHaveCSS("background-color", "rgb(255, 176, 0)");
+        await expect(marker).toHaveCSS("color", "rgb(16, 16, 14)");
         await page.screenshot({ path: `test-results/upgrade-palette-${dark ? "dark" : "light"}.png` });
     }
     await upgrade.click();

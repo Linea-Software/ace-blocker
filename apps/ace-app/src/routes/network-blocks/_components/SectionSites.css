@@ -51,9 +51,37 @@
     display: flex;
     gap: 4px;
     align-items: center;
-    color: var(--ace-pro);
+    color: var(--ace-pro-text);
 }
 @media (max-width: 560px) {
     #sites .category-choice { flex-wrap: wrap; gap: 8px; }
     #sites .category-choice-coverage { margin-left: auto; max-width: 100%; }
+}
+
+#sites .category-choice-selected {
+    border-color: color-mix(in srgb, var(--ace-interaction) 55%, var(--border));
+    background: color-mix(in srgb, var(--ace-interaction) 6%, var(--card));
+}
+#sites .category-choice-check {
+    border-color: var(--ace-interaction);
+    background: var(--ace-interaction);
+    color: var(--ace-interaction-foreground);
+}
+#sites .category-choice:focus-visible { outline-color: var(--ace-interaction); }
+
+#sites .category-choice-pro svg {
+    box-sizing: content-box;
+    flex-shrink: 0;
+    padding: 2px;
+    border-radius: 3px;
+    color: var(--ace-ink);
+    background: var(--ace-pro);
+}
+#sites .category-choice-pro:not(:has(svg))::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 2px;
+    background: var(--ace-pro);
 }

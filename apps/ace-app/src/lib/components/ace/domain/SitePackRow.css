@@ -87,7 +87,7 @@
     color: var(--foreground);
 }
 .site-pack-row.pro-required .state {
-    color: var(--ace-pro);
+    color: var(--ace-pro-text);
 }
 .site-pack-row.failed .state {
     color: var(--ace-danger);
@@ -156,6 +156,16 @@
     align-items: center;
     gap: 4px;
     font-size: 11px;
-    color: var(--ace-pro);
+    color: var(--ace-pro-text);
 }
 .site-pack-row .coverage-basic { color: var(--muted-foreground); font-size: 11px; }
+
+.site-pack-row .coverage-pro svg,
+.site-pack-row.pro-required .state svg {
+    box-sizing: content-box;
+    flex-shrink: 0;
+    padding: 2px;
+    border-radius: 3px;
+    color: var(--ace-ink);
+    background: var(--ace-pro);
+}

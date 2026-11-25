@@ -244,8 +244,8 @@ export default function AddSitesListDialog(props: AddSitesListDialogProps) {
                                                     </div>
                                                     <Show when={gated()}>
                                                         <div class="flex items-center gap-1.5 shrink-0 ml-2">
-                                                            <Crown class="h-3.5 w-3.5 text-[var(--ace-pro)]" />
-                                                            <span class="text-xs font-semibold text-[var(--ace-pro)]">
+                                                            <Crown class="box-content h-3.5 w-3.5 rounded-sm bg-[var(--ace-pro)] p-0.5 text-[var(--ace-ink)]" />
+                                                            <span class="text-xs font-semibold text-[var(--ace-pro-text)]">
                                                                 {m.get_pro()}
                                                             </span>
                                                             <ExternalLink class="h-3.5 w-3.5 text-muted-foreground opacity-70" />

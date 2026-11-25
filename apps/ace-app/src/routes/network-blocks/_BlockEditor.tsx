@@ -1080,7 +1080,7 @@ export default function BlockEditor(props: BlockEditorProps) {
                                     needsSchedule() ||
                                     needsTargets()
                                 }
-                                class="save-action"
+                                class="save-action editor-primary-action"
                             >
                                 <Show when={isSubmitting()}>
                                     <Spinner data-icon="inline-start" />
@@ -1096,6 +1096,7 @@ export default function BlockEditor(props: BlockEditorProps) {
                         }
                     >
                         <Button
+                            class="editor-primary-action"
                             onClick={() => goToStep((step() + 1) as 0 | 1 | 2)}
                             disabled={isSubmitting() || scheduleEditorOpen()}
                         >

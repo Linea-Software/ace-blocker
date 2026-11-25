@@ -217,7 +217,7 @@ export default function SectionSites(props: SectionSitesProps) {
                 type="button"
                 class={cn("category-choice flex w-full min-w-0 items-center gap-3 border border-border/50 bg-card px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                     locked() ? "cursor-default" : "cursor-pointer hover:bg-muted/50",
-                    isConnected() && "border-foreground/30 bg-muted/45")}
+                    isConnected() && "category-choice-selected")}
                 data-testid={row.group ? "category-family-option" : "category-single-option"}
                 aria-pressed={isConnected() ? "true" : "false"}
                 aria-disabled={locked() ? "true" : undefined}
@@ -230,7 +230,7 @@ export default function SectionSites(props: SectionSitesProps) {
                 }}
             >
                 <span class={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border border-border",
-                    isConnected() && "border-foreground bg-foreground text-background")} aria-hidden="true">
+                    isConnected() && "category-choice-check")} aria-hidden="true">
                     <Show when={isConnected()}><Check size={12} /></Show>
                     <Show when={proGated()}><LockKeyhole size={11} /></Show>
                 </span>

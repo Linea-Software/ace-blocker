@@ -72,10 +72,17 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    color: var(--ace-pro);
+    color: var(--ace-pro-text);
     font-family: "IBM Plex Mono", monospace;
     font-size: 10px;
     font-weight: 600;
+}
+.pro-flag svg {
+    box-sizing: content-box;
+    padding: 2px;
+    border-radius: 3px;
+    background: var(--ace-pro);
+    color: var(--ace-ink);
 }
 .upgrade-arrow { flex-shrink: 0; }
 @media (prefers-reduced-motion: reduce) {
