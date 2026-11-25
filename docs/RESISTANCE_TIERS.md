@@ -14,14 +14,14 @@ Ace Blocker is pre-release; only the current contract is supported.
 - **Ace Engine** is the only enforcement authority: it filters script
   candidates before interception and HTML injection, prevents enabling
   unauthorized Pro scripts through remoc, and preserves saved selections when
-  the subscription changes. The master switch and the two Free scripts work
+  the subscription changes. The master switch and the three Free scripts work
   without Pro; Resistance Time Lock remains Pro only.
 - **Ace App** renders `ScriptInfo.requiresPro` from remoc and does not
   maintain a second allowlist or control engine entitlements. All scripts
   remain visible; Pro scripts display upgrade controls for Free accounts.
 
-The two Free IDs are `youtube_shorts_remove` and
-`reddit_block_recomandations` (existing catalog spelling).
+The three Free IDs are `youtube_shorts_remove`,
+`reddit_block_recomandations` (existing catalog spelling), and `tiktok_desaturate`.
 
 ## Deployment order and verification
 
