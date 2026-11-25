@@ -17,12 +17,12 @@
 }
 
 .lock-seal.active {
-    border-top-color: var(--ace-signal-deep);
-    border-bottom-color: var(--ace-signal-deep);
+    border-top-color: var(--border);
+    border-bottom-color: var(--border);
 }
 
 .lock-seal.active .seal-rail {
-    background: var(--ace-signal);
+    background: var(--muted-foreground);
 }
 
 .lock-seal.danger.active {
@@ -50,8 +50,8 @@
 }
 
 .lock-seal.active .seal-mark {
-    border-color: color-mix(in srgb, var(--ace-signal-deep) 40%, var(--border));
-    color: var(--ace-signal-deep);
+    border-color: color-mix(in srgb, var(--foreground) 40%, var(--border));
+    color: var(--foreground);
 }
 
 .lock-seal.danger.active .seal-mark {
@@ -93,13 +93,9 @@
     min-height: 36px;
     border-inline: 0;
     border-top: 0;
-    border-bottom-color: color-mix(
-        in srgb,
-        var(--ace-signal-deep) 42%,
-        var(--border)
-    );
+    border-bottom-color: var(--border);
     border-radius: 0;
-    background: color-mix(in srgb, var(--ace-signal) 8%, var(--card));
+    background: color-mix(in srgb, var(--muted) 45%, var(--card));
     box-shadow: none;
 }
 

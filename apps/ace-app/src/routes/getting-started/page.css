@@ -194,7 +194,7 @@
 }
 
 .support-strip {
-    border-left-color: var(--ace-signal);
+    border-left-color: var(--ace-information);
 }
 
 @container page (max-width: 560px) {

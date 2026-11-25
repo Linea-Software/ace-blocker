@@ -122,12 +122,9 @@ Avoid:
 
 ### Meaning
 
-Signal amber means **attention, intervention, enforcement, or commitment**.
+Amber identifies **Pro entitlement and upgrade actions**. Use a solid amber CTA only for a direct upgrade. Keep gated feature controls neutral with a compact amber lock/Pro marker.
 
-Do not make every primary button amber.
-Ordinary edit actions can be monochrome.
-Use Signal when Ace changes what the machine permits or when users commit to enforcement.
-Use subdued violet only for Pro entitlement and upgrade actions; never use it for enforcement or lock states. Active Network Blocks use a narrow success rail, monochrome switches and text. Reserve amber for lock commitment and warnings. Do not use decorative feature colors elsewhere.
+Network Block activity uses a narrow success-green rail; inactive states use gray. Locks use neutral surfaces, typography and a lock icon, not amber. Ordinary actions, selected controls and navigation use monochrome contrast. Errors use danger red; informational notices use the information token. Keep focus indicators visible in both themes.
 
 ## 6. Typography
 

@@ -32,10 +32,10 @@
     gap: 8px;
     min-height: 42px;
     padding: 10px 12px;
-    border: 1px solid color-mix(in srgb, var(--ace-signal) 42%, var(--border));
-    border-left: 4px solid var(--ace-signal);
+    border: 1px solid color-mix(in srgb, var(--foreground) 42%, var(--border));
+    border-left: 4px solid var(--foreground);
     border-radius: 4px;
-    background: color-mix(in srgb, var(--ace-signal) 8%, var(--card));
+    background: color-mix(in srgb, var(--foreground) 8%, var(--card));
     font-family: "IBM Plex Mono", monospace;
     font-size: 11px;
 }
@@ -50,15 +50,15 @@
 }
 
 :global(.commit-button) {
-    border: 1px solid var(--ace-signal-deep) !important;
+    border: 1px solid var(--foreground) !important;
     border-radius: 4px !important;
-    background: var(--ace-signal) !important;
-    color: var(--ace-ink) !important;
+    background: var(--foreground) !important;
+    color: var(--background) !important;
     font-weight: 600 !important;
 }
 
 :global(.commit-button:hover:not(:disabled)) {
-    background: var(--ace-signal-bright) !important;
+    background: color-mix(in srgb, var(--foreground) 85%, var(--background)) !important;
 }
 
 @media (max-width: 560px) {

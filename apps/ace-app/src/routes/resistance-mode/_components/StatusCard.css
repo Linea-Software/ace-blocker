@@ -20,7 +20,7 @@
 }
 
 .state-locked .state-rail {
-    background: var(--ace-signal);
+    background: var(--foreground);
 }
 
 .state-offline .state-rail {
@@ -28,7 +28,7 @@
 }
 
 .resistance-state.locked:not(.state-offline) {
-    border-color: color-mix(in srgb, var(--ace-signal) 48%, var(--border));
+    border-color: var(--border);
 }
 
 .state-body,

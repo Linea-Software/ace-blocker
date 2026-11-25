@@ -15,13 +15,13 @@ h2 {
     gap: 14px;
     overflow: hidden;
     padding-right: 16px;
-    border: 1px solid color-mix(in srgb, var(--ace-signal) 42%, var(--border));
+    border: 1px solid color-mix(in srgb, var(--ace-information) 42%, var(--border));
     border-radius: 5px;
-    background: color-mix(in srgb, var(--ace-signal) 7%, var(--card));
+    background: color-mix(in srgb, var(--ace-information) 7%, var(--card));
 }
 
 .notice-rail {
-    background: var(--ace-signal);
+    background: var(--ace-information);
 }
 
 .lock-notice > div {

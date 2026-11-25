@@ -47,7 +47,7 @@
 }
 
 :is(.ace-settings-license) .license-row.pro {
-    border-left-color: var(--ace-success);
+    border-left-color: var(--ace-pro);
 }
 
 :is(.ace-settings-license) .plan-mark {
@@ -61,7 +61,7 @@
 }
 
 :is(.ace-settings-license) .pro .plan-mark {
-    color: var(--ace-success);
+    color: var(--ace-pro);
 }
 
 :is(.ace-settings-license) .plan-copy {
@@ -127,7 +127,7 @@
 
 :is(.ace-settings-license) .device-link-panel {
     border: 1px solid var(--border);
-    border-left: 3px solid var(--ace-amber, #ffb000);
+    border-left: 3px solid var(--ace-information);
     padding: 12px 14px;
     font-size: 13px;
     line-height: 1.5;

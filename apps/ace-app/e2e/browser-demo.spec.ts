@@ -88,3 +88,19 @@ test("Resistance Free enables free scripts while showing Pro upgrades", async ({
     expect(switchBox).not.toBeNull();
     expect(switchBox!.x + switchBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
 });
+
+test("Network Block rails distinguish active and scheduled states without Pro amber", async ({ page }) => {
+    await page.goto("/network-blocks");
+    const active = page.getByTestId("network-policy").filter({ hasText: "Adult websites" });
+    const scheduled = page.getByTestId("network-policy").filter({ hasText: "Focus hours" });
+    await expect(active).toBeVisible();
+    await expect(scheduled).toBeVisible();
+    for (const dark of [false, true]) {
+        await page.evaluate((value) => document.documentElement.classList.toggle("dark", value), dark);
+        await expect(active.locator(".state-rail span")).toHaveCSS("background-color", dark ? "rgb(155, 198, 143)" : "rgb(119, 168, 106)");
+        await expect(scheduled.locator(".state-rail span")).toHaveCSS("background-color", dark ? "rgb(169, 166, 155)" : "rgb(139, 138, 130)");
+        await expect(active.locator(".state-rail")).toHaveCSS("width", "4px");
+        await expect(active.locator(".enable-switch")).toHaveCSS("background-color", dark ? "rgb(243, 240, 232)" : "rgb(16, 16, 14)");
+        await page.screenshot({ path: `test-results/network-block-palette-${dark ? "dark" : "light"}.png` });
+    }
+});

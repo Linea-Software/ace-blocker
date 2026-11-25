@@ -322,7 +322,7 @@ export default function LockModal(props: LockModalProps) {
                                                     {(kind) => (
                                                         <button
                                                             type="button"
-                                                            class={`flex w-full items-start gap-3 rounded-md border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selectedKind() === kind ? "border-[var(--ace-signal-deep)] bg-[var(--ace-signal)]/8" : "border-border hover:bg-muted/40"}`}
+                                                            class={`flex w-full items-start gap-3 rounded-md border px-4 py-3.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selectedKind() === kind ? "border-foreground bg-muted/50" : "border-border hover:bg-muted/40"}`}
                                                             autofocus={kind === "soft_unlockable"}
                                                             aria-pressed={
                                                                 selectedKind() ===
@@ -376,7 +376,7 @@ export default function LockModal(props: LockModalProps) {
                                                                     kind
                                                                 }
                                                             >
-                                                                <Check class="mt-1 size-4 shrink-0 text-[var(--ace-signal-deep)]" />
+                                                                <Check class="mt-1 size-4 shrink-0 text-foreground" />
                                                             </Show>
                                                         </button>
                                                     )}
@@ -550,7 +550,7 @@ export default function LockModal(props: LockModalProps) {
                                             }
                                         >
                                             <section
-                                                class="rounded-md border border-[var(--ace-signal-deep)] bg-card p-4"
+                                                class="rounded-md border border-border bg-card p-4"
                                                 role="status"
                                                 aria-live="polite"
                                                 aria-label={m.lock_confirmation_title()}
@@ -591,7 +591,7 @@ export default function LockModal(props: LockModalProps) {
                                     aria-label={m.lock_current_state()}
                                 >
                                     <div class="flex items-start gap-3">
-                                        <span class="grid size-10 shrink-0 place-items-center rounded-md bg-[var(--ace-signal)]/15 text-[var(--ace-signal-deep)]">
+                                        <span class="grid size-10 shrink-0 place-items-center rounded-md bg-muted text-foreground">
                                             <LockKeyhole class="size-5" />
                                         </span>
                                         <div class="min-w-0 flex-1">
@@ -716,7 +716,7 @@ export default function LockModal(props: LockModalProps) {
                             <Button
                                 onClick={() => void handlePrimary()}
                                 disabled={!canApply()}
-                                class="min-h-10 bg-[var(--ace-signal)] font-semibold text-[var(--ace-ink)] hover:bg-[var(--ace-signal-bright)]"
+                                class="min-h-10 bg-primary font-semibold text-primary-foreground hover:bg-primary/85"
                             >
                                 {isSubmitting()
                                     ? m.saving()

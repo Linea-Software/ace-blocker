@@ -22,7 +22,7 @@ h2 {
     align-items: center;
     gap: 17px;
     padding: 18px 22px;
-    border-top: 3px solid var(--ace-signal);
+    border-top: 3px solid var(--ace-success);
 }
 
 .status-band.quiet {
@@ -36,10 +36,10 @@ h2 {
     flex: none;
     place-items: center;
     border: 1px solid
-        color-mix(in srgb, var(--ace-signal-deep) 35%, var(--border));
+        color-mix(in srgb, var(--foreground) 35%, var(--border));
     border-radius: 5px;
-    background: color-mix(in srgb, var(--ace-signal) 10%, var(--card));
-    color: var(--ace-signal-deep);
+    background: color-mix(in srgb, var(--ace-success) 10%, var(--card));
+    color: var(--foreground);
 }
 
 .quiet .status-icon {
@@ -195,7 +195,7 @@ h2 {
     position: absolute;
     inset: 0 auto 0 0;
     width: 4px;
-    background: var(--ace-signal);
+    background: var(--ace-success);
 }
 
 .policy-copy {
@@ -319,7 +319,7 @@ h2 {
 }
 
 .upcoming-list li.next .timeline-rail {
-    background: var(--ace-signal);
+    background: var(--ace-success);
 }
 
 .upcoming-list time {

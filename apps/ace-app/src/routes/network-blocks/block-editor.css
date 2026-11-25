@@ -44,7 +44,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    border: 1px solid var(--ace-signal-deep);
+    border: 1px solid var(--foreground);
     padding: 7px 10px;
     border-radius: 4px;
     font-size: 12px;
@@ -76,7 +76,7 @@
     transition: background 140ms;
 }
 .editor-steps button.current .step-progress {
-    background: var(--ace-signal);
+    background: var(--foreground);
 }
 .editor-steps button.complete .step-progress {
     background: var(--foreground);
@@ -105,9 +105,9 @@
         monospace;
 }
 .editor-steps button.current .step-number {
-    background: var(--ace-signal);
-    color: #10100e;
-    border-color: var(--ace-signal);
+    background: var(--foreground);
+    color: var(--background);
+    border-color: var(--foreground);
 }
 .editor-page-body {
     flex: 1;
@@ -223,8 +223,8 @@
     border-color: var(--foreground);
 }
 .mode-selector button.selected {
-    border-color: var(--ace-signal-deep);
-    box-shadow: inset 0 3px var(--ace-signal);
+    border-color: var(--foreground);
+    box-shadow: inset 0 3px var(--foreground);
 }
 .mode-selector button:disabled {
     opacity: 0.5;
@@ -270,7 +270,7 @@
     overflow: hidden;
 }
 .enforcement-preview .preview-rail {
-    background: var(--ace-signal);
+    background: var(--ace-success);
 }
 .enforcement-preview > div {
     padding: 15px 16px 15px 0;
@@ -335,7 +335,7 @@
     font-weight: 600;
 }
 .review-edit:hover {
-    color: var(--ace-signal-deep);
+    color: var(--foreground);
 }
 .protection-panel {
     display: grid;
@@ -388,7 +388,7 @@
     flex: none;
 }
 .review-ready svg {
-    color: var(--ace-signal-deep);
+    color: var(--ace-success);
     flex: none;
 }
 .editor-page-footer {

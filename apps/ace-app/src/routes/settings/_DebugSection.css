@@ -15,7 +15,7 @@
     height: 24px;
     display: grid;
     place-items: center;
-    border-left: 3px solid var(--ace-signal);
+    border-left: 3px solid var(--ace-information);
     color: var(--muted-foreground);
 }
 

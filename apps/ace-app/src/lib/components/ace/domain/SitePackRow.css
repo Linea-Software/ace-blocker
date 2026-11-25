@@ -84,7 +84,7 @@
     white-space: nowrap;
 }
 .site-pack-row.locked .state {
-    color: var(--ace-signal-deep);
+    color: var(--foreground);
 }
 .site-pack-row.pro-required .state {
     color: var(--ace-pro);

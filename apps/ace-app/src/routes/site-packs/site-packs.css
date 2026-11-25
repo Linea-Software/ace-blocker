@@ -23,7 +23,7 @@
     }
 
     .search-field:focus-within {
-        border-color: var(--ace-signal-deep);
+        border-color: var(--ring);
     }
 
     .search-field input {
@@ -375,7 +375,7 @@
 
     .pack-application {
         padding: 12px 14px;
-        border-left: 3px solid var(--ace-signal);
+        border-left: 3px solid var(--ace-information);
         background: color-mix(in srgb, var(--muted) 54%, transparent);
     }
 

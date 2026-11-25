@@ -196,7 +196,7 @@ export default function TutorialTour() {
                     >
                         {(rect) => (
                             <div
-                                class="pointer-events-none fixed z-[101] rounded-md ring-2 ring-[var(--ace-signal)] transition-all duration-150"
+                                class="pointer-events-none fixed z-[101] rounded-md ring-2 ring-[var(--foreground)] transition-all duration-150"
                                 style={{
                                     top: rect().top + "px",
                                     left: rect().left + "px",

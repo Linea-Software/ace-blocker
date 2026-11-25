@@ -41,15 +41,15 @@ export default function DebugLicenseSelector() {
     return (
         <Show when={import.meta.env.DEV}>
             <li class="group/menu-item relative">
-                <div class="px-2 py-1.5 border-2 border-dashed border-amber-500/30 rounded-md my-1 bg-amber-500/5">
+                <div class="px-2 py-1.5 border-2 border-dashed border-border rounded-md my-1 bg-muted/50">
                     <div class="flex items-center gap-2 mb-2 px-1">
-                        <Bug class="size-3 text-amber-500" />
-                        <span class="text-xs uppercase font-bold text-amber-500 tracking-wider">
+                        <Bug class="size-3 text-muted-foreground" />
+                        <span class="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                             Debug Pro Policy
                         </span>
                     </div>
                     <select
-                        class="h-7 w-full text-xs bg-background/50 border border-amber-500/20 rounded-md focus:ring-amber-500/20"
+                        class="h-7 w-full text-xs bg-background/50 border border-border rounded-md focus:ring-ring"
                         value={selectedPolicy()}
                         onChange={(e) =>
                             void handlePolicyChange(e.currentTarget.value)

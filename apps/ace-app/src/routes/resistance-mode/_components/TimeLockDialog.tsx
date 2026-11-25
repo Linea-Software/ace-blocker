@@ -284,7 +284,7 @@ export default function TimeLockDialog(props: Props) {
                         <AlertDialog.Action
                             data-testid="rm-lock-confirm"
                             onClick={commit}
-                            class="h-11 rounded-sm border border-[var(--ace-signal-deep)] bg-[var(--ace-signal)] px-7 font-semibold text-[var(--ace-ink)] hover:bg-[var(--ace-signal-bright)]"
+                            class="h-11 rounded-sm border border-foreground bg-primary px-7 font-semibold text-primary-foreground hover:bg-primary/85"
                         >
                             {m.commit_and_lock()}
                         </AlertDialog.Action>

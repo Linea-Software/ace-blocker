@@ -39,19 +39,6 @@
     background: var(--ace-ash);
 }
 
-.network-policy.locked {
-    border-color: color-mix(in srgb, var(--ace-signal-deep) 58%, var(--border));
-}
-
-.network-policy.locked .state-rail {
-    background: var(--ace-signal-deep);
-    border-right-color: var(--ace-signal-deep);
-}
-
-.network-policy.locked .state-rail span {
-    background: var(--ace-signal);
-}
-
 .network-policy .policy-body {
     min-width: 0;
 }
@@ -247,13 +234,13 @@
 }
 
 .network-policy .commit-action {
-    border-color: color-mix(in srgb, var(--ace-signal-deep) 45%, var(--border));
-    color: var(--ace-signal-deep);
+    border-color: var(--border);
+    color: var(--foreground);
 }
 
 .network-policy .commit-action:hover {
-    border-color: var(--ace-signal-deep);
-    background: color-mix(in srgb, var(--ace-signal) 12%, transparent);
+    border-color: var(--foreground);
+    background: var(--muted);
     color: var(--foreground);
 }
 

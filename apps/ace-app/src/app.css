@@ -17,9 +17,8 @@
     --ace-signal: #ffb000;
     --ace-signal-bright: #ffc533;
     --ace-signal-deep: #d58b00;
-    --ace-pro: #65519b;
-    --ace-pro-surface: #eee8f7;
-    --ace-pro-border: #b7a8d3;
+    --ace-pro: #805000;
+    --ace-pro-border: #bd9252;
     --ace-ink: #10100e;
     --ace-graphite: #1a1a17;
     --ace-steel: #292925;
@@ -51,8 +50,8 @@
     --destructive-foreground: #fffdf7;
     --border: #d7d2c7;
     --input: #c9c4b9;
-    --ring: #d58b00;
-    --chart-1: #ffb000;
+    --ring: #65645e;
+    --chart-1: #55534b;
     --chart-2: #668db3;
     --chart-3: #77a86a;
     --chart-4: #8b8a82;
@@ -64,7 +63,7 @@
     --sidebar-accent: #ddd8cd;
     --sidebar-accent-foreground: #10100e;
     --sidebar-border: #cbc6bb;
-    --sidebar-ring: #d58b00;
+    --sidebar-ring: #65645e;
 }
 
 .dark {
@@ -82,17 +81,16 @@
     --muted: #383831;
     --muted-foreground: #c7c3b8;
     --ace-text-tertiary: #a9a69b;
-    --ace-pro: #c8b7ed;
-    --ace-pro-surface: #393344;
-    --ace-pro-border: #726488;
+    --ace-pro: #ffc533;
+    --ace-pro-border: #8e6b30;
     --accent: #45443c;
     --accent-foreground: #f3f0e8;
     --destructive: #ef786d;
     --destructive-foreground: #181816;
     --border: #56554c;
     --input: #807e73;
-    --ring: #ffb000;
-    --chart-1: #ffc533;
+    --ring: #c7c3b8;
+    --chart-1: #e4dfd4;
     --chart-2: #8eaccb;
     --chart-3: #9bc68f;
     --chart-4: #a9a69b;
@@ -108,7 +106,7 @@
     --sidebar-accent: #383831;
     --sidebar-accent-foreground: #f3f0e8;
     --sidebar-border: #56554c;
-    --sidebar-ring: #ffb000;
+    --sidebar-ring: #c7c3b8;
 }
 
 @theme inline {
@@ -196,12 +194,12 @@
     }
 
     :where(button, a, input, textarea, select, [tabindex]):focus-visible {
-        outline: 2px solid var(--ace-signal-deep);
+        outline: 2px solid var(--ring);
         outline-offset: 2px;
     }
 
     ::selection {
-        background: color-mix(in srgb, var(--ace-signal) 34%, transparent);
+        background: color-mix(in srgb, var(--foreground) 18%, transparent);
         color: var(--foreground);
     }
 

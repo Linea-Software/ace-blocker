@@ -57,11 +57,11 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    border: 1px solid var(--ace-signal-deep);
+    border: 1px solid var(--foreground);
     border-radius: 4px;
     padding: 0 14px;
-    background: var(--ace-signal);
-    color: var(--ace-ink);
+    background: var(--foreground);
+    color: var(--background);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -71,8 +71,8 @@
 }
 
 .lock-action:hover:not(:disabled) {
-    background: var(--ace-signal-bright);
-    border-color: var(--ace-signal);
+    background: color-mix(in srgb, var(--foreground) 85%, var(--background));
+    border-color: var(--foreground);
 }
 
 .lock-action:disabled {

@@ -220,7 +220,7 @@ export default function WeeklyCoverage(props: WeeklyCoverageProps) {
                                             >
                                                 {(range) => (
                                                     <span
-                                                        class="absolute inset-y-0 bg-[var(--ace-signal)]"
+                                                        class="absolute inset-y-0 bg-[var(--ace-success)]"
                                                         style={{
                                                             left: rangeLeft(
                                                                 range,

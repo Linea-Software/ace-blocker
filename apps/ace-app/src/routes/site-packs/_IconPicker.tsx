@@ -111,7 +111,7 @@ export default function IconPicker(props: IconPickerProps) {
             itemSize(),
             "rounded-md flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             props.selectedIcon === slug
-                ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 ring-1 ring-amber-500/40"
+                ? "bg-muted text-foreground ring-1 ring-foreground/40"
                 : "bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground",
         );
 
@@ -160,7 +160,7 @@ export default function IconPicker(props: IconPickerProps) {
                                 onInput={(event) =>
                                     setSearchQuery(event.currentTarget.value)
                                 }
-                                class="w-full h-8 px-2.5 text-sm rounded-md bg-muted border border-border/50 focus:outline-none focus:ring-1 focus:ring-amber-500/40"
+                                class="w-full h-8 px-2.5 text-sm rounded-md bg-muted border border-border/50 focus:outline-none focus:ring-1 focus:ring-ring"
                             />
                         </div>
                         <div class="space-y-3">

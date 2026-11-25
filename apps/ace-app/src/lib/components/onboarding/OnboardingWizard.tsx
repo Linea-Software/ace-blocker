@@ -302,7 +302,7 @@ export default function OnboardingWizard() {
             >
                 <header class="border-b border-border bg-card px-6 pt-5 pb-4">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-8 shrink-0 items-center justify-center border-l-[4px] border-[var(--ace-signal)] text-muted-foreground">
+                        <div class="flex h-10 w-8 shrink-0 items-center justify-center border-l-[4px] border-[var(--foreground)] text-muted-foreground">
                             <Shield class="size-6" />
                         </div>
                         <div class="min-w-0">
