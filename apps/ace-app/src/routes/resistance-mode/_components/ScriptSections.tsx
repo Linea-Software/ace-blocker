@@ -584,7 +584,6 @@ export default function ScriptSections(props: Props) {
                                                                                                         {!eligible(script) ? (
                                                                                                             <UpgradeToProButton
                                                                                                                 class="rm-script-upgrade"
-                                                                                                                text={m.resistance_mode()}
                                                                                                             />
                                                                                                         ) : (
                                                                                                             <Switch

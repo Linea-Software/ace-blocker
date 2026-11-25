@@ -395,7 +395,6 @@ export default function BackupSection() {
                             ) : (
                                 <>
                                     <UpgradeToProButton
-                                        text={m.cloud_backup()}
                                     />
                                 </>
                             )}

@@ -150,7 +150,6 @@ export default function LicenseSection() {
                     <>
                         <div class="license-actions">
                             <UpgradeToProButton
-                                text={m.pro_status_inactive()}
                             />
                             <button
                                 type="button"

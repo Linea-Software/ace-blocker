@@ -3,7 +3,7 @@ import { createSignal, Show } from "solid-js";
 import { Dynamic } from "@solidjs/web";
 import type { LucideIcon } from "@lucide/solid";
 import { openAccountPage } from "$lib/utils/account-browser";
-import { LockKeyhole } from "@lucide/solid";
+import { ArrowUpRight, LockKeyhole } from "@lucide/solid";
 import { cn } from "$lib/utils";
 import * as m from "$lib/paraglide/messages.js";
 
@@ -14,6 +14,7 @@ export default function ProGatedButton(props: {
     class?: string;
     onclick?: () => void;
     onClick?: () => void;
+    upgradeOnly?: boolean;
 }) {
     const [opening, setOpening] = createSignal(false);
     const gated = () => !props.isPro;
@@ -37,11 +38,12 @@ export default function ProGatedButton(props: {
             disabled={opening()}
             aria-busy={opening() ? "true" : "false"}
             aria-label={
-                gated() ? `${props.label} · ${m.get_pro()}` : props.label
+                gated() && !props.upgradeOnly ? `${props.label} · ${m.get_pro()}` : props.label
             }
             class={cn(
                 "pro-action",
                 gated() && "pro-action--gated",
+                props.upgradeOnly && "pro-action--upgrade",
                 props.class,
             )}
         >
@@ -53,19 +55,17 @@ export default function ProGatedButton(props: {
                     aria-hidden="true"
                 />
             </Show>
-            <span class="action-label">
-                <span class="current-label">{props.label}</span>
-                <Show when={gated()}>
-                    <span class="upgrade-label" aria-hidden="true">
-                        {m.get_pro()}
+            <span class="action-label">{props.label}</span>
+            <Show when={gated()}>
+                <Show when={!props.upgradeOnly}>
+                    <span class="pro-flag" aria-hidden="true">
+                        <LockKeyhole size={12} />
+                        {m.pro_badge()}
                     </span>
                 </Show>
-            </span>
-            <Show when={gated()}>
-                <span class="pro-flag" aria-hidden="true">
-                    <LockKeyhole size={13} strokeWidth={2} />
-                    <span>{m.pro_badge()}</span>
-                </span>
+                <Show when={props.upgradeOnly}>
+                    <ArrowUpRight size={15} class="upgrade-arrow" aria-hidden="true" />
+                </Show>
             </Show>
         </button>
     );

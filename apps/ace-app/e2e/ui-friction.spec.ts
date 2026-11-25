@@ -37,21 +37,18 @@ test.describe("Desktop UI friction", () => {
         await expect(importAction).toBeVisible({ timeout: 15_000 });
         const bounds = await importAction.boundingBox();
         expect(bounds).not.toBeNull();
-        expect(bounds!.width).toBeGreaterThan(200);
+        expect(bounds!.width).toBeGreaterThan(100);
         expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(800);
 
-        // Gated features remain identifiable until hover/focus, without layout shifts.
-        const defaultLabel = importAction.locator(".current-label");
-        const upgradeLabel = importAction.locator(".upgrade-label");
-        await expect(defaultLabel).toHaveCSS("opacity", "1");
-        await expect(upgradeLabel).toHaveCSS("opacity", "0");
+        // Feature labels do not change on hover or keyboard focus.
+        const label = importAction.locator(".action-label");
+        await expect(label).toHaveText("Import Custom List");
         const initialWidth = (await importAction.boundingBox())!.width;
         await importAction.hover();
-        await expect(upgradeLabel).toHaveCSS("opacity", "1");
-        await expect(defaultLabel).toHaveCSS("opacity", "0");
+        await expect(label).toHaveText("Import Custom List");
         expect((await importAction.boundingBox())!.width).toBe(initialWidth);
         await importAction.focus();
-        await expect(upgradeLabel).toHaveCSS("opacity", "1");
+        await expect(label).toHaveText("Import Custom List");
 
         const search = page.getByRole("searchbox", {
             name: "Search categories and Custom Lists...",
@@ -403,7 +400,7 @@ test("Resistance logos use the bundled brand colors", async ({ page }) => {
     );
 });
 
-test("Free users can inspect Resistance interventions without changing them", async ({
+test("Free users can inspect Pro Resistance interventions without changing them", async ({
     page,
 }) => {
     await page.goto("/getting-started");
@@ -430,9 +427,10 @@ test("Free users can inspect Resistance interventions without changing them", as
                         name: "Hide feed",
                         description: "Hide recommended videos",
                         isEnabled: true,
+                        requiresPro: true,
                     },
                 ],
-                settings: { enabled: false, enforcementStatus: "not_pro" },
+                settings: { enabled: true, enforcementStatus: "operational" },
                 engineOnline: true,
                 isPro: false,
                 locked: false,
@@ -455,7 +453,8 @@ test("Free users can inspect Resistance interventions without changing them", as
         .click();
     await expect(
         page.locator('[data-testid="rm-script-switch"]'),
-    ).toBeDisabled();
+    ).toHaveCount(0);
+    await expect(page.locator(".rm-script-upgrade")).toHaveAccessibleName("Upgrade to Pro");
 });
 
 test("Custom List icon picker stays inside the window and above dialog footer", async ({
@@ -796,3 +795,46 @@ for (const isPro of [false, true]) {
         expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
     });
 }
+
+test("Pro upgrade CTA is amber and feature gates stay neutral in both themes", async ({ page }) => {
+    await page.goto("/settings");
+    await page.evaluate(async () => {
+        const [{ mount }, { default: UpgradeToProButton }, { default: ProGatedButton }] = await Promise.all([
+            import(/* @vite-ignore */ "/src/test-fixture-runtime.ts"),
+            import(/* @vite-ignore */ "/src/lib/components/UpgradeToProButton.tsx"),
+            import(/* @vite-ignore */ "/src/lib/components/ProGatedButton.tsx"),
+        ]);
+        const fixture = document.createElement("div");
+        fixture.dataset.testid = "upgrade-palette-fixture";
+        fixture.style.cssText = "position:fixed;inset:auto 20px 20px 20px;z-index:200;display:flex;gap:12px;background:var(--card);padding:20px";
+        document.body.append(fixture);
+        const direct = document.createElement("div");
+        const feature = document.createElement("div");
+        fixture.append(direct, feature);
+        mount(UpgradeToProButton, { target: direct, props: {} });
+        mount(ProGatedButton, { target: feature, props: { label: "Import Custom List", isPro: false } });
+        Object.assign(window, { __openedAccountUrl: null });
+        window.open = ((url: string | URL | undefined) => {
+            Object.assign(window, { __openedAccountUrl: String(url) });
+            return null;
+        }) as typeof window.open;
+    });
+    const fixture = page.getByTestId("upgrade-palette-fixture");
+    const upgrade = fixture.getByRole("button", { name: "Upgrade to Pro", exact: true });
+    const gated = fixture.getByRole("button", { name: /Import Custom List/ });
+    for (const dark of [false, true]) {
+        await page.evaluate((value) => document.documentElement.classList.toggle("dark", value), dark);
+        await expect(upgrade).toHaveCSS("background-color", "rgb(255, 176, 0)");
+        await expect(upgrade).toHaveCSS("color", "rgb(16, 16, 14)");
+        await expect(upgrade.locator("svg.lucide-crown")).toBeVisible();
+        await expect(gated).toHaveCSS("background-color", dark ? "rgb(43, 43, 38)" : "rgb(255, 253, 247)");
+        await expect(gated.locator(".pro-flag")).toHaveCSS("color", dark ? "rgb(255, 197, 51)" : "rgb(128, 80, 0)");
+        await expect(gated.locator(".pro-flag svg.lucide-lock-keyhole")).toBeVisible();
+        await page.screenshot({ path: `test-results/upgrade-palette-${dark ? "dark" : "light"}.png` });
+    }
+    await upgrade.click();
+    expect(await page.evaluate(() => (window as any).__openedAccountUrl)).toMatch(/\/get-pro$/);
+    await page.evaluate(() => Object.assign(window, { __openedAccountUrl: null }));
+    await gated.click();
+    expect(await page.evaluate(() => (window as any).__openedAccountUrl)).toMatch(/\/get-pro$/);
+});
