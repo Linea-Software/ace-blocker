@@ -126,7 +126,7 @@ timezone. See `../../docs/TRUSTED_TIME_FUTURE.md`,
 
 **Site Packs.** Use canonical `src/lib/utils/site-pack-presentation.ts`
 for official category grouping, icons and counts. Paired Free/Pro categories
-appear once and expand into editions; Custom Lists are separate. Respect
+appear as one logical row, with Basic/Extended coverage shown by plan; select the entitled edition automatically. Custom Lists are separate. Respect
 engine entitlements and never silently erase connections on downgrade.
 Downloaded pack counts are real; noninstalled counts are estimates.
 Catalog IDs must align with `ace-hosts` release metadata.

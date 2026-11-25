@@ -1,3 +1,4 @@
+import { groupSitePackCategories } from "$lib/utils/site-pack-presentation";
 import { createMemo, createSignal, For, Show, onSettled } from "solid-js";
 import * as Alert from "$lib/components/ui/alert/solid";
 import { Button } from "$lib/components/ui/button/solid";
@@ -107,17 +108,9 @@ export default function BlockEditor(props: BlockEditorProps) {
         m.block_wizard_schedule(),
         m.block_wizard_review(),
     ];
-    const categoryCount = createMemo(
-        () =>
-            sitePacksDelta().currentConnectedListIds.filter((id) =>
-                availableLists().some(
-                    (pack) => pack.id === id && isAceCategory(pack),
-                ),
-            ).length,
-    );
-    const customListCount = createMemo(
-        () => sitePacksDelta().currentConnectedListIds.length - categoryCount(),
-    );
+    const chosenPacks = createMemo(() => availableLists().filter((pack) => sitePacksDelta().currentConnectedListIds.includes(pack.id)));
+    const categoryCount = createMemo(() => groupSitePackCategories(chosenPacks()).length);
+    const customListCount = createMemo(() => chosenPacks().filter((pack) => !isAceCategory(pack)).length);
     const websiteCount = createMemo(
         () =>
             rulesDelta().currentRules.filter(
@@ -130,13 +123,10 @@ export default function BlockEditor(props: BlockEditorProps) {
                 (rule) => rule.ruleType === "regex",
             ).length,
     );
-    const chosenNames = createMemo(() =>
-        sitePacksDelta()
-            .currentConnectedListIds.map(
-                (id) => availableLists().find((pack) => pack.id === id)?.name,
-            )
-            .filter((item): item is string => !!item),
-    );
+    const chosenNames = createMemo(() => [
+        ...groupSitePackCategories(chosenPacks()).map((group) => group.name),
+        ...chosenPacks().filter((pack) => !isAceCategory(pack)).map((pack) => pack.name),
+    ]);
     function showWebsites() {
         setWebsitesOpen(true);
         queueMicrotask(() => {

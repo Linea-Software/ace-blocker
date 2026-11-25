@@ -1,14 +1,15 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 import "./SectionSites.css";
 import { Dynamic } from "@solidjs/web";
-import { Badge } from "$lib/components/ui/badge/solid";
 import { Input } from "$lib/components/ui/input/solid";
-import { Search, Check, ChevronDown, ChevronRight } from "@lucide/solid";
+import { Search, Check, LockKeyhole } from "@lucide/solid";
 import { getPackIcon } from "../../site-packs/_pack-icons";
 import {
     getSitePackCoverage,
     getSitePackIconSlug,
     groupSitePackCategories,
+    preferredCategoryPack,
+    extendedCategoryPack,
     type SitePackCategoryGroup,
 } from "$lib/utils/site-pack-presentation";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -42,9 +43,6 @@ export default function SectionSites(props: SectionSitesProps) {
     const [searchQuery, setSearchQuery] = createSignal("");
     const [showAllCategories, setShowAllCategories] = createSignal(false);
     const [showAllProCategories, setShowAllProCategories] = createSignal(false);
-    const [expandedCategoryNames, setExpandedCategoryNames] = createSignal<
-        string[]
-    >([]);
     const [downloadModalOpen, setDownloadModalOpen] = createSignal(false);
     const [listToDownload, setListToDownload] =
         createSignal<SitePackSchema | null>(null);
@@ -58,13 +56,6 @@ export default function SectionSites(props: SectionSitesProps) {
     const connectedListIds = () => props.delta.currentConnectedListIds;
     const isFreeUser = () => !userStore.isPro;
 
-    function toggleCategory(name: string) {
-        setExpandedCategoryNames((previous) =>
-            previous.includes(name)
-                ? previous.filter((candidate) => candidate !== name)
-                : [...previous, name],
-        );
-    }
     const sortedAllLists = createMemo(() =>
         [...props.availableLists].sort((a, b) => {
             const kindOrder =
@@ -132,27 +123,15 @@ export default function SectionSites(props: SectionSitesProps) {
         filteredLists().filter((list) => !isAceCategory(list)),
     );
 
-    // Tier swap is permitted only when the old connection can be removed.
-    // A preexisting locked connection is never removed, even when Pro has a superset.
     function stageConnection(list: SitePackSchema) {
-        if (isAceCategory(list)) {
-            for (const sibling of props.availableLists) {
-                if (
-                    sibling.id === list.id ||
-                    !isAceCategory(sibling) ||
-                    getBlockingListDisplayName(sibling) !==
-                        getBlockingListDisplayName(list) ||
-                    !props.delta.isConnected(sibling.id) ||
-                    (props.isLocked &&
-                        props.delta.isInitialConnection(sibling.id))
-                )
-                    continue;
-                if (props.delta.isNewConnection(sibling.id))
-                    props.delta.removeTempConnection(sibling.id);
-                else props.delta.removeConnection(sibling.id);
-            }
-        }
+        if (requiresProForConnection(list) && isFreeUser()) return;
         props.delta.addConnection(list.id);
+    }
+
+    function removeConnection(list: SitePackSchema) {
+        if (props.delta.isNewConnection(list.id))
+            props.delta.removeTempConnection(list.id);
+        else props.delta.removeConnection(list.id);
     }
 
     function toggleList(list: SitePackSchema) {
@@ -171,9 +150,7 @@ export default function SectionSites(props: SectionSitesProps) {
         if (props.delta.isConnected(list.id)) {
             if (props.isLocked && props.delta.isInitialConnection(list.id))
                 return;
-            if (props.delta.isNewConnection(list.id))
-                props.delta.removeTempConnection(list.id);
-            else props.delta.removeConnection(list.id);
+            removeConnection(list);
         } else stageConnection(list);
     }
 
@@ -204,7 +181,9 @@ export default function SectionSites(props: SectionSitesProps) {
             const freshList = res.data.sitePacks.find(
                 (item) => item.id === list.id,
             );
-            if (freshList) stageConnection(freshList);
+            if (!freshList?.isSynced) throw new Error("Downloaded category is unavailable");
+            if (requiresProForConnection(freshList) && isFreeUser()) throw new Error("Pro entitlement changed during download");
+            stageConnection(freshList);
             window.setTimeout(() => {
                 if (syncStore.statusOf(list.id) === "completed")
                     syncStore.clear(list.id);
@@ -222,216 +201,69 @@ export default function SectionSites(props: SectionSitesProps) {
         setListToDownload(null);
     }
 
-    function ListRow(row: { list: SitePackSchema; variant?: boolean }) {
-        const isConnected = () => connectedListIds().includes(row.list.id);
-        const premium = () => requiresProForConnection(row.list);
+    function ListRow(row: { list: SitePackSchema; group?: SitePackCategoryGroup }) {
+        const members = () => row.group?.packs ?? [row.list];
+        const connected = () => members().filter((pack) => props.delta.isConnected(pack.id));
+        const isConnected = () => connected().length > 0;
+        const current = () => connected().find((pack) => pack.requiresPro) ?? connected()[0] ?? row.list;
+        const extended = () => row.group && extendedCategoryPack(row.group);
+        const basic = () => row.group?.packs.find((pack) => !pack.requiresPro);
+        const premium = () => requiresProForConnection(current());
         const proGated = () => premium() && isFreeUser() && !isConnected();
-        const canToggle = () =>
-            !proGated() &&
-            (!isConnected() ||
-                !(
-                    props.isLocked &&
-                    props.delta.isInitialConnection(row.list.id)
-                ));
-        const coverage = () => getSitePackCoverage(row.list);
+        const locked = () => !!props.isLocked && connected().some((pack) => props.delta.isInitialConnection(pack.id));
+        const count = (pack: SitePackSchema) => getSitePackCoverage(pack).count?.toLocaleString(getLocale()) ?? "—";
         return (
             <button
                 type="button"
-                class={cn(
-                    "flex w-full min-w-0 items-center gap-3 border border-border/50 bg-card px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    row.variant && "border-t-0 pl-6",
-                    canToggle()
-                        ? "cursor-pointer hover:bg-muted/50"
-                        : "cursor-default opacity-60",
-                    isConnected() && "border-foreground/30 bg-muted/45",
-                )}
-                data-testid={
-                    row.variant
-                        ? "category-tier-option"
-                        : "category-single-option"
-                }
-                onClick={() => {
-                    if (proGated()) {
-                        void openGetProPage();
-                        return;
-                    }
-                    if (canToggle()) toggleList(row.list);
-                }}
+                class={cn("category-choice flex w-full min-w-0 items-center gap-3 border border-border/50 bg-card px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                    locked() ? "cursor-default" : "cursor-pointer hover:bg-muted/50",
+                    isConnected() && "border-foreground/30 bg-muted/45")}
+                data-testid={row.group ? "category-family-option" : "category-single-option"}
                 aria-pressed={isConnected() ? "true" : "false"}
+                aria-disabled={locked() ? "true" : undefined}
+                onClick={() => {
+                    if (locked()) return;
+                    if (proGated()) { void openGetProPage(); return; }
+                    if (isConnected()) {
+                        for (const pack of connected()) removeConnection(pack);
+                    } else toggleList(row.list);
+                }}
             >
-                <span
-                    class={cn(
-                        "flex size-4 shrink-0 items-center justify-center rounded-sm border border-border",
-                        isConnected() &&
-                            "border-foreground bg-foreground text-background",
-                    )}
-                    aria-hidden="true"
-                >
-                    <Show when={isConnected()}>
-                        <Check size={12} />
-                    </Show>
+                <span class={cn("flex size-4 shrink-0 items-center justify-center rounded-sm border border-border",
+                    isConnected() && "border-foreground bg-foreground text-background")} aria-hidden="true">
+                    <Show when={isConnected()}><Check size={12} /></Show>
+                    <Show when={proGated()}><LockKeyhole size={11} /></Show>
                 </span>
-                <Show when={!row.variant}>
-                    <span
-                        class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted"
-                        aria-hidden="true"
-                        data-testid="category-icon"
-                    >
-                        <Dynamic
-                            component={getPackIcon(
-                                getSitePackIconSlug(row.list),
-                            )}
-                            size={19}
-                            strokeWidth={1.75}
-                        />
-                    </span>
-                </Show>
+                <span class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted" aria-hidden="true" data-testid="category-icon">
+                    <Dynamic component={getPackIcon(getSitePackIconSlug(current()))} size={19} strokeWidth={1.75} />
+                </span>
                 <span class="flex min-w-0 flex-1 flex-col gap-1">
-                    <span class="flex flex-wrap items-center gap-2">
-                        <span class="text-sm font-semibold">
-                            {row.variant
-                                ? row.list.requiresPro
-                                    ? m.catalog_pro_extended()
-                                    : m.catalog_free_essential()
-                                : getBlockingListDisplayName(row.list)}
-                        </span>
-                        <Show when={!row.variant}>
-                            <span class="text-[11px] text-muted-foreground">
-                                {premium()
-                                    ? m.pro_badge()
-                                    : m.pack_access_free()}
-                            </span>
-                        </Show>
-                        <Show when={isConnected() && premium() && isFreeUser()}>
-                            <span class="text-xs text-muted-foreground">
-                                {m.status_pro_required()}
-                            </span>
-                        </Show>
+                    <span class="text-sm font-semibold">{getBlockingListDisplayName(current())}</span>
+                    <span class="text-[11px] text-muted-foreground">
+                        {extended() ? current().requiresPro ? m.catalog_pro_extended() : m.catalog_free_essential() : premium() ? m.pro_badge() : m.pack_access_free()}
+                        <Show when={isConnected() && premium() && isFreeUser()}> · {m.catalog_retained_coverage()}</Show>
+                        <Show when={locked()}> · {m.locked()}</Show>
                     </span>
                 </span>
-                <span
-                    class="shrink-0 text-right font-mono text-[11px] text-muted-foreground"
-                    data-testid="category-coverage"
-                >
-                    {coverage().count !== null
-                        ? `${coverage().count!.toLocaleString(getLocale())} ${m.domains_lowercase()}`
-                        : "—"}
+                <span class="category-choice-coverage" data-testid="category-coverage">
+                    <span>{count(current())} {m.domains_lowercase()}</span>
+                    <Show when={extended() && !current().requiresPro}>
+                        <span class="category-choice-pro" data-testid="category-tier-comparison">
+                            <Show when={isFreeUser()}><LockKeyhole size={12} aria-hidden="true" /></Show>
+                            {m.catalog_count_with_pro({ count: count(extended()!) })}
+                        </span>
+                    </Show>
+                    <Show when={extended() && current().requiresPro && basic()}>
+                        <span class="text-muted-foreground">{m.catalog_count_with_free({ count: count(basic()!) })}</span>
+                    </Show>
+                    <Show when={proGated()}><span class="category-choice-pro">{m.status_pro_required()}</span></Show>
                 </span>
             </button>
         );
     }
 
     function CategoryRow(row: { group: SitePackCategoryGroup }) {
-        const selectedCount = () =>
-            row.group.packs.filter((pack) =>
-                connectedListIds().includes(pack.id),
-            ).length;
-        return (
-            <Show
-                when={row.group.packs.length > 1}
-                fallback={
-                    <For each={row.group.packs}>
-                        {(pack) => <ListRow list={pack} />}
-                    </For>
-                }
-            >
-                <div
-                    class="rounded-sm border border-border/50 bg-card"
-                    data-testid="category-family"
-                >
-                    <button
-                        type="button"
-                        class="flex min-h-15 w-full min-w-0 items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                        data-testid="category-family-toggle"
-                        aria-expanded={
-                            expandedCategoryNames().includes(row.group.name)
-                                ? "true"
-                                : "false"
-                        }
-                        onClick={() => toggleCategory(row.group.name)}
-                    >
-                        <span
-                            class="flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-muted"
-                            aria-hidden="true"
-                            data-testid="category-icon"
-                        >
-                            <Dynamic
-                                component={getPackIcon(
-                                    getSitePackIconSlug(row.group.packs[0]),
-                                )}
-                                size={19}
-                                strokeWidth={1.75}
-                            />
-                        </span>
-                        <span class="min-w-0 flex-1">
-                            <span class="block text-sm font-semibold">
-                                {row.group.name}
-                            </span>
-                            <span
-                                class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 font-mono text-[11px] text-muted-foreground"
-                                data-testid="category-tier-comparison"
-                            >
-                                <For each={row.group.packs}>
-                                    {(pack) => (
-                                        <span>
-                                            {pack.requiresPro
-                                                ? m.pro_badge()
-                                                : m.pack_access_free()}{" "}
-                                            {getSitePackCoverage(
-                                                pack,
-                                            ).count?.toLocaleString(
-                                                getLocale(),
-                                            ) ?? "—"}
-                                        </span>
-                                    )}
-                                </For>
-                                <span>{m.domains_lowercase()}</span>
-                            </span>
-                        </span>
-                        <Show when={selectedCount() > 0}>
-                            <span class="shrink-0 text-foreground">
-                                <Check size={16} aria-hidden="true" />
-                                <span class="sr-only">
-                                    {m.block_wizard_category_count({
-                                        count: selectedCount(),
-                                    })}
-                                </span>
-                            </span>
-                        </Show>
-                        <Show
-                            when={expandedCategoryNames().includes(
-                                row.group.name,
-                            )}
-                            fallback={
-                                <ChevronRight
-                                    size={17}
-                                    class="shrink-0 text-muted-foreground"
-                                    aria-hidden="true"
-                                />
-                            }
-                        >
-                            <ChevronDown
-                                size={17}
-                                class="shrink-0 text-muted-foreground"
-                                aria-hidden="true"
-                            />
-                        </Show>
-                    </button>
-                    <Show
-                        when={expandedCategoryNames().includes(row.group.name)}
-                    >
-                        <div
-                            class="border-t border-border/50"
-                            data-testid="category-tier-options"
-                        >
-                            <For each={row.group.packs}>
-                                {(pack) => <ListRow list={pack} variant />}
-                            </For>
-                        </div>
-                    </Show>
-                </div>
-            </Show>
-        );
+        return <ListRow list={preferredCategoryPack(row.group, !isFreeUser())} group={row.group} />;
     }
 
     return (
@@ -451,7 +283,7 @@ export default function SectionSites(props: SectionSitesProps) {
                     </div>
                     <span class="text-muted-foreground text-[13px]">
                         {m.block_wizard_category_count({
-                            count: selectedLists().filter(isAceCategory).length,
+                            count: groupSitePackCategories(selectedLists().filter(isAceCategory)).length,
                         })}
                     </span>
                 </div>

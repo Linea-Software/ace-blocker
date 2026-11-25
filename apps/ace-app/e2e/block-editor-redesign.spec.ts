@@ -369,7 +369,7 @@ test("Category preview keeps selections, expands, and never truncates search res
     await expect(root.locator("details.pro-categories")).toHaveCount(1);
 });
 
-test("Pro users switch between Free and Pro tiers without losing locked connections", async ({
+test("Pro selects Extended directly and cannot remove locked category connections", async ({
     page,
 }) => {
     await page.goto("/getting-started");
@@ -427,10 +427,12 @@ test("Pro users switch between Free and Pro tiers without losing locked connecti
             host.dataset.testid = name + "-tier-fixture";
             host.style.cssText = "padding:20px;max-width:860px;";
             document.body.append(host);
+            const draft = new SitePacksConnectionDelta(isLocked ? ["pack-gambling-free", "pack-gambling-pro"] : []);
+            Object.assign(host, { draft });
             mount(SectionSites, {
                 target: host,
                 props: {
-                    delta: new SitePacksConnectionDelta(["pack-gambling-free"]),
+                    delta: draft,
                     availableLists: packs,
                     isLocked,
                 },
@@ -456,20 +458,17 @@ test("Pro users switch between Free and Pro tiers without losing locked connecti
         return urls;
     });
     expect(versions.length).toBeGreaterThan(0);
-    for (const id of ["switchable", "locked"]) {
-        const fixture = page.getByTestId(id + "-tier-fixture");
-        await fixture.getByTestId("category-family-toggle").click();
-        const options = fixture.getByTestId("category-tier-option");
-        await expect(options).toHaveCount(2);
-        await expect(options.first()).toHaveAttribute("aria-pressed", "true");
-        await options.last().click();
-        await expect(options.last()).toHaveAttribute("aria-pressed", "true");
-        // A pre-existing locked connection may not be removed during an upgrade.
-        await expect(options.first()).toHaveAttribute(
-            "aria-pressed",
-            id === "locked" ? "true" : "false",
-        );
-    }
+    const unlocked = page.getByTestId("switchable-tier-fixture").getByTestId("category-family-option");
+    await expect(unlocked).toHaveCount(1);
+    await expect(unlocked).toContainText("Pro · Extended");
+    await unlocked.click();
+    await expect(unlocked).toHaveAttribute("aria-pressed", "true");
+    expect(await page.getByTestId("switchable-tier-fixture").evaluate((el: any) => el.draft.currentConnectedListIds)).toEqual(["pack-gambling-pro"]);
+    const locked = page.getByTestId("locked-tier-fixture").getByTestId("category-family-option");
+    await expect(locked).toHaveCount(1);
+    await expect(locked).toHaveAttribute("aria-pressed", "true");
+    await expect(locked).toHaveAttribute("aria-disabled", "true");
+    expect(await page.getByTestId("locked-tier-fixture").evaluate((el: any) => el.draft.currentConnectedListIds)).toEqual(["pack-gambling-free", "pack-gambling-pro"]);
 });
 
 test("Editor hints at overflow, then hides the hint at the bottom", async ({
@@ -521,6 +520,21 @@ test("Official Site Pack icons and Free/Pro coverage are visible in both selecti
     page,
 }) => {
     await page.setViewportSize({ width: 1000, height: 740 });
+    await page.addInitScript(() => {
+        localStorage.setItem("ace:onboarding:v1", JSON.stringify({ wizardCompleted: true, tourCompleted: true }));
+        Object.assign(window, {
+            isTauri: true,
+            __TAURI_INTERNALS__: {
+                invoke: async (cmd: string, args: { op?: string }) => {
+                    if (cmd === "system_locale") return "en-US";
+                    if (cmd === "engine_call" && ["getAccountInfo", "refreshAccount"].includes(args.op ?? "")) return { isPro: false, tosAccepted: true };
+                    if (cmd === "engine_call" && args.op === "ping") return null;
+                    throw new Error("Unsupported fixture operation");
+                },
+                transformCallback: () => 1, unregisterCallback: () => {},
+            },
+        });
+    });
     await page.goto("/getting-started");
     await page.evaluate(async () => {
         const svelte = new URL("/src/test-fixture-runtime.ts", location.origin)
@@ -554,7 +568,7 @@ test("Official Site Pack icons and Free/Pro coverage are visible in both selecti
             isBundled: false,
             isLocked: false,
             isRemote: true,
-            isSynced: false,
+            isSynced: true,
             entriesCount: 0,
             icon: null,
         };
@@ -563,12 +577,14 @@ test("Official Site Pack icons and Free/Pro coverage are visible in both selecti
             id: "pack-gambling-free",
             name: "Gambling Websites — Free",
             requiresPro: false,
+            entriesCount: 14,
         };
         const pro = {
             ...base,
             id: "pack-gambling-pro",
             name: "Gambling Websites — Pro",
             requiresPro: true,
+            entriesCount: 454090,
         };
         const host = document.createElement("div");
         host.dataset.testid = "pack-family-fixture";
@@ -577,64 +593,38 @@ test("Official Site Pack icons and Free/Pro coverage are visible in both selecti
         document.body.append(host);
         const selection = document.createElement("section");
         host.append(selection);
+        const draft = new SitePacksConnectionDelta();
+        Object.assign(selection, { draft });
         mount(SectionSites, {
             target: selection,
             props: {
-                delta: new SitePacksConnectionDelta(),
+                delta: draft,
                 availableLists: [free, pro],
             },
         });
         const ledger = document.createElement("section");
         ledger.style.cssText = "max-width:840px;margin-top:30px;";
         host.append(ledger);
-        for (const pack of [free, pro]) {
-            mount(SitePackRow, {
-                target: ledger,
-                props: {
-                    pack,
-                    subtitle: "",
-                    isPro: false,
-                    variantOnly: true,
-                    onSelect: () => {},
-                },
-            });
-        }
+        mount(SitePackRow, {
+            target: ledger,
+            props: { pack: free, extendedPack: pro, basicPack: free, isPro: false, onSelect: () => {} },
+        });
     });
 
     const fixture = page.getByTestId("pack-family-fixture");
-    // Paired categories appear exactly once, not again in the Pro-only list.
-    const category = fixture
-        .getByTestId("category-preview")
-        .getByTestId("category-family");
-    await expect(category).toHaveCount(1);
-    const disclosure = category.getByTestId("category-family-toggle");
-    await expect(
-        disclosure
-            .getByTestId("category-icon")
-            .locator("svg.lucide-circle-dollar-sign"),
-    ).toBeVisible();
-    await expect(
-        disclosure.getByTestId("category-tier-comparison"),
-    ).toContainText("454,090");
-    await expect(disclosure).toHaveAttribute("aria-expanded", "false");
+    const row = fixture.getByTestId("category-family-option");
+    await expect(row).toHaveCount(1);
+    await expect(row.getByTestId("category-icon").locator("svg.lucide-circle-dollar-sign")).toBeVisible();
+    await expect(row.getByTestId("category-tier-comparison")).toHaveText("454,090 sites with Pro");
+    await expect(row.getByTestId("category-coverage")).toContainText("14 sites");
     await expect(fixture.locator("details.pro-categories")).toHaveCount(0);
-    await disclosure.click();
-    await expect(disclosure).toHaveAttribute("aria-expanded", "true");
-    const options = category.getByTestId("category-tier-option");
-    await expect(options).toHaveCount(2);
-    await expect(options.first()).toContainText("Free · Basic");
-    await expect(options.last()).toContainText("Pro · Extended");
-    await expect(options.last().getByTestId("category-coverage")).toContainText(
-        "454,090",
-    );
-
-    // The Inspector's compact rows preserve one icon and no repeated headings.
-    const rows = fixture.getByTestId("site-pack-row");
-    await expect(rows).toHaveCount(2);
-    await expect(rows.first()).toContainText("Free · Basic");
-    await expect(rows.last()).toContainText("Pro · Extended");
-    await expect(rows.first().getByTestId("site-pack-row-icon")).toHaveCount(0);
-    await expect(rows.last().getByTestId("site-pack-row-icon")).toHaveCount(0);
+    await row.click();
+    await expect(row).toHaveAttribute("aria-pressed", "true");
+    expect(await fixture.locator("section").first().evaluate((el: any) => el.draft.currentConnectedListIds)).toEqual(["pack-gambling-free"]);
+    const ledger = fixture.getByTestId("site-pack-row");
+    await expect(ledger).toHaveCount(1);
+    await expect(ledger.getByTestId("site-pack-row-icon")).toHaveCount(1);
+    await expect(ledger.getByTestId("site-pack-tier-comparison")).toHaveText("454,090 sites with Pro");
 
     await page.setViewportSize({ width: 390, height: 750 });
     await page.screenshot({ path: "test-results/site-pack-tiers-mobile.png" });

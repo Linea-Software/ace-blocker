@@ -73,8 +73,9 @@ Do not introduce server functions for engine control.
 - Network Block drafts are staged until a single atomic `saveNetworkBlock`
   call on Review. Enabled and schedule mode are separate. Never weaken or
   remove a locked connection, bypass Pro entitlements, or auto-lock creation.
-- Site Packs maintain Free/Pro coverage labels, selections and Inspector
-  semantics; failures must not silently remove saved policies.
+- Site Packs show one logical category and compare Basic/Extended coverage.
+  The editor selects the entitled edition and keeps existing locked connections.
+  Failures or entitlement loss must not silently remove saved policies.
 - Absolute trusted lock deadlines and pinned schedule time zones retain their
   distinct semantics.
 - English/Italian Paraglide messages, native OS language preference and
